@@ -46,9 +46,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and scroll and all; its list is read afresh. The rail's mark goes to Home, where every module is listed in its group with how many there are. Every screen is under a header band in the theme's colours with:
   - **search and commands**, which Ctrl K opens too, going to a module or searching for what is typed;
   - an account chip whose menu holds **Theme** (Light, Dark or Auto, which follows the system; remembered
-    in this browser, and Auto until chosen), the interface's language and the go-to keys, and signs out; or
-    Theme and Sign in for somebody signed out. Signing in always
-    asks the provider which account to use, so signing out and back in can switch person.
+    in this browser, and Auto until chosen), the interface's language and the go-to keys, and signs out.
+    A page opened with nobody signed in shows a sign-in screen instead of all this: the ways in the
+    environment offers, or that it offers none, coming back to the page asked for. It opens only on the
+    service's 401, so no answer still opens the page, and a session that ends while a page is open leaves
+    it as it is. It never goes to a provider by itself; signing in always asks the provider which account
+    to use, so signing out and back in can switch person. In the desktop app the tray's Connect to still
+    changes environment from there.
 
   Controls, tables and messages are drawn in the chosen theme from the Ledger tokens in
   `apps/web/src/theme/tokens.css`, the only file that writes a colour, and set in IBM Plex Sans,

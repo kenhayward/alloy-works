@@ -13,6 +13,7 @@ import { useGoToKeys } from './shell/commands/useGoToKeys.js';
 import { HeaderHostsProvider } from './shell/HeaderSlot.js';
 import { Rail } from './shell/Rail.js';
 import { RegionKeys } from './shell/regions.js';
+import { SignInGate } from './shell/SignInScreen.js';
 import { StatusProvider } from './shell/Status.js';
 import { localeDataVersion } from './words/locale-data.js';
 import { useWords } from './words/words.js';
@@ -43,10 +44,6 @@ export function App({
 }: AppProps): React.JSX.Element {
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
   const hash = useHash();
-  const [searching, setSearching] = useCommandKey();
-  const { words } = useWords();
-  const [environmentName, setEnvironmentName] = useState<string | undefined>();
-  useGoToKeys();
 
   useEffect(() => {
     let current = true;
@@ -70,6 +67,30 @@ export function App({
       />
     );
   }
+
+  return (
+    <SignInGate here={hash}>
+      <Shell hash={hash} platform={platform} environment={environment} workspace={workspace} />
+    </SignInGate>
+  );
+}
+
+/** The header band, the module rail, the page and the status bar, for somebody past the gate. */
+function Shell({
+  hash,
+  platform,
+  environment,
+  workspace,
+}: {
+  hash: string;
+  platform: PlatformInfo | null;
+  environment: React.ReactNode;
+  workspace: React.ReactNode;
+}): React.JSX.Element {
+  const [searching, setSearching] = useCommandKey();
+  const { words } = useWords();
+  const [environmentName, setEnvironmentName] = useState<string | undefined>();
+  useGoToKeys();
 
   return (
     // The status bar's owner: one live region for the application, at the foot of every page
