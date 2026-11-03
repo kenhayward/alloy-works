@@ -599,17 +599,18 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(fold(/^Notes/)).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('stands in the Table tab the page gives it, telling the page it holds a table and each time the cursor enters one (ADR-0052)', async () => {
+  it('stands in the Table tab the page gives it, telling the page it holds a table and whether the cursor is in one (ADR-0052, ADR-0079)', async () => {
     const host = document.createElement('div');
     document.body.append(host);
     const told = vi.fn();
     try {
       const { view, panel } = await inTable(undefined, { tableHost: host, onTable: told });
       expect(host).toContainElement(panel);
-      expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 1 });
+      expect(told).toHaveBeenLastCalledWith({ holds: true, inHand: true });
       // Out of the table: the tab is the page's to keep or leave, and shows the table read only - its
       // settings as text, Provenance its one act, nothing to remove or add (ADR-0052, decision 5).
       act(() => selectText(view, 2, 2));
+      expect(told).toHaveBeenLastCalledWith({ holds: true, inHand: false });
       const read = within(host).getByRole('group', { name: BOUND_TABLE_WORDS.panelReadOnly });
       expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
       expect(within(read).getByRole('region', { name: 'Table' })).toHaveTextContent(
@@ -622,7 +623,7 @@ describe('the Bound table panel (TB2-F)', () => {
       }
       act(() => selectText(view, 10, 10));
       expect(await within(host).findByRole('combobox', { name: 'Wide' })).toBeInTheDocument();
-      expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 2 });
+      expect(told).toHaveBeenLastCalledWith({ holds: true, inHand: true });
     } finally {
       host.remove();
     }

@@ -1045,6 +1045,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         ['List'],
         button('Definition list', true),
       );
+      // Nothing chooses the Table tab for the reader (ADR-0079).
+      await surface.getByText('Measured', { exact: true }).click();
+      await page.getByRole('tab', { name: 'Table, the cursor is in a table' }).click();
       await at(
         'the cursor in a table cell, the Table panel open',
         surface.getByText('Measured', { exact: true }),

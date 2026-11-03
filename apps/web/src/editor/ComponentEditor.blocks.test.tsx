@@ -4,11 +4,15 @@ import {
   openFootnote,
   Selection,
   setListAttributes,
+  tableAt,
+  tableCursor,
   type EditorView,
 } from '@alloy-works/editor';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { rowsWindow } from './TableMap.js';
+import { placeToolbar } from './TableToolbar.js';
 import { RegionKeys } from '../shell/regions.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { CHOOSING_PRESENTATION } from '../theme/presentation.fixture.js';
@@ -786,7 +790,7 @@ describe('the table panel (tables 1)', () => {
     const panel = await screen.findByRole('group', { name: 'Table' });
     view.focus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
-    expect(within(panel).getByLabelText('Header rows')).toHaveFocus();
+    expect(within(panel).getByRole('button', { name: 'Go to the table' })).toHaveFocus();
   });
 
   it('STR-071 marks the table unnumbered from its Numbered box, and numbered again, its caption kept', async () => {
@@ -794,18 +798,18 @@ describe('the table panel (tables 1)', () => {
     const view = await surface();
     caretIn(view, 'd1');
     const panel = await screen.findByRole('group', { name: 'Table' });
-    const box = within(panel).getByRole('checkbox', { name: 'Numbered' });
+    const box = within(panel).getByRole('switch', { name: /^Numbered/ });
     expect(box).toBeChecked();
     expect(tableOf(view)).not.toHaveProperty('numbered');
 
     await userEvent.click(box);
     await waitFor(() => expect(tableOf(view)).toMatchObject({ numbered: false }));
-    expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+    expect(within(panel).getByRole('switch', { name: /^Numbered/ })).not.toBeChecked();
     expect(tableOf(view)).toMatchObject({
       caption: [{ type: 'text', value: 'Readings', marks: [] }],
     });
 
-    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
+    await userEvent.click(within(panel).getByRole('switch', { name: /^Numbered/ }));
     await waitFor(() => expect(tableOf(view)).not.toHaveProperty('numbered'));
   });
 
@@ -814,11 +818,11 @@ describe('the table panel (tables 1)', () => {
     const view = await surface();
     caretIn(view, 'd1');
     const panel = await screen.findByRole('group', { name: 'Table' });
-    const wide = within(panel).getByLabelText('Wide');
-    expect(wide).toHaveDisplayValue("The table style's");
-    await userEvent.selectOptions(wide, 'scale');
+    const wide = within(panel).getByRole('radiogroup', { name: 'Wide' });
+    expect(within(wide).getByRole('radio', { name: "The table style's" })).toBeChecked();
+    await userEvent.click(within(wide).getByRole('radio', { name: 'Scale to fit' }));
     await waitFor(() => expect(tableOf(view)).toMatchObject({ wide: 'scale' }));
-    await userEvent.selectOptions(within(panel).getByLabelText('Wide'), 'style');
+    await userEvent.click(within(wide).getByRole('radio', { name: "The table style's" }));
     await waitFor(() => expect(tableOf(view)).not.toHaveProperty('wide'));
   });
 
@@ -832,17 +836,169 @@ describe('the table panel (tables 1)', () => {
     const view = await surface();
     caretIn(view, 'd1');
     const panel = await screen.findByRole('group', { name: 'Table' });
-    expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
-    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
-    await waitFor(() =>
-      expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).toBeChecked(),
-    );
+    const numbered = () => within(panel).getByRole('switch', { name: /^Numbered/ });
+    expect(numbered()).not.toBeChecked();
+    await userEvent.click(numbered());
+    await waitFor(() => expect(numbered()).toBeChecked());
     act(() => {
       fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
     });
-    await waitFor(() =>
-      expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked(),
+    await waitFor(() => expect(numbered()).not.toBeChecked());
+  });
+
+  it('CNT-077 reaches the floating toolbar by F6, one tab stop whose arrows move, and goes back to the cell on Esc (ADR-0079)', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    expect(screen.queryByRole('toolbar', { name: 'Table toolbar' })).toBeNull();
+    caretIn(view, 'd1');
+    const toolbar = await screen.findByRole('toolbar', { name: 'Table toolbar' });
+    view.focus();
+    // It takes no focus on appearing, and leaves the panel on its tab.
+    expect(toolbar).not.toContainElement(document.activeElement as HTMLElement);
+    const name = within(toolbar).getByRole('button', { name: 'Table, its settings' });
+    while (!toolbar.contains(document.activeElement)) {
+      await userEvent.keyboard('{F6}');
+    }
+    expect(name).toHaveFocus();
+    expect(toolbar.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    await userEvent.keyboard('{ArrowRight}');
+    expect(within(toolbar).getByRole('button', { name: 'Row above' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(within(toolbar).getByRole('button', { name: 'Split cell' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(view.dom).toHaveFocus();
+  });
+
+  it('CNT-016 changes the grid from the toolbar, each button saying why where it would do nothing (ADR-0079)', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const toolbar = await screen.findByRole('toolbar', { name: 'Table toolbar' });
+    const button = (name: string) => within(toolbar).getByRole('button', { name });
+    expect(
+      within(toolbar)
+        .getAllByRole('button')
+        .map((each) => each.getAttribute('aria-label')),
+    ).toEqual([
+      'Table, its settings',
+      'Row above',
+      'Row below',
+      'Column before',
+      'Column after',
+      'Delete row',
+      'Delete column',
+      'Merge cells',
+      'Split cell',
+    ]);
+    expect(button('Merge cells')).toHaveAttribute('aria-disabled', 'true');
+    expect(button('Merge cells')).toHaveAttribute(
+      'title',
+      'Merge cells: select two or more cells first',
     );
+    expect(button('Split cell')).toHaveAttribute('title', 'Split cell: only a merged cell splits');
+    const rows = () => tableAt(view.state)!.rows;
+    const before = rows();
+    await userEvent.click(button('Row below'));
+    await waitFor(() => expect(rows()).toBe(before + 1));
+    expect(button('Row below')).toHaveAttribute('title', 'Row below');
+    // In the caption there is no row to act on, and it says so.
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'tableCaption') at = pos + 1;
+      });
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
+    });
+    expect(button('Row above')).toHaveAttribute(
+      'title',
+      'Row above: put the cursor in a cell first',
+    );
+    expect(button('Row above')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it("opens the table's settings from the toolbar, stepping a count the command clamps, and closes on Esc back to its button (ADR-0079)", async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const toolbar = await screen.findByRole('toolbar', { name: 'Table toolbar' });
+    const name = within(toolbar).getByRole('button', { name: 'Table, its settings' });
+    await userEvent.click(name);
+    const settings = within(toolbar).getByRole('dialog', { name: 'Table settings' });
+    const { rows, columns } = tableAt(view.state)!;
+    expect(settings).toHaveTextContent(`${columns} columns × ${rows} rows · Row 2, column 1`);
+    const count = within(settings).getByLabelText('Header rows');
+    expect(count).toHaveValue(1);
+    await userEvent.click(within(settings).getByRole('button', { name: 'One fewer header row' }));
+    await waitFor(() => expect(tableAt(view.state)!.headerRows).toBe(0));
+    expect(within(settings).getByRole('button', { name: 'One fewer header row' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    fireEvent.change(within(settings).getByLabelText('Header rows'), { target: { value: '99' } });
+    await waitFor(() => expect(tableAt(view.state)!.headerRows).toBe(rows));
+    within(settings).getByLabelText('Header rows').focus();
+    await userEvent.keyboard('{Escape}');
+    expect(within(toolbar).queryByRole('dialog')).toBeNull();
+    expect(name).toHaveFocus();
+  });
+
+  it('CNT-077 moves the cursor from the map, by press and by arrow, Shift selecting cells to merge (ADR-0079)', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    const map = within(panel).getByRole('grid', { name: 'Map of the table' });
+    const at = () => tableCursor(view.state) as { row: number; column: number };
+    const { row, column } = at();
+    map.focus();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(at()).toMatchObject({ row: row - 1, column });
+    expect(map).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(at()).toMatchObject({ row, column });
+    // Off the edge it stays.
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}');
+    expect(at().column).toBe(0);
+    await userEvent.keyboard('{Shift>}{ArrowRight}{/Shift}');
+    expect(tableCursor(view.state)).toMatchObject({ selected: { cells: 2 } });
+    expect(panel).toHaveTextContent('2 cells selected');
+    const merge = within(panel).getByRole('button', { name: 'Merge cells' });
+    expect(merge).toHaveAttribute('aria-disabled', 'false');
+    expect(merge).toHaveTextContent('2 cells into one');
+    await userEvent.click(merge);
+    await waitFor(() => expect(panel).toHaveTextContent('merged cell'));
+    expect(within(panel).getByRole('button', { name: 'Split cell' })).toHaveTextContent(
+      'Back into 2 cells',
+    );
+    // A press goes where it says and leaves the focus on the text.
+    const cells = within(map).getAllByRole('gridcell');
+    view.focus();
+    await userEvent.click(cells[0]!);
+    expect(at()).toMatchObject({ row: 0, column: 0 });
+    expect(view.dom).toHaveFocus();
+    map.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(view.dom).toHaveFocus();
+  });
+});
+
+describe('where the toolbar stands and what the map draws (ADR-0079)', () => {
+  it('stands above the table, sticks at the desk top until the table has gone, and keeps on the page', () => {
+    const table = { top: 300, bottom: 600, left: 120 };
+    expect(placeToolbar(table, 56)).toEqual({ top: 248, left: 120, hidden: false });
+    expect(placeToolbar({ ...table, top: 50 }, 56)).toEqual({ top: 64, left: 120, hidden: false });
+    expect(placeToolbar({ ...table, top: -500, bottom: 100 }, 56)).toMatchObject({
+      top: 64,
+      hidden: true,
+    });
+    expect(placeToolbar({ ...table, left: -40 }, 56).left).toBe(8);
+  });
+
+  it('draws nine rows at most, those around the row the cursor is in', () => {
+    expect(rowsWindow(8, 7)).toEqual({ first: 0, last: 8 });
+    expect(rowsWindow(30, 0)).toEqual({ first: 0, last: 9 });
+    expect(rowsWindow(30, 19)).toEqual({ first: 15, last: 24 });
+    expect(rowsWindow(30, 29)).toEqual({ first: 21, last: 30 });
   });
 });
 
@@ -1835,12 +1991,13 @@ describe('footnotes and the table note in the editor (footnotes 1)', () => {
     );
     const view = await surface();
     caretIn(view, 'd1');
-    const panel = await screen.findByRole('group', { name: 'Table' });
-    expect(within(panel).getByRole('button', { name: 'Remove note' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    await userEvent.click(within(panel).getByRole('button', { name: 'Add note' }));
+    await screen.findByRole('group', { name: 'Table' });
+    const note = () =>
+      within(screen.getByRole('group', { name: 'Table' })).getByRole('switch', {
+        name: /^Note beneath the table/,
+      });
+    expect(note()).not.toBeChecked();
+    await userEvent.click(note());
     expect(view.state.selection.$from.parent.type.name).toBe('tableNote');
     act(() => view.dispatch(view.state.tr.insertText('Estimated.')));
     const tableOf = () =>
@@ -1848,12 +2005,8 @@ describe('footnotes and the table note in the editor (footnotes 1)', () => {
         note?: unknown;
       };
     expect(tableOf().note).toEqual([{ type: 'text', value: 'Estimated.', marks: [] }]);
-    const again = screen.getByRole('group', { name: 'Table' });
-    expect(within(again).getByRole('button', { name: 'Add note' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    await userEvent.click(within(again).getByRole('button', { name: 'Remove note' }));
+    expect(note()).toBeChecked();
+    await userEvent.click(note());
     expect(tableOf().note).toBeUndefined();
   });
 });

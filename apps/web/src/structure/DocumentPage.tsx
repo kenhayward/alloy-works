@@ -758,6 +758,10 @@ const dockIds = (key: string) => ({ tab: `document-tab-${key}`, panel: `document
 /** The panel chosen last, remembered by this browser as the panes' widths are. */
 export const DOCK_KEY = 'aw.document.dock';
 
+/** What a selection may take the panels from: not the Assistant, nor Threads (ADR-0079). */
+export const selectionMayTake = (panel: string): boolean =>
+  !['assistant', 'threads', 'selection'].includes(panel);
+
 const keptDock = (): DockPanel =>
   DOCK_PANELS.find((each) => each.key === kept(DOCK_KEY))?.key ?? 'part';
 
@@ -2106,11 +2110,12 @@ export function DocumentPage({
     if (next !== 'selection') keep(DOCK_KEY, next);
   };
   // What a selection offers takes the panels while it stands, unless they are in the middle of the
-  // Assistant, as the toolbar's second line once came at once; it hands them back as it was (ADR-0075).
+  // Assistant or Threads (ADR-0079), as the toolbar's second line once came at once; it hands them back
+  // as it was (ADR-0075).
   const beforeSelection = useRef<DockPanel | null>(null);
   useEffect(() => {
     if (selectionHeld) {
-      if (dock === 'assistant' || dock === 'selection') return;
+      if (!selectionMayTake(dock)) return;
       beforeSelection.current = dock;
       setDockState('selection');
     } else if (dock === 'selection') {
@@ -2121,12 +2126,9 @@ export function DocumentPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionHeld]);
   // Whether the component open in place holds a table, and where its formatting is set (ADR-0052):
-  // the Table tab is offered while it does, and chosen each time the cursor enters a table.
-  const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
+  // the Table tab is offered while it does, and marked while the cursor is in a table (ADR-0079).
+  const [heldTable, setHeldTable] = useState({ holds: false, inHand: false });
   const [tableHost, setTableHost] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (heldTable.entered > 0) setDockState('table');
-  }, [heldTable.entered]);
   // The panel an address names, opened once for each arrival of it (HM-G).
   const openedAt = useRef<number | null>(null);
   const { setCollapsed: setDockCollapsed } = dockPane;
@@ -3455,6 +3457,9 @@ export function DocumentPage({
                     label={say('document.document-panels')}
                     listLabel={say('document.document-panels-2')}
                     tabs={dockTabs.map((each) => {
+                      if (each.key === 'table' && heldTable.inHand && shownDock !== 'table') {
+                        return { ...each, dot: true, name: say('editor.table-in-hand') };
+                      }
                       if (each.key !== 'threads') return each;
                       const unread = threadList.filter(
                         (thread) => thread.new && thread.resolvedAt === null,

@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { PaneToggle, type Pane } from '../layouts/PaneWidth.js';
@@ -47,15 +47,15 @@ const ids = (key: string) => ({ tab: `component-tab-${key}`, panel: `component-p
  * editor sets the fields of the component's type (`onFieldsHost`), Versions and Access. Each panel
  * stays mounted while another is shown, so the fields keep what is being typed into them. Used in
  * waits for a route that can say (the LG plan, LG-H). Table comes first while the component holds a
- * table (ADR-0052): the editor sets its formatting there (`onTableHost`), and it is chosen each time
- * the cursor enters a table, the reader's own choice standing until the next.
+ * table (ADR-0052): the editor sets its formatting there (`onTableHost`). It is never chosen for the
+ * reader, and shows a dot while the cursor is in a table and it is not showing (ADR-0079).
  */
 export function ComponentDock({
   client,
   id,
   line,
   onFieldsHost,
-  table = { holds: false, entered: 0 },
+  table = { holds: false, inHand: false },
   onTableHost = () => {},
   pane,
   mine,
@@ -67,8 +67,8 @@ export function ComponentDock({
   /** The line open, whose history the Versions panel shows and restores on (LOC-012). */
   line?: string | undefined;
   onFieldsHost: (host: HTMLElement | null) => void;
-  /** Whether the component holds a table, and how many times the cursor has entered one. */
-  table?: { readonly holds: boolean; readonly entered: number };
+  /** Whether the component holds a table, and whether the cursor is in one. */
+  table?: { readonly holds: boolean; readonly inHand: boolean };
   onTableHost?: (host: HTMLElement | null) => void;
   /** Its width and whether it is hidden to a rail, which the page draws; kept mounted while hidden. */
   pane?: Pane;
@@ -80,11 +80,13 @@ export function ComponentDock({
   onRestored?: () => void;
 }) {
   const [chosen, setChosen] = useState<PanelKey>('attributes');
-  useEffect(() => {
-    if (table.entered > 0) setChosen('table');
-  }, [table.entered]);
-  const panels = COMPONENT_PANELS.filter((each) => each.key !== 'table' || table.holds);
   const shown: PanelKey = chosen === 'table' && !table.holds ? 'attributes' : chosen;
+  const panels = COMPONENT_PANELS.filter((each) => each.key !== 'table' || table.holds).map(
+    (each) =>
+      each.key === 'table' && table.inHand && shown !== 'table'
+        ? { key: each.key, label: each.label, dot: true, name: words('editor.table-in-hand') }
+        : each,
+  );
   return (
     <div className={styles['dock']} hidden={pane?.collapsed}>
       {/* The tabs stay where they are while the body under them scrolls. */}

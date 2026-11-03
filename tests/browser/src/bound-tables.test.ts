@@ -173,6 +173,9 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
       // To the Bound table panel by F6, past the Value panel.
       const panel = page.getByRole('group', { name: 'Bound table' });
       const valuePanel = page.getByRole('region', { name: 'Value' });
+      // Nothing chooses the Table tab for the reader (ADR-0079).
+      await page.getByRole('tab', { name: /^Table/ }).click();
+      await surface.focus();
       await panel.waitFor();
       for (let pressed = 0; pressed < 12; pressed++) {
         if (await panel.evaluate((element) => element.contains(document.activeElement))) break;
