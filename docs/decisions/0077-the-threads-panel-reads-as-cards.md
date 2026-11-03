@@ -26,6 +26,12 @@ records where the code answers it otherwise.
 6. **The composer promises nobody will hear.** Who may not read a thread is known only once it is sent, and
    a person's cadence may be daily or never, so "will be notified" is not said.
 
+## What would change the answer
+
+Documents with thousands of threads, where reading every page stops being quick: then the list filters on the
+service again, and Show's counts come from a route of their own. And a real need for a chip in the box as a
+mention is typed, which would take a small editor rather than a `textarea`.
+
 ## Consequences
 
 The list answer grows with every comment's words. A thread with very long comments costs more per page; if

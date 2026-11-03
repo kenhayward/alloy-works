@@ -903,6 +903,7 @@ const VALID_INPUT: Readonly<
     payload: { version: SESSION, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
   },
   addComment: { payload: { parts: [{ text: 'Hm' }] } },
+  markThreadsRead: { payload: { threads: ['00000000-0000-4000-8000-000000000000'] } },
   makeSuggestion: { payload: { version: SESSION, content: { title: 'Elsewhere' } } },
   resolveSuggestions: { payload: { act: 'reject', scope: `artifact:${SESSION}` } },
   openRound: {

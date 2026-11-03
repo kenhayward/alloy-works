@@ -20,6 +20,11 @@ principal stands for the assistant.
 4. **The assistant only comments, through a proposal. `@Assistant` starts nothing.** A model call started
    from a comment is a new data path and a cost, with no requirement. It may be filtered by, never mentioned.
 
+## What would change the answer
+
+An assistant trusted to comment without a person accepting it, which GEN-009 refuses today: its comments would
+have nobody to stand behind them, and it would need a principal.
+
 ## Consequences
 
 An edit keeps the mark: the comment was still drafted so. `read_comments` tells the model nothing of it. An

@@ -131,7 +131,9 @@ export const ThreadView = z.object({
             ),
         })
         .optional()
-        .describe('Drafted by the assistant and accepted by its author (GEN-063); absent otherwise'),
+        .describe(
+          'Drafted by the assistant and accepted by its author (GEN-063); absent otherwise',
+        ),
       texts: z
         .array(
           z.object({ parts: z.array(z.record(z.string(), z.unknown())), at: z.iso.datetime() }),
