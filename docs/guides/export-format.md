@@ -23,13 +23,20 @@ size in a pax `size` record.
 A table's file may be several gzip members one after another, as the gzip format allows. A table with
 no rows has an empty one.
 
+A partial archive (`scope` is `configuration`, `space`, `document` or `publication`) also holds
+`references.jsonl`: one `{ "table", "id", "how" }` for each row its rows name that it does not hold
+(`how` is `by_identity`), or that it holds only because it was asked to follow references (`by_value`). It
+holds definitions always, and of a person only `id`, `kind`, `issuer`, `subject` and `display_name`. It holds
+no audit log, no access and no threads marked internal. A row needing a row outside the archive through a
+required key is not in it.
+
 ## The manifest
 
 | Member                | Means                                                                     |
 | --------------------- | ------------------------------------------------------------------------- |
 | `format`              | `2`                                                                       |
 | `export`              | The export's identifier                                                   |
-| `scope`               | `tenant`: everything                                                      |
+| `scope`               | `tenant` for everything, or the part, with `scopeId` and `followReferences` |
 | `requestedAt`         | When it was asked for                                                     |
 | `cutAt`               | The moment it holds: every table as of this one instant                   |
 | `lastMigration`       | The newest database migration of the product that wrote it                |

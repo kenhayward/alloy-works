@@ -11,11 +11,18 @@ import {
   EXPORT_TABLES,
   failTenantExport,
   finishTenantExport,
+  partialLeftOut,
   readExportCut,
+  readPartialCut,
   readTenantExport,
+  readableForExport,
+  type ExportCut,
+  type ExportReference,
+  type ExportScope,
   type TenantDatabase,
 } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
+import { JobRefused } from '../refusal.js';
 import { tarWriter } from '../tar.js';
 import type { JobHandler } from '../worker.js';
 
@@ -55,16 +62,41 @@ export function tenantExportJob(deps: {
         await mkdir(tables);
         await mkdir(objects);
         const file = (table: string) => join(tables, `${table}.jsonl.gz`);
-        const cut = await deps.db.withTenant(
-          tenant,
-          (trx) =>
-            readExportCut(trx, async (table, lines) => {
-              // Gzip's members concatenate, so each page is written and forgotten.
-              await appendFile(file(table), await zipped(`${lines.join('\n')}\n`));
-            }),
-          undefined,
-          { isolation: 'repeatable read', readOnly: true },
-        );
+        const write = async (table: string, lines: readonly string[]) => {
+          // Gzip's members concatenate, so each page is written and forgotten.
+          await appendFile(file(table), await zipped(`${lines.join('\n')}\n`));
+        };
+        const whole = asked.scope === 'tenant';
+        // What the asker may read is read first: reading it takes a lock a read-only cut cannot.
+        const readable =
+          whole || asked.requestedBy === null
+            ? undefined
+            : await deps.db.withTenant(tenant, (trx) =>
+                readableForExport(trx, asked.requestedBy!),
+              );
+        if (!whole && !readable) {
+          throw new JobRefused('export_invalid', 'Whoever asked for this export has gone.');
+        }
+        const cut: ExportCut & { references?: readonly ExportReference[] } =
+          await deps.db.withTenant(
+            tenant,
+            (trx) =>
+              whole
+                ? readExportCut(trx, write)
+                : readPartialCut(
+                    trx,
+                    {
+                      scope: asked.scope as Exclude<ExportScope, 'tenant'>,
+                      id: asked.scopeId,
+                      followReferences: asked.followReferences,
+                      requestedBy: asked.requestedBy!,
+                    },
+                    readable!,
+                    write,
+                  ),
+            undefined,
+            { isolation: 'repeatable read', readOnly: true },
+          );
 
         // Each object once, by its hash, checked. One the store has lost or holds wrongly is named,
         // rather than making the tenant impossible to export when it most needs to leave (IMP-020).
@@ -90,7 +122,14 @@ export function tenantExportJob(deps: {
         const manifest = {
           format: EXPORT_FORMAT,
           export: asked.id,
-          scope: 'tenant',
+          scope: asked.scope,
+          ...(whole
+            ? {}
+            : {
+                scopeId: asked.scopeId,
+                followReferences: asked.followReferences,
+                references: { file: 'references.jsonl', count: cut.references?.length ?? 0 },
+              }),
           requestedAt: asked.requestedAt.toISOString(),
           cutAt: cut.cutAt,
           lastMigration: cut.lastMigration,
@@ -113,7 +152,10 @@ export function tenantExportJob(deps: {
             holds: 'A reference to each secret, never its value.',
           },
           rebuilt: omitted('rebuilt'),
-          leftOut: omitted('leftOut'),
+          leftOut: {
+            ...omitted('leftOut'),
+            ...(whole ? {} : partialLeftOut(asked.scope as Exclude<ExportScope, 'tenant'>)),
+          },
           columnsNeverCarried: {
             columns: EXPORT_NOT_CARRIED_COLUMNS,
             why: "A database's own transaction numbers, which mean nothing in another.",
@@ -131,6 +173,14 @@ export function tenantExportJob(deps: {
             'secrets.jsonl',
             Buffer.from(cut.secrets.map((each) => `${JSON.stringify(each)}\n`).join('')),
           );
+          if (!whole) {
+            tar.bytes(
+              'references.jsonl',
+              Buffer.from(
+                (cut.references ?? []).map((each) => `${JSON.stringify(each)}\n`).join(''),
+              ),
+            );
+          }
           for (const name of names) {
             // A table with no rows has no file on disk, and an empty one in the archive.
             if ((cut.rows[name] ?? 0) === 0) {

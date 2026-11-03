@@ -98,6 +98,8 @@ export interface RouteContract {
   readonly query?: z.ZodObject;
   /** A JSON request body. The service validates it before a handler, as it does parameters. */
   readonly body?: z.ZodObject;
+  /** A body a caller may leave off, read as an empty object: for a route that grew one later. */
+  readonly bodyOptional?: true;
   /**
    * A request body of bytes, of one content type and no more than `maxBytes`: refused as `413` before
    * it is read whole (figures 1, R2). A route declares this or `body`, never both.

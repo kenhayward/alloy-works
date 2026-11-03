@@ -119,11 +119,12 @@ committed `format.json` lists each carried table's columns; a test fails when th
 bumps the format and adds an upgrader taking format N to N+1. A frozen fixture archive is imported on every run. An
 archive newer than the product is refused, `export_format_newer`. Without this, an export a year old is not a backup.
 
-**EI-J. Permissions.** `export_environment` for a whole tenant or configuration, and `export_audit` as well for
-the whole tenant, since a complete export holds audit, to ask for one and to download one. A partial export needs `administer` at its scope and holds only
-what the asker may read, with no internal threads (COL-053), which reads IMP-023 as the whole tenant's rule. A new
-high-risk permission, `import_environment`, for configuration and whole-tenant imports, with a sign-in in the last ten
-minutes (IN-D); `administer` at the target for a partial one.
+**EI-J. Permissions.** `export_environment` for every scope, and `export_audit` as well for the whole tenant, since it
+holds audit, to ask for one and to download one. A partial export holds only what the asker may read, with no internal
+threads (COL-053), which reads IMP-023 as the whole tenant's rule. A new high-risk permission, `import_environment`, for
+every import, with a sign-in in the last ten minutes (IN-D). Not `administer` at a scope, as first designed: a person
+holding only that could ask for an archive and have nowhere to find it, and every route here would need a second
+check. The routes stay one permission each.
 
 **EI-K. An archive is untrusted input, and this is not a bulk-create endpoint** (IMP-048, API-N05). Entries are
 read by exact name (`tables/<known>.jsonl`, `objects/<64 hex>`), sizes are capped against what the manifest declares,
@@ -168,6 +169,13 @@ outside a digest (`publication_output.object_key`, `report_key`) are rewritten o
 a new tenant knows nothing of it. A restore is as of its archive: the preview says how old it is and that anyone
 erased since returns and must be erased again, and the report repeats it (VER-038). A ledger of erasures that outlives
 a tenant would be a list of erased people (Ken).
+
+**EI-R. A part follows artifacts through foreign keys.** `export-scope.ts` names each carried table: content follows
+the artifacts in scope, a row staying only when every content row it requires is in; referenced rows are those it names
+(`principal` to issuer, subject and name alone); the configuration scope alone holds the configuration, whole. Access,
+audit and everything else stay out, and the manifest says so. Definitions always come, since a version's digest names
+them. What a row names and the archive lacks is in `references.jsonl` by identity, or by value where followed. It runs
+in one read-only cut like a whole export, and the asker's readable set, read first, bounds what is seeded.
 
 ## Not designed
 

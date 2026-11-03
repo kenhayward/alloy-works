@@ -185,6 +185,10 @@ describe('the high-risk permissions', () => {
     const download = `/v1/exports/${id}/download`;
     expect((await get(download, without.cookie)).statusCode).toBe(403);
     expect((await get(download, both.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
+    // A part holds no log, so needs only export_environment (EI-R).
+    expect((await post('/v1/exports', without.cookie, { scope: 'configuration' })).statusCode).toBe(
+      200,
+    );
   });
 
   it('leaves what grants access or makes a token that edits with administer', () => {

@@ -3,7 +3,7 @@
 > T7's next slice, designed in [export-and-import.md](../design/export-and-import.md). **Full tier**: several PRs,
 > migrations, a new contract, a process boundary and tenancy. Ken decided that a whole-tenant archive goes only into an
 > empty tenant (EI-D), that an erased person's return is a warning (EI-Q), that a secret's holder may arrive switched
-> off (EI-G), and that sweeps wait for a review after a restore (EI-M). Pre-flight found sixteen defects, answered in the design and here; neither spike has run.
+> off (EI-G), and that sweeps wait for a review after a restore (EI-M). Pre-flight found sixteen defects, answered in the design and here; both spikes have run.
 
 **Goal:** an administrator exports a whole tenant, reads it without the product, restores it into a new tenant with
 its audit log and people, and brings a space or the configuration into a tenant already in use.
@@ -68,10 +68,10 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
 
 ## Spikes
 
-Neither has been run; each could change the plan.
+Both run on 2026-11-03 against a real tenant's cut, with the rows held in memory.
 
-- **S1, how rows get in (before EIc).** Some 45 insert triggers hold live rules (`publication_output_while_queued`, `workflow_transition_follows`, `review_round_event_by_a_reviewer`...), which history cannot satisfy, and `generated always` needs `overriding system value`. Try a fixture archive through the tenant's role and list what refuses. Expected: the `aw_restorer` path above with `alter table ... disable trigger user`, foreign keys left on. It takes `access exclusive`: fine in an empty tenant, not in a populated one. So EId may carry only what live triggers accept, or insert through narrow `security definer` functions. **The worker gaining the owner role is the largest risk here**; a separate process with that login alone is the alternative, and my recommendation if the worker cannot be kept from it.
-- **S2, one transaction at size (before EIc).** A million-event fixture: time, WAL, the job's lease. Also the export's long `repeatable read`, which holds back vacuum for the whole cluster, not just this tenant. If either is too much, the fallback for export is `pg_export_snapshot` over pages, and for restore a job heartbeat.
+- **S1, how rows get in. Answered:** as the owner, in one transaction, `alter table ... disable trigger user` on every table, foreign keys on, `set constraints all deferred`, wipe what is seeded with `truncate`, insert in `insertOrder` with `overriding system value`, set the broken columns, `set constraints all immediate` (before triggers return, or `alter` refuses on pending events), triggers back. Every carried table came back with its count. `component_type_version_id` must not be written null, since a check forbids it: its key is deferrable, so deferring is the break. So an empty restore keeps ids as they are and needs no remapping: empty means nothing is lost by the wipe. **The worker does not gain the owner role**: a separate `restorer` process, the same image with its own login `aw_restorer`, claims only `tenant_restore` jobs. Disabling a trigger takes `share row exclusive`, so a partial import pauses writers on the tables it writes, and readers carry on: EId takes that, says so in the preview, and touches only those tables.
+- **S2, one transaction at size. Answered:** a million events exported in 5 s and inserted in 12 s, with no sign that the lease or vacuum needs a fallback at that size. Neither `pg_export_snapshot` nor a heartbeat is built.
 
 ## Risks
 

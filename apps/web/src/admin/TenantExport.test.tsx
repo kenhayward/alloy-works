@@ -11,10 +11,14 @@ const json = (status: number, body: unknown) =>
 const READY = '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41';
 const GONE = '6a1d9c2e-7b3f-4e8a-9c5d-1f2e3a4b5c6d';
 const ASKED = '2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d';
+const SPACE = '3d5f7a9c-2e4a-4b6c-8d0e-0f1a2b3c4d5e';
 
 const row = (id: string, state: string, over: Record<string, unknown> = {}) => ({
   id,
   state,
+  scope: 'tenant',
+  scopeId: null,
+  followReferences: false,
   requestedAt: '2026-10-12T09:00:00.000Z',
   requestedBy: null,
   finishedAt: state === 'queued' ? null : '2026-10-12T09:05:00.000Z',
@@ -28,12 +32,17 @@ const row = (id: string, state: string, over: Record<string, unknown> = {}) => (
 /** The exports listing, an export asked for, and its download, as the service answers them. */
 function service() {
   const asked: string[] = [];
+  const bodies: Record<string, unknown>[] = [];
   let made: 'none' | 'queued' | 'done' = 'none';
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     asked.push(`${request.method} ${path}`);
+    if (request.method === 'GET' && path === '/v1/spaces') {
+      return json(200, { items: [{ id: SPACE, name: 'Regulatory' }], next: null });
+    }
     if (request.method === 'POST' && path === '/v1/exports') {
+      bodies.push((await request.clone().json()) as Record<string, unknown>);
       made = 'queued';
       return json(200, { export: row(ASKED, 'queued') });
     }
@@ -52,10 +61,28 @@ function service() {
     }
     return json(404, { code: 'not_found', message: 'There is nothing at this address.' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked };
+  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked, bodies };
 }
 
 describe("Administration's Export (the R21 plan, R21-B)", () => {
+  it('IMP-022 IMP-024 asks for the configuration or one space, following its references unless told not to', async () => {
+    const user = userEvent.setup();
+    const { client, bodies } = service();
+    render(<TenantExport client={client} followMs={1} follow={() => {}} />);
+    await user.click(await screen.findByRole('button', { name: 'Export the configuration' }));
+    await waitFor(() => expect(bodies).toEqual([{ scope: 'configuration' }]));
+    expect(await screen.findByLabelText('Space')).toHaveValue(SPACE);
+    await user.click(screen.getByRole('button', { name: 'Export this space' }));
+    await waitFor(() =>
+      expect(bodies[1]).toEqual({ scope: 'space', id: SPACE, followReferences: true }),
+    );
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Export this space' }));
+    await waitFor(() =>
+      expect(bodies[2]).toEqual({ scope: 'space', id: SPACE, followReferences: false }),
+    );
+  });
+
   it('API-044 asks for an export of the environment and lists the past ones, each downloadable while it is kept', async () => {
     const user = userEvent.setup();
     const follow = vi.fn();

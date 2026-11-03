@@ -290,11 +290,16 @@ function pathParameters(params: z.ZodObject): Json[] {
  * is telling the service something it does not understand, and dropping it silently would accept and
  * discard part of the request rather than refuse it.
  */
-function requestBody(body: z.ZodObject, name: string, definitions: Definitions): Json {
+function requestBody(
+  body: z.ZodObject,
+  name: string,
+  definitions: Definitions,
+  optional = false,
+): Json {
   const json: Json = { ...z.toJSONSchema(body, { io: 'input' }) };
   delete json.$schema;
   return {
-    required: true,
+    required: !optional,
     content: {
       'application/json': {
         schema: hoist(json, name, definitions),
@@ -414,7 +419,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
           : []),
       ],
       ...(route.body
-        ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions) }
+        ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions, route.bodyOptional) }
         : {}),
       ...(route.rawBody
         ? {
