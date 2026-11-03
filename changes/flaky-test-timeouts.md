@@ -13,3 +13,5 @@
   page at the top: the text was not yet tall enough to reach the part, so the scroll was lost. The
   choice now waits for the texts, as following a link to a part does, and goes there once they have
   taken their room. Fixes #453 and #747.
+- The five-hundred-node navigation test took 37s on a quiet machine and crossed the suite's 120s
+  default on a loaded CI runner. It now allows 180s. Fixes #757.

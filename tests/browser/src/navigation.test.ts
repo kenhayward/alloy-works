@@ -532,5 +532,7 @@ describe('moving through a long document in a browser (issue #336)', () => {
         expect(await shownInPane(tree, focusedNode!), `${key}'s item in the pane`).toBe(true);
       }
     });
-  });
+    // A document of five hundred nodes, opened and moved through: 37s on a quiet machine, and a
+    // loaded CI runner sits well above the suite's 120s default (issue #757).
+  }, 180_000);
 });
