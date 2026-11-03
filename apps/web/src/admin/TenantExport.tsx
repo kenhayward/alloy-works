@@ -12,6 +12,7 @@ type Client = ReturnType<typeof createApiClient>;
 
 /** An export as Export lists it (API-044; the R21 plan, R21-B). */
 interface ExportRow {
+  scope: 'tenant' | 'configuration' | 'space' | 'document' | 'publication';
   readonly id: string;
   readonly state: 'queued' | 'done' | 'failed' | 'expired';
   readonly requestedAt: string;

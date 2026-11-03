@@ -32,20 +32,20 @@ required key is not in it.
 
 ## The manifest
 
-| Member                | Means                                                                     |
-| --------------------- | ------------------------------------------------------------------------- |
-| `format`              | `2`                                                                       |
-| `export`              | The export's identifier                                                   |
+| Member                | Means                                                                       |
+| --------------------- | --------------------------------------------------------------------------- |
+| `format`              | `2`                                                                         |
+| `export`              | The export's identifier                                                     |
 | `scope`               | `tenant` for everything, or the part, with `scopeId` and `followReferences` |
-| `requestedAt`         | When it was asked for                                                     |
-| `cutAt`               | The moment it holds: every table as of this one instant                   |
-| `lastMigration`       | The newest database migration of the product that wrote it                |
-| `tables`              | Each carried table's file and row count                                   |
-| `objects`             | How many, and `missing`: hashes the store could not give back, or wrongly |
-| `secrets`             | The file holding the references, and how many                             |
-| `rebuilt`             | Tables not held because they are made again from what is, each with why   |
-| `leftOut`             | Tables not held for any other reason, each with why                       |
-| `columnsNeverCarried` | Columns no table's rows hold, and why                                     |
+| `requestedAt`         | When it was asked for                                                       |
+| `cutAt`               | The moment it holds: every table as of this one instant                     |
+| `lastMigration`       | The newest database migration of the product that wrote it                  |
+| `tables`              | Each carried table's file and row count                                     |
+| `objects`             | How many, and `missing`: hashes the store could not give back, or wrongly   |
+| `secrets`             | The file holding the references, and how many                               |
+| `rebuilt`             | Tables not held because they are made again from what is, each with why     |
+| `leftOut`             | Tables not held for any other reason, each with why                         |
+| `columnsNeverCarried` | Columns no table's rows hold, and why                                       |
 
 A table in neither `tables`, `rebuilt` nor `leftOut` does not exist. An export is complete apart from
 what these say, so check `objects.missing` first.

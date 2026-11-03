@@ -71,9 +71,7 @@ export function tenantExportJob(deps: {
         const readable =
           whole || asked.requestedBy === null
             ? undefined
-            : await deps.db.withTenant(tenant, (trx) =>
-                readableForExport(trx, asked.requestedBy!),
-              );
+            : await deps.db.withTenant(tenant, (trx) => readableForExport(trx, asked.requestedBy!));
         if (!whole && !readable) {
           throw new JobRefused('export_invalid', 'Whoever asked for this export has gone.');
         }

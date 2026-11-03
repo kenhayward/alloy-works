@@ -61,7 +61,11 @@ function service() {
     }
     return json(404, { code: 'not_found', message: 'There is nothing at this address.' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked, bodies };
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    asked,
+    bodies,
+  };
 }
 
 describe("Administration's Export (the R21 plan, R21-B)", () => {

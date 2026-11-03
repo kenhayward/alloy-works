@@ -419,7 +419,14 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
           : []),
       ],
       ...(route.body
-        ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions, route.bodyOptional) }
+        ? {
+            requestBody: requestBody(
+              route.body,
+              `${route.operationId}Body`,
+              definitions,
+              route.bodyOptional,
+            ),
+          }
         : {}),
       ...(route.rawBody
         ? {

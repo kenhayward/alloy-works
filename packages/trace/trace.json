@@ -23360,7 +23360,7 @@
     {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 228,
+      "line": 239,
       "kind": "title"
     },
     {
@@ -24744,6 +24744,12 @@
       "kind": "title"
     },
     {
+      "id": "IMP-024",
+      "file": "apps/service/src/tenant-export-routes.test.ts",
+      "line": 66,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "apps/service/src/tenants.test.ts",
       "line": 37,
@@ -25568,7 +25574,19 @@
     {
       "id": "API-044",
       "file": "apps/web/src/admin/TenantExport.test.tsx",
-      "line": 59,
+      "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-022",
+      "file": "apps/web/src/admin/TenantExport.test.tsx",
+      "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-024",
+      "file": "apps/web/src/admin/TenantExport.test.tsx",
+      "line": 72,
       "kind": "title"
     },
     {
@@ -29001,6 +29019,54 @@
       "id": "CNT-085",
       "file": "apps/worker/src/marks.test.ts",
       "line": 277,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-005",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 287,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-054",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 287,
+      "kind": "title"
+    },
+    {
+      "id": "COL-053",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 346,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-023",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 298,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-024",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 223,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-038",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 236,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-040",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-052",
+      "file": "apps/worker/src/partial-export.test.ts",
+      "line": 223,
       "kind": "title"
     },
     {

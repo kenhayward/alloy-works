@@ -1040,7 +1040,7 @@ describe('the citations in the committed model', () => {
     // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
     // 2463 (2026-11-03): the sign-in screen's tests cite IAM-011 and ADM-051.
-    expect(model.citations).toHaveLength(2471);
+    expect(model.citations).toHaveLength(2482);
   });
 
   it('cites no identifier the corpus does not hold', () => {

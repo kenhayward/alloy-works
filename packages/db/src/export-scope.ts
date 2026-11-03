@@ -217,7 +217,7 @@ async function seedArtifacts(
   }
   const followed = new Set<string>();
   if (asked.followReferences && asked.scope !== 'configuration') {
-    for (let grew = true; grew; ) {
+    for (let grew = true; grew;) {
       grew = false;
       const ids = [...seeded];
       const { rows } = await sql<{ id: string }>`
@@ -448,10 +448,8 @@ export function insertOrder(
   catalogue: ExportCatalogue,
 ): readonly (readonly [string, Extract<(typeof EXPORT_TABLES)[string], { fate: 'carried' }>])[] {
   const left = new Map(carriedTables());
-  const order: (readonly [
-    string,
-    Extract<(typeof EXPORT_TABLES)[string], { fate: 'carried' }>,
-  ])[] = [];
+  const order: (readonly [string, Extract<(typeof EXPORT_TABLES)[string], { fate: 'carried' }>])[] =
+    [];
   while (left.size > 0) {
     const ready = [...left].filter(
       ([table, census]) =>

@@ -323,7 +323,11 @@ export function tenantExportHandlers(
       const { id } = request.params as TenantExportParams;
       const made = await readTenantExport(trx, id);
       if (!made) throw notFound();
-      if (made.scope === 'tenant') await holdsTheLog(trx, principalId, facts);
+      // A part is bounded by what its asker may read, so another reader needs what would let them
+      // export it all (EI-J).
+      if (made.scope === 'tenant' || made.requestedBy !== principalId) {
+        await holdsTheLog(trx, principalId, facts);
+      }
       if (made.state !== 'done' || made.key === null) {
         throw new AppError(
           409,
