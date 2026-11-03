@@ -185,7 +185,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   one makes an image in the space, because adding an image is part of editing. The last space not archived cannot be archived. An archived space is marked in the list of
   spaces and offered nowhere as a place to make something.
 
-  Each act is on the environment's audit log (below). Moving content between spaces is T7.
+  Each act is on the environment's audit log (below). **Moving content between spaces.** Move to another space, in the Document menu and on a component's band, says first what comes along, what stays and what would stop working, and needs administer on it and create or administer at the target. A document's publications follow it, and its components and images can, where nothing else needs them. Who can read it follows the new space at once: direct grants on it end, a publication's shares stay, its locks and presence go. A thread stands for whoever can still read what it is on; one who cannot sees on the withheld part only that it moved and has threads. A hold or a keep it would lose refuses it. A template or an image moves through `POST /v1/artifacts/{id}/move`.
 
 - **An audit log, written.** Every act the product performs is recorded in the environment's own
   audit log, in the same transaction as the act, naming who did it - a person, by their session or a

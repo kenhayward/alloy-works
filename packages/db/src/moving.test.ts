@@ -464,7 +464,7 @@ describe('moving content between spaces', () => {
     expect(ended.map((each) => each.space)).toEqual([open]);
   });
 
-  it("takes a component's locks and presence with it, and its holder may claim again", async () => {
+  it("COL-069 a held lock and presence are gone after a move, and the holder claims again", async () => {
     const made = await component();
     const document = await placing(made);
     const session = randomUUID();

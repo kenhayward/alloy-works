@@ -479,3 +479,20 @@ export async function previewMove(
     consequences: rows[0]!,
   };
 }
+
+/**
+ * Which of these components moved and have threads (MV-F): what a document may say of a part it
+ * withholds, and nothing of how many, when or who. Moved at any time: `artifact_move` cannot say who
+ * could read before, so one who never could learns as much, and no more.
+ */
+export async function movedWithThreads(
+  trx: TenantTransaction,
+  components: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (components.length === 0) return new Set();
+  const { rows } = await sql<{ id: string }>`
+    select distinct m.artifact_id as id from artifact_move m
+     where m.artifact_id = any(${ids(components)})
+       and exists (select from thread t where t.on_id = m.artifact_id)`.execute(trx);
+  return new Set(rows.map((row) => row.id));
+}

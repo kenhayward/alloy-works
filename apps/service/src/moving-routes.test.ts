@@ -45,6 +45,7 @@ describe('moving content between spaces, over HTTP (moving.md)', () => {
       title: 'A part',
       language: 'en-GB',
       direction: 'ltr',
+      markdown: 'Set the tray, then wait.',
     });
     expect(made.statusCode, made.body).toBe(200);
     return made.json<{ id: string }>().id;
@@ -60,7 +61,7 @@ describe('moving content between spaces, over HTTP (moving.md)', () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
-    const users = ['ada', 'grace', 'ivy', 'nell'];
+    const users = ['ada', 'grace', 'ivy', 'nell', 'reader'];
     idp = await startStandInProvider({
       clients: [
         {
@@ -122,6 +123,7 @@ describe('moving content between spaces, over HTTP (moving.md)', () => {
       const reader = await createRole(trx, 'Looks', ['read']);
       if (!('role' in reader)) throw new Error(reader.refused);
       await allow('nell', reader.role.id, elsewhere);
+      await allow('reader', reader.role.id, open);
     });
   });
 
@@ -167,6 +169,81 @@ describe('moving content between spaces, over HTTP (moving.md)', () => {
     expect(reading.statusCode, reading.body).toBe(403);
     const moved = await moving(await issue(['administer']), part);
     expect(moved.statusCode, moved.body).toBe(200);
+  });
+
+  it('COL-069 one who lost the component sees the flag on the withheld part and no thread; one who kept it sees the thread standing', async () => {
+    const part = await component();
+    const made = await call(as('ada'), `/v1/spaces/${open}/documents`, {
+      title: 'The report',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const document = made.json<{ id: string; version: { id: string } }>();
+    const placed = await call(as('ada'), `/v1/documents/${document.id}/outline`, {
+      openedFrom: document.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: part, mode: { kind: 'latest' } },
+      },
+    });
+    expect(placed.statusCode, placed.body).toBe(200);
+    const node = placed.json<{ outline: { nodes: { id: string }[] } }>().outline.nodes[0]!.id;
+    const view = (
+      await app.inject({
+        method: 'GET',
+        url: `/v1/components/${part}`,
+        headers: { host: HOST, ...as('ada') },
+      })
+    ).json<{ version: { id: string }; content: { content: { id: string }[] } }>();
+    const started = await call(as('ada'), `/v1/components/${part}/threads`, {
+      version: view.version.id,
+      anchor: {
+        kind: 'span',
+        block: view.content.content[0]!.id,
+        quote: 'the tray',
+        before: 'Set ',
+      },
+      parts: [{ text: 'Is this right?' }],
+    });
+    expect(started.statusCode, started.body).toBe(200);
+    const look = (who: string, url: string) =>
+      app.inject({ method: 'GET', url, headers: { host: HOST, ...as(who) } });
+    expect(
+      (await look('reader', `/v1/documents/${document.id}`)).json<{ movedParts: string[] }>()
+        .movedParts,
+    ).toEqual([]);
+    expect((await moving('grace', part)).statusCode).toBe(200);
+
+    const lost = (await look('reader', `/v1/documents/${document.id}`)).json<{
+      movedParts: string[];
+      outline: { nodes: { component: string | null }[] };
+    }>();
+    expect(lost.movedParts).toEqual([node]);
+    expect(lost.outline.nodes[0]!.component).toBeNull();
+    const unlisted = await look('reader', `/v1/documents/${document.id}/threads`);
+    expect(JSON.stringify(unlisted.json())).not.toContain('Is this right?');
+
+    const kept = await look('ada', `/v1/components/${part}/threads`);
+    expect(kept.statusCode, kept.body).toBe(200);
+    expect(JSON.stringify(kept.json())).toContain('Is this right?');
+    expect(
+      (await look('ada', `/v1/documents/${document.id}`)).json<{ movedParts: string[] }>()
+        .movedParts,
+    ).toEqual([]);
+  });
+
+  it('says which spaces the caller may move into', async () => {
+    const answer = await app.inject({
+      method: 'GET',
+      url: '/v1/spaces?limit=100',
+      headers: { host: HOST, ...as('nell') },
+    });
+    const items = answer.json<{ items: { id: string; mayMoveInto: boolean }[] }>().items;
+    expect(items.find((each) => each.id === open)?.mayMoveInto).toBe(true);
+    expect(items.find((each) => each.id === elsewhere)?.mayMoveInto).toBe(false);
   });
 
   it('answers a preview without moving anything, and refuses a stale from or the archived target', async () => {

@@ -131,6 +131,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { MoveDialog } from '../parts/MoveDialog.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
 import {
   ReachDialog,
@@ -646,6 +647,7 @@ export function ComponentEditor({
   const [notice, setNotice] = useState<string | null>(null);
   // Archived or unarchived on this page since it opened: what it shows over the GET's (lifecycle.md).
   const [archivedNow, setArchivedNow] = useState<boolean | null>(null);
+  const moveAct = useRef<() => void>(null);
   // Moved on this page, or heard moved on its stream, since it opened: shown over the GET's (WF-G).
   const [standingNow, setStandingNow] = useState<Standing | null>(null);
   // Its dates as last saved here, over the view's (WF5-A).
@@ -2780,6 +2782,25 @@ export function ComponentEditor({
                 onStale={restand}
                 askFirst={askFirst}
               />
+            )}
+            {shown.mayMove === true && !archived && (
+              <>
+                <button
+                  type="button"
+                  className={styles['archive']}
+                  onClick={() => moveAct.current?.()}
+                >
+                  {say('moving.move-to-another-space-menu')}
+                </button>
+                <MoveDialog
+                  act={moveAct}
+                  client={client}
+                  id={componentId}
+                  from={shown.space.id}
+                  carries={false}
+                  onMoved={setNotice}
+                />
+              </>
             )}
             <ArchiveButton
               client={client}
