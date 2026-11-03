@@ -1161,6 +1161,7 @@ describe('the domain package', () => {
         'VocabularyRefused',
         'parseVocabulary',
         'valueDescription',
+        'valueIsMade',
         'valueLabel',
         'valuesInOrder',
         'vocabularyChangeRefusals',
