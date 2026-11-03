@@ -15,3 +15,7 @@
   taken their room. Fixes #453 and #747.
 - The five-hundred-node navigation test took 37s on a quiet machine and crossed the suite's 120s
   default on a loaded CI runner. It now allows 180s. Fixes #757.
+- The canvas test that opens a component in place measured the text before the line holding an inline
+  image had taken its size, so the image loading moved the text a few pixels between the two reads.
+  The document now waits for every image to be sized before anything is measured, as opening a
+  component already did. Fixes #639 and #640.
