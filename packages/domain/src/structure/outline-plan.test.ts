@@ -88,7 +88,11 @@ const topTitles = (outline: OutlineDocument, operations: readonly OutlineOperati
   let next = outline;
   let made = 0;
   for (const operation of operations) {
-    const applied = applyOutlineOperation(next, operation, () => `${'e'.repeat(25)}${'abcdefgh'[made++]!}`);
+    const applied = applyOutlineOperation(
+      next,
+      operation,
+      () => `${'e'.repeat(25)}${'abcdefgh'[made++]!}`,
+    );
     if (!applied.applied) throw new Error(applied.reason);
     next = applied.outline;
   }

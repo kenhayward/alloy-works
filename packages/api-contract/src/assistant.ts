@@ -37,7 +37,9 @@ export const ProposalActed = z.object({
     version: z
       .string()
       .optional()
-      .describe('A proposed edit, accepted: the version of the component it made; a change of the outline, of the document'),
+      .describe(
+        'A proposed edit, accepted: the version of the component it made; a change of the outline, of the document',
+      ),
     thread: z
       .string()
       .optional()

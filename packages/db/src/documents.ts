@@ -745,7 +745,9 @@ async function foldOperations(
     readonly author: string;
     readonly operations: readonly OutlineOperation[];
   },
-): Promise<Folded | Exclude<OutlineAnswer, RecordAnswer> | { readonly answer: 'artifact.missing' }> {
+): Promise<
+  Folded | Exclude<OutlineAnswer, RecordAnswer> | { readonly answer: 'artifact.missing' }
+> {
   const opened = await readVersion(trx, input.openedFrom);
   if (!opened || opened.artifactId !== input.artifactId || opened.kind !== 'document') {
     return { answer: 'artifact.missing' };
@@ -838,7 +840,9 @@ export async function outlineOperationsRefused(
 ): Promise<string | undefined> {
   const folded = await foldOperations(trx, input);
   if (folded.answer === 'folded') return undefined;
-  return folded.answer === 'outline.invalid' ? folded.reason : 'That cannot be done to the outline.';
+  return folded.answer === 'outline.invalid'
+    ? folded.reason
+    : 'That cannot be done to the outline.';
 }
 
 /** Operations made one version of a document, all or none: `editOutline`'s, for any number. */
