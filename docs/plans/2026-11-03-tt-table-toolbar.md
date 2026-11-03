@@ -7,6 +7,8 @@
 **Goal:** the quick changes to a plain table sit on the table, every setting has a place that doesn't
 move the panel, and working through Threads is no longer interrupted by the cursor crossing a table.
 
+**Built, 0.230.0.** T1's measure, on the real sheet in place and alone, in light and dark: the toolbar stands 8px above the table, and moves nothing, sitting over the text above it where there is any; it mounts on `document.body`, outside the sheet.
+
 **Touches nothing stored.** Every setting is already a `tableFigure` attribute with its command, so
 there is no schema, mapping, contract, publishing or trace-corpus change. No new requirement.
 
@@ -40,7 +42,8 @@ The review found these against the code. They stand unless the build proves one 
 8. **The counter keeps a number input** between − and +, so typing a count and the accessible names
    "Header rows" and "Header columns" survive, and with them most tests.
 9. **Focus is never hidden:** stuck to the desk's top, the toolbar could cover the cursor's row
-   (WCAG 2.4.11), so the surface takes a scroll margin of its height.
+   (WCAG 2.4.11), so a move of the selection beneath it scrolls clear. Built that way: an arrow moves the
+   caret natively, so a scroll margin on the view, the plan's first answer, never ran.
 
 ## Tasks
 
@@ -79,7 +82,7 @@ and no footnote is open.
 - `role="toolbar"` and one tab stop, as `EditorToolbar` is. Never takes focus on appearing. In the `F6` ring
   (CNT-077, whose test cites it); `Esc` returns to the cell. The ring already skips a hidden tab.
 - Placed from the table's measured rect on scroll, resize and transaction; stuck at the desk's top until the
-  table has gone (scroll margin, point 9).
+  table has gone (point 9).
 - **Table N ▾** opens the 300px popover: the facts line, then `TableSettings`. `Esc` and a click elsewhere
   close it, and focus returns to its button.
 - New icons in `Icon.tsx`, with their test. New words as the README lists them, less grips and Select, plus
