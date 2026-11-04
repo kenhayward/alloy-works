@@ -1541,7 +1541,7 @@ describe('the address of every node', () => {
     expect(formatting).toBeInTheDocument();
     // ...and Done, Save version and Saved text first on its frame's line, its language in the Component
     // menu there, none of which takes the sheet's height (CNT-075).
-    const frame = within(text).getByRole('group', { name: 'Component' });
+    const frame = screen.getByRole('group', { name: 'Component' });
     expect(
       within(frame)
         .getAllByRole('button')

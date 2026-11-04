@@ -26157,31 +26157,31 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1299,
+      "line": 1321,
       "kind": "title"
     },
     {
       "id": "AST-017",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1467,
+      "line": 1489,
       "kind": "title"
     },
     {
       "id": "AST-032",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1438,
+      "line": 1460,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1213,
+      "line": 1235,
       "kind": "title"
     },
     {
       "id": "AST-052",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1438,
+      "line": 1460,
       "kind": "title"
     },
     {
@@ -26199,13 +26199,13 @@
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1895,
+      "line": 1917,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 2014,
+      "line": 2036,
       "kind": "title"
     },
     {
@@ -26217,13 +26217,13 @@
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1745,
+      "line": 1767,
       "kind": "title"
     },
     {
       "id": "CNT-121",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1129,
+      "line": 1151,
       "kind": "title"
     },
     {
@@ -36765,7 +36765,7 @@
     {
       "id": "CNT-077",
       "file": "tests/browser/src/table-toolbar.test.ts",
-      "line": 174,
+      "line": 189,
       "kind": "title"
     },
     {

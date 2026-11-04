@@ -336,7 +336,7 @@ const surfaces = (grace: Graces): readonly Surface[] => [
   {
     // A table's settings, from its floating toolbar with the caret in a cell (ADR-0079).
     name: 'The Table settings popover',
-    dialog: 'editor/TableToolbar.tsx',
+    dialog: 'editor/PartToolbar.tsx',
     address: `#/components/${grace.tabled}`,
     regions: ['[role="dialog"]'],
     ready: (page, language) =>

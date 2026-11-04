@@ -108,9 +108,7 @@ import { InPlaceBand } from './InPlaceBand.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
 import type { MenuEntry } from '../parts/MenuBar.js';
-import { NameTip } from '../parts/NameTip.js';
 import { paragraphStyleItems } from '../theme/StyleChoice.js';
-import { Icon } from './Icon.js';
 import { MarginStyleButton } from './MarginStyleButton.js';
 import {
   lazy,
@@ -173,7 +171,7 @@ import {
 } from './recovery.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
-import { TableToolbar } from './TableToolbar.js';
+import { PartToolbar } from './PartToolbar.js';
 import { ValuePanel } from './ValuePanel.js';
 import type { BindingState } from '../structure/bindingContexts.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
@@ -708,6 +706,9 @@ export function ComponentEditor({
   const inPlaceSettings = useContext(InPlaceSettings);
   const presentationNow = usePresentation();
   const [componentMenuOpen, setComponentMenuOpen] = useState(false);
+  const toggleComponentMenu = useCallback(() => setComponentMenuOpen((was) => !was), []);
+  /** The part of the document this is open in, which the one toolbar stands over. */
+  const partOfSurface = useCallback(() => place.current?.closest('[data-component]') ?? null, []);
   useEffect(() => {
     if (notice !== null) status?.say(notice);
   }, [status, notice]);
@@ -751,7 +752,6 @@ export function ComponentEditor({
   const layer = usePageLayer();
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
-  const frameRegion = useRef<HTMLDivElement | null>(null);
   const valueRegion = useRef<HTMLElement | null>(null);
   // The Bound table panel's, while the cursor stands in a bound table (TB2-F).
   const boundTableRegion = useRef<HTMLDivElement | null>(null);
@@ -2170,7 +2170,6 @@ export function ComponentEditor({
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
     const ring = [
-      frameRegion.current,
       headerRegion.current,
       toolbarRegion.current,
       tableToolbarRegion.current,
@@ -2198,7 +2197,11 @@ export function ComponentEditor({
     const back = event.shiftKey;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
-    const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);
+    // The toolbar stands on the page's layer, in none of the application's regions: it wraps instead.
+    const past =
+      at >= 0 &&
+      ring[at] !== tableToolbarRegion.current &&
+      (back ? at === 0 : at === ring.length - 1);
     if (past && event.currentTarget.closest('[data-app-region]') !== null) return;
     event.preventDefault();
     const next =
@@ -3374,46 +3377,6 @@ export function ComponentEditor({
           )}
         {/* The component's own acts, on its frame's line and taking no height of the sheet's, so the
             sheet does not move as one opens (ADR-0075, CNT-075). */}
-        {inFrame && (
-          <div
-            ref={frameRegion}
-            className={styles['frameBar']}
-            role="group"
-            aria-label={say('document.component-menu')}
-            tabIndex={-1}
-            data-region-entry
-          >
-            <div className={styles['frameActs']}>
-              {leadingActs.map((act) => (
-                <NameTip key={act.label} name={act.label} below>
-                  <button
-                    type="button"
-                    className={styles['frameButton']}
-                    aria-label={act.label}
-                    aria-disabled={act.disabled}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      if (!act.disabled) act.onPress();
-                    }}
-                  >
-                    <Icon name={act.icon} />
-                  </button>
-                </NameTip>
-              ))}
-              <button
-                type="button"
-                className={styles['frameMenu']}
-                aria-expanded={componentMenuOpen}
-                onClick={() => setComponentMenuOpen((was) => !was)}
-              >
-                {say('document.component-menu')}
-              </button>
-              <div className={styles['frameStrip']} hidden={!componentMenuOpen}>
-                {stripPart}
-              </div>
-            </div>
-          </div>
-        )}
         {inBand && editing !== null && styleEntries.length > 0 && (
           <MarginStyleButton
             view={editing}
@@ -3576,20 +3539,42 @@ export function ComponentEditor({
             {/* On the table, in the reader's theme, whichever tab the panel shows (ADR-0079). Not
                 while a footnote is open over it, nor a dialog, nor while the workspace keeps this page
                 hidden: on the body's layer, the page's own `hidden` does not reach it. */}
-            {surface !== null &&
-              table !== null &&
-              mayFormat &&
-              !behindDialog &&
-              pageShown &&
-              openFootnote(surface) === null && (
-                <TableToolbar
+            {(() => {
+              const inTable =
+                surface !== null &&
+                table !== null &&
+                mayFormat &&
+                !behindDialog &&
+                pageShown &&
+                openFootnote(surface) === null;
+              if (!inFrame && !inTable) return null;
+              return (
+                <PartToolbar
                   ref={tableToolbarRegion}
                   view={surface}
-                  table={table}
+                  table={inTable ? table : null}
                   enabled={mayFormat}
                   number={tableNumber}
+                  away={!pageShown}
+                  behind={behindDialog}
+                  {...(inFrame
+                    ? {
+                        part: {
+                          element: partOfSurface,
+                          name: say('document.component-menu'),
+                          acts: leadingActs,
+                          menu: {
+                            label: say('document.component-menu'),
+                            open: componentMenuOpen,
+                            onToggle: toggleComponentMenu,
+                            strip: stripPart,
+                          },
+                        },
+                      }
+                    : {})}
                 />
-              )}
+              );
+            })()}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (
@@ -3619,7 +3604,17 @@ export function ComponentEditor({
             <UnheldFaces />
             {/* On its own, a sheet on a desk; in place, the document's sheet is the paper (ADR-0056). */}
             <Canvas sheet={onDone === undefined}>
-              <div ref={place} className={styles['surface']} tabIndex={-1} data-content />
+              <div
+                ref={place}
+                className={styles['surface']}
+                tabIndex={-1}
+                data-content
+                // Where the application's F6 enters this editor in a document: its text.
+                {...(inFrame ? { 'data-region-entry': '' } : {})}
+                onFocus={(event) => {
+                  if (event.target === event.currentTarget) surface?.focus();
+                }}
+              />
             </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they
