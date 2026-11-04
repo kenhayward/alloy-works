@@ -1537,7 +1537,14 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
 
       await row(/Methods/).click();
       await check('a section chosen in the outline', {
-        shows: [node(/Methods/), page.getByRole('list', { name: 'Referenced by' })],
+        shows: [node(/Methods/), page.getByRole('radiogroup', { name: 'Starts on' })],
+      });
+      // The Part panel with all its groups open (the PP plan); every one stays open from here.
+      for (const group of [/^Readers/, /^Links/]) {
+        await page.getByRole('button', { name: group }).click();
+      }
+      await check('the Part panel with its groups open', {
+        shows: [page.getByRole('list', { name: 'Referenced by' })],
       });
 
       await page.goto(`${SERVICE}/#/documents/${document.id}/nodes/${methods.children[0]!.id}`);
@@ -1574,21 +1581,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await closeDialog(page);
 
       // The removal asked about.
-      await page.getByRole('button', { name: 'Remove section' }).click();
-      const question = page.getByRole('group', { name: 'Confirm removal' });
+      await page.getByRole('button', { name: /^Remove section/ }).click();
+      const question = page.getByRole('dialog', { name: /^Remove / });
       await check('the removal asked about', {
         shows: [question, question.getByText(/^Referenced once elsewhere/)],
       });
-      // The warning is the Remove button's description, which is where the focus goes.
-      const described = await question
-        .getByRole('button', { name: 'Remove', exact: true })
-        .evaluate((button) =>
-          (button.getAttribute('aria-describedby') ?? '')
-            .split(' ')
-            .map((each) => button.ownerDocument.getElementById(each)?.textContent ?? '')
-            .join(' '),
-        );
-      expect(described).toMatch(/Referenced once elsewhere in this document\./);
       await question.getByRole('button', { name: 'Keep' }).click();
       await leave(question);
 

@@ -13,6 +13,9 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **The Part panel is grouped and folds.** [`handoffs/part-panel/`](handoffs/part-panel/README.md),
+> as overruled by [ADR-0084](../decisions/0084-the-part-panel-is-grouped-and-folds.md).
+>
 > **The editing canvas is a page on a desk.** [`handoffs/canvas/`](handoffs/canvas/README.md)
 > redraws the paper as a centred sheet, with a document bar and zoom in the status bar ([ADR-0056](../decisions/0056-the-editing-canvas-is-a-page-on-a-desk.md)).
 

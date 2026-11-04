@@ -1,5 +1,7 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Icon } from '../editor/Icon.js';
+import { usedElsewhere } from '../structure/partSummary.js';
 import { Modal } from '../layouts/Modal.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import styles from './UsedIn.module.css';
@@ -141,6 +143,109 @@ export function UsedInButton({
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
         {label}
+      </button>
+      {open && (
+        <UsedInDialog client={client} id={id} title={title} onClose={() => setOpen(false)} />
+      )}
+    </>
+  );
+}
+
+/** Reads at a time: a section can place hundreds, each row asking for itself (the plan, R4). */
+const READS_AT_ONCE = 4;
+let reading = 0;
+const queued: (() => void)[] = [];
+async function inTurn<T>(read: () => Promise<T>): Promise<T> {
+  if (reading >= READS_AT_ONCE) await new Promise<void>((go) => queued.push(go));
+  reading += 1;
+  try {
+    return await read();
+  } finally {
+    reading -= 1;
+    queued.shift()?.();
+  }
+}
+
+const ELSEWHERE_WORDS = {
+  only: () => words('reuse.only-here'),
+  more: (count: number) => words('reuse.here-and-more', { count }),
+  elsewhere: () => words('reuse.here-and-elsewhere'),
+};
+
+/**
+ * One component a part places (STR-075; R14-B): its name, a pill saying where else it is used once
+ * that is known, read as the row comes into view, and today's Used in on a press.
+ */
+export function UsedInRow({
+  client,
+  id,
+  title,
+  label,
+  document: here,
+}: {
+  client: Client;
+  id: string;
+  title: string;
+  /** Its words as a button, naming the component. */
+  label: string;
+  /** The document it is placed in, which is not "elsewhere". */
+  document: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [uses, setUses] = useState<Uses | null>(null);
+  const row = useRef<HTMLButtonElement>(null);
+  const pill = useId();
+  useEffect(() => {
+    let current = true;
+    const read = () => {
+      void inTurn(() => (current ? readUses(client, id) : Promise.resolve(null))).then((answer) => {
+        if (current) setUses(answer);
+      });
+    };
+    const element = row.current;
+    if (typeof IntersectionObserver === 'undefined' || element === null) {
+      read();
+      return () => {
+        current = false;
+      };
+    }
+    const watching = new IntersectionObserver((seen) => {
+      if (!seen.some((each) => each.isIntersecting)) return;
+      watching.disconnect();
+      read();
+    });
+    watching.observe(element);
+    return () => {
+      current = false;
+      watching.disconnect();
+    };
+  }, [client, id]);
+  const elsewhere = uses === null ? null : usedElsewhere(uses, here);
+  return (
+    <>
+      <button
+        ref={row}
+        type="button"
+        className={styles['row']}
+        aria-label={label}
+        aria-describedby={elsewhere === null ? undefined : pill}
+        title={title}
+        onClick={() => setOpen(true)}
+      >
+        <Icon name="Part component" size={14} />
+        <span className={styles['rowName']}>{title}</span>
+        {elsewhere !== null && (
+          <span
+            id={pill}
+            className={styles['pill']}
+            data-more={elsewhere.kind === 'only' ? undefined : ''}
+          >
+            {elsewhere.kind === 'more'
+              ? ELSEWHERE_WORDS.more(elsewhere.count)
+              : ELSEWHERE_WORDS[elsewhere.kind]()}
+          </span>
+        )}
+        <Icon name="Go to" size={12} />
       </button>
       {open && (
         <UsedInDialog client={client} id={id} title={title} onClose={() => setOpen(false)} />

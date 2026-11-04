@@ -1,0 +1,416 @@
+/* The Part panel, grouped and folding (ADR-0083; docs/interface/handoffs/part-panel/). */
+.panel {
+  --part-tile: 34px;
+  --part-group-head: 42px;
+  --part-starts-on: 48px;
+  --part-ref-row: 34px;
+  --part-used-row: 38px;
+  --part-chip: 18px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  font-size: var(--size-13);
+}
+
+/* The head and identity stay as the groups scroll under them, in the dock's own scroller. */
+.fixed {
+  position: sticky;
+  top: calc(var(--space-12) * -1);
+  z-index: 1;
+  min-width: 0;
+  margin-block-start: calc(var(--space-12) * -1);
+  border-block-end: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: 48px;
+  border-block-end: 1px solid var(--border);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.acts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.rule {
+  width: 1px;
+  height: 18px;
+  margin-inline: var(--space-4);
+  background: var(--border);
+}
+
+.removeIcon {
+  display: contents;
+}
+
+.removeIcon > button {
+  color: var(--danger);
+}
+
+.identity {
+  display: grid;
+  grid-template-columns: var(--part-tile) minmax(0, 1fr);
+  gap: var(--space-8) var(--space-12);
+  padding-block: var(--space-12);
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  width: var(--part-tile);
+  height: var(--part-tile);
+  border-radius: 9px;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.tile[data-unreadable] {
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+.who {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.who [contenteditable] {
+  font-weight: 600;
+}
+
+.kicker {
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--size-14);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.name {
+  color: var(--text);
+}
+
+a.name:hover .rowName {
+  text-decoration: underline;
+}
+
+a.name > svg {
+  flex: none;
+  color: var(--accent-text);
+}
+
+.name[data-unreadable] {
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--part-chip);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+.address {
+  grid-column: 1 / -1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}
+
+.group {
+  min-width: 0;
+  margin: 0;
+  border-block-end: 1px solid var(--border);
+}
+
+.groupHeading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--part-group-head);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+}
+
+.groupHead > svg:last-child {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--muted);
+}
+
+.groupName {
+  flex: none;
+  font-weight: 600;
+}
+
+.summary {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-12);
+  min-width: 0;
+  padding-block: 2px var(--space-12);
+}
+
+.groupBody[hidden] {
+  display: none;
+}
+
+.control {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.label,
+.linksHead {
+  color: var(--muted);
+}
+
+/* Starts on: three choices, each an icon over its short words. */
+.startsOn {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  min-height: var(--part-starts-on);
+  padding: 2px;
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.startsOn > button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-4) 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.startsOn > button[aria-checked='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.numbered {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.numbered[data-locked] input {
+  opacity: 0.5;
+}
+
+.numberedLabel {
+  display: grid;
+  min-width: 0;
+}
+
+.line {
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.locked {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.locked > svg {
+  flex: none;
+  margin-block-start: 2px;
+}
+
+/* Number it: an offer, never done of itself (the plan, R2). */
+.offer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border-radius: var(--radius-8);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.offer > p {
+  margin: 0;
+}
+
+.offer > button {
+  border-color: var(--accent-text);
+  background: transparent;
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.readers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.links {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.linksHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.said {
+  margin: 0;
+  color: var(--muted);
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.refRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--part-ref-row);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.refRow:hover {
+  background: var(--sunken);
+}
+
+.refRow > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.refRow > svg:first-child {
+  color: var(--accent-text);
+}
+
+.rowName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowFact {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.facts {
+  margin: 0;
+  padding-inline-start: var(--space-16);
+}
+
+.reason {
+  display: grid;
+  gap: var(--space-4);
+  margin-block-start: var(--space-12);
+}
+
+.reason > textarea {
+  width: 100%;
+  min-height: 56px;
+}

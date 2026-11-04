@@ -568,6 +568,46 @@ describe('the five operations over an outline', () => {
   );
 });
 
+describe('a set naming a title', () => {
+  const title = [{ type: 'text' as const, value: 'Results', marks: [] }];
+
+  it('STR-076 turns a section numbered and takes the title with it, in one operation', () => {
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null), allocate);
+    const node = outline.nodes[0]!.id;
+    outline = run(outline, { operation: 'set', node, numbered: false }, allocate);
+    outline = run(outline, { operation: 'set', node, numbered: true, title }, allocate);
+    expect(outline.nodes[0]).toMatchObject({ numbered: true, title });
+  });
+
+  it('counts a title as a switch, so a set naming only that is taken', () => {
+    expect(outlineOperationSchema.safeParse({ operation: 'set', node: NODE, title }).success).toBe(
+      true,
+    );
+  });
+
+  it('refuses a title on a component reference, which has none of its own', () => {
+    const { allocate } = identifiers();
+    const outline = run(
+      empty,
+      {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: COMPONENT, mode: { kind: 'latest' } },
+      },
+      allocate,
+    );
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'set', node: outline.nodes[0]!.id, title },
+        allocate,
+      ),
+    ).toMatchObject({ applied: false });
+  });
+});
+
 describe('what an operation cannot build, because the parse refuses it', () => {
   const UNSTORABLE = {
     applied: false,

@@ -59375,6 +59375,299 @@ export interface operations {
                         matter?: "front" | "body" | "appendix";
                         /** @enum {string} */
                         pageBreak?: "none" | "page" | "recto";
+                        title?: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks?: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "equation";
+                            mathml: string;
+                            latex?: string;
+                        } | {
+                            /** @constant */
+                            type: "footnote";
+                            id: string;
+                            anchor: {
+                                /** @constant */
+                                kind: "span";
+                            } | {
+                                /** @constant */
+                                kind: "cell";
+                                key: string;
+                            } | {
+                                /** @constant */
+                                kind: "cellPosition";
+                                row: number;
+                                column: number;
+                            } | {
+                                /** @constant */
+                                kind: "table";
+                            } | {
+                                /** @constant */
+                                kind: "keyed";
+                                key: {
+                                    [key: string]: string | boolean;
+                                };
+                                column: string;
+                            } | {
+                                /** @constant */
+                                kind: "column";
+                                column: string;
+                            };
+                            content: unknown[];
+                        } | {
+                            /** @constant */
+                            type: "crossReference";
+                            id: string;
+                            target: {
+                                /** @constant */
+                                kind: "block";
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "component";
+                                component: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "node";
+                                node: string;
+                            } | {
+                                /** @constant */
+                                kind: "entry";
+                                entry: string;
+                            };
+                            /** @enum {string} */
+                            display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                            /** @enum {string} */
+                            withoutPages?: "number" | "title" | "numberAndTitle";
+                        } | {
+                            /** @constant */
+                            type: "citation";
+                            entry: string;
+                            locator?: string;
+                        } | {
+                            /** @constant */
+                            type: "indexMarker";
+                            term: string;
+                            sub?: string;
+                            see?: string;
+                            seeAlso?: string[];
+                        } | {
+                            /** @constant */
+                            type: "variable";
+                            name: string;
+                        } | {
+                            /** @constant */
+                            type: "binding";
+                            id: string;
+                            query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
+                            take: {
+                                column: string;
+                            } | {
+                                key: {
+                                    [key: string]: string | boolean | null;
+                                };
+                                column: string;
+                            };
+                        } | {
+                            /** @constant */
+                            type: "messageForm";
+                            id: string;
+                            /** @constant */
+                            kind: "plural";
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            arms: {
+                                [key: string]: ({
+                                    /** @constant */
+                                    type: "text";
+                                    value: string;
+                                    /** @default [] */
+                                    marks?: ({
+                                        /** @constant */
+                                        type: "emphasis";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "strong";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "underline";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "subscript";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "superscript";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "inlineCode";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "quotedPhrase";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "definedTerm";
+                                        id: string;
+                                        term: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "condition";
+                                        id: string;
+                                        axis: string;
+                                        values: string[];
+                                    } | {
+                                        /** @constant */
+                                        type: "suggestion";
+                                        id: string;
+                                        /** @enum {string} */
+                                        operation: "insert" | "delete" | "replace";
+                                        author: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "comment";
+                                        id: string;
+                                        threadId: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "hyperlink";
+                                        id: string;
+                                        href: string;
+                                        title?: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "language";
+                                        id: string;
+                                        tag: string;
+                                    })[];
+                                } | {
+                                    /** @constant */
+                                    type: "messageValue";
+                                })[];
+                            };
+                        } | {
+                            /** @constant */
+                            type: "image";
+                            asset: string;
+                            /** @constant */
+                            follow?: "latest";
+                            imageStyle: string;
+                            alternative: {
+                                /** @constant */
+                                kind: "own";
+                                text: string;
+                            } | {
+                                /** @constant */
+                                kind: "inherited";
+                            } | {
+                                /** @constant */
+                                kind: "decorative";
+                            };
+                        })[];
                         mode?: {
                             /** @constant */
                             kind: "pinned";
