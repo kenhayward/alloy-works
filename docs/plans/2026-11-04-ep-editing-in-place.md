@@ -84,7 +84,7 @@ next component jumping 163px up and back. Longer over a real network.
   replay them, pinned in the walk.
 - **Where the read text differs from what opens, it changes at once, and says why:** pinned with a newer version (read 23px,
   editor 61px), overridden ("NORTH drain" becomes "drain", and a note moved the next part 51px), and held by someone (45.5px).
-  Those notices stand where they move nothing, or the plan says which may. `openAt` maps only where the texts agree.
+  A held part's notice may move what follows: the reader asked to edit and cannot. `openAt` maps only where the texts agree.
 - Remove `.card[data-in-place]`'s shadow, `.surface:focus-within`'s outline, the `.component` outline, and the `.body` hover
   tint. Add one 3px accent rule, placed as `data-changed`'s is; it takes that rule's place while the part is open.
 - **This PR also adds the grey line** for hover and Show boundaries (CNT-073), since that outline was their only mark. The rule

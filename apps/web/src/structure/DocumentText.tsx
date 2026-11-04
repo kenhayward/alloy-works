@@ -3,6 +3,7 @@ import { Icon } from '../editor/Icon.js';
 import type { createApiClient } from '@alloy-works/api-client';
 import { statusWords, translationKind, type TranslationSaid } from '../translation/Translations.js';
 import type { OverrideView } from './overrides.js';
+import type { ContentDocument } from '@alloy-works/domain';
 import { Chip } from '../parts/Chip.js';
 import {
   conditions,
@@ -167,8 +168,10 @@ export interface Place {
   readonly number?: string;
   /** How many characters into the text it was opened, for the caret; absent if not by the text. */
   readonly openAt?: number;
-  /** Closes it, as Done does. */
-  readonly onDone: () => void;
+  /** Closes it, as Done does, with what it last held. */
+  readonly onDone: (last?: ContentDocument) => void;
+  /** What stands in its place while it opens: the text as it was read (the EP plan, EP2). */
+  readonly whileOpening?: React.ReactNode;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
   readonly referenceContext?: ReferenceContext | null;
   /**
@@ -525,7 +528,7 @@ export function DocumentText({
   /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
-  onEdit?: (node: string | null) => void;
+  onEdit?: (node: string | null, last?: ContentDocument) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
   editor?: (component: string, place: Place) => React.ReactNode;
   /**
@@ -862,6 +865,14 @@ export function DocumentText({
                 {say('document.this-document-overrides-some-of')}
               </p>
             )}
+            {editing === node.id && newer?.byNode.has(node.id) && (
+              <p className={styles['cannot']} role="note">
+                {say('document.editing-the-newer-version', {
+                  newer: newer.byNode.get(node.id)!.newer.number,
+                  pinned: newer.byNode.get(node.id)!.pinned.number,
+                })}
+              </p>
+            )}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
               <NewerVersion
                 // A comparison shown is of the pair it was asked for: another pair starts afresh.
@@ -912,7 +923,19 @@ export function DocumentText({
                         }
                       : {}),
                     ...(onSaved ? { onSaved } : {}),
-                    onDone: () => onEdit?.(null),
+                    onDone: (last) => onEdit?.(null, last),
+                    ...(texts?.has(node.id)
+                      ? {
+                          whileOpening: (
+                            <RenderedText
+                              content={texts.get(node.id)}
+                              context={contexts.get(node.id) ?? null}
+                              bindings={bindingContextsByNode?.get(node.id) ?? null}
+                              marks={threadMarks?.get(node.id)}
+                            />
+                          ),
+                        }
+                      : {}),
                   })
                 : texts?.has(node.id) && (
                     <RenderedText

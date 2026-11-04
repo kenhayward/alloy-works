@@ -2724,7 +2724,9 @@ export function DocumentPage({
                 previewing={preview.pane !== null}
                 startWidth={outlinePane.width}
                 // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
-                panelsWidth={(heldTable.holds ? tablePane : dockPane).width}
+                panelsWidth={
+                  (heldTable.holds && shownDock === 'table' ? tablePane : dockPane).width
+                }
               >
                 {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
                 <ShellSideDock>
@@ -3337,7 +3339,7 @@ export function DocumentPage({
                   <ShellPanelsEdge>
                     <PaneSeparator
                       label={say('document.document-panels')}
-                      pane={heldTable.holds ? tablePane : dockPane}
+                      pane={heldTable.holds && shownDock === 'table' ? tablePane : dockPane}
                       edge="end"
                     />
                   </ShellPanelsEdge>
@@ -3574,7 +3576,23 @@ export function DocumentPage({
                     {...(principalId === undefined || !authoring
                       ? {}
                       : {
-                          onEdit: (node: string | null) => {
+                          onEdit: (node: string | null, last?: unknown) => {
+                            // What it closed on stands until the read below answers, so that the
+                            // words never leave the page: only where that is what the page will
+                            // show, a part at the latest with nothing overridden (EP2).
+                            const closing =
+                              editing === null
+                                ? undefined
+                                : placeOf(document.outline.nodes, editing)?.node;
+                            if (
+                              node === null &&
+                              last !== undefined &&
+                              closing?.type === 'reference' &&
+                              closing.mode.kind === 'latest' &&
+                              (overridesByNode.get(closing.id)?.length ?? 0) === 0
+                            ) {
+                              setTexts((was) => new Map(was).set(closing.id, last));
+                            }
                             setEditing(node);
                             // Closing reads the text again, so the card shows what was saved, and its
                             // bindings from the version it cut.

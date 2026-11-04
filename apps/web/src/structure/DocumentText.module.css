@@ -77,12 +77,20 @@
   position: relative;
 }
 
-.component:hover,
-.component:focus-within,
-.text[data-boundaries='shown'] .component,
-.component[data-editing='true'] {
-  outline: 1px solid var(--border);
-  outline-offset: var(--space-8);
+/* One rule down its left edge, in the place an edit's own rule stands; a border, which forced colours
+   keep where they would take a fill away. It moves nothing, and it says which part is open. */
+.component::before {
+  position: absolute;
+  inset-block: calc(-1 * var(--space-8));
+  inset-inline-start: calc(-1 * var(--space-8));
+  pointer-events: none;
+  content: '';
+}
+
+.component:hover::before,
+.component:focus-within::before,
+.text[data-boundaries='shown'] .component::before {
+  border-inline-start: 3px solid var(--muted);
 }
 
 .label {
@@ -243,10 +251,6 @@
   cursor: text;
 }
 
-.body[data-opens='true']:hover {
-  background: var(--accent-weak);
-}
-
 .body[data-opens='true']:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -275,11 +279,12 @@
 /* A part an accepted assistant edit just changed (issue #876): a green rule down its left edge, at
  * its boundary's offset. */
 .reference[data-changed='true'] > .component::before {
-  position: absolute;
-  inset: calc(-1 * var(--space-8)) auto calc(-1 * var(--space-8)) calc(-1 * var(--space-8));
-  width: 3px;
-  background: var(--ok);
-  content: '';
+  border-inline-start: 3px solid var(--ok);
+}
+
+/* Open in an editor, whatever else is said of it. */
+.reference > .component[data-editing='true']::before {
+  border-inline-start: 3px solid var(--accent);
 }
 
 /* Who else is in this component now (the PL plan, PL2), beside who holds it. */

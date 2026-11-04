@@ -70,12 +70,6 @@
   color: var(--muted);
 }
 
-/* In place in a document, the box is the card being edited, with the ring that says so. */
-.card[data-in-place='true'] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-
 .card > * {
   margin-block: 0;
 }
@@ -207,7 +201,8 @@
   min-height: 0;
 }
 
-.surface:focus-within {
+/* A keyboard landing on the surface itself: what says which part is open is its rule (EP2). */
+.surface:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }

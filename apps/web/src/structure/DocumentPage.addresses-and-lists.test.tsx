@@ -592,12 +592,14 @@ describe('the address of every node', () => {
         expect(ruleOf(shown), shown).toMatch(/opacity: 1/);
       }
       for (const edged of [
-        '.component:hover',
-        '.component:focus-within',
-        ".text[data-boundaries='shown'] .component",
+        '.component:hover::before',
+        '.component:focus-within::before',
+        ".text[data-boundaries='shown'] .component::before",
       ]) {
-        expect(ruleOf(edged), edged).toMatch(/outline: 1px solid/);
+        // A rule down its left edge, a border so that forced colours keep it (the EP plan, EP2).
+        expect(ruleOf(edged), edged).toMatch(/border-inline-start: 3px solid/);
       }
+      expect(ruleOf('.component:hover') ?? '').not.toMatch(/outline/);
       // Show boundaries shows them all, and is kept for this reader.
       // A checked item of the View menu (ADR-0075), checked while they show.
       expect(text).not.toHaveAttribute('data-boundaries');
