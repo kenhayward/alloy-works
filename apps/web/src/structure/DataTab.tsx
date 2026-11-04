@@ -396,7 +396,7 @@ export function DataTab({
                   : []),
                 ...(failure !== undefined ? [failure] : []),
                 ...(state.definitionChanged && shown !== 'definition'
-                  ? [DATA_STATE_WORDS.definition]
+                  ? [<Lozenge kind={DATA_STATE_KINDS.definition} size="small" />]
                   : []),
                 ...(since !== null ? [since] : []),
                 // A person's values (DAT-115), standing or lapsed, and a cell's row gone (DAT-063).
