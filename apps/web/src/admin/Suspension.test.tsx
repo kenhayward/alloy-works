@@ -31,6 +31,6 @@ describe('suspending this environment', () => {
   it('says to sign in again where the sign-in is too old', async () => {
     render(<Suspension client={refusing('reauthentication_required')} />);
     await askTo();
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Sign in again/);
+    expect(await screen.findByRole('button', { name: /sign in again/i })).toBeInTheDocument();
   });
 });

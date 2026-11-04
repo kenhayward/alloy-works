@@ -679,7 +679,14 @@ function InvitePeople({
  * list; Invite people asks for an address; withdrawing an invitation and erasing a person (ER-F) ask
  * first.
  */
-export function People({ client }: { client: Client }) {
+export function People({
+  client,
+  makesServices = true,
+}: {
+  client: Client;
+  /** Not at an organisation's tenant, where nothing could be given to one (TL-K). */
+  makesServices?: boolean;
+}) {
   const ids = useId();
   const [tab, setTab] = useState<'people' | 'invitations'>('people');
   const [generation, setGeneration] = useState(0);
@@ -811,9 +818,13 @@ export function People({ client }: { client: Client }) {
       <div className={styles['lead']}>
         <p>{say('admin.everybody-who-has-signed-in')}</p>
         <span>
-          <button type="button" onClick={() => setMaking(true)}>
-            {say('admin.new-service-identity')}
-          </button>{' '}
+          {makesServices && (
+            <>
+              <button type="button" onClick={() => setMaking(true)}>
+                {say('admin.new-service-identity')}
+              </button>{' '}
+            </>
+          )}
           <button type="button" className="primary" onClick={() => setInviting(true)}>
             <Icon name="Invite people" /> {say('admin.invite-people')}
           </button>

@@ -319,11 +319,12 @@ function useSection(): Section {
  * How many each section holds, for the menu (AD-A): a listing's `total`, or the rows of one that is a
  * page already; nothing where the reader may not see it, or it could not be read.
  */
-function useCounts(client: Client): Partial<Record<Section, number>> {
+function useCounts(client: Client, only?: readonly Section[]): Partial<Record<Section, number>> {
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   useEffect(() => {
     let current = true;
     const count = (section: Section, read: () => Promise<number | undefined>) => {
+      if (only !== undefined && !only.includes(section)) return;
       read()
         .then((found) => {
           if (current && found !== undefined) setCounts((was) => ({ ...was, [section]: found }));
@@ -393,7 +394,7 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     return () => {
       current = false;
     };
-  }, [client]);
+  }, [client, only]);
   return counts;
 }
 
@@ -416,7 +417,7 @@ export function Administration({
 }) {
   const asked = useSection();
   const shown = only === undefined || only.includes(asked) ? asked : only[0]!;
-  const counts = useCounts(client);
+  const counts = useCounts(client, only);
   const title = SECTIONS.find((each) => each.slug === shown)!;
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
@@ -577,7 +578,7 @@ export function Administration({
         {shown === 'vocabularies' && <Vocabularies client={client} />}
         {shown === 'licences' && <Licences client={client} />}
         {shown === 'themes' && <Themes client={client} />}
-        {shown === 'people' && <People client={client} />}
+        {shown === 'people' && <People client={client} makesServices={only === undefined} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && (
           <Roles read={roles} client={client} onMade={() => setRolesRead((read) => read + 1)} />

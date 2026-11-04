@@ -252192,6 +252192,21 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                             "description": "When it came to be in this state"
                           },
+                          "suspendedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who stopped it: an organisation may start only what a person stopped"
+                          },
                           "closedBy": {
                             "anyOf": [
                               {
@@ -252233,6 +252248,7 @@
                           "name",
                           "state",
                           "since",
+                          "suspendedBy",
                           "closedBy",
                           "graceEndsAt",
                           "hostnames"
@@ -252300,7 +252316,7 @@
             }
           },
           "403": {
-            "description": "`suspend_tenant` is not held at this organisation's tenant",
+            "description": "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
             "content": {
               "application/json": {
                 "schema": {
@@ -252458,6 +252474,21 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                             "description": "When it came to be in this state"
                           },
+                          "suspendedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who stopped it: an organisation may start only what a person stopped"
+                          },
                           "closedBy": {
                             "anyOf": [
                               {
@@ -252499,6 +252530,7 @@
                           "name",
                           "state",
                           "since",
+                          "suspendedBy",
                           "closedBy",
                           "graceEndsAt",
                           "hostnames"
@@ -252566,7 +252598,7 @@
             }
           },
           "403": {
-            "description": "`suspend_tenant` is not held at this organisation's tenant",
+            "description": "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
             "content": {
               "application/json": {
                 "schema": {
@@ -252648,7 +252680,7 @@
             }
           },
           "409": {
-            "description": "It is not somewhere this can be done from, or the operator began the closure",
+            "description": "It is not somewhere this can be done from, or the operator stopped it or began the closure",
             "content": {
               "application/json": {
                 "schema": {
@@ -252806,6 +252838,21 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                             "description": "When it came to be in this state"
                           },
+                          "suspendedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who stopped it: an organisation may start only what a person stopped"
+                          },
                           "closedBy": {
                             "anyOf": [
                               {
@@ -252847,6 +252894,7 @@
                           "name",
                           "state",
                           "since",
+                          "suspendedBy",
                           "closedBy",
                           "graceEndsAt",
                           "hostnames"
@@ -252914,7 +252962,7 @@
             }
           },
           "403": {
-            "description": "`suspend_tenant` is not held at this organisation's tenant",
+            "description": "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
             "content": {
               "application/json": {
                 "schema": {
@@ -252996,7 +253044,7 @@
             }
           },
           "409": {
-            "description": "It is not somewhere this can be done from, or the operator began the closure",
+            "description": "It is not somewhere this can be done from, or the operator stopped it or began the closure",
             "content": {
               "application/json": {
                 "schema": {
@@ -253177,6 +253225,21 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                             "description": "When it came to be in this state"
                           },
+                          "suspendedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who stopped it: an organisation may start only what a person stopped"
+                          },
                           "closedBy": {
                             "anyOf": [
                               {
@@ -253218,6 +253281,7 @@
                           "name",
                           "state",
                           "since",
+                          "suspendedBy",
                           "closedBy",
                           "graceEndsAt",
                           "hostnames"
@@ -253285,7 +253349,7 @@
             }
           },
           "403": {
-            "description": "`suspend_tenant` is not held at this organisation's tenant",
+            "description": "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
             "content": {
               "application/json": {
                 "schema": {
@@ -253367,7 +253431,7 @@
             }
           },
           "409": {
-            "description": "It is not somewhere this can be done from, or the operator began the closure",
+            "description": "It is not somewhere this can be done from, or the operator stopped it or began the closure",
             "content": {
               "application/json": {
                 "schema": {

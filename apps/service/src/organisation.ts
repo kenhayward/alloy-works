@@ -42,6 +42,7 @@ const listed = async (trx: TenantTransaction): Promise<OrganisationTenants> => (
     name: each.name,
     state: each.state,
     since: each.since.toISOString(),
+    suspendedBy: each.suspendedBy,
     closedBy: each.closingBy,
     graceEndsAt: each.graceEndsAt?.toISOString() ?? null,
     hostnames: [...each.hostnames],

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import styles from './Console.module.css';
 import { Administration, sectionOf, type Section } from '../admin/Administration.js';
+import { SignInAgain } from '../admin/Closure.js';
 import { words, type WordKey } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -12,6 +13,7 @@ interface OrganisationTenant {
   readonly name: string;
   readonly state: string;
   readonly since: string;
+  readonly suspendedBy?: string | null;
   readonly closedBy: string | null;
   readonly graceEndsAt: string | null;
   readonly hostnames: readonly string[];
@@ -29,7 +31,9 @@ export function OrganisationHome({ client }: { client: Client }): React.JSX.Elem
     return () => window.removeEventListener('hashchange', follow);
   }, []);
   return SECTIONS.includes(sectionOf(hash)) ? (
-    <Administration client={client} about={null} only={SECTIONS} />
+    <main data-app-region>
+      <Administration client={client} about={null} only={SECTIONS} />
+    </main>
   ) : (
     <Console client={client} />
   );
@@ -44,6 +48,7 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
   const [said, setSaid] = useState('');
   const [stopping, setStopping] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [stale, setStale] = useState(false);
 
   const read = useCallback(async () => {
     const { data, response } = await client.GET('/v1/organisation/tenants');
@@ -56,10 +61,12 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
     void read().catch(() => setSaid(words('organisation.could-not-read')));
   }, [read]);
 
-  const did = async (act: () => Promise<{ response: Response }>) => {
+  const did = async (act: () => Promise<{ response: Response; error?: unknown }>) => {
     setSaid('');
+    setStale(false);
     try {
-      const { response } = await act();
+      const { response, error } = await act();
+      setStale((error as { code?: string } | undefined)?.code === 'reauthentication_required');
       if (response.ok) {
         setStopping(null);
         setReason('');
@@ -95,6 +102,7 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
         {words('environment.closing-sign-out')}
       </button>
       {said !== '' && <p role="alert">{said}</p>}
+      {stale && <SignInAgain client={client} />}
       {tenants?.length === 0 && <p>{words('organisation.none')}</p>}
       {tenants !== null && tenants.length > 0 && (
         <table aria-label={words('organisation.tenants')}>
@@ -122,7 +130,10 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
                       {words('organisation.suspend')}
                     </button>
                   )}
-                  {tenant.state === 'suspended' && (
+                  {tenant.state === 'suspended' && tenant.suspendedBy === 'operator' && (
+                    <>{words('organisation.operators-suspension')}</>
+                  )}
+                  {tenant.state === 'suspended' && tenant.suspendedBy !== 'operator' && (
                     <button
                       type="button"
                       onClick={() =>

@@ -10,6 +10,7 @@ import {
   cancelClosureFromOrganisation,
   liftFromOrganisation,
   organisationTenants,
+  resumeTenant,
   startClosing,
   suspendFromOrganisation,
   suspendTenant,
@@ -112,6 +113,7 @@ describe("an organisation's tenant (the TL plan, TLd)", () => {
       'name',
       'since',
       'state',
+      'suspendedBy',
     ]);
     // A content tenant asking sees nothing of its siblings.
     expect(await inTenant(mine, (trx) => organisationTenants(trx))).toEqual([]);
@@ -245,6 +247,81 @@ describe("an organisation's tenant (the TL plan, TLd)", () => {
       fromOrganisation((trx) => startClosing(trx, organisation, { declined: true })),
     ).rejects.toBeInstanceOf(TenantStateRefused);
     expect(await stateOf(organisation)).toBe('active');
+  });
+
+  it("ADM-030 will not close a suspended organisation's tenant while it has a tenant left", async () => {
+    await steward.withTenant(
+      organisation,
+      (trx) => suspendTenant(trx, organisation, 'R'),
+      OPERATOR,
+    );
+    await expect(
+      steward.withTenant(
+        organisation,
+        (trx) => startClosing(trx, organisation, { notice: 'N' }),
+        OPERATOR,
+      ),
+    ).rejects.toBeInstanceOf(TenantStateRefused);
+    await steward.withTenant(organisation, (trx) => resumeTenant(trx, organisation), OPERATOR);
+    expect(await stateOf(organisation)).toBe('active');
+  });
+
+  it("IAM-068 keeps a closure in the organisation's log while the organisation's tenant is suspended", async () => {
+    const mine = await content();
+    await steward.withTenant(
+      organisation,
+      (trx) => suspendTenant(trx, organisation, 'R'),
+      OPERATOR,
+    );
+    await inTenant(mine, (trx) => startClosing(trx, mine, { declined: true }));
+    await steward.withTenant(organisation, (trx) => resumeTenant(trx, organisation), OPERATOR);
+    expect(
+      (await events(organisation, 'organisation.changed')).filter(
+        (each) => each.detail['tenant'] === mine.id,
+      ),
+    ).toMatchObject([{ detail: { change: 'closing' } }]);
+  });
+
+  it('ADM-028 refuses an organisation lifting what the operator suspended, and says it was them', async () => {
+    const mine = await content();
+    await steward.withTenant(mine, (trx) => suspendTenant(trx, mine, 'Non-payment'), OPERATOR);
+    const listed = await fromOrganisation((trx) => organisationTenants(trx));
+    expect(listed.find((each) => each.id === mine.id)?.suspendedBy).toBe('operator');
+    await expect(
+      fromOrganisation((trx) => liftFromOrganisation(trx, mine.id)),
+    ).rejects.toBeInstanceOf(TenantStateRefused);
+    // Still the operator's after a closure over it is given up.
+    await steward.withTenant(mine, (trx) => startClosing(trx, mine, { notice: 'N' }), OPERATOR);
+    await steward.withTenant(mine, (trx) => cancelClosing(trx, mine), OPERATOR);
+    await expect(
+      fromOrganisation((trx) => liftFromOrganisation(trx, mine.id)),
+    ).rejects.toBeInstanceOf(TenantStateRefused);
+    await steward.withTenant(mine, (trx) => resumeTenant(trx, mine), OPERATOR);
+
+    await fromOrganisation((trx) => suspendFromOrganisation(trx, mine.id, 'An incident'));
+    expect(await fromOrganisation((trx) => liftFromOrganisation(trx, mine.id))).toBe('done');
+  });
+
+  it("IAM-068 names the tenant in the organisation's log, so it is known after the tenant has gone", async () => {
+    const mine = await content();
+    await inTenant(mine, (trx) => startClosing(trx, mine, { declined: true }));
+    await inTenant(mine, (trx) => cancelClosing(trx, mine));
+    await fromOrganisation((trx) => suspendFromOrganisation(trx, mine.id, 'An incident'));
+    const { rows } = await fromOrganisation((trx) =>
+      sql<{ subject_kind: string; name: string | null }>`
+        select e.subject_kind,
+               (select l.text from audit_label l
+                 where l.sequence = e.sequence and l.role = 'subject') as name
+          from audit_event e
+         where e.kind = 'organisation.changed' and e.detail ->> 'tenant' = ${mine.id}`.execute(trx),
+    );
+    expect(rows.length).toBe(3);
+    for (const row of rows) {
+      expect(row).toMatchObject({
+        subject_kind: 'tenant',
+        name: expect.stringMatching(/^Tenant /),
+      });
+    }
   });
 
   it("gives an organisation's tenant the role that holds its acts, and no other tenant", async () => {

@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useState } from 'react';
 
+import { SignInAgain } from './Closure.js';
 import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -10,6 +11,7 @@ export function Suspension({ client }: { client: Client }): React.JSX.Element {
   const [reason, setReason] = useState('');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  const [stale, setStale] = useState(false);
 
   const suspend = async () => {
     setBusy(true);
@@ -21,6 +23,7 @@ export function Suspension({ client }: { client: Client }): React.JSX.Element {
         return;
       }
       const code = (error as { code?: string } | undefined)?.code;
+      setStale(code === 'reauthentication_required');
       setSaid(
         code === 'no_organisation_to_lift'
           ? words('admin.suspend-no-organisation')
@@ -47,6 +50,7 @@ export function Suspension({ client }: { client: Client }): React.JSX.Element {
         {words('admin.suspend-it')}
       </button>
       {said !== '' && <p role="alert">{said}</p>}
+      {stale && <SignInAgain client={client} to="admin/export" />}
     </section>
   );
 }

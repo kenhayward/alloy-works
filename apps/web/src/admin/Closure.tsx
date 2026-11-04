@@ -39,6 +39,7 @@ const saidFor = (error: unknown) => {
   if (code === 'closure_name_mismatch') return words('admin.closure-wrong-name');
   if (code === 'closure_export_unanswered') return words('admin.closure-unanswered');
   if (code === 'closure_begun_by_operator') return words('admin.closure-operator');
+  if (code === 'organisation_has_tenants') return words('admin.closure-organisation-has-tenants');
   return words('admin.closure-could-not');
 };
 
@@ -46,14 +47,14 @@ const isStale = (error: unknown) =>
   (error as { code?: string } | undefined)?.code === 'reauthentication_required';
 
 /** Closing and giving it up ask for a recent sign-in, which is to be had from here (TL-E). */
-function SignInAgain({
+export function SignInAgain({
   client,
   to,
-  go,
+  go = follow,
 }: {
   client: Client;
   to?: string;
-  go: (url: string) => void;
+  go?: (url: string) => void;
 }): React.JSX.Element {
   const [failed, setFailed] = useState(false);
   const ask = async () => {

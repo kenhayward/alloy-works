@@ -132,13 +132,18 @@ export function SignInGate({
       .then(({ response, error, data }) => {
         if (!current) return;
         // Those a closing environment still lets in meet what is left of it (TL-A).
-        if (data?.environmentKind === 'organisation') {
-          setAnswer('organisation');
-          return;
-        }
         const state = data?.environmentState;
         if (state === 'closing' || state === 'retained') {
           setAnswer('closing');
+          return;
+        }
+        // Suspended a moment ago, by this person among others: a cached tenant still lets `/v1/me` by.
+        if (state === 'suspended') {
+          setAnswer('suspended');
+          return;
+        }
+        if (data?.environmentKind === 'organisation') {
+          setAnswer('organisation');
           return;
         }
         // Nobody may enter whoever they are, so nothing behind it could say anything (ADM-028).

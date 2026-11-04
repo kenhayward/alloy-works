@@ -68,6 +68,24 @@ describe("an organisation's console", () => {
     expect(screen.getByText(/operator began this/)).toBeInTheDocument();
   });
 
+  it('ADM-028 offers no lifting of what the operator suspended', async () => {
+    render(<Console client={fake([tenant({ state: 'suspended', suspendedBy: 'operator' })])} />);
+    expect(await screen.findByText(/operator suspended this/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lift the suspension' })).toBeNull();
+  });
+
+  it('offers to sign in again where the sign-in is too old to do this', async () => {
+    const remove = vi.fn(() =>
+      Promise.resolve({
+        response: { ok: false } as Response,
+        error: { code: 'reauthentication_required' },
+      }),
+    );
+    render(<Console client={fake([tenant({ state: 'suspended' })], undefined, remove as never)} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Lift the suspension' }));
+    expect(await screen.findByRole('button', { name: /sign in again/i })).toBeInTheDocument();
+  });
+
   it('has words for every state a tenant can be in', async () => {
     const { TENANT_STATES } = await import('@alloy-works/domain');
     const { default: enGB } = await import('../words/en-GB.json');

@@ -114,8 +114,9 @@ async function alsoInOrganisationLog(
   what: TenantChange,
   reason?: string,
 ): Promise<void> {
-  const { rows } = await sql<{ schema_name: string; role_name: string }>`
-    select schema_name, role_name from platform.own_organisation_tenant()`.execute(trx);
+  const { rows } = await sql<{ schema_name: string; role_name: string; tenant_name: string }>`
+    select schema_name, role_name, tenant_name
+      from platform.organisation_log_of_own_tenant()`.execute(trx);
   const organisation = rows[0];
   if (!organisation) return;
   const by = await actingAs(trx);
@@ -124,10 +125,15 @@ async function alsoInOrganisationLog(
     { schema: organisation.schema_name, role: organisation.role_name },
     { actorKind: 'system' },
     () =>
-      recordEvent(trx, {
-        kind: 'organisation.changed',
-        detail: { tenant: tenant.id, change: what, by, ...(reason ? { reason } : {}) },
-      }),
+      recordEvent(
+        trx,
+        {
+          kind: 'organisation.changed',
+          subject: { kind: 'tenant' },
+          detail: { tenant: tenant.id, change: what, by, ...(reason ? { reason } : {}) },
+        },
+        [{ role: 'subject', text: organisation.tenant_name }],
+      ),
   );
 }
 
@@ -138,6 +144,7 @@ export interface OrganisationTenant {
   readonly state: TenantState;
   readonly since: Date;
   readonly closingBy: 'person' | 'operator' | null;
+  readonly suspendedBy: 'person' | 'operator' | null;
   readonly graceEndsAt: Date | null;
   readonly hostnames: readonly string[];
 }
@@ -151,9 +158,10 @@ export async function organisationTenants(
     state: TenantState;
     state_since: Date;
     closing_by: 'person' | 'operator' | null;
+    suspended_by: 'person' | 'operator' | null;
     grace_ends_at: Date | null;
     hostnames: string[];
-  }>`select id, name, state, state_since, closing_by, grace_ends_at, hostnames
+  }>`select id, name, state, state_since, closing_by, suspended_by, grace_ends_at, hostnames
        from platform.organisation_tenants()`.execute(trx);
   return rows.map((row) => ({
     id: row.id,
@@ -161,6 +169,7 @@ export async function organisationTenants(
     state: row.state,
     since: row.state_since,
     closingBy: row.closing_by,
+    suspendedBy: row.suspended_by,
     graceEndsAt: row.grace_ends_at,
     hostnames: row.hostnames,
   }));
@@ -168,10 +177,10 @@ export async function organisationTenants(
 
 /** A tenant of this organisation by id, or nothing: another's is no different from one not there. */
 const organisationsOwn = async (trx: TenantTransaction, id: string) => {
-  const listed = await organisationTenants(trx);
-  if (!listed.some((each) => each.id === id)) return undefined;
+  const found = (await organisationTenants(trx)).find((each) => each.id === id);
+  if (!found) return undefined;
   const names = tenantNames(id);
-  return { id, schema: names.schema, role: names.role };
+  return { id, name: found.name, schema: names.schema, role: names.role };
 };
 
 const FROM_ORGANISATION: AuditContext = { actorKind: 'organisation' };
@@ -182,14 +191,19 @@ const FROM_ORGANISATION: AuditContext = { actorKind: 'organisation' };
  */
 const eventInOrganisation = (
   trx: TenantTransaction,
-  id: string,
+  target: { readonly id: string; readonly name: string },
   change: TenantChange,
   reason?: string,
 ) =>
-  recordEvent(trx, {
-    kind: 'organisation.changed',
-    detail: { tenant: id, change, by: 'organisation', ...(reason ? { reason } : {}) },
-  });
+  recordEvent(
+    trx,
+    {
+      kind: 'organisation.changed',
+      subject: { kind: 'tenant' },
+      detail: { tenant: target.id, change, by: 'organisation', ...(reason ? { reason } : {}) },
+    },
+    [{ role: 'subject', text: target.name }],
+  );
 
 export async function suspendFromOrganisation(
   trx: TenantTransaction,
@@ -199,7 +213,7 @@ export async function suspendFromOrganisation(
   const target = await organisationsOwn(trx, id);
   if (!target) return 'missing';
   await change(trx, target, 'suspended', reason);
-  const organisationEvent = await eventInOrganisation(trx, id, 'suspended', reason);
+  const organisationEvent = await eventInOrganisation(trx, target, 'suspended', reason);
   await within(trx, target, FROM_ORGANISATION, () =>
     recordEvent(trx, { kind: 'tenant.suspended', detail: { reason, organisationEvent } }),
   );
@@ -213,7 +227,7 @@ export async function liftFromOrganisation(
   const target = await organisationsOwn(trx, id);
   if (!target) return 'missing';
   const since = await change(trx, target, 'active', null);
-  const organisationEvent = await eventInOrganisation(trx, id, 'resumed');
+  const organisationEvent = await eventInOrganisation(trx, target, 'resumed');
   await within(trx, target, FROM_ORGANISATION, async () => {
     const suspendedSeconds = await moveClocksOn(trx, since);
     await recordEvent(trx, {
@@ -231,7 +245,7 @@ export async function cancelClosureFromOrganisation(
   const target = await organisationsOwn(trx, id);
   if (!target) return 'missing';
   const since = await change(trx, target, 'cancelled', null);
-  const organisationEvent = await eventInOrganisation(trx, id, 'closure_cancelled');
+  const organisationEvent = await eventInOrganisation(trx, target, 'closure_cancelled');
   await within(trx, target, FROM_ORGANISATION, async () => {
     if ((await ownTenantState(trx)).state === 'active') await moveClocksOn(trx, since);
     await recordEvent(trx, { kind: 'tenant.closure_cancelled', detail: { organisationEvent } });

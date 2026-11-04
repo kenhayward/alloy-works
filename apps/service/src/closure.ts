@@ -1,5 +1,6 @@
 import type { ClosureBody, ClosureView } from '@alloy-works/api-contract';
 import {
+  organisationTenants,
   cancelClosing,
   closureFacts,
   isRecentWholeExport,
@@ -46,6 +47,13 @@ const operatorBegan = () =>
     403,
     'closure_begun_by_operator',
     'The operator began this closure, and only the operator can cancel it.',
+    'ADM-030',
+  );
+const organisationHasTenants = () =>
+  new AppError(
+    409,
+    'organisation_has_tenants',
+    "An organisation's tenant closes after its tenants: close or remove those first.",
     'ADM-030',
   );
 const cannot = (message: string) => new AppError(409, 'closure_not_possible', message, 'ADM-030');
@@ -106,6 +114,10 @@ export function closureHandlers(db: TenantDatabase, tenantOf: (request: FastifyR
         !decide('export_audit', facts).allowed
       ) {
         throw needsExport();
+      }
+      // Its log has to outlast them (TL-E), so said before anything is typed for nothing.
+      if ((await organisationTenants(trx)).some((each) => each.state !== 'deleted')) {
+        throw organisationHasTenants();
       }
       const { name } = await viewOf(trx, false);
       if (body.name !== name) throw wrongName();

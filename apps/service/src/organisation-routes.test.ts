@@ -134,6 +134,29 @@ describe("an organisation's tenant through the service (the TL plan, TLd)", () =
     expect((await h.call('ada', 'GET', '/v1/spaces')).statusCode).toBe(200);
   });
 
+  it('ADM-030 says an organisation cannot close while it has tenants, before anything is typed', async () => {
+    const cookie = await signIn(h.app, ORG_HOST, 'grace', h.issuer);
+    const me = await h.app.inject({ url: '/v1/me', headers: { host: ORG_HOST, cookie } });
+    const id = me.json<{ id: string }>().id;
+    await h.tenantDb.withTenant(organisation, async (trx) => {
+      await grant(trx, {
+        roleId: (await findRole(trx, 'Administrator'))!.id,
+        subject: { principal: id },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: id,
+      });
+    });
+    const answer = await h.app.inject({
+      method: 'POST',
+      url: '/v1/closure',
+      headers: { host: ORG_HOST, cookie },
+      payload: { name: 'not typed yet', declined: true },
+    });
+    expect(answer.statusCode, answer.body).toBe(409);
+    expect(answer.json()).toMatchObject({ code: 'organisation_has_tenants' });
+  });
+
   it('IAM-004 takes no session from one of its tenants', async () => {
     const fromTenant = await signIn(h.app, HOST, 'ada', h.issuer);
     const answer = await h.app.inject({

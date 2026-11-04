@@ -88264,6 +88264,8 @@ export interface operations {
                              * @description When it came to be in this state
                              */
                             since: string;
+                            /** @description Who stopped it: an organisation may start only what a person stopped */
+                            suspendedBy: ("person" | "operator") | null;
                             /** @description Who began a closure: an organisation may give up only a person's */
                             closedBy: ("person" | "operator") | null;
                             /** @description When a closure can no longer be given up */
@@ -88294,7 +88296,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            /** @description `suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88379,6 +88381,8 @@ export interface operations {
                              * @description When it came to be in this state
                              */
                             since: string;
+                            /** @description Who stopped it: an organisation may start only what a person stopped */
+                            suspendedBy: ("person" | "operator") | null;
                             /** @description Who began a closure: an organisation may give up only a person's */
                             closedBy: ("person" | "operator") | null;
                             /** @description When a closure can no longer be given up */
@@ -88409,7 +88413,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            /** @description `suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88449,7 +88453,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            /** @description It is not somewhere this can be done from, or the operator stopped it or began the closure */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88546,6 +88550,8 @@ export interface operations {
                              * @description When it came to be in this state
                              */
                             since: string;
+                            /** @description Who stopped it: an organisation may start only what a person stopped */
+                            suspendedBy: ("person" | "operator") | null;
                             /** @description Who began a closure: an organisation may give up only a person's */
                             closedBy: ("person" | "operator") | null;
                             /** @description When a closure can no longer be given up */
@@ -88576,7 +88582,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            /** @description `suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88616,7 +88622,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            /** @description It is not somewhere this can be done from, or the operator stopped it or began the closure */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88701,6 +88707,8 @@ export interface operations {
                              * @description When it came to be in this state
                              */
                             since: string;
+                            /** @description Who stopped it: an organisation may start only what a person stopped */
+                            suspendedBy: ("person" | "operator") | null;
                             /** @description Who began a closure: an organisation may give up only a person's */
                             closedBy: ("person" | "operator") | null;
                             /** @description When a closure can no longer be given up */
@@ -88731,7 +88739,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            /** @description `suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88771,7 +88779,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            /** @description It is not somewhere this can be done from, or the operator stopped it or began the closure */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

@@ -3,6 +3,12 @@
 alter table tenant
   add column kind text not null default 'content' check (kind in ('content', 'organisation'));
 
+-- Who stopped it, as `closing_by` says who began closing it: what the operator stopped, at a contract's
+-- end say, is the operator's to start (TL-D). Until now only the operator could stop a tenant.
+alter table tenant
+  add column suspended_by text check (suspended_by in ('person', 'operator'));
+update tenant set suspended_by = 'operator' where state = 'suspended' or closing_from = 'suspended';
+
 create unique index tenant_one_organisation_tenant on tenant (organisation_id)
   where kind = 'organisation' and state not in ('deleting', 'deleted');
 
@@ -27,6 +33,27 @@ $$;
 revoke all on function own_organisation_tenant() from public;
 grant execute on function own_organisation_tenant() to aw_tenant;
 
+-- Where a tenant's changes are also written: its organisation's log, whatever state that tenant is in,
+-- for as long as it has one (TL-J), with this tenant's name, which outlives it there.
+create function organisation_log_of_own_tenant()
+  returns table (schema_name text, role_name text, tenant_name text)
+  language sql
+  stable
+  security definer
+  set search_path = platform, pg_temp
+as $$
+  select o.schema_name, o.role_name, me.name
+    from tenant me
+    join tenant o on o.organisation_id = me.organisation_id
+                 and o.kind = 'organisation'
+                 and o.id <> me.id
+                 and o.state not in ('deleting', 'deleted')
+   where me.role_name = current_setting('role', true)
+$$;
+
+revoke all on function organisation_log_of_own_tenant() from public;
+grant execute on function organisation_log_of_own_tenant() to aw_tenant;
+
 -- What an organisation sees of its tenants, and all it can: existence, state and addresses (IAM-069).
 -- Answers nothing unless the role asking is an organisation's tenant.
 create function organisation_tenants()
@@ -36,6 +63,7 @@ create function organisation_tenants()
     state text,
     state_since timestamptz,
     closing_by text,
+    suspended_by text,
     grace_ends_at timestamptz,
     hostnames text[]
   )
@@ -44,7 +72,7 @@ create function organisation_tenants()
   security definer
   set search_path = platform, pg_temp
 as $$
-  select t.id, t.name, t.state, t.state_since, t.closing_by, t.grace_ends_at,
+  select t.id, t.name, t.state, t.state_since, t.closing_by, t.suspended_by, t.grace_ends_at,
          array(select h.hostname from tenant_hostname h where h.tenant_id = t.id order by h.hostname)
     from tenant me
     join tenant t on t.organisation_id = me.organisation_id and t.id <> me.id and t.kind = 'content'
@@ -88,19 +116,21 @@ begin
        and o.organisation_id = found_tenant.organisation_id
        and o.kind = 'organisation' and o.id <> found_tenant.id and o.state = 'active');
   known := true;
+  if wanted = 'closing' and found_tenant.state in ('active', 'suspended')
+     and found_tenant.kind = 'organisation' and exists (
+       select from tenant t
+        where t.organisation_id = found_tenant.organisation_id
+          and t.id <> found_tenant.id and t.state <> 'deleted') then
+    raise exception 'An organisation''s tenant closes after its tenants' using errcode = 'AW002';
+  end if;
   case
     when found_tenant.state = 'active' and wanted = 'suspended' then
       -- Only where somebody else can lift it: nobody signs in to a suspended tenant (TL-D).
       allowed := asker = 'aw_steward' or from_organisation or (own and has_organisation);
     when found_tenant.state = 'suspended' and wanted = 'active' then
-      allowed := asker = 'aw_steward' or from_organisation;
+      allowed := asker = 'aw_steward'
+        or (from_organisation and found_tenant.suspended_by is distinct from 'operator');
     when found_tenant.state = 'active' and wanted = 'closing' then
-      if found_tenant.kind = 'organisation' and exists (
-        select from tenant t
-         where t.organisation_id = found_tenant.organisation_id
-           and t.id <> found_tenant.id and t.state <> 'deleted') then
-        raise exception 'An organisation''s tenant closes after its tenants' using errcode = 'AW002';
-      end if;
       allowed := asker = 'aw_steward' or own;
     when found_tenant.state = 'suspended' and wanted = 'closing' then
       allowed := asker = 'aw_steward';
@@ -142,6 +172,12 @@ begin
       when found_tenant.state = 'suspended' and becomes = 'closing' then state_reason
       when wanted = 'cancelled' and becomes = 'suspended' then state_reason
       else reason
+    end,
+    suspended_by = case
+      when found_tenant.state = 'active' and becomes = 'suspended' then
+        case when asker = 'aw_steward' then 'operator' else 'person' end
+      when becomes = 'active' then null
+      else suspended_by
     end,
     closing_from = case
       when becomes = 'closing' then found_tenant.state

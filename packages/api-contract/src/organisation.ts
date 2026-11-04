@@ -25,6 +25,10 @@ export const OrganisationTenantView = z.object({
   name: z.string().describe('Its name'),
   state: z.enum(TENANT_STATES).describe('Where it is in its life'),
   since: z.iso.datetime().describe('When it came to be in this state'),
+  suspendedBy: z
+    .enum(['person', 'operator'])
+    .nullable()
+    .describe('Who stopped it: an organisation may start only what a person stopped'),
   closedBy: z
     .enum(['person', 'operator'])
     .nullable()
@@ -47,17 +51,22 @@ const ACT = {
   credential: 'session',
 } as const;
 
+/** What stops a tenant or gives up its closure asks for what the same act inside one does. */
+const ACT_RECENTLY = { ...ACT, recentSignIn: 600 } as const;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
 } as const;
 const forbidden = {
-  description: "`suspend_tenant` is not held at this organisation's tenant",
+  description:
+    "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
   schema: ErrorBody,
 } as const;
 const notFound = { description: 'Not a tenant of this organisation', schema: ErrorBody } as const;
 const conflict = {
-  description: 'It is not somewhere this can be done from, or the operator began the closure',
+  description:
+    'It is not somewhere this can be done from, or the operator stopped it or began the closure',
   schema: ErrorBody,
 } as const;
 
@@ -111,7 +120,7 @@ export const organisationRoutes = {
     summary: "Stop one of this organisation's tenants",
     tenantScoped: true,
     organisationTenant: true,
-    access: ACT,
+    access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,
     body: SuspensionBody,
@@ -130,7 +139,7 @@ export const organisationRoutes = {
     summary: "Start one of this organisation's tenants again",
     tenantScoped: true,
     organisationTenant: true,
-    access: ACT,
+    access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,
     responses: {
@@ -151,7 +160,7 @@ export const organisationRoutes = {
     summary: "Give up closing one of this organisation's tenants",
     tenantScoped: true,
     organisationTenant: true,
-    access: ACT,
+    access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,
     responses: {
