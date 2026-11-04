@@ -102,7 +102,11 @@ export async function migrate(
     await client.query('select pg_advisory_lock(hashtext($1))', ['alloy-works:migrate']);
     const platform = await applyAll(client, { schema: 'platform' }, platformMigrations);
     const { rows } = await client.query<{ id: string; schema_name: string; role_name: string }>(
-      'select id, schema_name, role_name from platform.tenant order by id',
+      // A row outlives its schema once deleted, and `set role` to what is gone would stop every deploy
+      // from here on (TL-I).
+      `select id, schema_name, role_name from platform.tenant
+        where exists (select from pg_namespace n where n.nspname = schema_name)
+        order by id`,
     );
     const tenants: Record<string, readonly string[]> = {};
     for (const tenant of rows) {
