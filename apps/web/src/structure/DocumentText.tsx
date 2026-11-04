@@ -68,91 +68,6 @@ import { words as say } from '../words/words.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 
-/** The room a component's label keeps from the text it stands beside. */
-const LABEL_GAP = 48;
-
-/**
- * Whether a component's label stands beside its text (CNT-073): only where the column leaves it the
- * room - the text, from the component's start, then the gap, then the label. Zoomed in, the text
- * fills the column and the label stands above it instead, never on it.
- */
-export function labelFits({
-  column,
-  text,
-  label,
-}: {
-  readonly column: number;
-  readonly text: number;
-  readonly label: number;
-}): boolean {
-  return column - text >= label + LABEL_GAP;
-}
-
-/**
- * How far a component's words reach from its inline start (UI-G; LOC-004): from its left edge left to
- * right, from its right edge right to left, where its label stands at the other end.
- */
-export function textExtent(
-  component: { readonly left: number; readonly right: number },
-  words: { readonly left: number; readonly right: number },
-  direction: 'ltr' | 'rtl',
-): number {
-  return direction === 'rtl' ? component.right - words.left : words.right - component.left;
-}
-
-/**
- * Each component's label placed beside its text or above it (`labelFits`), again as the column or
- * the text's measure changes size. Decided from widths that placing the label does not change, so it
- * never flips back and forth, and never on hover, so showing a label moves no text.
- */
-function useLabelsPlaced(column: RefObject<HTMLElement | null>) {
-  useLayoutEffect(() => {
-    const root = column.current;
-    if (root === null) return;
-    const place = () => {
-      // On a sheet (ADR-0056) a component is the measure wide, so its label stands beside its
-      // heading's words, where they leave it room, rather than beside its text; where they leave it
-      // none, raised over the space above the component rather than a line of its own, since the
-      // sheet sets the text where the PDF does (STY-080).
-      const sheet = root.classList.contains('aw-sheet');
-      for (const component of root.querySelectorAll<HTMLElement>('[data-component]')) {
-        const label = component.querySelector<HTMLElement>(':scope > [data-label]');
-        const text = sheet
-          ? component.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6')
-          : component.querySelector<HTMLElement>('.aw-text');
-        let words = text?.getBoundingClientRect();
-        if (sheet && text) {
-          const range = document.createRange();
-          range.selectNodeContents(text);
-          words = range.getBoundingClientRect();
-        }
-        const above =
-          label !== null &&
-          text !== null &&
-          words !== undefined &&
-          !labelFits({
-            column: component.clientWidth,
-            text: textExtent(
-              component.getBoundingClientRect(),
-              words,
-              getComputedStyle(component).direction === 'rtl' ? 'rtl' : 'ltr',
-            ),
-            label: label.offsetWidth,
-          });
-        // Both, every time: a label placed before the sheet arrived must not keep the line it took.
-        component.toggleAttribute('data-label-above', above && !sheet);
-        component.toggleAttribute('data-label-raised', above && sheet);
-      }
-    };
-    place();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(place);
-    observer.observe(root);
-    for (const each of root.querySelectorAll('.aw-text')) observer.observe(each);
-    return () => observer.disconnect();
-  });
-}
-
 /** No bound tables, one object, so the rows the page wants are not asked again for nothing. */
 const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
 
@@ -253,6 +168,157 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
   return null;
 }
 
+/** What hovering over a part says where it cannot simply be edited; null where it can. */
+function editableTip(state: Editable | undefined): string | null {
+  if (state === undefined) return null;
+  const lock =
+    state.lock !== null && new Date(state.lock.expectedRelease).getTime() > Date.now()
+      ? state.lock
+      : null;
+  if (lock !== null && !lock.yours) {
+    return heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease });
+  }
+  return state.mayEdit ? null : say('document.you-may-read-this-component');
+}
+
+/** What a part's standing is told from, as the page knows it. */
+export interface Standing {
+  readonly names: Names;
+  readonly changed?: ReadonlySet<string> | undefined;
+  readonly movedParts?: readonly string[] | undefined;
+  readonly resolved?: ReadonlyMap<string, Parameters<typeof versionSaid>[1]> | undefined;
+  readonly revisions?: ReadonlyMap<string, Parameters<typeof versionSaid>[2]> | undefined;
+  readonly lines?: ReadonlyMap<string, string> | undefined;
+  readonly diverged?: ReadonlyMap<string, readonly string[]> | undefined;
+  readonly translated?: Parameters<typeof DocumentText>[0]['translated'];
+  readonly pastReview?: ReadonlySet<string> | undefined;
+  readonly overridesOf?: Parameters<typeof DocumentText>[0]['overridesOf'];
+  readonly editable?: ReadonlyMap<string, Editable> | undefined;
+  readonly openComponent?: string | null | undefined;
+  readonly present?: Parameters<typeof DocumentText>[0]['present'];
+  readonly threadCounts?: ReadonlyMap<string, number> | undefined;
+  /** The acts on it, in the Part panel only: left out, it says and offers nothing. */
+  readonly acts?: {
+    readonly choosing?: Choosing | undefined;
+    readonly onOverride?: ((node: string) => void) | undefined;
+    readonly onSuggest?: ((node: string) => void) | undefined;
+    /** The part a suggestion is being drafted in: none is offered there again. */
+    readonly drafting?: string | null | undefined;
+    readonly hasText?: boolean | undefined;
+  };
+}
+
+/**
+ * **What is true of a part** (the EP plan, EP4; CNT-162, LIF-018, LIF-046, LOC-016, REU-015): its version
+ * and how it is placed, its lines, translations, review and overrides, who may edit it and who is here.
+ * In the Part panel, with its acts; beside the text, in words for a screen reader, without them.
+ */
+export function PartStanding({ node, standing }: { node: OutlineViewNode; standing: Standing }) {
+  const { names, changed, movedParts, resolved, revisions, lines, diverged, translated } = standing;
+  const { pastReview, overridesOf, editable, openComponent, present, threadCounts, acts } =
+    standing;
+  if (node.type !== 'reference') return null;
+  const name = nodeName(node, names);
+  return (
+    <>
+      {acts === undefined && <span className={styles['labelName']}>{name}</span>}
+      {changed?.has(node.id) === true && (
+        <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
+      )}
+      {node.component === null ? (
+        <>
+          {acts === undefined && <Lozenge kind="notYoursToRead" size="small" />}
+          {movedParts?.includes(node.id) === true && (
+            <span>{say('moving.part-moved-with-threads')}</span>
+          )}
+        </>
+      ) : (
+        <>
+          {acts?.choosing ? (
+            <VersionChoice
+              node={node}
+              component={node.component}
+              name={name}
+              said={versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
+              choosing={acts.choosing}
+            />
+          ) : (
+            <span className={styles['versionSaid']}>
+              {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
+            </span>
+          )}
+          {lines?.has(node.id) === true && (
+            <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
+          )}
+          {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
+            <Lozenge kind="diverged" size="small">
+              {say('document.main-line-also', { value1: diverged!.get(node.id)!.join(', ') })}
+            </Lozenge>
+          )}
+          {(translated?.get(node.id) ?? []).map((each) => (
+            <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
+              {`${each.language}: ${statusWords(each)}`}
+            </Lozenge>
+          ))}
+          {pastReview?.has(node.id) === true && <Lozenge kind="pastReview" size="small" />}
+          {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
+            <Chip>{say('document.overridden-here')}</Chip>
+          )}
+          {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
+            <Chip tone="warn">{say('document.override-no-longer-applies')}</Chip>
+          )}
+          <EditableState
+            state={editable?.get(node.id)}
+            openHere={
+              openComponent !== null &&
+              openComponent !== undefined &&
+              openComponent === node.component
+            }
+          />
+          {(present?.get(node.component) ?? []).length > 0 && (
+            <span className={styles['here']}>
+              {present!
+                .get(node.component)!
+                .map((person) => presenceWords(person))
+                .join('; ')}
+            </span>
+          )}
+          <ThreadsSaid count={threadCounts?.get(node.id)} />
+          {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
+            <span className={styles['threads']}>
+              {say('document.suggestions-2', {
+                count: editable!.get(node.id)!.pendingSuggestions,
+              })}
+            </span>
+          )}
+          {acts?.onOverride && acts.hasText === true && (
+            <button
+              type="button"
+              className={styles['open']}
+              onClick={() => acts.onOverride!(node.id)}
+              aria-label={say('document.overrides-of', { value1: name })}
+            >
+              {say('document.overrides')}
+            </button>
+          )}
+          {acts?.onSuggest &&
+            editable?.get(node.id)?.maySuggest === true &&
+            acts.drafting !== node.id && (
+              <button
+                type="button"
+                className={styles['open']}
+                onClick={() => acts.onSuggest!(node.id)}
+                aria-label={say('document.suggest-changes-to', { value1: name })}
+              >
+                {say('document.suggest-changes')}
+              </button>
+            )}
+        </>
+      )}
+    </>
+  );
+}
+
 /** How many threads stand on a component or a section as a whole, said in Review. */
 function ThreadsSaid({ count }: { count: number | undefined }) {
   if (count === undefined || count === 0) return null;
@@ -342,6 +408,7 @@ function RenderedText({
   onProvenance,
   onBroken,
   marks,
+  tip,
 }: {
   content: unknown;
   /** What its references print from, where it stands in a document (ruling R12). */
@@ -358,6 +425,8 @@ function RenderedText({
   onBroken?: (count: number) => void;
   /** Where each thread on it stands, marked in Review (the TH plan, Task 3). */
   marks?: readonly Placed[] | undefined;
+  /** What hovering over it says of who may edit it, in place of "Click to edit" (the EP plan, ruling 11). */
+  tip?: string | null | undefined;
 }) {
   const place = useRef<HTMLDivElement>(null);
   const onBrokenRef = useRef(onBroken);
@@ -429,7 +498,7 @@ function RenderedText({
       className={classes}
       data-opens="true"
       tabIndex={0}
-      title={say('document.click-to-edit')}
+      title={tip ?? say('document.click-to-edit')}
       onClick={(event) => {
         const host = place.current;
         if (!host) return;
@@ -531,9 +600,7 @@ export function DocumentText({
   diverged,
   translated,
   overridesOf,
-  onOverride,
   onPointedAt,
-  choosing,
   bindingStates = null,
   onProvenance,
   onBindingSettle,
@@ -547,7 +614,6 @@ export function DocumentText({
   threadCounts,
   openComments,
   onLock,
-  onSuggest,
   newer,
   movedParts,
 }: {
@@ -598,15 +664,8 @@ export function DocumentText({
   translated?: ReadonlyMap<string, readonly TranslationSaid[]>;
   /** Each reference's local overrides by node, and whether each stands (REU-011; the R4 plan, R4-G). */
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
-  /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
-  onOverride?: (node: string) => void;
   /** A part clicked or opened in the text, in any mode: the page chooses it (the EP plan, EP1). */
   onPointedAt?: (node: string) => void;
-  /**
-   * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
-   * reader who may restructure the document. Without it the label says the version and offers nothing.
-   */
-  choosing?: Choosing;
   /**
    * What the bindings view says of every binding the texts hold (the B1 plan, B1-I), or null where the
    * page has not read it, or could not: then no value is shown, and no error (B1-N).
@@ -648,8 +707,6 @@ export function DocumentText({
     >;
     readonly open: (thread: string) => void;
   };
-  /** In Review, opens a draft of a component to suggest a change to it (the SG plan, SG-J). */
-  onSuggest?: (node: string) => void;
   /**
    * Each reference pinned below a newer version the reader may read, by node, and where the comparison
    * between them is read from (CNT-181).
@@ -666,7 +723,6 @@ export function DocumentText({
   // sheet on the desk its parent is (ADR-0056).
   const column = useRef<HTMLElement>(null);
   const canvas = useCanvas(deskRoom, column as RefObject<HTMLDivElement | null>, true);
-  useLabelsPlaced(column);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
   const open = (node: string) => (at: number) => {
@@ -798,119 +854,30 @@ export function DocumentText({
                 )}
               </div>
             )}
-            {/* The component's label (CNT-073): what it is, which version and how it is placed
-                (CNT-162), whether the reader may edit it and who holds it, and Open - seen on hover, on
-                focus and under Show boundaries, and always there for a screen reader. While it is
-                being edited the editor's own strip says it. */}
+            {/* What a part's standing says, for a screen reader reaching it: never seen, since the Part
+                panel shows it to everyone else, with its acts (the EP plan, EP4). While it is being
+                edited the editor says it. */}
             {!(editing === node.id && editor && node.component !== null) && (
               <div className={styles['label']} data-label="">
-                <span className={styles['labelName']}>{nodeName(node, names)}</span>
-                {changed?.has(node.id) === true && (
-                  <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
-                )}
-                {node.component === null ? (
-                  <>
-                    <Lozenge kind="notYoursToRead" size="small" />
-                    {movedParts?.includes(node.id) === true && (
-                      <span>{say('moving.part-moved-with-threads')}</span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {choosing ? (
-                      <VersionChoice
-                        node={node}
-                        component={node.component}
-                        name={nodeName(node, names)}
-                        said={versionSaid(
-                          node.mode,
-                          resolved?.get(node.id),
-                          revisions?.get(node.id),
-                        )}
-                        choosing={choosing}
-                      />
-                    ) : (
-                      <span className={styles['versionSaid']}>
-                        {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
-                      </span>
-                    )}
-                    {lines?.has(node.id) === true && (
-                      <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
-                    )}
-                    {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
-                      <Lozenge kind="diverged" size="small">
-                        {say('document.main-line-also', {
-                          value1: diverged!.get(node.id)!.join(', '),
-                        })}
-                      </Lozenge>
-                    )}
-                    {(translated?.get(node.id) ?? []).map((each) => (
-                      <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
-                        {`${each.language}: ${statusWords(each)}`}
-                      </Lozenge>
-                    ))}
-                    {pastReview?.has(node.id) === true && (
-                      <Lozenge kind="pastReview" size="small" />
-                    )}
-                    {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
-                      <Chip>{say('document.overridden-here')}</Chip>
-                    )}
-                    {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
-                      <Chip tone="warn">{say('document.override-no-longer-applies')}</Chip>
-                    )}
-                    {onOverride && texts?.has(node.id) && editing !== node.id && (
-                      <button
-                        type="button"
-                        className={styles['open']}
-                        onClick={() => onOverride(node.id)}
-                        aria-label={say('document.overrides-of', { value1: nodeName(node, names) })}
-                      >
-                        {say('document.overrides')}
-                      </button>
-                    )}
-                    <EditableState
-                      state={editable?.get(node.id)}
-                      openHere={openComponent !== null && openComponent === node.component}
-                    />
-                    {(present?.get(node.component) ?? []).length > 0 && (
-                      <span className={styles['here']}>
-                        {present!
-                          .get(node.component)!
-                          .map((person) => presenceWords(person))
-                          .join('; ')}
-                      </span>
-                    )}
-                    <a
-                      className={styles['open']}
-                      href={`#/components/${node.component}`}
-                      aria-label={say('document.open', { value1: nodeName(node, names) })}
-                    >
-                      {say('document.open-2')}
-                    </a>
-                    <ThreadsSaid count={threadCounts?.get(node.id)} />
-                    {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
-                      <span className={styles['threads']}>
-                        {say('document.suggestions-2', {
-                          count: editable!.get(node.id)!.pendingSuggestions,
-                        })}
-                      </span>
-                    )}
-                    {onSuggest &&
-                      editable?.get(node.id)?.maySuggest === true &&
-                      editing !== node.id && (
-                        <button
-                          type="button"
-                          className={styles['open']}
-                          onClick={() => onSuggest(node.id)}
-                          aria-label={say('document.suggest-changes-to', {
-                            value1: nodeName(node, names),
-                          })}
-                        >
-                          {say('document.suggest-changes')}
-                        </button>
-                      )}
-                  </>
-                )}
+                <PartStanding
+                  node={node}
+                  standing={{
+                    names,
+                    changed,
+                    movedParts,
+                    resolved,
+                    revisions,
+                    lines,
+                    diverged,
+                    translated,
+                    pastReview,
+                    overridesOf,
+                    editable,
+                    openComponent,
+                    present,
+                    threadCounts,
+                  }}
+                />
               </div>
             )}
             {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
@@ -999,6 +966,7 @@ export function DocumentText({
                       context={contexts.get(node.id) ?? null}
                       bindings={bindingContextsByNode?.get(node.id) ?? null}
                       marks={threadMarks?.get(node.id)}
+                      tip={onEdit && editor ? editableTip(editable?.get(node.id)) : null}
                       {...(onBroken
                         ? { onBroken: (count: number) => onBroken(node.id, count) }
                         : {})}

@@ -379,6 +379,8 @@ export interface OutlinePanelProps {
   readonly marks?: ReadonlyMap<string, NodeMarks>;
   /** Who holds each part, in words, for the Part panel. */
   readonly heldSaid?: ReadonlyMap<string, string>;
+  /** What is true of a part and what may be done from here, for the Part panel (the EP plan, EP4). */
+  readonly standing?: (node: OutlineViewNode) => ReactNode;
   /**
    * What in this document refers to a node or to anything in it, from outside it (STR-074): listed in
    * the Part panel, and named before the node is removed. `checking` until the page first knows, and
@@ -487,6 +489,7 @@ export function OutlinePanel({
   versionOf,
   marks,
   heldSaid,
+  standing,
   referencesTo,
   sectionFields,
   schemas,
@@ -823,6 +826,7 @@ export function OutlinePanel({
         : numberIf(node.id),
     state: placedState(node),
     heldSaid: heldSaid?.get(node.id),
+    standing: standing?.(node),
     address: linkOf?.(node.id),
     references:
       referencesTo === undefined

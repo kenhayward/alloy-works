@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { opened } from '../editor/test/componentEditor.js';
@@ -7,6 +7,7 @@ import {
   ADA,
   client,
   DOCUMENT,
+  fromMenu,
   json,
   outline,
   PRINTER,
@@ -134,11 +135,17 @@ async function openInReview() {
 }
 
 describe('suggestions in Review (collaboration.md, Suggestions)', () => {
+  it('says to choose a part first, where none is chosen (the EP plan, EP4)', async () => {
+    await openInReview();
+    await fromMenu(userEvent, 'Review', 'Suggest changes');
+    expect(await screen.findByText(/^Click the part you want to suggest changes to/)).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Content of Install the printer' })).toBeNull();
+  });
+
   it('COL-020 COL-025 drafts a suggestion in place with no lock, sends it, and lists it to be accepted', async () => {
     const { text, asked, sent } = await openInReview();
-    await userEvent.click(
-      await within(text).findByRole('button', { name: /^Suggest changes to / }),
-    );
+    fireEvent.click(text.querySelector('[data-component]')!);
+    await fromMenu(userEvent, 'Review', 'Suggest changes');
     // The draft opens in place, with Send and Discard, and no lock asked for. Its editing is the
     // editor's own test's (ComponentEditor.draft.test.tsx).
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
@@ -165,9 +172,8 @@ describe('suggestions in Review (collaboration.md, Suggestions)', () => {
 
   it('CNT-137 announces a suggestion sent and accepted, naming whose and where, in status regions there from the start', async () => {
     const { text } = await openInReview();
-    await userEvent.click(
-      await within(text).findByRole('button', { name: /^Suggest changes to / }),
-    );
+    fireEvent.click(text.querySelector('[data-component]')!);
+    await fromMenu(userEvent, 'Review', 'Suggest changes');
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
     // The panel's region is there, empty, before anything is said in it.
     const panel = await screen.findByRole('tabpanel', { name: 'Suggestions' });

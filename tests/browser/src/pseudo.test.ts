@@ -513,22 +513,10 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       // Its text drawn first: chosen sooner, Authoring is drawn over again as the text arrives.
       await page.getByText('The pond survey found newts.').waitFor();
       await documentDrawn(page, language).check();
-      // A placed component's own line, Overrides on it, is drawn with the boundaries.
-      await page
-        .getByRole('menubar')
-        .getByRole('menuitem', { name: say(language, 'menu.view'), exact: true })
-        .click();
-      await page
-        .getByRole('menuitemcheckbox', {
-          name: say(language, 'document.show-boundaries'),
-          exact: true,
-        })
-        .click();
-      // Named by the component's place in the text, so found by the message's start; pressed by the
-      // keyboard, as the longer line beside the text stands under the side panel, out of the pointer's
-      // reach (a finding of TE-G, not yet fixed).
+      // In the Part panel, on the part clicked, in Authoring (the EP plan, EP4).
+      await page.getByText('The pond survey found newts.').click();
       const [before] = say(language, 'document.overrides-of', { value1: 'HERE' }).split('HERE');
-      await page.locator(`button[aria-label^="${before!.trimEnd()}"]`).first().press('Enter');
+      await page.locator(`button[aria-label^="${before!.trimEnd()}"]`).first().click();
       return page.getByRole('dialog');
     },
   },

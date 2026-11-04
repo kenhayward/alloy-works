@@ -381,6 +381,8 @@ export interface PartFacts {
   readonly version?: string | undefined;
   /** Who holds it now, in words (CNT-074), where anyone does. */
   readonly heldSaid?: string | undefined;
+  /** What is true of it and what may be done from here, from the page (the EP plan, EP4). */
+  readonly standing?: ReactNode;
 }
 
 const MODE_WORDS = {
@@ -414,7 +416,7 @@ function PartIdentity({
   /** The address the clipboard would not take, to be copied by hand (the plan, R7). */
   uncopied: string | null;
 }) {
-  const { node, names, state, number, fieldCount, version, heldSaid } = facts;
+  const { node, names, state, number, fieldCount, version, heldSaid, standing } = facts;
   const unreadable = node.type === 'reference' && node.component === null;
   const count = node.type === 'section' ? componentsBeneath(node) : 0;
   const name = nodeName(node, names);
@@ -475,13 +477,14 @@ function PartIdentity({
               {say('document.count-fields', { count: fieldCount })}
             </Chip>
           )}
-          {node.type === 'reference' && !unreadable && (
+          {node.type === 'reference' && !unreadable && standing === undefined && (
             <Chip className={part['chip']}>{version ?? MODE_WORDS[node.mode.kind]()}</Chip>
           )}
         </div>
       </div>
       {unreadable && <p className={part['note']}>{say('document.may-not-read-this-component')}</p>}
       {heldSaid !== undefined && <p className={part['note']}>{heldSaid}</p>}
+      {standing}
       {uncopied !== null && (
         <input
           readOnly
