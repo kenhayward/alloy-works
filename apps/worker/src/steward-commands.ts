@@ -1,4 +1,9 @@
-import { resumeTenant, suspendTenant, TenantStateRefused, type TenantDatabase } from '@alloy-works/db';
+import {
+  resumeTenant,
+  suspendTenant,
+  TenantStateRefused,
+  type TenantDatabase,
+} from '@alloy-works/db';
 
 /**
  * The operator's command line (tenant-lifecycle.md, TL-P), the only way to lift a suspension until an

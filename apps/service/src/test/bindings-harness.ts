@@ -214,7 +214,10 @@ export interface HarnessOptions {
   /** The service's secrets, as its environment would hold them: `SINK_BRIDGE_KEYS` or `SECRET_DELIVERED_URL`, say. */
   readonly secrets?: Readonly<Record<string, string>>;
   /** Anything else the service is built with: a renderer to serve, a shorter cache of tenants. */
-  readonly appOptions?: Pick<AppOptions, 'rendererRoot' | 'tenantCacheMs' | 'onRoute' | 'stateCheckMs'>;
+  readonly appOptions?: Pick<
+    AppOptions,
+    'rendererRoot' | 'tenantCacheMs' | 'onRoute' | 'stateCheckMs'
+  >;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {

@@ -67,7 +67,10 @@ describe('the sign-in screen', () => {
   });
 
   it('ADM-028 says an environment is suspended, in place of the shell and of any way in', async () => {
-    serviceThat(() => json(503, { code: 'environment_suspended', message: 'Suspended.' }));
+    serviceThat(
+      () => json(503, { code: 'environment_suspended', message: 'Suspended.' }),
+      () => json(200, ONE_WAY),
+    );
     open();
     expect(
       await screen.findByRole('heading', { name: 'This environment is suspended' }),

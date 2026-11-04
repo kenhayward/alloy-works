@@ -20,10 +20,7 @@ export function rendererRoutes(root: string): ReadonlySet<string> {
   );
   const routes = files.map(
     (file) =>
-      posix.sep +
-      relative(root, `${file.parentPath}${sep}${file.name}`)
-        .split(sep)
-        .join(posix.sep),
+      posix.sep + relative(root, `${file.parentPath}${sep}${file.name}`).split(sep).join(posix.sep),
   );
   // `index.html` also answers as its directory.
   return new Set([

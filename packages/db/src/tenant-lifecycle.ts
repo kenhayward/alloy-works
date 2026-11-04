@@ -22,7 +22,9 @@ const change = async (
 ): Promise<Date> => {
   try {
     const { rows } = await sql<{ since: Date }>`
-      select platform.change_tenant_state(${tenant.id}, ${wanted}, ${reason}) as since`.execute(trx);
+      select platform.change_tenant_state(${tenant.id}, ${wanted}, ${reason}) as since`.execute(
+      trx,
+    );
     return rows[0]!.since;
   } catch (error) {
     const code = (error as { code?: string }).code;
