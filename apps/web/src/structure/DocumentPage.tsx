@@ -824,6 +824,23 @@ export function DocumentPage({
   const [textsKnown, setTextsKnown] = useState<'checking' | 'known' | 'unknown'>('checking');
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
+  // **Moving on** (the EP plan, EP5): the open editor is asked to close as Done would, and stays mounted
+  // until it has, so its release and its version are not dropped. What comes next is held here, the
+  // latest asked for, and taken up as it closes.
+  const [leaving, setLeaving] = useState<{
+    readonly arrival: number;
+    readonly onlyIfUnchanged: boolean;
+  } | null>(null);
+  const leavingArrival = useRef(0);
+  const afterLeaving = useRef<{ node: string | null; mode?: Mode } | null>(null);
+  const leaveFor = (next: { node: string | null; mode?: Mode }, onlyIfUnchanged = false) => {
+    afterLeaving.current = next;
+    setLeaving((was) => {
+      if (was !== null && !was.onlyIfUnchanged) return was;
+      leavingArrival.current += 1;
+      return { arrival: leavingArrival.current, onlyIfUnchanged };
+    });
+  };
   // Reading, Review or Authoring (document-view.md, "Modes"; CNT-154, CNT-155): the reader's choice,
   // kept in the browser, Authoring the first time; which of them is on offer is decided below, from
   // what they may do.
@@ -2113,6 +2130,15 @@ export function DocumentPage({
     });
   });
   const chooseMode = (mode: Mode) => {
+    // With a part open, as moving on: the page drops to the mode once it has closed (the EP plan,
+    // ruling 10). Authoring is what it is in, and needs nothing closed.
+    if (mode !== 'authoring' && editing !== null) {
+      leaveFor({ node: null, mode });
+      return;
+    }
+    modeChosen(mode);
+  };
+  const modeChosen = (mode: Mode) => {
     setChosenMode(mode);
     // Reading and Review offer no editor, so one open in place closes as the page drops to either.
     if (mode !== 'authoring') setEditing(null);
@@ -3638,7 +3664,18 @@ export function DocumentPage({
                     {...(principalId === undefined || !authoring
                       ? {}
                       : {
-                          onEdit: (node: string | null, last?: unknown) => {
+                          onLeave: () => {
+                            // A click on another part's text has already said where to.
+                            if (afterLeaving.current === null) leaveFor({ node: null });
+                          },
+                          onEmptySheet: () => {
+                            if (afterLeaving.current === null) leaveFor({ node: null }, true);
+                          },
+                          onEdit: (node: string | null, last?: unknown, cut?: string) => {
+                            if (node !== null && editing !== null) {
+                              if (node !== editing) leaveFor({ node });
+                              return;
+                            }
                             // What it closed on stands until the read below answers, so that the
                             // words never leave the page: only where that is what the page will
                             // show, a part at the latest with nothing overridden (EP2).
@@ -3650,16 +3687,37 @@ export function DocumentPage({
                               node === null &&
                               last !== undefined &&
                               closing?.type === 'reference' &&
-                              closing.mode.kind === 'latest' &&
+                              (closing.mode.kind === 'latest' ||
+                                (closing.mode.kind === 'pinned' &&
+                                  cut !== undefined &&
+                                  document.mayEdit)) &&
                               (overridesByNode.get(closing.id)?.length ?? 0) === 0
                             ) {
                               setTexts((was) => new Map(was).set(closing.id, last));
                             }
-                            setEditing(node);
+                            // Taken up as it closes: where the reader went, and any mode they chose.
+                            const next = afterLeaving.current;
+                            afterLeaving.current = null;
+                            setLeaving(null);
+                            setEditing(node ?? next?.node ?? null);
+                            if (next?.mode !== undefined) modeChosen(next.mode);
                             // Closing reads the text again, so the card shows what was saved, and its
                             // bindings from the version it cut.
                             if (node === null) {
-                              setTextsAttempt((count) => count + 1);
+                              // A pinned part's pin moves to the version cut, as an accepted edit's
+                              // does (ruling 8), before the text is read at it.
+                              if (
+                                cut !== undefined &&
+                                closing?.type === 'reference' &&
+                                closing.mode.kind === 'pinned' &&
+                                closing.component !== null
+                              ) {
+                                void movePins(closing.component, cut).then(() =>
+                                  setTextsAttempt((count) => count + 1),
+                                );
+                              } else {
+                                setTextsAttempt((count) => count + 1);
+                              }
                               setBindingSession(null);
                               setEditingTables(null);
                               setEditorSaved(null);
@@ -3674,6 +3732,20 @@ export function DocumentPage({
                               client={client}
                               principalId={principalId}
                               {...place}
+                              leaving={leaving}
+                              onStay={(blocked) => {
+                                afterLeaving.current = null;
+                                setLeaving(null);
+                                // The panel goes back to the part still open.
+                                if (editing !== null) {
+                                  chosenNow.current = editing;
+                                  setPointed((was) => ({
+                                    node: editing,
+                                    arrival: (was?.arrival ?? 0) + 1,
+                                  }));
+                                }
+                                if (blocked) setNotice(say('document.part-stays-open'));
+                              }}
                               documentParameters={documentParameters}
                               tableHost={tableHost}
                               onTable={setHeldTable}

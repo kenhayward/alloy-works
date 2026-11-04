@@ -312,7 +312,15 @@ export interface ComponentEditorProps {
    * Given where it is open in place (interface slice 13): Done then closes it, releasing the lock
    * first when this author holds one, and is offered to a reader as the way out.
    */
-  readonly onDone?: (last?: ContentDocument) => void;
+  readonly onDone?: (last?: ContentDocument, cut?: string) => void;
+  /**
+   * The page asks it to close as Done would (the EP plan, EP5): the reader moved on. Each new `arrival`
+   * is one request, kept waiting while a claim or a save is on the wire; `onlyIfUnchanged` asks nothing
+   * of a part with changes, as a click on empty sheet does not.
+   */
+  readonly leaving?: { readonly arrival: number; readonly onlyIfUnchanged: boolean } | null;
+  /** It stays open after all: the reach question cancelled, or changes it cannot yet save (`blocked`). */
+  readonly onStay?: (blocked: boolean) => void;
   /** What stands in its place while it opens, so that nothing moves (the EP plan, EP2). */
   readonly whileOpening?: ReactNode;
   /**
@@ -580,6 +588,8 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  leaving,
+  onStay,
   whileOpening,
   ownPage,
   hostDocument,
@@ -697,6 +707,26 @@ export function ComponentEditor({
       },
     );
   };
+  // The version the session has cut since it opened, which the page moves a pin to (ruling 8).
+  const openedVersion = useRef<string | null>(null);
+  if (openedVersion.current === null && loaded.state === 'open') {
+    openedVersion.current = loaded.component.version.id;
+  }
+  // Moved on from (the EP plan, EP5): as Done, reach question and all; but what cannot be saved keeps
+  // the part open, where it says why and offers the text, rather than destroy it by closing. Before
+  // this page draws anything of a component, there is nothing to keep.
+  const closeForLeaving = useRef<() => void>(() => undefined);
+  closeForLeaving.current = () => onDone?.();
+  const leavingAnswered = useRef(0);
+  useEffect(() => {
+    if (!leaving || leavingAnswered.current === leaving.arrival) return;
+    const waiting = session?.phase;
+    if (waiting === 'claiming' || waiting === 'cutting' || waiting === 'releasing') return;
+    leavingAnswered.current = leaving.arrival;
+    closeForLeaving.current();
+    // Asked once for each arrival, and again only as the phase it waited on moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaving?.arrival, session?.phase]);
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
@@ -2710,12 +2740,31 @@ export function ComponentEditor({
     keepDismissed(componentId, savedAt);
     setDismissedAt(savedAt);
   };
-  const done = async () => {
+  const done = async (): Promise<boolean> => {
     if (phase === 'editing') {
       await controls.current?.doneEditing();
-      if (controls.current?.view().phase !== 'reading') return;
+      if (controls.current?.view().phase !== 'reading') return false;
     }
-    onDone?.(surface === null ? undefined : fromEditor(surface.state.doc));
+    const now = controls.current?.view().version.id;
+    onDone?.(
+      surface === null ? undefined : fromEditor(surface.state.doc),
+      now !== undefined && now !== openedVersion.current ? now : undefined,
+    );
+    return true;
+  };
+  closeForLeaving.current = () => {
+    const changed = session !== null && (session.dirty || session.savedAt !== null);
+    if (leaving?.onlyIfUnchanged === true && changed) {
+      onStay?.(false);
+      return;
+    }
+    if ((phase !== 'editing' && phase !== 'reading') || session?.save === 'stopped') {
+      onStay?.(true);
+      return;
+    }
+    const go = () => void done().then((closed) => closed || onStay?.(true));
+    if (changed) askFirst(say('editor.done-editing'), go);
+    else go();
   };
 
   // The band a page keeps above the desk (ADR-0056), and whether this is in one. The frame's line and
@@ -2724,22 +2773,28 @@ export function ComponentEditor({
   const inFrame = inBand && onDone !== undefined;
   const headerEditable =
     shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase) && !readingRef.current;
+  // Over the whole page in a document, where the strip it would stand in is hidden with the Component
+  // menu, and a question there would never be seen (Done would seem to do nothing).
+  const reachQuestion = reach && (
+    <ReachDialog
+      uses={reach.uses}
+      related={reach.related}
+      title={header?.title ?? ''}
+      act={reach.act}
+      onConfirm={() => {
+        setReach(null);
+        reach.go();
+      }}
+      onCancel={() => {
+        setReach(null);
+        if (leaving) onStay?.(false);
+      }}
+    />
+  );
   // What stands whatever else the page draws: the question before a save, what one does, the save state.
   const stripTail = (
     <>
-      {reach && (
-        <ReachDialog
-          uses={reach.uses}
-          related={reach.related}
-          title={header?.title ?? ''}
-          act={reach.act}
-          onConfirm={() => {
-            setReach(null);
-            reach.go();
-          }}
-          onCancel={() => setReach(null)}
-        />
-      )}
+      {!inFrame && reachQuestion}
       {/* Before the first save of an approved one, what a save does (WF-F). */}
       {standing?.state.approved && shown.mayEdit && !drafting && (
         <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
@@ -3364,6 +3419,7 @@ export function ComponentEditor({
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
+        {inFrame && reachQuestion && createPortal(reachQuestion, document.body)}
         {ownPage !== undefined && header && stripTail}
         {ownPage !== undefined && header && chrome}
         {inBand &&
