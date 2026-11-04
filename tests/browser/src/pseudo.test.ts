@@ -464,6 +464,21 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     },
   },
   {
+    name: 'The Remove a part dialog',
+    dialog: 'structure/PartPanel.tsx',
+    address: `#/documents/${grace.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      // Its text drawn first: chosen sooner, Authoring is drawn over again as the text arrives.
+      await page.getByText('The pond survey found newts.').waitFor();
+      await documentDrawn(page, language).check();
+      await page.getByRole('treeitem').first().click();
+      await page.keyboard.press('Delete');
+      return page.getByRole('dialog');
+    },
+  },
+  {
     name: 'The Overrides dialog',
     dialog: 'structure/OverrideDialog.tsx',
     address: `#/documents/${grace.document}`,
