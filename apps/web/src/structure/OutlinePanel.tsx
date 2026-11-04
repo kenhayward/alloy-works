@@ -32,6 +32,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { usePageLayer } from '../shell/Status.js';
 
 // The title field's editor, and the equations in it, drawn as the component editor draws them.
 import '@alloy-works/editor/style.css';
@@ -485,6 +486,7 @@ export function OutlinePanel({
   conditionAxes = [],
   onConditions,
 }: OutlinePanelProps) {
+  const layer = usePageLayer();
   const prefix = useId();
   const nodes = outline.nodes;
   const standings = useMemo(() => standingsBy(nodes, outline.profile), [nodes, outline.profile]);
@@ -1412,7 +1414,7 @@ export function OutlinePanel({
               onCancel={() => setEquating(null)}
             />
           </Suspense>,
-          document.body,
+          layer,
         )}
     </>
   );
