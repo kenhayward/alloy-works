@@ -244,8 +244,13 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     'editor/SymbolPalette.tsx',
     grace.component.id,
     async (page, l) => {
-      await caret(page);
-      await page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true }).click();
+      // A symbol needs a caret in plain text; the paragraph's end is its index marker, so go to the
+      // line's start - always text - before opening from the button (Chromium keeps Ctrl+Shift+M).
+      await page.locator('.ProseMirror p').first().click();
+      await page.keyboard.press('Home');
+      const button = page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true });
+      // The click can land on the index marker's node; Playwright waits for a text caret to enable it.
+      await button.click();
       return page.getByRole('dialog');
     },
   ),
