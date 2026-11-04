@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+import { posix, relative, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { apiNotFound } from './http.js';
@@ -9,6 +11,27 @@ import { apiNotFound } from './http.js';
  */
 export function serveRenderer(app: FastifyInstance, root: string): void {
   void app.register(fastifyStatic, { root, wildcard: false });
+}
+
+/** The routes `serveRenderer` adds, one per file, as Fastify names them. */
+export function rendererRoutes(root: string): ReadonlySet<string> {
+  const files = readdirSync(root, { recursive: true, withFileTypes: true }).filter((entry) =>
+    entry.isFile(),
+  );
+  const routes = files.map(
+    (file) =>
+      posix.sep +
+      relative(root, `${file.parentPath}${sep}${file.name}`)
+        .split(sep)
+        .join(posix.sep),
+  );
+  // `index.html` also answers as its directory.
+  return new Set([
+    ...routes,
+    ...routes
+      .filter((route) => route.endsWith('/index.html'))
+      .map((route) => route.slice(0, -'index.html'.length)),
+  ]);
 }
 
 /**

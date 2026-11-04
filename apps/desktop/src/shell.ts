@@ -137,7 +137,7 @@ export const CONNECT_CHANNEL = 'alloy-works:connect';
 
 /**
  * What an address's answer to `GET /v1/me` with no session says it is (DR-C): an environment answers
- * 401 `unauthenticated`; the service with no environment at that hostname, 404 `tenant_not_found`;
+ * 401 `unauthenticated`, or 503 `environment_suspended` while it is stopped; the service with no environment at that hostname, 404 `tenant_not_found`;
  * anything else - a redirect, a page, another service - is not Alloy Works.
  */
 export function environmentAnswer(
@@ -147,6 +147,7 @@ export function environmentAnswer(
   const code =
     typeof body === 'object' && body !== null ? (body as { code?: unknown }).code : undefined;
   if (status === 401 && code === 'unauthenticated') return 'environment';
+  if (status === 503 && code === 'environment_suspended') return 'environment';
   if (status === 404 && code === 'tenant_not_found') return 'no-environment';
   return 'not-alloy-works';
 }

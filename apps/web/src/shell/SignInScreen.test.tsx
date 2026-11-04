@@ -66,6 +66,18 @@ describe('the sign-in screen', () => {
     );
   });
 
+  it('ADM-028 says an environment is suspended, in place of the shell and of any way in', async () => {
+    serviceThat(() => json(503, { code: 'environment_suspended', message: 'Suspended.' }));
+    open();
+    expect(
+      await screen.findByRole('heading', { name: 'This environment is suspended' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nothing in it has been lost/)).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Modules' })).toBeNull();
+    expect(screen.queryByText('the workspace')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+  });
+
   it("brings a person back to the page they asked for, a shared publication's link among them", async () => {
     const publication = '0193a3b0-7c1e-7000-8000-0123456789ab';
     window.location.hash = `#/publications/${publication}`;

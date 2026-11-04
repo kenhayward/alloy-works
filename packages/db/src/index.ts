@@ -258,7 +258,9 @@ export {
   createTenantDatabase,
   type TenantDatabase,
   type TenantDatabaseOptions,
+  type ResolvedTenant,
 } from './tenant-database.js';
+export { resumeTenant, suspendTenant, TenantStateRefused } from './tenant-lifecycle.js';
 export {
   artifactPlace,
   AuditContextMissing,

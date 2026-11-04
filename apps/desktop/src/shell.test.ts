@@ -721,6 +721,7 @@ describe('environmentAnswer (the DR plan, DR-C)', () => {
   it('ADM-051 takes an environment by its answer to a request with no session, and names the rest', () => {
     expect(environmentAnswer(401, { code: 'unauthenticated' })).toBe('environment');
     expect(environmentAnswer(404, { code: 'tenant_not_found' })).toBe('no-environment');
+    expect(environmentAnswer(503, { code: 'environment_suspended' })).toBe('environment');
     expect(environmentAnswer(401, { code: 'something_else' })).toBe('not-alloy-works');
     expect(environmentAnswer(200, { code: 'unauthenticated' })).toBe('not-alloy-works');
     expect(environmentAnswer(301, null)).toBe('not-alloy-works');

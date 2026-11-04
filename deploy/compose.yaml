@@ -218,6 +218,23 @@ services:
       setup:
         condition: service_completed_successfully
 
+  # The operator's command line, run when needed and otherwise not running (tenant-lifecycle.md, TL-P):
+  #   docker compose -f deploy/compose.yaml run --rm steward suspend --tenant <id> --reason "<why>"
+  steward:
+    profiles: [operator]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
+      target: worker
+    entrypoint: ['node', 'dist/steward-cli.js']
+    environment:
+      STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
   # networks and no others: `connector-private`, which it shares with the service and the worker, and
   # `connector-egress`, out to the sources. Neither carries the platform or the host (the D1 plan,

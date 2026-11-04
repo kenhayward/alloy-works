@@ -73,6 +73,19 @@ function SignInScreen({ here }: { here: string }): React.JSX.Element {
   );
 }
 
+/** All a person can be told of an environment that is suspended: never the reason (TL-B). */
+function EnvironmentSuspended(): React.JSX.Element {
+  const { words } = useWords();
+  return (
+    <main className={styles['connect']} data-app-region>
+      <div className={styles['card']}>
+        <h1>{words('environment.suspended-title')}</h1>
+        <p>{words('environment.suspended-body')}</p>
+      </div>
+    </main>
+  );
+}
+
 /**
  * Asks once, as a page loads, who is signed in, and shows nothing until the service answers. Only its
  * 401 is signed out: with no answer, or any other, the shell opens and the page says what it could not
@@ -85,13 +98,17 @@ export function SignInGate({
   here: string;
   children: React.ReactNode;
 }): React.ReactNode {
-  const [answer, setAnswer] = useState<'nobody' | 'open' | undefined>();
+  const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | undefined>();
   useEffect(() => {
     let current = true;
     createApiClient({ baseUrl: window.location.origin })
       .GET('/v1/me')
-      .then(({ response }) => {
-        if (current) setAnswer(response.status === 401 ? 'nobody' : 'open');
+      .then(({ response, error }) => {
+        if (!current) return;
+        // Nobody may enter whoever they are, so nothing behind it could say anything (ADM-028).
+        const code = (error as { code?: unknown } | undefined)?.code;
+        if (code === 'environment_suspended') setAnswer('suspended');
+        else setAnswer(response.status === 401 ? 'nobody' : 'open');
       })
       .catch(() => {
         if (current) setAnswer('open');
@@ -102,5 +119,6 @@ export function SignInGate({
   }, []);
 
   if (answer === undefined) return null;
+  if (answer === 'suspended') return <EnvironmentSuspended />;
   return answer === 'nobody' ? <SignInScreen here={here} /> : children;
 }

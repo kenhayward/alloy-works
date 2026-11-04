@@ -34,6 +34,8 @@ export * from './access/index.js';
 
 // The audit log: its closed list of kinds, their details, its context and labels (docs/design/audit.md).
 export * from './audit/index.js';
+// A tenant's states and what each stops (tenant-lifecycle.md, TL-C).
+export * from './tenancy/states.js';
 
 // The document's outline: the tree, its parse, and the five operations over it.
 export * from './structure/index.js';

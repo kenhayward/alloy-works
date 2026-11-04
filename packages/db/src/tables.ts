@@ -4,6 +4,7 @@ import type {
   PrincipalKind,
   SearchConfiguration,
   SearchKind,
+  TenantState,
 } from '@alloy-works/domain';
 import type { ColumnType, Generated, RawBuilder, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
@@ -67,6 +68,7 @@ export interface TenantTable {
   name: string;
   schema_name: string;
   role_name: string;
+  state: ColumnType<TenantState, never, never>;
   created_at: ColumnType<Date, never, never>;
 }
 

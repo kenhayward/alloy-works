@@ -167,6 +167,10 @@ export function registerMcp(
       // A body that is not JSON is the protocol's parse error, never the API's.
       errorHandler: (error, request, reply) => {
         const status = (error as { statusCode?: number }).statusCode;
+        // Its environment is suspended (TL-B): as the protocol says it, and nothing has failed.
+        if ((error as { code?: string }).code === 'environment_suspended') {
+          return send(reply, 503, failure(null, INVALID_REQUEST, error.message));
+        }
         if (status === 400) {
           return send(reply, 400, failure(null, PARSE_ERROR, 'The body is not JSON.'));
         }

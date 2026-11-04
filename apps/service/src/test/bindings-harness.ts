@@ -31,7 +31,7 @@ import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
-import { buildApp } from '../app.js';
+import { buildApp, type AppOptions } from '../app.js';
 import { createOidcClient } from '../oidc.js';
 import { environmentSecrets } from '../secrets.js';
 import { FAKE_CONNECTOR_KEY, fakeConnector, type FakeConnector } from './fake-connector.js';
@@ -213,6 +213,8 @@ export interface HarnessOptions {
   readonly development?: boolean;
   /** The service's secrets, as its environment would hold them: `SINK_BRIDGE_KEYS` or `SECRET_DELIVERED_URL`, say. */
   readonly secrets?: Readonly<Record<string, string>>;
+  /** Anything else the service is built with: a renderer to serve, a shorter cache of tenants. */
+  readonly appOptions?: Pick<AppOptions, 'rendererRoot' | 'tenantCacheMs' | 'onRoute' | 'stateCheckMs'>;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
@@ -259,6 +261,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets(options.secrets ?? {}),
       sealingKey: TEST_SEALING_KEY,
+      ...options.appOptions,
       ...(objects === undefined ? {} : { objects }),
       ...(events === undefined ? {} : { events }),
       connector: {

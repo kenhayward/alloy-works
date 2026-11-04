@@ -36,7 +36,7 @@ export async function deliverWebhooks(
   log: WorkerLog,
 ): Promise<number> {
   let attempted = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       attempted += await deliverInTenant(db, tenant, deliverer, log);
     } catch (error) {

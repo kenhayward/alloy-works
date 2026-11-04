@@ -25,6 +25,8 @@ const SNAPSHOT_SAMPLES = 20;
  * afresh within this.
  */
 export const STREAM_LIFETIME_MS = 5 * 60 * 1000;
+/** How often a stream asks whether its tenant is still open, the bound a suspension promises (TL-B). */
+export const STATE_CHECK_MS = 30_000;
 
 /** A scoped stream's range: its scope, whom it is for, and the components of it they may read. */
 export interface ScopedStream {
@@ -63,6 +65,9 @@ export async function streamToViewer(options: {
   /** A document's or a component's stream, read when it was asked for; none for the environment's. */
   readonly scoped?: ScopedStream;
   readonly lifetimeMs?: number;
+  /** Whether the tenant still answers, read afresh rather than from the resolver's cache (TL-B). */
+  readonly stillOpen?: () => Promise<boolean>;
+  readonly stateCheckMs?: number;
 }): Promise<void> {
   const { request, reply, db, events, tenant, credential, scoped } = options;
   let components = scoped?.components ?? new Set<string>();
@@ -169,10 +174,19 @@ export async function streamToViewer(options: {
   });
   const beat = setInterval(() => raw.write(': alive\n\n'), HEARTBEAT_MS);
   const lifetime = setTimeout(() => end(), options.lifetimeMs ?? STREAM_LIFETIME_MS);
+  const stateCheck = setInterval(() => {
+    void options.stillOpen?.().then(
+      (open) => {
+        if (!open) end();
+      },
+      (error: unknown) => request.log.warn({ err: error }, 'a stream could not read its state'),
+    );
+  }, options.stateCheckMs ?? STATE_CHECK_MS);
   function stop() {
     if (gone) return;
     gone = true;
     clearInterval(beat);
+    clearInterval(stateCheck);
     clearTimeout(lifetime);
     subscription.stop();
     // A dropped connection is absence at once, not 30 seconds of a live claim (COL-004).
