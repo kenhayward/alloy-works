@@ -85,6 +85,9 @@ export const outlineOperationSchema = z
       numbered: z.boolean().optional(),
       matter: sectionNodeSchema.shape.matter.optional(),
       pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
+      // A section's title, with whatever else it names, as one act and so one undo: a typed number
+      // taken off as the outline's own takes over (the PP plan). Alone it is what `retitle` does.
+      title: sectionNodeSchema.shape.title.optional(),
       mode: referenceModeSchema.optional(),
       // A reference's local overrides, whole (REU-011; the R4 plan, R4-B): `[]` clears them.
       overrides: z
@@ -119,6 +122,7 @@ export const outlineOperationSchema = z
       operation.numbered !== undefined ||
       operation.matter !== undefined ||
       operation.pageBreak !== undefined ||
+      operation.title !== undefined ||
       operation.mode !== undefined ||
       operation.overrides !== undefined ||
       operation.conditions !== undefined ||
@@ -476,6 +480,9 @@ function set(
   if (operation.overrides !== undefined && node.type !== 'reference') {
     return refuse('An override belongs to a component reference, not a section');
   }
+  if (operation.title !== undefined && node.type !== 'section') {
+    return refuse('Only a section can be retitled');
+  }
   if (operation.values !== undefined) {
     if (node.type !== 'section') return refuse(REFERENCE_VALUES);
     const failures = checkWrittenValues(sectionFields, operation.values);
@@ -485,7 +492,7 @@ function set(
   // disturbing the rest - built from entries, never a member assigned by a key spelled out by hand.
   // `outlineOperationSchema`'s own refine already refuses a `set` naming none of them.
   const patch: Record<string, unknown> = Object.fromEntries(
-    (['numbered', 'matter', 'pageBreak', 'mode'] as const)
+    (['numbered', 'matter', 'pageBreak', 'title', 'mode'] as const)
       .filter((key) => operation[key] !== undefined)
       .map((key) => [key, operation[key]]),
   );

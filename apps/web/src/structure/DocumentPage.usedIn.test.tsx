@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentPage } from './DocumentPage.js';
 import {
@@ -21,6 +21,10 @@ import {
   section,
   service,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -69,16 +73,20 @@ describe('where what a node places is used (the R14 plan, R14-B)', () => {
   it('STR-075 offers, for a section, Used in for each component placed beneath it that the reader may read, naming the other documents', async () => {
     const asked = await open();
     await userEvent.click(item(/^Method/));
-    const placed = await within(part()).findByRole('list', { name: 'Used in' });
+    const placed = await within(part()).findByRole('list', {
+      name: 'Where its components are used',
+    });
     const offered = within(placed).getAllByRole('button');
-    expect(offered.map((each) => each.textContent)).toEqual(['Where Install the printer is used']);
+    expect(offered.map((each) => each.getAttribute('aria-label'))).toEqual([
+      'Where Install the printer is used',
+    ]);
     await userEvent.click(offered[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Where Install the printer is used' });
     expect(await within(dialog).findByRole('link', { name: 'Pump manual' })).toHaveAttribute(
       'href',
       `#/documents/${MANUAL}`,
     );
-    expect(asked).toEqual([`/v1/components/${PRINTER}/uses`]);
+    expect(new Set(asked)).toEqual(new Set([`/v1/components/${PRINTER}/uses`]));
   });
 
   it('STR-075 offers Used in for the component a reference places, and none for a section placing nothing', async () => {

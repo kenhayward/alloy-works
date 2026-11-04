@@ -6,7 +6,9 @@ import {
   type EffectiveField,
   type FieldDefinition,
 } from '@alloy-works/domain';
-import { useId, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useId, useMemo, useRef, useState } from 'react';
+
+import { Icon } from '../editor/Icon.js';
 
 import { authorZone, instantFor, localIn } from './dateTime.js';
 import styles from './FieldsForm.module.css';
@@ -32,6 +34,23 @@ export interface FieldsFormProps {
 }
 
 /** The field as `validate` takes it: the definition the view describes, and how it applies here. */
+/** Where a form says each field's kind beside its label: the Part panel's, as drawn. */
+export const FieldKindIcons = createContext(false);
+
+const KIND_ICONS: Readonly<Record<string, string>> = {
+  text: 'Field text',
+  user: 'Field person',
+  date: 'Field date',
+  time: 'Field date',
+  dateTime: 'Field date',
+};
+
+function KindIcon({ dataType }: { dataType: string }) {
+  const shown = useContext(FieldKindIcons);
+  const icon = KIND_ICONS[dataType];
+  return shown && icon !== undefined ? <Icon name={icon} size={13} /> : null;
+}
+
 function effectiveOf(view: FieldView): EffectiveField {
   const field = {
     schemaVersion: 1,
@@ -241,6 +260,7 @@ function OneInput(
   const labelled = (control: React.ReactNode) => (
     <>
       <label htmlFor={id} {...(props.content === true ? { 'data-content': '' } : {})}>
+        <KindIcon dataType={props.field.dataType} />
         {props.label}
       </label>
       {control}

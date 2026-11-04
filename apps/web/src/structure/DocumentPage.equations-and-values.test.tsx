@@ -13,7 +13,7 @@ import {
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DOCK_KEY, DocumentPage } from './DocumentPage.js';
 import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
@@ -45,6 +45,10 @@ import {
   SOMEBODY_ELSE,
   referenceTo,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -137,7 +141,7 @@ describe("a section's title holding an equation (equations 3)", () => {
       node: METHOD,
       title: [words('Growth as '), { type: 'equation', mathml: cubed, latex: 'x^3' }],
     });
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
 
     // The field gives way to it, rather than keeping the equation the words could not tell apart.
@@ -323,7 +327,7 @@ describe("a section's title holding an equation (equations 3)", () => {
 
     // An act in flight, and Grace retitles Method while it is: the act will be refused against hers.
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     fake.theirs({
       operation: 'retitle',
@@ -369,7 +373,7 @@ describe("a section's title holding an equation (equations 3)", () => {
 
     // An act in flight, and Grace removes Method while it is: the act will be refused against hers.
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     fake.theirs({ operation: 'remove', node: METHOD });
     selectInTitle(false);

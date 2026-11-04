@@ -1,7 +1,7 @@
 import type { ContentDocument, OutlineNode } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentPage } from './DocumentPage.js';
 import {
@@ -22,6 +22,10 @@ import {
   section,
   service,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -123,7 +127,7 @@ describe('what in its own document references a node (STR-074)', () => {
     await userEvent.click(item(/^Method/));
     const referring = within(part()).getByRole('list', { name: 'Referenced by' });
     const links = within(referring).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual([
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
       'Introduction, after',
       'Install the printer, 2 references',
     ]);
@@ -149,20 +153,16 @@ describe('what in its own document references a node (STR-074)', () => {
     );
     await userEvent.click(item(/^Method/));
     await userEvent.keyboard('{Delete}');
-    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    const question = screen.getByRole('dialog', { name: /^Remove / });
     expect(question).toHaveTextContent(
       'Referenced 2 times elsewhere in this document. Removing it breaks each reference.',
     );
-    // Said to whoever reaches Remove, which is where the focus goes.
-    const remove = within(question).getByRole('button', { name: 'Remove' });
-    expect(remove).toHaveFocus();
-    expect(remove).toHaveAccessibleDescription(
-      /^Remove Method and everything beneath it\?.*Referenced 2 times elsewhere in this document\./,
-    );
+    // The focus on keeping (ADR-0049), the question naming the dialog.
+    expect(within(question).getByRole('button', { name: 'Keep' })).toHaveFocus();
     expect(
       within(question)
         .getAllByRole('link')
-        .map((link) => link.textContent),
+        .map((link) => link.getAttribute('aria-label')),
     ).toEqual(['Introduction, after', 'Install the printer']);
     await userEvent.click(within(question).getByRole('button', { name: 'Remove' }));
     await waitFor(() =>
@@ -183,7 +183,7 @@ describe('what in its own document references a node (STR-074)', () => {
       within(part()).getByText('Nothing you can read in this document refers to it.'),
     ).toBeVisible();
     await userEvent.keyboard('{Delete}');
-    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    const question = screen.getByRole('dialog', { name: /^Remove / });
     expect(question).not.toHaveTextContent(/Referenced/);
   });
 
@@ -197,7 +197,7 @@ describe('what in its own document references a node (STR-074)', () => {
     expect(await within(part()).findByText('Could not be checked.')).toBeVisible();
     expect(within(part()).queryByText(/refers to it/)).toBeNull();
     await userEvent.keyboard('{Delete}');
-    expect(screen.getByRole('group', { name: 'Confirm removal' })).toHaveTextContent(
+    expect(screen.getByRole('dialog', { name: /^Remove / })).toHaveTextContent(
       'Whether anything else in this document refers to it could not be checked.',
     );
   });
@@ -214,7 +214,7 @@ describe('what in its own document references a node (STR-074)', () => {
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await userEvent.click(item(/^Method/));
     await userEvent.keyboard('{Delete}');
-    expect(screen.getByRole('group', { name: 'Confirm removal' })).toHaveTextContent(
+    expect(screen.getByRole('dialog', { name: /^Remove / })).toHaveTextContent(
       'Referenced once elsewhere in this document.',
     );
   });

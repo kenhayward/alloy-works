@@ -12115,13 +12115,22 @@
       "line": 162
     },
     {
+      "id": "STR-076",
+      "area": "STR",
+      "statement": "An author must be able to turn a number typed at the start of a section's title into the outline's own number, as one act that can be undone, where doing so leaves the number shown unchanged",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 163
+    },
+    {
       "id": "STR-056",
       "area": "STR",
       "statement": "A cross-reference to something in its own component must target the nodes of its own occurrence: a component referenced twice resolves \"see Figure 2\" against the occurrence the reader is in (STR-010, STR-021)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "STR-055",
@@ -12130,7 +12139,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "STR-062",
@@ -12139,7 +12148,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "STR-034",
@@ -12148,7 +12157,7 @@
       "tranche": "T1",
       "status": "Superseded by STR-065",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "STR-065",
@@ -12157,7 +12166,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "STR-066",
@@ -12166,7 +12175,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "STR-035",
@@ -12175,7 +12184,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "STR-036",
@@ -12184,7 +12193,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "STR-037",
@@ -12193,7 +12202,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "STR-038",
@@ -12202,7 +12211,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "STR-039",
@@ -12211,7 +12220,7 @@
       "tranche": "T1",
       "status": "Superseded by STR-072",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "STR-063",
@@ -12220,7 +12229,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 200
+      "line": 201
     },
     {
       "id": "STR-072",
@@ -12229,7 +12238,7 @@
       "tranche": "T1",
       "status": "Superseded by STR-073",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 201
+      "line": 202
     },
     {
       "id": "STR-073",
@@ -12238,7 +12247,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "STR-040",
@@ -12247,7 +12256,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "STR-041",
@@ -12256,7 +12265,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "STR-042",
@@ -12265,7 +12274,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "STR-043",
@@ -12274,7 +12283,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "STR-044",
@@ -12283,7 +12292,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "STR-045",
@@ -12292,7 +12301,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "STR-046",
@@ -12301,7 +12310,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "STR-047",
@@ -12310,7 +12319,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "STR-048",
@@ -12319,7 +12328,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 234
+      "line": 235
     },
     {
       "id": "STR-049",
@@ -12328,7 +12337,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 235
+      "line": 236
     },
     {
       "id": "STR-050",
@@ -12337,7 +12346,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "STY-001",
@@ -15378,31 +15387,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 244
+      "line": 245
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "STY-N01",
@@ -16304,28 +16313,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 252
+      "line": 253
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 253
+      "line": 254
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "**Answered (the IX plan): in scope**, an index marked in content and placed by the layout; STR-043 and PUB-041 stay `should`",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 254
+      "line": 255
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 255
+      "line": 256
     },
     {
       "id": "STY-Q01",
@@ -20397,6 +20406,10 @@
         {
           "id": "STR-075",
           "howItIsMet": "A node's details offer **Used in** for each component it places, itself where a reference or every one beneath it where a section, that the reader may read, each opening the component's where-used (REU-006), which names every document placing it. Nothing in another document refers to a node but through its component: a cross-reference stays within its document (the R14 plan, R14-B)"
+        },
+        {
+          "id": "STR-076",
+          "howItIsMet": "`typedNumber` (`apps/web/src/structure/partSummary.ts`) finds a dotted number opening a title, the Part panel offers **Number it** only where it equals the number the section would take, and `set` carries `numbered` with `title` as one operation, so one version and one undo (`operations.test.ts`, `tree.test.ts`, `PartPanel.test.tsx`)"
         }
       ]
     },
@@ -27908,229 +27921,229 @@
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 509,
+      "line": 515,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 529,
+      "line": 535,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1518,
+      "line": 1524,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1675,
+      "line": 1681,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 625,
+      "line": 631,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2615,
+      "line": 2621,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 625,
+      "line": 631,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 656,
+      "line": 662,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 837,
+      "line": 843,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 889,
+      "line": 895,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 810,
+      "line": 816,
       "kind": "title"
     },
     {
       "id": "CNT-163",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 810,
+      "line": 816,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2381,
+      "line": 2387,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2078,
+      "line": 2084,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 641,
+      "line": 647,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 810,
+      "line": 816,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 916,
+      "line": 922,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 828,
+      "line": 834,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 810,
+      "line": 816,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1048,
+      "line": 1054,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2283,
+      "line": 2289,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2118,
+      "line": 2124,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 340,
+      "line": 344,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1097,
+      "line": 1103,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 386,
+      "line": 390,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1809,
+      "line": 1815,
       "kind": "title"
     },
     {
       "id": "REU-021",
       "file": "apps/web/src/structure/DocumentPage.conditions.test.tsx",
-      "line": 20,
+      "line": 24,
       "kind": "title"
     },
     {
       "id": "REU-026",
       "file": "apps/web/src/structure/DocumentPage.conditions.test.tsx",
-      "line": 20,
+      "line": 24,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/web/src/structure/DocumentPage.conditions.test.tsx",
-      "line": 83,
+      "line": 87,
       "kind": "title"
     },
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 469,
+      "line": 473,
       "kind": "title"
     },
     {
       "id": "DAT-024",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1125,
+      "line": 1129,
       "kind": "title"
     },
     {
       "id": "DAT-027",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 990,
+      "line": 994,
       "kind": "title"
     },
     {
       "id": "DAT-041",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1048,
+      "line": 1052,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1015,
+      "line": 1019,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1483,
+      "line": 1487,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1414,
+      "line": 1418,
       "kind": "title"
     },
     {
       "id": "DAT-115",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1205,
+      "line": 1209,
       "kind": "title"
     },
     {
       "id": "DAT-122",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1232,
+      "line": 1236,
       "kind": "title"
     },
     {
@@ -28154,43 +28167,43 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 599,
+      "line": 606,
       "kind": "title"
     },
     {
       "id": "LIF-024",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 613,
+      "line": 620,
       "kind": "title"
     },
     {
       "id": "LOC-004",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 1246,
+      "line": 1257,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 533,
+      "line": 540,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 37,
+      "line": 41,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 420,
+      "line": 427,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 804,
+      "line": 811,
       "kind": "title"
     },
     {
@@ -28202,7 +28215,7 @@
     {
       "id": "STR-074",
       "file": "apps/web/src/structure/DocumentPage.references.test.tsx",
-      "line": 112,
+      "line": 116,
       "kind": "title"
     },
     {
@@ -28250,37 +28263,37 @@
     {
       "id": "TPL-028",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 50,
+      "line": 54,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 65,
+      "line": 69,
       "kind": "title"
     },
     {
       "id": "TPL-033",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 124,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "TPL-034",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 124,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 85,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "STR-075",
       "file": "apps/web/src/structure/DocumentPage.usedIn.test.tsx",
-      "line": 69,
+      "line": 73,
       "kind": "title"
     },
     {
@@ -28389,6 +28402,18 @@
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "STR-076",
+      "file": "apps/web/src/structure/PartPanel.test.tsx",
+      "line": 200,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-029",
+      "file": "apps/web/src/structure/PartPanel.test.tsx",
+      "line": 324,
       "kind": "title"
     },
     {
@@ -28521,6 +28546,12 @@
       "id": "DAT-060",
       "file": "apps/web/src/structure/settleBinding.test.ts",
       "line": 388,
+      "kind": "title"
+    },
+    {
+      "id": "STR-076",
+      "file": "apps/web/src/structure/tree.test.ts",
+      "line": 310,
       "kind": "title"
     },
     {
@@ -35408,19 +35439,25 @@
     {
       "id": "STR-060",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 805,
+      "line": 845,
+      "kind": "title"
+    },
+    {
+      "id": "STR-076",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "TPL-015",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 697,
+      "line": 737,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 743,
+      "line": 783,
       "kind": "title"
     },
     {
@@ -36620,7 +36657,7 @@
     {
       "id": "CNT-180",
       "file": "tests/browser/src/budgets.test.ts",
-      "line": 420,
+      "line": 421,
       "kind": "title"
     },
     {

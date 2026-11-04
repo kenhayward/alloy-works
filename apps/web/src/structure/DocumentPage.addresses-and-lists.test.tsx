@@ -66,6 +66,10 @@ import {
   aside,
 } from './test/documentPage.js';
 
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
+
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
 
@@ -348,6 +352,7 @@ describe('the address of every node', () => {
     const first = open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Install the printer, latest' });
     await screen.findByRole('treeitem', { name: 'Scope' });
+    userEvent.setup();
     let copied = '';
     for (const [id, choice, name] of [
       [INTRODUCTION, 'Introduction', 'Introduction'],
@@ -356,13 +361,13 @@ describe('the address of every node', () => {
       [SCOPE, 'Scope', 'Scope'],
     ] as const) {
       await userEvent.click(item(choice));
-      const field = screen.getByRole('textbox', { name: `Link to ${name}` }) as HTMLInputElement;
-      expect(field.value).toBe(
+      await userEvent.click(screen.getByRole('button', { name: `Copy a link to ${name}` }));
+      copied = await navigator.clipboard.readText();
+      expect(copied).toBe(
         `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${id}`,
       );
       // The address follows what is chosen, so a reload or a copy of it comes back here.
       expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${id}`);
-      copied = field.value;
     }
     first.unmount();
 
@@ -378,9 +383,8 @@ describe('the address of every node', () => {
     expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
     expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
     // And shows them the same address for it.
-    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
-      copied,
-    );
+    await userEvent.click(screen.getByRole('button', { name: 'Copy a link to Scope' }));
+    expect(await navigator.clipboard.readText()).toBe(copied);
   });
 
   it('STR-046 keeps a node at its address when the outline is reordered around it', async () => {
@@ -392,8 +396,12 @@ describe('the address of every node', () => {
     );
     const page = openAt(fake.fetch, SCOPE);
     await waitFor(() => expect(item('Scope')).toHaveFocus());
-    const before = (screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement)
-      .value;
+    userEvent.setup();
+    const scopeAddress = async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Copy a link to Scope' }));
+      return navigator.clipboard.readText();
+    };
+    const before = await scopeAddress();
     expect(item('Scope')).toHaveAccessibleDescription('2.1');
 
     // Method, and Scope with it, moves to the front: Scope's number and position both change.
@@ -411,9 +419,7 @@ describe('the address of every node', () => {
     await waitFor(() => expect(item('Scope')).toHaveFocus());
     expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
     expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
-    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
-      before,
-    );
+    expect(await scopeAddress()).toBe(before);
   });
 
   it('follows the selection to the first node when the chosen one is gone, rather than naming a node that is not there', async () => {
@@ -1800,7 +1806,7 @@ describe('the address of every node', () => {
     const part = (element: HTMLElement) =>
       element.closest('[data-part]')?.getAttribute('data-part');
     expect(part(tree)).toBe('outline');
-    expect(part(screen.getByRole('button', { name: 'Copy link' }))).toBe('details');
+    expect(part(screen.getByRole('button', { name: /^Copy a link to/ }))).toBe('details');
     const text = screen.getByRole('region', { name: "The document's text" });
     expect(within(text).getByRole('heading', { name: /Introduction/ })).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: 'Resize the outline' })).toBeInTheDocument();
@@ -1882,7 +1888,7 @@ describe('the address of every node', () => {
     expect(screen.getAllByRole('status')).toHaveLength(1);
 
     await user.click(within(tree).getByRole('treeitem', { name: 'Introduction' }));
-    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    await user.click(screen.getByRole('button', { name: /^Copy a link to/ }));
     expect(await within(bar).findByText('Copied the link to Introduction.')).toBeInTheDocument();
 
     // Not shown, but still what the tree is described by.
@@ -2014,7 +2020,7 @@ describe('the address of every node', () => {
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
     open(fake.fetch);
     await user.click(await screen.findByRole('treeitem', { name: 'Introduction' }));
-    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    await user.click(screen.getByRole('button', { name: /^Copy a link to/ }));
     expect(await screen.findByText('Copied the link to Introduction.')).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe(
       `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`,

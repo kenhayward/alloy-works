@@ -287,8 +287,8 @@ describe('the outline in a browser', () => {
         shows: drawnAs(tree, ['Alpha', 'Delta', ['Beta', 'Beta one'], 'Gamma']),
       });
 
-      // Retitle, in Title, the next stop after the tree.
-      await page.keyboard.press('Tab');
+      // Retitle, in Title, past the head's three acts.
+      for (let stop = 0; stop < 4; stop++) await page.keyboard.press('Tab');
       expect(await focused(page)).toMatch(/Title$/);
       await page.keyboard.press('ControlOrMeta+a');
       await page.keyboard.type('Epsilon');
@@ -306,15 +306,14 @@ describe('the outline in a browser', () => {
         shows: drawnAs(tree, ['Alpha', 'Epsilon', ['Beta', 'Beta one'], 'Gamma']),
       });
 
-      // Starts on, past Equation.
-      await page.keyboard.press('Tab');
-      await page.keyboard.press('Tab');
-      expect(await focused(page)).toMatch(/^select:/);
-      await page.keyboard.press('ArrowDown');
+      // Starts on, past Equation and the head of Layout.
+      for (let stop = 0; stop < 3; stop++) await page.keyboard.press('Tab');
+      expect(await focused(page)).toMatch(/Wherever it falls$/);
+      await page.keyboard.press('ArrowRight');
       await announced(page, 'Epsilon now starts on a new page.');
       const epsilon = find(nodesOf(await readDocument(client, document.id)), 'Epsilon');
       expect(epsilon.pageBreak).toBe('page');
-      expect(await focused(page)).toMatch(/^select:/);
+      expect(await focused(page)).toMatch(/A new page$/);
       await checkAxe(page, 'a section set to start on a new page', task.meta, {
         within: OUTLINE_PANEL,
         shows: drawnAs(tree, [
@@ -326,16 +325,17 @@ describe('the outline in a browser', () => {
       });
 
       // Remove, back in the tree: Delete, and the question answered.
-      await page.keyboard.press('Shift+Tab');
-      await page.keyboard.press('Shift+Tab');
-      await page.keyboard.press('Shift+Tab');
+      for (let stop = 0; stop < 7; stop++) await page.keyboard.press('Shift+Tab');
       expect(await focused(page)).toBe(`treeitem:${delta}`);
       await page.keyboard.press('Delete');
-      await page.getByRole('group', { name: 'Confirm removal' }).waitFor();
+      const asked = page.getByRole('dialog', { name: /^Remove / });
+      await asked.waitFor();
       await checkAxe(page, 'the removal asked about', task.meta, {
-        within: OUTLINE_PANEL,
-        shows: page.getByRole('group', { name: 'Confirm removal' }),
+        within: '[role="dialog"]',
+        shows: asked,
       });
+      // The focus starts on Keep (ADR-0049): Remove is the next stop.
+      await page.keyboard.press('Tab');
       await page.keyboard.press('Enter');
       await announced(page, 'Removed Epsilon.');
       expect(await held(client, document)).toEqual(['Alpha', ['Beta', 'Beta one'], 'Gamma']);
@@ -430,12 +430,8 @@ describe('the outline in a browser', () => {
         shows: drawnAs(tree, ['Gamma', ['Beta', 'Beta one'], 'Alpha', 'Epsilon']),
       });
 
-      // Starts on: the select clicked open and a choice made. Its list is drawn by the browser
-      // outside the page, where no pointer event can reach, so the choice is made as the list makes
-      // it - the option selected and the change announced to the page.
-      const startsOn = page.getByLabel('Starts on');
-      await startsOn.click();
-      await startsOn.selectOption({ label: 'A new page' });
+      // Starts on: the choice pressed.
+      await page.getByRole('radio', { name: 'A new page' }).click();
       await announced(page, 'Epsilon now starts on a new page.');
       const epsilon = find(nodesOf(await readDocument(client, document.id)), 'Epsilon');
       expect(epsilon.pageBreak).toBe('page');
@@ -450,8 +446,8 @@ describe('the outline in a browser', () => {
       });
 
       // Remove: **Remove section** clicked, and the question's **Remove** clicked.
-      await page.getByRole('button', { name: 'Remove section' }).click();
-      const question = page.getByRole('group', { name: 'Confirm removal' });
+      await page.getByRole('button', { name: /^Remove section/ }).click();
+      const question = page.getByRole('dialog', { name: /^Remove / });
       await question.getByRole('button', { name: 'Remove', exact: true }).click();
       await announced(page, 'Removed Epsilon.');
       expect(await held(client, document)).toEqual(['Gamma', ['Beta', 'Beta one'], 'Alpha']);

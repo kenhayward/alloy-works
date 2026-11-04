@@ -281,6 +281,7 @@ const SWITCHES = [
   'numbered',
   'matter',
   'pageBreak',
+  'title',
   'mode',
   'values',
   'overrides',
@@ -351,6 +352,7 @@ export function inverseOf(
         conditions: node.conditions ?? [],
         // Overrides back as they were, none at all as none (the R4 plan, R4-B).
         ...(node.type === 'reference' ? { mode: node.mode, overrides: node.overrides ?? [] } : {}),
+        ...(node.type === 'section' ? { title: [...node.title] } : {}),
       };
       const previous = Object.fromEntries(
         SWITCHES.filter((key) => operation[key] !== undefined && key in held).map((key) => [

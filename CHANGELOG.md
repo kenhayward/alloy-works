@@ -3,6 +3,23 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.234.0 - 2026-11-04 (PR #957)
+
+The Part panel is grouped and folds: what a part is at a glance, its acts in the head, and a typed number turned into a real one in one step.
+
+### Added
+
+- **Number it.** When a title starts with the number the part would take, the panel offers to number it properly and take the typed number off, as one step you can undo.
+
+### Changed
+
+- **The Part panel is grouped.** What a part is, where it sits and its key facts stay at the top, and Layout, Fields, Readers and Links fold beneath, each saying what it holds in a line when shut. What you leave open is remembered in this browser.
+- **Going to a part, copying its link and removing it are icons at the head of the panel.** If the clipboard refuses, the address appears to copy by hand.
+- **Starts on is three choices, each an icon and short words.** Numbered says what number the part shows, or would show, and why when a part above it decides.
+- **Where its components are used is one row each**, saying once known whether each is used only here or elsewhere too.
+- **Removing a part asks in a dialog, as every other removal does.** The focus starts on Keep, so Delete then Enter now keeps it, and Remove is one Tab further on.
+- **The panel beside the components list has the full version timeline**, in place of the latest three versions: search, filter, compare and one version's view. Restore stays in the editor.
+
 ## 0.233.0 - 2026-11-04 (PR #953)
 
 The Versions panel is a timeline: where each revision stands, baselines and publications in their place, any two versions compared, one version taking the panel, and finding one in a long history (the VP plan).

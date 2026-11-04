@@ -338,12 +338,14 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
         const made = await nodeNamed(page, added);
         await focusedOn(page, made);
         await page.keyboard.press('Delete');
-        await page.getByRole('group', { name: 'Confirm removal' }).waitFor();
+        await page.getByRole('dialog', { name: /^Remove / }).waitFor();
+        // The focus starts on Keep (ADR-0049): Remove is the next stop.
+        await page.keyboard.press('Tab');
         await timed('remove', { kind: 'gone', node: made }, () => page.keyboard.press('Enter'));
 
-        // Retitled in Title, the next stop after the tree, and back.
+        // Retitled in Title, past the panel's three acts, and back.
         await choose(page, topic);
-        await page.keyboard.press('Tab');
+        for (let stop = 0; stop < 4; stop++) await page.keyboard.press('Tab');
         expect(await focusName(page)).toMatch(/Title$/);
         for (const to of [`${title} retitled`, title]) {
           await page.keyboard.press('ControlOrMeta+a');
@@ -353,17 +355,16 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
           );
         }
 
-        // Starts on, past Equation: a new page, and back to none.
-        await page.keyboard.press('Tab');
-        await page.keyboard.press('Tab');
-        expect(await focusName(page)).toMatch(/^select:/);
+        // Starts on, past Equation and the head of Layout: a new page, and back to none.
+        for (let stop = 0; stop < 3; stop++) await page.keyboard.press('Tab');
+        expect(await focusName(page)).toMatch(/Wherever it falls$/);
         await timed(
           'set',
           { kind: 'label', node: topic, label: `${title}, starts on a new page` },
-          () => page.keyboard.press('ArrowDown'),
+          () => page.keyboard.press('ArrowRight'),
         );
         await timed('set', { kind: 'label', node: topic, label: title }, () =>
-          page.keyboard.press('ArrowUp'),
+          page.keyboard.press('ArrowLeft'),
         );
 
         // Moved among its siblings, down and back up: each time it takes the other's number.
