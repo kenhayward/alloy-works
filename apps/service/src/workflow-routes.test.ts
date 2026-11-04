@@ -438,6 +438,22 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     });
   });
 
+  it("narrows versions over the route, and counts a document's activity by the week", async () => {
+    const created = await made('documents', 'Active summary');
+    const narrowed = await call(
+      'GET',
+      `/v1/documents/${created.id}/versions?only=revisions`,
+      'ada',
+    );
+    expect(narrowed.statusCode, narrowed.body).toBe(200);
+    expect(narrowed.json<ComponentVersionList>().items).toEqual([]);
+    const activity = await call('GET', `/v1/documents/${created.id}/activity`, 'ada');
+    expect(activity.statusCode, activity.body).toBe(200);
+    expect(activity.json<{ weeks: unknown[] }>().weeks).toEqual([
+      { start: expect.any(String), versions: 1, approvals: 0 },
+    ]);
+  });
+
   it('finds versions over the route, and says a version nobody delivered has no delivery', async () => {
     const created = await made('documents', 'Searched summary');
     const answer = await call(

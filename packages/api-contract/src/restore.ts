@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { UnitChangeView } from './comparison.js';
-import { ComponentVersionList, DocumentVersionsQuery, VersionSummary } from './components.js';
+import {
+  ComponentVersionList,
+  DocumentVersionsQuery,
+  VersionActivityView,
+  VersionSummary,
+} from './components.js';
 import type { RouteContract } from './contract.js';
 import { EditingRefusal } from './editing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -250,6 +255,27 @@ export const restoreRoutes = {
         description:
           'restore_locked (naming the holder), restore_unchanged, restore_unreadable, or version_precondition (naming the latest)',
         schema: EditingRefusal,
+      },
+    },
+  },
+  readDocumentActivity: {
+    operationId: 'readDocumentActivity',
+    method: 'GET',
+    path: '/v1/documents/{id}/activity',
+    summary: "A document's versions and approvals a week",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: z.object({ id: z.uuid() }),
+    responses: {
+      200: { description: 'Each week with any, oldest first', schema: VersionActivityView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a reader of the document may read its history',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such document in this environment, or none the caller may read',
+        schema: ErrorBody,
       },
     },
   },

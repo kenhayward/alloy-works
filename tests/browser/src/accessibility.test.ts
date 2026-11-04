@@ -1659,6 +1659,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await documentVersions.getByRole('button', { name: 'Back to the versions' }).click();
       await documentVersions.getByRole('button', { name: 'Compare two versions' }).click();
+      // Finding a version (the VP plan, VP3): the graph asked for, Filter and Go to a date open.
+      await documentVersions.getByRole('button', { name: 'Show the activity graph' }).click();
+      await documentVersions.getByRole('button', { name: 'Filter', exact: true }).click();
+      await documentVersions.getByRole('button', { name: 'Go to a date' }).click();
+      await check("the document's versions with the graph, Filter and Go to a date", {
+        shows: documentVersions.getByRole('slider', { name: 'Versions a week' }),
+      });
+      await documentVersions.getByRole('button', { name: 'Hide the activity graph' }).click();
+      await documentVersions.getByRole('button', { name: 'Go to a date' }).click();
+      await documentVersions.getByRole('button', { name: 'Filter', exact: true }).click();
       await documentVersions
         .getByRole('button', { name: /^Restore \d/ })
         .first()

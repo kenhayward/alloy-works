@@ -3,6 +3,26 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.233.0 - 2026-11-04 (PR #953)
+
+The Versions panel is a timeline: where each revision stands, baselines and publications in their place, any two versions compared, one version taking the panel, and finding one in a long history (the VP plan).
+
+### Added
+
+- **The Versions panel is a timeline by day.** Each day's header folds it to one line, and one press folds or opens every day, remembered for each document. A version opens in place, with what changed from the one before and its actions, and older versions read a page at a time.
+- **A version list says which versions are revisions and where each stands.** A revision shows the state its gate moved it to, and whether it is pending, effective, superseded or was replaced before it took effect. Other versions carry no state, and the artifact's own state is shown once, at the head.
+- **A document's baselines and publications fall where they happened in its timeline**, in rows of their own, each with what it opens, compares or downloads.
+- **Any two versions of a document can be compared**, by its outline, values and parameters.
+- **Compare any two versions from the Versions panel.** Choose two, or pick each from a list that reaches any version by its number, note or author, then swap them, or take a quick choice: the version before, the revision in force, my changes, or a baseline.
+- **One version can take the panel**: its facts to the second, its own approvals, what changed from the one before, the delivery that made it, and the baselines that name it.
+- **Find a version in a long history.** Search by number, note or person; filter by person, to revisions, or to baselines or publications; go to a date, with the list opening at the end of that day.
+- **An activity graph shows versions a week over the last year**, with approvals marked. It appears from 20 versions, moves by the arrow keys, says each week in words, and choosing a week moves the list there. Hiding or showing it is remembered.
+
+### Fixed
+
+- **Asking which revision is effective no longer answers a translation's.**
+- **A version's row in the panel starts at its left**, no longer centred.
+
 ## 0.232.0 - 2026-11-04 (PR #947)
 
 A state is now shown one way everywhere, and the repository holds it (the LS plan).

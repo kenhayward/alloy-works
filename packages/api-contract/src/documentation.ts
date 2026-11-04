@@ -323,6 +323,7 @@ const operationTags = {
     'takeLock',
     'releaseLock',
     'listComponentVersions',
+    'readComponentActivity',
     'getComponentVersion',
     'cutVersion',
     'previewRestore',
@@ -338,6 +339,7 @@ const operationTags = {
   Documents: [
     'listDocuments',
     'listDocumentVersions',
+    'readDocumentActivity',
     'getDocumentVersion',
     'previewDocumentRestore',
     'restoreDocumentVersion',
@@ -913,6 +915,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Claims or moves the editing lock to the caller’s session. Another holder’s live lock is not overridden.',
   releaseLock:
     'Finishes an editing session, cutting a version if its content changed, then releases the lock.',
+  readComponentActivity:
+    'Counts a component’s versions and approvals by the week, in UTC, on its main line or a line named, oldest first, leaving out any week with neither.',
+  readDocumentActivity:
+    'Counts a document’s versions and approvals by the week, in UTC, oldest first, leaving out any week with neither.',
   listComponentVersions:
     'Lists released component versions newest first using an opaque cursor. It does not include working iterations. Named, `line` lists that line’s own versions, divergent or a language’s; absent, the main line’s.',
   listDocumentVersions:

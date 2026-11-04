@@ -72,6 +72,7 @@ exist.
 | [0076](0076-one-registry-of-commands-and-keys.md)                                 | One registry of commands and keys                                             | Accepted           |
 | [0077](0077-the-threads-panel-reads-as-cards.md)                                  | The threads panel reads as cards, found in the browser                        | Accepted           |
 | [0078](0078-a-drafted-comment-stays-its-persons.md)                               | A comment the assistant drafted stays its person's                            | Accepted           |
+| [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                     | Accepted           |
 | [0081](0081-lifecycle-states-are-lozenges.md)                                     | Lifecycle states are lozenges, and a version has none                         | Accepted           |
 | [0080](0080-restoring-is-a-process-of-its-own.md)                                 | Restoring is a process of its own, and an archive comes in as the owner       | Accepted           |
 | [0079](0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)                      | A table's toolbar floats on the table, and its tab is a map                   | Accepted           |

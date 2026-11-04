@@ -26,6 +26,7 @@ import {
   listComponentTypes,
   listReadableComponents,
   listVersions,
+  versionActivity,
   versionRevisions,
   type VersionRevision,
   listSpacesFor,
@@ -127,7 +128,12 @@ export async function versionsPage(
   limit: string | undefined,
   after: VersionPosition | undefined,
   line?: string,
-  q?: string,
+  narrowed: {
+    readonly q?: string | undefined;
+    readonly before?: string | undefined;
+    readonly author?: string | undefined;
+    readonly only?: 'revisions' | undefined;
+  } = {},
 ) {
   const page = await listVersions(
     trx,
@@ -135,7 +141,10 @@ export async function versionsPage(
     {
       limit: pageLimit(limit),
       ...(after === undefined ? {} : { after }),
-      ...(q === undefined ? {} : { q }),
+      ...(narrowed.q === undefined ? {} : { q: narrowed.q }),
+      ...(narrowed.before === undefined ? {} : { before: new Date(narrowed.before) }),
+      ...(narrowed.author === undefined ? {} : { author: narrowed.author }),
+      ...(narrowed.only === undefined ? {} : { only: narrowed.only }),
     },
     line,
   );
@@ -165,7 +174,13 @@ export async function versionsPage(
           ? null
           : { id: each.restoredFrom.id, number: number(each.restoredFrom) },
       // Newest first by a keyset: the first row of the first page is the line's latest.
-      current: after === undefined && q === undefined && at === 0,
+      current:
+        after === undefined &&
+        narrowed.q === undefined &&
+        narrowed.before === undefined &&
+        narrowed.author === undefined &&
+        narrowed.only === undefined &&
+        at === 0,
       revision: revisionView(revisions.get(each.id)),
     })),
     next: versionCursor(page.next),
@@ -549,7 +564,20 @@ export function componentHandlers(
       if (artifact?.kind !== 'component') throw notFound();
       // A line's own history (LOC-012), closed or not; one the component does not hold is none.
       if (query.line !== undefined && !(await readLine(trx, id, query.line))) throw notFound();
-      return versionsPage(trx, id, query.limit, after, query.line, query.q);
+      return versionsPage(trx, id, query.limit, after, query.line, query);
+    },
+
+    readComponentActivity: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as ComponentParams;
+      const { line } = request.query as { line?: string };
+      const artifact = await trx
+        .selectFrom('artifact')
+        .select('kind')
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (artifact?.kind !== 'component') throw notFound();
+      if (line !== undefined && !(await readLine(trx, id, line))) throw notFound();
+      return { weeks: [...(await versionActivity(trx, id, line))] };
     },
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
