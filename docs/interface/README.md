@@ -245,9 +245,8 @@ Drawn on the screens, ahead of the code. Each is cheap to remove and expensive t
    text (`publishing.md`, "Preview"), where the drawings put both buttons in a bar above the panes
    and the build puts them in the panel of publications. The warm preview is T3's.
 7. **Delete**, in the row menu. Nothing deletes anything yet.
-8. **Lifecycle lozenges** (Draft, In review, In approval, Approved, Superseded, Archived) are drawn
-   on `States` but reserved for the review and approval tranche. Today the only real publishing
-   states are Published, Changed since, Never published, and every publication says **not approved**.
+8. **Lifecycle lozenges** are no longer drawn here: [`lifecycle-states.md`](lifecycle-states.md) is the master
+   guide, and supersedes the lozenges on `States`.
 
 ## Building from this
 

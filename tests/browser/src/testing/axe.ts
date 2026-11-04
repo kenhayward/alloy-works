@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { AxeBuilder } from '@axe-core/playwright';
 import type { Locator, Page } from 'playwright-core';
 import type { TaskMeta } from 'vitest';
+import catalogue from '../../../../apps/web/src/words/en-GB.json' with { type: 'json' };
 
 /**
  * WCAG 2.2 AA's automatable criteria, as axe tags them (the W13 plan's B-I): A and AA at 2.0, 2.1 and
@@ -38,6 +39,11 @@ declare module 'vitest' {
 }
 
 /** The pinned axe-core itself, injected by source, so the engine is the one this workspace names. */
+/** The words a state is shown by: the catalogue's `states.*`, "Done" aside, mostly a verb. */
+const STATE_WORDS: readonly string[] = Object.entries(catalogue)
+  .filter(([key, value]) => key.startsWith('states.') && value !== 'Done')
+  .map(([, value]) => value);
+
 const AXE_SOURCE = readFileSync(
   createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
   'utf8',
@@ -142,6 +148,32 @@ async function inTheme(page: Page, theme: 'light' | 'dark'): Promise<void> {
   );
 }
 
+/**
+ * A state's word standing alone outside a lozenge (ADR-0081), where the guard cannot follow a table.
+ * A heading, label, term, control, a filter chosen or an author's content holding the word is no state.
+ */
+async function strayStates(page: Page): Promise<readonly string[]> {
+  return page.evaluate((states) => {
+    const said = new Set(states);
+    const found: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent?.trim() ?? '';
+      const parent = node.parentElement;
+      if (!said.has(text) || parent === null) continue;
+      if (
+        parent.closest(
+          '[data-lozenge], [data-tone="accent"], th, label, legend, dt, option, button, a, [role="tab"], [role="menuitem"], [role="status"], [data-content], [contenteditable], h1, h2, h3, h4',
+        ) !== null
+      ) {
+        continue;
+      }
+      found.push(text);
+    }
+    return found;
+  }, STATE_WORDS);
+}
+
 async function checkAxeOnce(
   page: Page,
   state: string,
@@ -158,6 +190,10 @@ async function checkAxeOnce(
   },
 ): Promise<void> {
   await arrived(state, arrival);
+  const stray = await strayStates(page);
+  if (stray.length > 0) {
+    throw new Error(`${state}: a state's word outside a lozenge (ADR-0081): ${stray.join(', ')}`);
+  }
   let builder = new AxeBuilder({ page, axeSource: AXE_SOURCE }).withTags([
     ...WCAG_22_AA,
     ...(bestPractice ? ['best-practice'] : []),

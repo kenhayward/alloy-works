@@ -1772,10 +1772,25 @@ describe('publishing from the document page', () => {
     open(fake.fetch, false);
     const items = await screen.findAllByRole('listitem');
     expect(items.map((each) => each.textContent?.replace(/ on .*? \(/, ' ('))).toEqual([
-      'Version 0.3, published by Ada (Word, not approved)',
-      'Version 0.3, published by Ada (PDF and Word, not approved)',
-      'Version 0.3, published by Ada (PDF, not approved)',
+      'Version 0.3, published by Ada (Word) Not approved',
+      'Version 0.3, published by Ada (PDF and Word) Not approved',
+      'Version 0.3, published by Ada (PDF) Not approved',
     ]);
+  });
+
+  it('says a publication a gate approved is approved, and a baseline’s is not', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [
+        listed([
+          { ...publication, id: 'p2', approval: 'approved' },
+          { ...publication, id: 'p1', approval: 'baseline' },
+        ]),
+      ],
+    });
+    open(fake.fetch, false);
+    const items = await screen.findAllByRole('listitem');
+    expect(within(items[0]!).getByText('Approved')).toHaveAttribute('data-kind', 'approved');
+    expect(within(items[1]!).getByText('Not approved')).toHaveAttribute('data-kind', 'notApproved');
   });
 });
 

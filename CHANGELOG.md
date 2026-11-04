@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.232.0 - 2026-11-04 (PR #947)
+
+A state is now shown one way everywhere, and the repository holds it (the LS plan).
+
+### Changed
+
+- **Every state looks the same everywhere.** A document's, a component's, a publication's, a baseline's, a thread's, a suggestion's, a reviewer's, a translation's and a binding's state is now a lozenge with an icon and its words, so none rests on colour, in either theme or in a high-contrast mode.
+- **An archived or held document still shows where it is in its workflow**, with Archived, On hold or Past review beside it.
+- **One word for each state.** "Archived" and the others read the same wherever they appear.
+
+### Fixed
+
+- **An approved publication no longer reads Not approved in the lists.** The Publications list and a document's Publishing panel now say what its page says.
+
 ## 0.231.0 - 2026-11-04 (PR #939)
 
 Export and import closed (the EI plan): everything in an environment comes out in a form readable without this product, a whole export restores into an empty environment, and a part comes into one in use.

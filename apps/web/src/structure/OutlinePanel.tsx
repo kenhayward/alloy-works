@@ -1568,7 +1568,7 @@ function ComponentChooser({
           ))}
         </select>
       </label>
-      {state && <StateLozenge state={state} />}
+      {state && <StateLozenge size="small" state={state} />}
       <button type="submit">{say('document.add-2')}</button>
       <button type="button" onClick={onCancel}>
         {say('document.cancel')}
@@ -1772,7 +1772,7 @@ function StateRow({
   return (
     <div className={styles['partRow']}>
       <span className={styles['rowLabel']}>{say('document.state')}</span>
-      <StateLozenge state={state} />
+      <StateLozenge size="small" state={state} />
     </div>
   );
 }

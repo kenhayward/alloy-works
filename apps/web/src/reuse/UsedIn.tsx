@@ -109,7 +109,7 @@ function DocumentItem({ document }: { document: UsingDocument }) {
       <a href={`#/documents/${document.id}`} data-content>
         {document.title}
       </a>
-      {document.state && <StateLozenge state={document.state} />}
+      {document.state && <StateLozenge size="small" state={document.state} />}
       <ul className={styles['references']}>
         {document.references.map((reference) => (
           <li key={reference.node}>{followsSaid(reference)}</li>

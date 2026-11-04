@@ -41,7 +41,6 @@ import { readStanding, standingIn, RevisionChip, type Standing } from '../lifecy
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
-import { Chip } from '../parts/Chip.js';
 import { PanelRail } from '../parts/PanelRail.js';
 import {
   PreviewButton,
@@ -140,6 +139,7 @@ import type { Choosing, OfferedVersion } from './VersionChoice.js';
 import type { VersionNamed } from './NewerVersion.js';
 import { words as say } from '../words/words.js';
 import { dockRoom } from './dockRoom.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -2841,8 +2841,8 @@ export function DocumentPage({
                     setNotice(say('document.accepted-it-takes-effect-there'));
                   }}
                 />
-                {document.archived && <Chip>{say('document.archived')}</Chip>}
-                {document.onHold && <Chip>{say('document.on-hold')}</Chip>}
+                {document.archived && <Lozenge kind="archived" />}
+                {document.onHold && <Lozenge kind="onHold" />}
                 {authoring && editing === null && (
                   <span>{say('editor.click-a-component-s-text')}</span>
                 )}

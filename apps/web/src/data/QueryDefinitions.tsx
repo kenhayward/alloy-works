@@ -12,6 +12,7 @@ import { connectionLink, NEW_QUERY_DEFINITION, queryDefinitionLink } from './lin
 import { useDefinitionPlaces } from './places.js';
 import { isRecord } from './shapes.js';
 import { words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -214,7 +215,10 @@ export function QueryDefinitions({
                         {item.title}
                       </a>
                       {item.retired && (
-                        <span className={styles['muted']}> {words('data.retired')}</span>
+                        <>
+                          {' '}
+                          <Lozenge kind="retired" size="small" />
+                        </>
                       )}
                     </td>
                     <td className={styles['muted']} data-content>

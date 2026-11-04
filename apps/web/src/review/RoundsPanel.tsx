@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import styles from './ThreadsPanel.module.css';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,16 +39,10 @@ export interface Round {
   readonly reviewing: boolean;
 }
 
-const STATE_WORDS = {
-  get not_started() {
-    return words('review.not-started');
-  },
-  get in_progress() {
-    return words('review.in-progress');
-  },
-  get complete() {
-    return words('review.done');
-  },
+const STATE_KINDS = {
+  not_started: 'notStarted',
+  in_progress: 'inProgress',
+  complete: 'complete',
 } as const;
 
 /** A round's moment, as the person's language writes it. */
@@ -64,15 +59,10 @@ const refusalOf = (error: unknown, fallback: string) =>
     ? String((error as { message: unknown }).message)
     : fallback;
 
-/** A reviewer's state in words: how they finished, and what they said, counted (RR-D). */
-function stateWords(reviewer: Round['reviewers'][number]): string {
-  const state =
-    reviewer.state === 'complete' && reviewer.outcome !== undefined
-      ? words('review.done-2', { outcome: reviewer.outcome })
-      : STATE_WORDS[reviewer.state];
+/** What a reviewer said, counted, beside their state (RR-D). */
+function stateFacts(reviewer: Round['reviewers'][number]): string {
   return formats().list(
     [
-      state,
       ...(reviewer.threads > 0 ? [words('review.threads', { count: reviewer.threads })] : []),
       ...(reviewer.suggestions > 0
         ? [words('review.suggestions', { count: reviewer.suggestions })]
@@ -212,6 +202,11 @@ export function RoundsPanel({
               {round.title}
             </h3>
             <p className={styles['note']}>
+              {round.closed !== null && (
+                <>
+                  <Lozenge kind="closed" size="small" />{' '}
+                </>
+              )}
               {round.closed !== null
                 ? round.scope.length > 0
                   ? words('review.closed-on-sections', {
@@ -255,7 +250,14 @@ export function RoundsPanel({
                     )}
                     <Outside person={each.person} />
                   </span>
-                  <span className={styles['state']}>{stateWords(each)}</span>
+                  <span className={styles['state']}>
+                    <Lozenge kind={STATE_KINDS[each.state]} size="small">
+                      {each.state === 'complete' && each.outcome !== undefined
+                        ? words('review.done-2', { outcome: each.outcome })
+                        : undefined}
+                    </Lozenge>{' '}
+                    {stateFacts(each)}
+                  </span>
                 </li>
               ))}
             </ul>

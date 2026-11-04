@@ -321,7 +321,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
               <li key={each.id} className={styles['row']} data-unread={!each.read}>
                 <span className={styles['said']}>{said(each)}</span>
                 {/* What it is on, in its state now, to a reader of it alone (LIF-005). */}
-                {each.on?.state && <StateLozenge state={each.on.state} />}
+                {each.on?.state && <StateLozenge size="small" state={each.on.state} />}
                 <span className={styles['muted']}>
                   {words('account.unread', {
                     at: moment(each.at),

@@ -140,10 +140,84 @@
   color: var(--danger);
 }
 
+/* A state, as docs/interface/lifecycle-states.md measures it: a pill, its icon, then its words. Its
+   small size's words stand below ADR-0046's scale (ADR-0081). */
+.lozenge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  height: 22px;
+  padding-inline: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: var(--size-12);
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.lozenge > svg {
+  flex: none;
+}
+
+.lozenge[data-size='small'] {
+  gap: var(--space-4);
+  height: 18px;
+  padding-inline: 5px 7px;
+  font-size: 11px;
+}
+
+.lozenge[data-size='dot'] {
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
+.lozenge[data-tone='neutral'] {
+  border-color: var(--strong-border);
+  background: var(--sunken);
+  color: var(--text);
+}
+
+.lozenge[data-tone='info'] {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.lozenge[data-tone='ok'] {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.lozenge[data-tone='warn'] {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.lozenge[data-tone='muted'] {
+  border-color: var(--strong-border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.lozenge[data-tone='danger'] {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 /* A high-contrast mode takes a dot's colour: a border keeps it a dot, in the text's colour, its words
-   beside it saying the state (CNT-138). */
+   beside it saying the state (CNT-138). A lozenge's ground goes the same way, so its edge and its icon
+   and words tell it (LIF-078). */
 @media (forced-colors: active) {
   .dot {
     border: 2px solid CanvasText;
+  }
+
+  .lozenge {
+    border-color: CanvasText;
+    color: CanvasText;
   }
 }

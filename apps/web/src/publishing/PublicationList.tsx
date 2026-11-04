@@ -198,7 +198,10 @@ export function PublicationList({ client }: { client: Client }) {
                       {item.publisher.displayName ?? ''}
                     </td>
                     <td>
-                      <Lozenge kind="notApproved">{words('publishing.not-approved')}</Lozenge>
+                      <Lozenge
+                        kind={item.approval === 'approved' ? 'approved' : 'notApproved'}
+                        size="small"
+                      />
                     </td>
                   </tr>
                 ))}

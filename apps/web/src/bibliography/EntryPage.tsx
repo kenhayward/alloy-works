@@ -7,6 +7,7 @@ import { Notice } from '../states/Notice.js';
 import { BIBLIOGRAPHY } from './links.js';
 import { authorsFull, authorsLines, authorsTyped, TYPES, yearOf, type Csl } from './shape.js';
 import { formats, words, wordsWith } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -109,6 +110,20 @@ function EntrySource({
       ) : (
         <>
           <p role={flagged ? 'alert' : undefined}>
+            {flagged && (
+              <>
+                <Lozenge
+                  kind={
+                    status.outcome === 'retracted'
+                      ? 'retracted'
+                      : status.outcome === 'superseded'
+                        ? 'superseded'
+                        : 'corrected'
+                  }
+                  size="small"
+                />{' '}
+              </>
+            )}
             {flagged
               ? words('bibliography.status-flagged', {
                   outcome: status.outcome,

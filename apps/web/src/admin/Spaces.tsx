@@ -9,6 +9,7 @@ import styles from './Administration.module.css';
 import { Shown, type Read } from './listing.js';
 import { SpaceDialog, type SpaceAct, type SpaceRow } from './SpaceDialogs.js';
 import { words as say } from '../words/words.js';
+import { Lozenge, stateWord } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -17,7 +18,7 @@ type Show = (typeof SHOWS)[number];
 
 /** A segment's words. */
 const showName = (show: Show): string =>
-  ({ All: say('admin.all'), Active: say('admin.active'), Archived: say('admin.archived') })[show];
+  ({ All: say('admin.all'), Active: say('admin.active'), Archived: stateWord('archived') })[show];
 
 /**
  * Administration's Spaces, in the one shape (ADR-0049, decision 3; the AD plan, AD4): a sentence and
@@ -173,7 +174,7 @@ export function Spaces({
                         </td>
                         <td>
                           {space.archived ? (
-                            <Chip>{say('admin.archived')}</Chip>
+                            <Lozenge kind="archived" size="small" />
                           ) : (
                             <Chip tone="ok">{say('admin.active')}</Chip>
                           )}

@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Versions: days-collapsed, light</title>
+<style>x-dc{display:none!important}</style>
+<style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" data-dc-tpl="1"><style data-dc-tpl="2">
+body{margin:0;background:#e6e9ed}
+</style><style data-dc-tpl="2">
+body{margin:0}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="vp-days-collapsed-light"><div data-dc-tpl="3" style="width: 400px; height: 788px;"><div class="sc-host" data-sc-name="Versions" data-dc-tpl="4"><div data-dc-tpl="3" style="width: 400px; height: 788px; box-sizing: border-box; display: flex; border: 1px solid rgb(225, 229, 234); border-radius: 12px; background: rgb(255, 255, 255); color: rgb(21, 32, 43); font-family: &quot;IBM Plex Sans&quot;, system-ui, sans-serif; font-size: 13px; overflow: hidden;">
+  <div data-dc-tpl="4" style="position: relative; flex: 1 1 0px; min-width: 0px; display: flex; flex-direction: column;">
+
+    
+      <div data-dc-tpl="6" style="flex: 0 0 auto; height: 52px; box-sizing: border-box; padding: 0px 8px 0px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgb(225, 229, 234);">
+        <h2 data-dc-tpl="7" style="margin: 0px; font-size: 15px; font-weight: 600;">Versions</h2>
+        <span data-dc-tpl="8" style="padding: 1px 8px; border-radius: 999px; border: 1px solid rgb(225, 229, 234); background: rgb(238, 241, 244); font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 11px; color: rgb(86, 96, 108);"><span class="sc-interp">76</span></span>
+        <button data-dc-tpl="9" type="button" title="Line: the main line. Translations and divergent lines have their own history" style="height: 24px; display: flex; align-items: center; gap: 4px; padding: 0px 6px; border: 0px; border-radius: 6px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 12px; white-space: nowrap; cursor: pointer;"><svg data-dc-tpl="10" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="11" d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6M18 9a9 9 0 0 1-9 9"></path></svg>Main line<svg data-dc-tpl="12" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="13" d="M6 9l6 6 6-6"></path></svg></button>
+        <span data-dc-tpl="14" style="flex: 1 1 0%;"></span>
+        
+          <button data-dc-tpl="16" type="button" aria-label="Save a version" title="Save a version" aria-pressed="false" style="width: 30px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(22, 90, 114); cursor: pointer;"><svg data-dc-tpl="17" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M5 3h11l3 3v15H5zM8 3v5h7M8 21v-7h8v7"></path></svg></button>
+        
+          <button data-dc-tpl="16" type="button" aria-label="Compare two versions" title="Compare two versions" aria-pressed="false" style="width: 30px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="17" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"></path></svg></button>
+        
+          <button data-dc-tpl="16" type="button" aria-label="Collapse every day" title="Collapse every day" aria-pressed="false" style="width: 30px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="17" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M7 20l5-5 5 5M7 4l5 5 5-5"></path></svg></button>
+        
+          <button data-dc-tpl="16" type="button" aria-label="Go to a date" title="Go to a date" aria-pressed="false" style="width: 30px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="17" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"></path></svg></button>
+        
+      </div>
+
+      <div data-dc-tpl="19" style="flex: 0 0 auto; padding: 10px 12px; display: flex; gap: 6px; border-bottom: 1px solid rgb(225, 229, 234);">
+        <label data-dc-tpl="20" style="flex: 1 1 0%; min-width: 0px; height: 32px; box-sizing: border-box; padding: 0px 8px; display: flex; align-items: center; gap: 6px; border: 1px solid rgb(225, 229, 234); border-radius: 8px; background: rgb(238, 241, 244); color: rgb(86, 96, 108);">
+          <svg data-dc-tpl="21" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="22" d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"></path></svg>
+          <span data-dc-tpl="23" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px);">Find a version</span>
+          <input data-dc-tpl="24" type="text" placeholder="Number, note, person or date" style="flex: 1 1 0%; min-width: 0px; border: 0px; outline: none; background: transparent; color: rgb(21, 32, 43); font-family: inherit; font-size: 12px;">
+        </label>
+        <button data-dc-tpl="25" type="button" aria-label="Filter versions" title="Filter: state, person, milestones" style="width: 32px; height: 32px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid rgb(225, 229, 234); border-radius: 8px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="26" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="27" d="M3 5h18l-7 8v6l-4 2v-8z"></path></svg></button>
+      </div>
+
+      
+        <div data-dc-tpl="29" style="flex: 0 0 auto; padding: 8px 8px 8px 12px; border-bottom: 1px solid rgb(225, 229, 234);">
+          <div data-dc-tpl="30" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgb(86, 96, 108);"><span data-dc-tpl="31" style="flex: 1 1 0%;">Versions a week</span><span data-dc-tpl="32"><span class="sc-interp">Shown: 21 Oct to today</span></span><button data-dc-tpl="33" type="button" aria-label="Hide the activity graph" title="Hide the activity graph. The toolbar shows it again" style="width: 22px; height: 22px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="34" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="35" d="M18 15l-6-6-6 6"></path></svg></button></div>
+          <div data-dc-tpl="36" role="img" aria-label="Versions a week since March. Approved in June and October. The last two weeks are shown." style="position: relative; margin-top: 6px; height: 46px; display: flex; align-items: flex-end; gap: 2px;">
+            
+              <span data-dc-tpl="38" title="3 versions, week 1" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="4 versions, week 2" style="position: relative; flex: 1 1 0px; height: 28px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 3" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="5 versions, week 4" style="position: relative; flex: 1 1 0px; height: 35px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 5" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 6" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 7" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="4 versions, week 8" style="position: relative; flex: 1 1 0px; height: 28px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="6 versions, week 9" style="position: relative; flex: 1 1 0px; height: 42px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 10" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 11" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 12" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="0 versions, week 13" style="position: relative; flex: 1 1 0px; height: 3px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"><span data-dc-tpl="40" style="position: absolute; left: 50%; top: -13px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: rgb(29, 113, 72); box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px;"></span></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 14" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 15" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 16" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 17" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="4 versions, week 18" style="position: relative; flex: 1 1 0px; height: 28px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 19" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 20" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 21" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="0 versions, week 22" style="position: relative; flex: 1 1 0px; height: 3px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 23" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 24" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 25" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 26" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 27" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 28" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="1 version, week 29" style="position: relative; flex: 1 1 0px; height: 7px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 30" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="4 versions, week 31" style="position: relative; flex: 1 1 0px; height: 28px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="2 versions, week 32" style="position: relative; flex: 1 1 0px; height: 14px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="3 versions, week 33" style="position: relative; flex: 1 1 0px; height: 21px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"></span>
+            
+              <span data-dc-tpl="38" title="5 versions, week 34" style="position: relative; flex: 1 1 0px; height: 35px; border-radius: 2px 2px 0px 0px; background: rgb(201, 208, 216);"><span data-dc-tpl="40" style="position: absolute; left: 50%; top: -13px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: rgb(29, 113, 72); box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px;"></span></span>
+            
+              <span data-dc-tpl="38" title="6 versions, week 35" style="position: relative; flex: 1 1 0px; height: 42px; border-radius: 2px 2px 0px 0px; background: rgb(29, 106, 133);"></span>
+            
+              <span data-dc-tpl="38" title="4 versions, week 36" style="position: relative; flex: 1 1 0px; height: 28px; border-radius: 2px 2px 0px 0px; background: rgb(29, 106, 133);"></span>
+            
+            <span data-dc-tpl="41" aria-hidden="true" style="position: absolute; right: 0px; bottom: -2px; top: -4px; width: 6%; border: 1.5px solid rgb(29, 106, 133); border-radius: 4px; background: rgba(29, 106, 133, 0.1);"></span>
+          </div>
+          <div data-dc-tpl="42" aria-hidden="true" style="margin-top: 4px; display: flex; justify-content: space-between; font-size: 10px; color: rgb(86, 96, 108);"><span data-dc-tpl="43">Mar</span><span data-dc-tpl="44">May</span><span data-dc-tpl="45">Jul</span><span data-dc-tpl="46">Sep</span><span data-dc-tpl="47">Nov</span></div>
+        </div>
+      
+
+      <div data-dc-tpl="48" style="position: relative; flex: 1 1 0px; min-height: 0px; overflow-y: auto;">
+
+        
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="true" aria-label="Today · 4 Nov, 3 versions" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M6 9l6 6 6-6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Today · 4 Nov</span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">3</span></span>
+            </button>
+            
+            
+              <div data-dc-tpl="68" style="position: relative; padding: 0px 12px 0px 40px; background: transparent;">
+                <span data-dc-tpl="69" aria-hidden="true" style="position: absolute; left: 21px; top: 0px; bottom: 0px; width: 2px; background: rgb(225, 229, 234);"></span>
+                <span data-dc-tpl="70" aria-hidden="true" style="position: absolute; left: 16px; top: 12px; width: 12px; height: 12px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid rgb(21, 32, 43); background: rgb(29, 106, 133); color: rgb(21, 32, 43);"></span>
+                <div data-dc-tpl="74" role="button" tabindex="0" aria-pressed="false" aria-label="Version 2.14, Today · 4 Nov 09:41, Ada Moreau, Draft" style="padding: 8px 0px; border-bottom: 1px solid rgb(225, 229, 234); cursor: pointer;">
+                  <div data-dc-tpl="75" style="display: flex; align-items: center; gap: 8px;">
+                    
+                    <b data-dc-tpl="78" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 13px; font-weight: 600;"><span class="sc-interp">2.14</span></b>
+                    <span data-dc-tpl="79" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 12px; color: rgb(86, 96, 108);"><span class="sc-interp">09:41</span></span>
+                    <span data-dc-tpl="81" style="padding: 0px 6px; border-radius: 999px; border: 1px solid rgb(29, 106, 133); color: rgb(22, 90, 114); font-size: 10px; font-weight: 600; line-height: 16px;">Current</span>
+                    <span data-dc-tpl="82" style="flex: 1 1 0%;"></span>
+                    <span data-dc-tpl="83" style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0px 7px; border-radius: 999px; border: 1px solid rgb(201, 208, 216); background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-size: 11px; font-weight: 600; white-space: nowrap;"><svg data-dc-tpl="84" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3.2" aria-hidden="true"><path data-dc-tpl="85" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path></svg><span class="sc-interp">Draft</span></span>
+                  </div>
+                  <div data-dc-tpl="86" style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(86, 96, 108);">
+                    <span data-dc-tpl="87" aria-hidden="true" style="flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 8px; font-weight: 600;"><span class="sc-interp">AM</span></span>
+                    <span data-dc-tpl="88" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Ada Moreau</span></span>
+                  </div>
+                  <div data-dc-tpl="90" style="margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Executive summary: cite FIN-3101</span></div>
+                  
+                  
+                  
+                    <div data-dc-tpl="105" role="toolbar" aria-label="Version 2.14" style="margin-top: 8px; display: flex; gap: 4px;">
+                      
+                        <button data-dc-tpl="107" type="button" aria-label="View version 2.14, read only" title="View version 2.14, read only" style="width: 32px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid rgb(225, 229, 234); border-radius: 7px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="108" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="109" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0"></path></svg></button>
+                      
+                        <button data-dc-tpl="107" type="button" aria-label="Compare 2.14 with the current version" title="Compare 2.14 with the current version" style="width: 32px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 7px; background: rgb(228, 241, 245); color: rgb(22, 90, 114); cursor: pointer;"><svg data-dc-tpl="108" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="109" d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"></path></svg></button>
+                      
+                        <button data-dc-tpl="107" type="button" aria-label="Compare 2.14 with approved 2.0" title="Compare 2.14 with approved 2.0" style="width: 32px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 7px; background: rgb(226, 243, 233); color: rgb(29, 113, 72); cursor: pointer;"><svg data-dc-tpl="108" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="109" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M8 12l3 3 5-6"></path></svg></button>
+                      
+                        <button data-dc-tpl="107" type="button" aria-label="Copy a link to 2.14" title="Copy a link to 2.14" style="width: 32px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid rgb(225, 229, 234); border-radius: 7px; background: transparent; color: rgb(21, 32, 43); cursor: pointer;"><svg data-dc-tpl="108" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="109" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></button>
+                      
+                        <button data-dc-tpl="107" type="button" aria-label="More: download as PDF, edit the note, pin to a baseline" title="More: download as PDF, edit the note, pin to a baseline" style="width: 32px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 1px solid rgb(225, 229, 234); border-radius: 7px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="108" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="109" d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button>
+                      
+                    </div>
+                  
+                </div>
+              </div>
+            
+              <div data-dc-tpl="68" style="position: relative; padding: 0px 12px 0px 40px; background: transparent;">
+                <span data-dc-tpl="69" aria-hidden="true" style="position: absolute; left: 21px; top: 0px; bottom: 0px; width: 2px; background: rgb(225, 229, 234);"></span>
+                <span data-dc-tpl="70" aria-hidden="true" style="position: absolute; left: 16px; top: 12px; width: 12px; height: 12px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid rgb(21, 32, 43); background: rgb(255, 255, 255); color: rgb(21, 32, 43);"></span>
+                <div data-dc-tpl="74" role="button" tabindex="0" aria-pressed="false" aria-label="Version 2.13, Today · 4 Nov 08:55, Ravi Menon, Draft" style="padding: 8px 0px; border-bottom: 1px solid rgb(225, 229, 234); cursor: pointer;">
+                  <div data-dc-tpl="75" style="display: flex; align-items: center; gap: 8px;">
+                    
+                    <b data-dc-tpl="78" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 13px; font-weight: 600;"><span class="sc-interp">2.13</span></b>
+                    <span data-dc-tpl="79" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 12px; color: rgb(86, 96, 108);"><span class="sc-interp">08:55</span></span>
+                    
+                    <span data-dc-tpl="82" style="flex: 1 1 0%;"></span>
+                    <span data-dc-tpl="83" style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0px 7px; border-radius: 999px; border: 1px solid rgb(201, 208, 216); background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-size: 11px; font-weight: 600; white-space: nowrap;"><svg data-dc-tpl="84" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3.2" aria-hidden="true"><path data-dc-tpl="85" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path></svg><span class="sc-interp">Draft</span></span>
+                  </div>
+                  <div data-dc-tpl="86" style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(86, 96, 108);">
+                    <span data-dc-tpl="87" aria-hidden="true" style="flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgb(251, 233, 214); color: rgb(154, 70, 16); font-size: 8px; font-weight: 600;"><span class="sc-interp">RM</span></span>
+                    <span data-dc-tpl="88" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Ravi Menon</span></span>
+                  </div>
+                  <div data-dc-tpl="90" style="margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Add the confidence interval to 71%</span></div>
+                  
+                  
+                  
+                </div>
+              </div>
+            
+              <div data-dc-tpl="68" style="position: relative; padding: 0px 12px 0px 40px; background: transparent;">
+                <span data-dc-tpl="69" aria-hidden="true" style="position: absolute; left: 21px; top: 0px; bottom: 0px; width: 2px; background: rgb(225, 229, 234);"></span>
+                <span data-dc-tpl="70" aria-hidden="true" style="position: absolute; left: 16px; top: 12px; width: 12px; height: 12px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid rgb(21, 32, 43); background: rgb(255, 255, 255); color: rgb(21, 32, 43);"></span>
+                <div data-dc-tpl="74" role="button" tabindex="0" aria-pressed="false" aria-label="Version 2.12, Today · 4 Nov 08:20, Ada Moreau, Draft" style="padding: 8px 0px; border-bottom: 1px solid rgb(225, 229, 234); cursor: pointer;">
+                  <div data-dc-tpl="75" style="display: flex; align-items: center; gap: 8px;">
+                    
+                    <b data-dc-tpl="78" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 13px; font-weight: 600;"><span class="sc-interp">2.12</span></b>
+                    <span data-dc-tpl="79" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 12px; color: rgb(86, 96, 108);"><span class="sc-interp">08:20</span></span>
+                    
+                    <span data-dc-tpl="82" style="flex: 1 1 0%;"></span>
+                    <span data-dc-tpl="83" style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0px 7px; border-radius: 999px; border: 1px solid rgb(201, 208, 216); background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-size: 11px; font-weight: 600; white-space: nowrap;"><svg data-dc-tpl="84" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3.2" aria-hidden="true"><path data-dc-tpl="85" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path></svg><span class="sc-interp">Draft</span></span>
+                  </div>
+                  <div data-dc-tpl="86" style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(86, 96, 108);">
+                    <span data-dc-tpl="87" aria-hidden="true" style="flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 8px; font-weight: 600;"><span class="sc-interp">AM</span></span>
+                    <span data-dc-tpl="88" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Ada Moreau</span></span>
+                  </div>
+                  
+                  
+                    <div data-dc-tpl="92" style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px;">
+                      <span data-dc-tpl="94" title="Restored from version 2.10" style="height: 18px; display: inline-flex; align-items: center; gap: 4px; padding: 0px 6px; border-radius: 4px; background: rgb(238, 241, 244); border: 1px solid rgb(225, 229, 234); color: rgb(154, 70, 16); font-size: 10px;"><svg data-dc-tpl="95" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="96" d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"></path></svg><span class="sc-interp">Restored from 2.10</span></span>
+                    </div>
+                  
+                  
+                  
+                </div>
+              </div>
+            
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Yesterday · 3 Nov, 4 versions, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Yesterday · 3 Nov</span></span>
+              
+                
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(220, 241, 228); color: rgb(29, 113, 72); font-size: 7px; font-weight: 600;"><span class="sc-interp">MC</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(227, 232, 238); color: rgb(52, 66, 79); font-size: 7px; font-weight: 600;"><span class="sc-interp">CT</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(251, 225, 223); color: rgb(180, 35, 24); font-size: 7px; font-weight: 600;"><span class="sc-interp">TR</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 7px; font-weight: 600;"><span class="sc-interp">AM</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">4 versions</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Mon · 2 Nov, 2 versions, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Mon · 2 Nov</span></span>
+              
+                
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(251, 233, 214); color: rgb(154, 70, 16); font-size: 7px; font-weight: 600;"><span class="sc-interp">RM</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 7px; font-weight: 600;"><span class="sc-interp">AM</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">2 versions</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Fri · 30 Oct, 3 versions, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Fri · 30 Oct</span></span>
+              
+                
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(220, 241, 228); color: rgb(29, 113, 72); font-size: 7px; font-weight: 600;"><span class="sc-interp">MC</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 7px; font-weight: 600;"><span class="sc-interp">AM</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(235, 229, 251); color: rgb(91, 63, 184); font-size: 7px; font-weight: 600;"><span class="sc-interp">GI</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">3 versions</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Wed · 28 Oct, 2 versions, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Wed · 28 Oct</span></span>
+              
+                
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 7px; font-weight: 600;"><span class="sc-interp">AM</span></span><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(251, 233, 214); color: rgb(154, 70, 16); font-size: 7px; font-weight: 600;"><span class="sc-interp">RM</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">2 versions</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Tue · 20 Oct, 1 version, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Tue · 20 Oct</span></span>
+              
+                <span data-dc-tpl="57" aria-hidden="true" style="display: flex; gap: 2px;"><span data-dc-tpl="59" title="Approved" style="width: 18px; height: 18px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid transparent; background: rgb(226, 243, 233); color: rgb(29, 113, 72);"><svg data-dc-tpl="60" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=""><path data-dc-tpl="61" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M8 12l3 3 5-6"></path></svg></span></span>
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(220, 241, 228); color: rgb(29, 113, 72); font-size: 7px; font-weight: 600;"><span class="sc-interp">MC</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">1 version</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Wed · 14 Oct, 1 version, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Wed · 14 Oct</span></span>
+              
+                <span data-dc-tpl="57" aria-hidden="true" style="display: flex; gap: 2px;"><span data-dc-tpl="59" title="In review" style="width: 18px; height: 18px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid transparent; background: rgb(239, 234, 252); color: rgb(91, 63, 184);"><svg data-dc-tpl="60" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=""><path data-dc-tpl="61" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0"></path></svg></span></span>
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(215, 236, 242); color: rgb(22, 90, 114); font-size: 7px; font-weight: 600;"><span class="sc-interp">AM</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">1 version</span></span>
+            </button>
+            
+          
+            <button data-dc-tpl="51" type="button" aria-expanded="false" aria-label="Thu · 8 Oct, 1 version, collapsed" title="Collapse or expand this day" style="position: sticky; top: 0px; z-index: 2; width: 100%; height: 36px; box-sizing: border-box; padding: 0px 12px 0px 10px; display: flex; align-items: center; gap: 6px; border-width: 0px 0px 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(225, 229, 234); border-image: none; background: rgb(255, 255, 255); color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-align: left; cursor: pointer;">
+              <svg data-dc-tpl="52" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="53" d="M9 6l6 6-6 6"></path></svg>
+              <span data-dc-tpl="54" style="flex: 1 1 0%; text-transform: uppercase; color: rgb(21, 32, 43);"><span class="sc-interp">Thu · 8 Oct</span></span>
+              
+                <span data-dc-tpl="57" aria-hidden="true" style="display: flex; gap: 2px;"><span data-dc-tpl="59" title="Returned" style="width: 18px; height: 18px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid transparent; background: rgb(253, 240, 225); color: rgb(154, 70, 16);"><svg data-dc-tpl="60" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=""><path data-dc-tpl="61" d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></span></span>
+                <span data-dc-tpl="62" aria-hidden="true" style="display: flex; padding-left: 4px;"><span data-dc-tpl="64" style="width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; border: 2px solid rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; background: rgb(235, 229, 251); color: rgb(91, 63, 184); font-size: 7px; font-weight: 600;"><span class="sc-interp">GI</span></span></span>
+              
+              <span data-dc-tpl="65" style="min-width: 22px; text-align: right; font-weight: 500; letter-spacing: 0px; color: rgb(86, 96, 108);"><span class="sc-interp">1 version</span></span>
+            </button>
+            
+          
+          <div data-dc-tpl="110" style="padding: 12px 16px 18px; font-size: 11px; color: rgb(86, 96, 108);">Earlier versions load as you scroll · <span class="sc-interp">59</span> more</div>
+        
+
+      </div>
+
+      
+      
+    
+
+    
+
+    
+  </div>
+
+  <div data-dc-tpl="243" role="tablist" aria-orientation="vertical" aria-label="Side panels" style="flex: 0 0 auto; width: 48px; box-sizing: border-box; padding: 10px 0px; display: flex; flex-direction: column; align-items: center; gap: 6px; border-left: 1px solid rgb(225, 229, 234);">
+    <button data-dc-tpl="244" type="button" aria-label="Collapse panel" style="width: 32px; height: 32px; padding: 0px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="245" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="246" d="M9 6l6 6-6 6"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Table" title="Table" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Layers" title="Layers" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M12 2 2 7l10 5 10-5zM2 12l10 5 10-5M2 17l10 5 10-5"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Outline" title="Outline" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Assistant" title="Assistant" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M12 2.5C13.2 7.8 16.2 10.8 21.5 12C16.2 13.2 13.2 16.2 12 21.5C10.8 16.2 7.8 13.2 2.5 12C7.8 10.8 10.8 7.8 12 2.5Z"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="true" aria-label="Versions" title="Versions" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: rgb(228, 241, 245); color: rgb(22, 90, 114); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path></svg><span data-dc-tpl="252" aria-hidden="true" style="position: absolute; right: -6px; top: 8px; width: 3px; height: 20px; border-radius: 3px 0px 0px 3px; background: rgb(29, 106, 133);"></span></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Publish" title="Publish" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M22 2l-7 20-4-9-9-4zM22 2 11 13"></path></svg></button>
+    
+      <button data-dc-tpl="248" type="button" role="tab" aria-selected="false" aria-label="Threads" title="Threads" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="249" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="250" d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2zM18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"></path></svg></button>
+    
+  </div></div></div></div></div></div>
+
+
+</body></html>
