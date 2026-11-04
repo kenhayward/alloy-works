@@ -3,6 +3,7 @@ import { Icon } from '../editor/Icon.js';
 import type { createApiClient } from '@alloy-works/api-client';
 import { statusWords, translationKind, type TranslationSaid } from '../translation/Translations.js';
 import type { OverrideView } from './overrides.js';
+import type { ContentDocument } from '@alloy-works/domain';
 import { Chip } from '../parts/Chip.js';
 import {
   conditions,
@@ -167,8 +168,10 @@ export interface Place {
   readonly number?: string;
   /** How many characters into the text it was opened, for the caret; absent if not by the text. */
   readonly openAt?: number;
-  /** Closes it, as Done does. */
-  readonly onDone: () => void;
+  /** Closes it, as Done does, with what it last held. */
+  readonly onDone: (last?: ContentDocument) => void;
+  /** What stands in its place while it opens: the text as it was read (the EP plan, EP2). */
+  readonly whileOpening?: React.ReactNode;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
   readonly referenceContext?: ReferenceContext | null;
   /**
@@ -489,6 +492,7 @@ export function DocumentText({
   translated,
   overridesOf,
   onOverride,
+  onPointedAt,
   choosing,
   bindingStates = null,
   onProvenance,
@@ -524,7 +528,7 @@ export function DocumentText({
   /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
-  onEdit?: (node: string | null) => void;
+  onEdit?: (node: string | null, last?: ContentDocument) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
   editor?: (component: string, place: Place) => React.ReactNode;
   /**
@@ -555,6 +559,8 @@ export function DocumentText({
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
   /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
   onOverride?: (node: string) => void;
+  /** A part clicked or opened in the text, in any mode: the page chooses it (the EP plan, EP1). */
+  onPointedAt?: (node: string) => void;
   /**
    * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
    * reader who may restructure the document. Without it the label says the version and offers nothing.
@@ -622,6 +628,7 @@ export function DocumentText({
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
   const open = (node: string) => (at: number) => {
     setOpenAt(at);
+    onPointedAt?.(node);
     onEdit?.(node);
   };
   const numbers = useMemo(
@@ -685,7 +692,11 @@ export function DocumentText({
     // In a holder the measure wide on the canvas, so the heading's indents and alignment stand inside
     // the measure while its section and component keep the column's width (issue #333).
     return (
-      <div className={styles['measured']}>
+      <div
+        className={styles['measured']}
+        // A component's heading is within its box, which answers for the whole of it.
+        {...(node.type === 'section' && onPointedAt ? { onClick: () => onPointedAt(node.id) } : {})}
+      >
         <Heading depth={depth}>
           {at !== undefined && (
             <>
@@ -719,7 +730,12 @@ export function DocumentText({
           data-marked={marked === node.id ? 'true' : undefined}
           data-changed={changed?.has(node.id) === true ? 'true' : undefined}
         >
-          <div className={styles['component']} data-component="" data-editing={editing === node.id}>
+          <div
+            className={styles['component']}
+            data-component=""
+            data-editing={editing === node.id}
+            onClick={onPointedAt ? () => onPointedAt(node.id) : undefined}
+          >
             {openComments?.byNode.has(node.id) === true && (
               <CommentGlyph
                 comments={openComments.byNode.get(node.id)!}
@@ -849,6 +865,14 @@ export function DocumentText({
                 {say('document.this-document-overrides-some-of')}
               </p>
             )}
+            {editing === node.id && newer?.byNode.has(node.id) && (
+              <p className={styles['cannot']} role="note">
+                {say('document.editing-the-newer-version', {
+                  newer: newer.byNode.get(node.id)!.newer.number,
+                  pinned: newer.byNode.get(node.id)!.pinned.number,
+                })}
+              </p>
+            )}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
               <NewerVersion
                 // A comparison shown is of the pair it was asked for: another pair starts afresh.
@@ -899,7 +923,19 @@ export function DocumentText({
                         }
                       : {}),
                     ...(onSaved ? { onSaved } : {}),
-                    onDone: () => onEdit?.(null),
+                    onDone: (last) => onEdit?.(null, last),
+                    ...(texts?.has(node.id)
+                      ? {
+                          whileOpening: (
+                            <RenderedText
+                              content={texts.get(node.id)}
+                              context={contexts.get(node.id) ?? null}
+                              bindings={bindingContextsByNode?.get(node.id) ?? null}
+                              marks={threadMarks?.get(node.id)}
+                            />
+                          ),
+                        }
+                      : {}),
                   })
                 : texts?.has(node.id) && (
                     <RenderedText

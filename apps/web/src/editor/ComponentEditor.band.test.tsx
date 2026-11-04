@@ -19,6 +19,56 @@ function Banded({ children }: { children: ReactNode }) {
 
 const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
 
+describe('a component opening in place (the EP plan, EP2)', () => {
+  it('stands what it is given while it opens, and the keys typed meanwhile arrive', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+        'POST /v1/components/{id}/lock': () => json(200, lock),
+      },
+      quick,
+      false,
+      { whileOpening: <p>The words as read.</p>, openAt: 0, onDone: () => undefined },
+    );
+    expect(screen.getByText('The words as read.')).toBeInTheDocument();
+    expect(screen.queryByText('Opening...')).toBeNull();
+
+    await userEvent.keyboard('Ab');
+    answer(json(200, opened()));
+
+    const view = await surface();
+    expect(screen.queryByText('The words as read.')).toBeNull();
+    await waitFor(() => expect(view.state.doc.textContent).toBe('AbUnbox the printer.'));
+  });
+
+  it('leaves alone the keys typed where something else holds the focus', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+      },
+      quick,
+      false,
+      {
+        whileOpening: <input aria-label="Elsewhere" />,
+        openAt: 0,
+        onDone: () => undefined,
+      },
+    );
+    await userEvent.type(screen.getByLabelText('Elsewhere'), 'Ab');
+    answer(json(200, opened()));
+    const view = await surface();
+    expect(view.state.doc.textContent).toBe('Unbox the printer.');
+  });
+});
+
 describe('a component on its own page, reading (the CE plan, CE3)', () => {
   const page = (reading: boolean) => ({
     ownPage: {

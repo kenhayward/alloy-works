@@ -135,7 +135,7 @@ import {
   useReadingPosition,
   watchReader,
 } from './position.js';
-import type { Choosing, OfferedVersion } from './VersionChoice.js';
+import { versionSaid, type Choosing, type OfferedVersion } from './VersionChoice.js';
 import type { VersionNamed } from './NewerVersion.js';
 import { ModeSwitch } from '../parts/ModeSwitch.js';
 import { usePanelChoice } from '../parts/usePanelChoice.js';
@@ -2014,6 +2014,9 @@ export function DocumentPage({
   useReachableDesk(textColumn);
   const [inView, setInView] = useState<string | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
+  // The part last clicked in the text, for the outline to choose (the EP plan, EP1).
+  const [pointed, setPointed] = useState<{ node: string; arrival: number } | null>(null);
+  const chosenNow = useRef<string | null>(null);
   // The parts the assistant's last answer cited, stepped through above the text (the DP plan).
   const [citedNodes, setCitedNodes] = useState<readonly string[]>([]);
   // The references an accepted assistant edit changed, marked until the page is left (issue #876),
@@ -2721,7 +2724,9 @@ export function DocumentPage({
                 previewing={preview.pane !== null}
                 startWidth={outlinePane.width}
                 // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
-                panelsWidth={(heldTable.holds ? tablePane : dockPane).width}
+                panelsWidth={
+                  (heldTable.holds && shownDock === 'table' ? tablePane : dockPane).width
+                }
               >
                 {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
                 <ShellSideDock>
@@ -2868,6 +2873,14 @@ export function DocumentPage({
                   components={componentsNow}
                   onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
                   linked={linked}
+                  pointed={pointed}
+                  versionOf={(node) =>
+                    node.type === 'reference' &&
+                    node.component !== null &&
+                    (node.mode.kind === 'approved' || resolved.has(node.id))
+                      ? versionSaid(node.mode, resolved.get(node.id), revisionByNode.get(node.id))
+                      : undefined
+                  }
                   usedIn={(component) => (
                     <UsedInRow
                       client={client}
@@ -2882,6 +2895,7 @@ export function DocumentPage({
                   }
                   inView={inView}
                   onSelected={(node) => {
+                    chosenNow.current = node;
                     // The address follows what is chosen, without a history entry per arrow key and without a
                     // `hashchange`, so a reload or a copy of the address comes back to it.
                     window.history.replaceState(
@@ -3325,7 +3339,7 @@ export function DocumentPage({
                   <ShellPanelsEdge>
                     <PaneSeparator
                       label={say('document.document-panels')}
-                      pane={heldTable.holds ? tablePane : dockPane}
+                      pane={heldTable.holds && shownDock === 'table' ? tablePane : dockPane}
                       edge="end"
                     />
                   </ShellPanelsEdge>
@@ -3431,6 +3445,21 @@ export function DocumentPage({
                     marked={marked}
                     resolved={resolved}
                     revisions={revisionByNode}
+                    onPointedAt={(node) => {
+                      // Each click in a part already chosen asks nothing of a page this large.
+                      if (chosenNow.current === node) return;
+                      chosenNow.current = node;
+                      setPointed((was) => ({ node, arrival: (was?.arrival ?? 0) + 1 }));
+                      window.history.replaceState(
+                        window.history.state,
+                        '',
+                        nodeLink(document.id, node),
+                      );
+                      arriving.current = null;
+                      stopWaiting();
+                      letGo();
+                      if (node !== marked) setMarked(null);
+                    }}
                     lines={lineByNode}
                     diverged={divergedByNode}
                     translated={translatedByNode}
@@ -3547,7 +3576,23 @@ export function DocumentPage({
                     {...(principalId === undefined || !authoring
                       ? {}
                       : {
-                          onEdit: (node: string | null) => {
+                          onEdit: (node: string | null, last?: unknown) => {
+                            // What it closed on stands until the read below answers, so that the
+                            // words never leave the page: only where that is what the page will
+                            // show, a part at the latest with nothing overridden (EP2).
+                            const closing =
+                              editing === null
+                                ? undefined
+                                : placeOf(document.outline.nodes, editing)?.node;
+                            if (
+                              node === null &&
+                              last !== undefined &&
+                              closing?.type === 'reference' &&
+                              closing.mode.kind === 'latest' &&
+                              (overridesByNode.get(closing.id)?.length ?? 0) === 0
+                            ) {
+                              setTexts((was) => new Map(was).set(closing.id, last));
+                            }
                             setEditing(node);
                             // Closing reads the text again, so the card shows what was saved, and its
                             // bindings from the version it cut.

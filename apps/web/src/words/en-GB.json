@@ -1562,6 +1562,7 @@
   "document.suggestions-2": "{count, plural, one {# suggestion} other {# suggestions}}",
   "document.suggest-changes-to": "Suggest changes to {value1}",
   "document.suggest-changes": "Suggest changes",
+  "document.editing-the-newer-version": "You are editing version {newer}. This document shows version {pinned} until you choose otherwise.",
   "document.this-document-overrides-some-of": "This document overrides some of this component''s paragraphs. You are editing the component itself, as every document has it.",
   "document.the-document-s-text": "The document''s text",
   "document.restore": "Restore {number}",

@@ -489,7 +489,9 @@ describe('the address of every node', () => {
                 lock: null,
               },
             ],
-            versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+            versions: [
+              { id: 'vvvvvvvv-0000-4000-8000-000000000001', number: '0.2', content: printer },
+            ],
           });
         }
         return fake.fetch(request);
@@ -532,6 +534,46 @@ describe('the address of every node', () => {
       expect(text.querySelector('[data-component]')).not.toBeNull();
     });
 
+    it('chooses the part clicked in the text, for the Part panel and the address, and moves nothing', async () => {
+      const text = await openOneScroll();
+      const panel = screen.getByRole('tabpanel', { name: 'Part' });
+      // The first node until something else is chosen.
+      expect(within(panel).getByText(/^Section/)).toBeInTheDocument();
+      const scrolled = vi.fn();
+      Element.prototype.scrollIntoView = scrolled;
+
+      await userEvent.click(within(text).getByText('Unbox the printer.'));
+
+      const part = screen.getByRole('tabpanel', { name: 'Part' });
+      expect(within(part).getByText(/^Component/)).toBeInTheDocument();
+      // Which version, by its number, wherever the panel is read (the EP plan, EP1).
+      expect(within(part).getByText(/^Version .*latest/)).toBeInTheDocument();
+      expect(window.location.hash).toContain(`/nodes/${REFERENCE}`);
+      expect(scrolled).not.toHaveBeenCalled();
+      // The tree says so, with the focus left alone.
+      expect(
+        within(screen.getByRole('tree')).getByRole('treeitem', { selected: true }),
+      ).toHaveTextContent(/Install the printer/);
+      expect(screen.getByRole('tree').contains(document.activeElement)).toBe(false);
+    });
+
+    it('chooses a section by its heading, leaving the tab that is showing alone', async () => {
+      const text = await openOneScroll();
+      await userEvent.click(within(text).getByText('Unbox the printer.'));
+      const tabs = screen.getByRole('tablist', { name: 'Document panels' });
+      await userEvent.click(within(tabs).getByRole('tab', { name: 'Threads' }));
+
+      await userEvent.click(within(text).getByRole('heading', { name: /Setting up/ }));
+
+      expect(within(tabs).getByRole('tab', { name: 'Threads' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      expect(
+        within(screen.getByRole('tree')).getByRole('treeitem', { selected: true }),
+      ).toHaveTextContent(/Setting up/);
+    });
+
     it("CNT-073 shows a component's edges and label on hover, on focus and under Show boundaries, and never otherwise", async () => {
       const text = await openOneScroll();
       // The label is there for a screen reader and the keyboard, and seen only when asked for.
@@ -550,12 +592,14 @@ describe('the address of every node', () => {
         expect(ruleOf(shown), shown).toMatch(/opacity: 1/);
       }
       for (const edged of [
-        '.component:hover',
-        '.component:focus-within',
-        ".text[data-boundaries='shown'] .component",
+        '.component:hover::before',
+        '.component:focus-within::before',
+        ".text[data-boundaries='shown'] .component::before",
       ]) {
-        expect(ruleOf(edged), edged).toMatch(/outline: 1px solid/);
+        // A rule down its left edge, a border so that forced colours keep it (the EP plan, EP2).
+        expect(ruleOf(edged), edged).toMatch(/border-inline-start: 3px solid/);
       }
+      expect(ruleOf('.component:hover') ?? '').not.toMatch(/outline/);
       // Show boundaries shows them all, and is kept for this reader.
       // A checked item of the View menu (ADR-0075), checked while they show.
       expect(text).not.toHaveAttribute('data-boundaries');
