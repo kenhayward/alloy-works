@@ -499,7 +499,7 @@ describe('the workspace', () => {
 
     await userEvent.click(within(tabs).getByRole('tab', { name: 'Versions' }));
     const versions = screen.getByRole('tabpanel', { name: 'Versions' });
-    expect(await within(versions).findByText('Ada, 17 Sept', { exact: false })).toBeInTheDocument();
+    expect(await within(versions).findByText('17 Sept', { exact: false })).toBeInTheDocument();
     expect(within(versions).getByText('First cut')).toBeInTheDocument();
 
     await userEvent.click(within(tabs).getByRole('tab', { name: 'Access' }));
@@ -542,6 +542,7 @@ describe('the workspace', () => {
     await userEvent.click(within(tabs).getByRole('tab', { name: 'Versions' }));
     const versions = screen.getByRole('tabpanel', { name: 'Versions' });
     const list = await within(versions).findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: /^Version 0.1,/ }));
     expect(within(list).queryByRole('button', { name: 'Restore 0.1' })).toBeNull();
     open();
     expect(await within(list).findByRole('button', { name: 'Restore 0.1' })).toBeInTheDocument();

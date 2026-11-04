@@ -15,7 +15,9 @@ import {
   type RestoreAnswer,
   type RestoreRefusal,
 } from './restoreWords.js';
-import { VersionList, type ListedVersion } from './VersionList.js';
+import type { ListedVersion } from './VersionList.js';
+import { changeCounts } from './versionDays.js';
+import { VersionTimeline } from './VersionTimeline.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from './VersionList.module.css';
 import { words } from '../words/words.js';
@@ -195,12 +197,19 @@ export function VersionsPanel({
           {words('editor.my-changes')}
         </button>
       )}
-      <VersionList
+      <VersionTimeline
         client={client}
         id={id}
         {...(line === undefined ? {} : { line })}
         read={read}
-        opens
+        changesFrom={async (older, newer) => {
+          const answer = await client
+            .GET('/v1/components/{id}/comparison', {
+              params: { path: { id }, query: { from: older.id, to: newer.id } },
+            })
+            .catch(() => undefined);
+          return answer?.data ? changeCounts(answer.data.changes as readonly UnitChange[]) : null;
+        }}
         onCompare={(version, latest) => {
           setRestoring(null);
           void compare(version, latest);
@@ -209,7 +218,10 @@ export function VersionsPanel({
           ? { onRestore: (version: ListedVersion) => void previewRestore(version) }
           : {})}
       />
-      <ApprovalsList client={client} kind="component" id={id} />
+      <details className={styles['decided']}>
+        <summary>{words('editor.who-decided-what')}</summary>
+        <ApprovalsList client={client} kind="component" id={id} />
+      </details>
       {restoring && (
         <section
           aria-label={words('editor.restore', { number: restoring.version.number })}

@@ -120,11 +120,16 @@ function service(
   return { client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }), asked, sent };
 }
 
+/** A version opens in place, its actions then showing. */
+const opening = (list: HTMLElement, number: string) =>
+  userEvent.click(within(list).getByRole('button', { name: new RegExp(`^Version ${number},`) }));
+
 describe("a document's Versions panel", () => {
   it('SCH-058 opens each earlier version on its own page, read only', async () => {
     const { client } = service();
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit={false} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     expect(within(list).getByRole('link', { name: 'Open 0.2' })).toHaveAttribute(
       'href',
       `#/documents/${DOCUMENT}/versions/${V2}`,
@@ -138,6 +143,7 @@ describe("a document's Versions panel", () => {
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit onRestored={onRestored} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
     expect(within(list).queryByRole('button', { name: 'Restore 0.3' })).toBeNull();
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     const changes = await within(preview).findByRole('list', {
@@ -158,6 +164,7 @@ describe("a document's Versions panel", () => {
     ]);
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(
@@ -175,6 +182,7 @@ describe("a document's Versions panel", () => {
     ]);
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     for (const title of ['Install the printer', 'Clean the nozzle']) {
@@ -192,6 +200,7 @@ describe("a document's Versions panel", () => {
     const { client, sent } = service([], { latest: summary(V5, '0.5') });
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(
@@ -216,6 +225,7 @@ describe("a document's Versions panel", () => {
     );
     const list = await screen.findByRole('list', { name: 'Versions' });
     expect(lists()).toBe(1);
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
@@ -234,6 +244,7 @@ describe("a document's Versions panel", () => {
     const { client, sent } = service();
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     const status = within(preview).getByRole('status');
@@ -253,6 +264,7 @@ describe("a document's Versions panel", () => {
     });
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const changes = await screen.findByRole('list', { name: 'What restoring 0.2 would change' });
     expect(changes.querySelector('del')).toHaveTextContent('Install the new printer');
@@ -263,6 +275,7 @@ describe("a document's Versions panel", () => {
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit={false} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
     expect(within(list).getByText('0.2')).toBeInTheDocument();
+    await opening(list, '0.2');
     expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
   });
 });

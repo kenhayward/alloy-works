@@ -1290,6 +1290,14 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       // Restore on an earlier version (the RS plan, RS-H): what it would make, or why it may not.
       const versionsPanel = page.getByRole('tabpanel', { name: 'Versions' });
+      // A version opens in place, its actions then showing.
+      await versionsPanel
+        .getByRole('button', { name: /^Version \d/ })
+        .nth(1)
+        .click();
+      await check('the Versions panel with a version opened in place', {
+        shows: versionsPanel.getByRole('button', { name: /^Restore \d/ }).first(),
+      });
       await versionsPanel
         .getByRole('button', { name: /^Restore \d/ })
         .first()
@@ -1625,6 +1633,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check("the document's Versions panel", {
         shows: documentVersions.getByRole('list', { name: 'Versions' }),
       });
+      await documentVersions
+        .getByRole('button', { name: /^Version \d/ })
+        .nth(1)
+        .click();
       await documentVersions
         .getByRole('button', { name: /^Restore \d/ })
         .first()

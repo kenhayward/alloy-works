@@ -30,5 +30,7 @@ export type {
 } from './workflow.js';
 export { effectiveRevision, scopeEntrySchema, scopePartySchema, scopeSchema } from './scope.js';
 export type { Scope, ScopeEntry, ScopeParty, ScopedRevision } from './scope.js';
+export { revisionStanding } from './standing.js';
+export type { RevisionStanding, TimedRevision } from './standing.js';
 export { bringBack, lineDifferences } from './lines.js';
 export type { BlockDifference } from './lines.js';

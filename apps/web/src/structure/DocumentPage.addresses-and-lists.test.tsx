@@ -2447,6 +2447,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Versions' }));
     const panel = screen.getByRole('tabpanel', { name: 'Versions' });
     const list = await within(panel).findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: /^Version 0.1,/ }));
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.1' }));
     const preview = await within(panel).findByRole('region', { name: 'Restore 0.1' });
     await userEvent.click(

@@ -63,14 +63,22 @@ function service() {
   return { client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }), asked };
 }
 
+/** A version opens in place, its actions then showing. */
+const opening = (list: HTMLElement, number: string) =>
+  userEvent.click(within(list).getByRole('button', { name: new RegExp(`^Version ${number},`) }));
+
 describe('the Versions panel', () => {
   it('CNT-111 CNT-112 lists each version with who cut it and when, and compares an earlier one with the latest as a redline', async () => {
     const { client, asked } = service();
     render(<VersionsPanel client={client} id={COMPONENT} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
-    expect(within(list).getByText(/Grace, 10 Oct/)).toBeInTheDocument();
+    expect(within(list).getByText(/10 Oct/)).toBeInTheDocument();
+    expect(
+      within(list).getByRole('button', { name: /^Version 0\.2, .*, Grace$/ }),
+    ).toBeInTheDocument();
     // The latest has nothing later to be compared with.
     expect(within(list).queryByRole('button', { name: 'Compare 0.3 with 0.3' })).toBeNull();
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Compare 0.2 with 0.3' }));
     const changes = await screen.findByRole('list', { name: 'Changes from 0.2 to 0.3' });
     expect(changes.querySelector('ins')).toHaveTextContent('Added: new');
@@ -81,6 +89,7 @@ describe('the Versions panel', () => {
     const { client } = service();
     render(<VersionsPanel client={client} id={COMPONENT} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     expect(within(list).getByRole('link', { name: 'Open 0.2' })).toHaveAttribute(
       'href',
       `#/components/${COMPONENT}/versions/${V2}`,
@@ -218,6 +227,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const list = await screen.findByRole('list', { name: 'Versions' });
     // The latest is no earlier version to restore.
     expect(within(list).queryByRole('button', { name: 'Restore 0.3' })).toBeNull();
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     const changes = await screen.findByRole('list', { name: 'Changes from 0.3 to 0.2' });
@@ -236,6 +246,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client } = restoring([{ code: 'restore_locked', holder: { id: 'g', name: 'Grace' } }]);
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(
@@ -251,6 +262,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client, asked, sent } = restoring([], { latest: summary(V5, '0.5') });
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(
@@ -273,6 +285,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     });
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     const lists = () => asked.filter((each) => each.endsWith(`${COMPONENT}/versions`)).length;
@@ -296,6 +309,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     });
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const changed = await screen.findByRole('list', { name: 'Values changed' });
     expect(
@@ -311,6 +325,7 @@ describe('restoring an earlier version from the Versions panel', () => {
       <VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit={false} />,
     );
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
     rerender(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     expect(await within(list).findByRole('button', { name: 'Restore 0.2' })).toBeInTheDocument();
@@ -320,6 +335,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client, sent } = restoring();
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     const status = within(preview).getByRole('status');
@@ -334,6 +350,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client } = restoring([{ code: 'definition_unreadable' }, { code: 'content_invalid' }]);
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(
@@ -352,6 +369,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client } = restoring();
     render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit={false} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
     expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
     expect(within(list).getByRole('button', { name: 'Compare 0.2 with 0.3' })).toBeInTheDocument();
   });
@@ -362,6 +380,7 @@ describe('restoring an earlier version from the Versions panel', () => {
     render(<VersionsPanel client={client} id={COMPONENT} line={LINE} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
     expect(asked).toContain(`GET /v1/components/${COMPONENT}/versions?line=${LINE}`);
+    await opening(list, '0.2');
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
     expect(asked).toContain(

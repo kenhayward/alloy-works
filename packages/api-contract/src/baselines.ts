@@ -58,6 +58,13 @@ export const BaselineSummaryView = z.object({
   name: z.string(),
   madeBy: z.object({ id: LowercaseUuid, name: z.string().nullable() }),
   madeAt: z.iso.datetime(),
+  version: z
+    .object({ id: LowercaseUuid, number: z.string() })
+    .describe("The document's version it names, which is not all it pins"),
+  gate: z
+    .string()
+    .nullable()
+    .describe('The transition whose gate took it (VER-059); null for one a person made'),
   digest: Digest.describe('SHA-256 over everything it pins (VER-043)'),
   superseded: z
     .object({
