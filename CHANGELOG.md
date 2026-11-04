@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.234.0 - 2026-11-04 (PR #957)
+## 0.234.0 - 2026-11-04 (PR #958)
 
 The Part panel is grouped and folds: what a part is at a glance, its acts in the head, and a typed number turned into a real one in one step.
 
