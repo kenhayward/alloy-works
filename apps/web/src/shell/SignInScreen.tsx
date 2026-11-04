@@ -1,4 +1,4 @@
-import { createApiClient } from '@alloy-works/api-client';
+import { createApiClient, onEnvironmentSuspended } from '@alloy-works/api-client';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useWords } from '../words/words.js';
@@ -73,6 +73,19 @@ function SignInScreen({ here }: { here: string }): React.JSX.Element {
   );
 }
 
+/** All a person can be told of an environment that is suspended: never the reason (TL-B). */
+function EnvironmentSuspended(): React.JSX.Element {
+  const { words } = useWords();
+  return (
+    <main className={styles['connect']} data-app-region>
+      <div className={styles['card']}>
+        <h1>{words('environment.suspended-title')}</h1>
+        <p>{words('environment.suspended-body')}</p>
+      </div>
+    </main>
+  );
+}
+
 /**
  * Asks once, as a page loads, who is signed in, and shows nothing until the service answers. Only its
  * 401 is signed out: with no answer, or any other, the shell opens and the page says what it could not
@@ -85,13 +98,19 @@ export function SignInGate({
   here: string;
   children: React.ReactNode;
 }): React.ReactNode {
-  const [answer, setAnswer] = useState<'nobody' | 'open' | undefined>();
+  const { words } = useWords();
+  const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | undefined>();
+  const [suspendedSince, setSuspendedSince] = useState(false);
   useEffect(() => {
     let current = true;
     createApiClient({ baseUrl: window.location.origin })
       .GET('/v1/me')
-      .then(({ response }) => {
-        if (current) setAnswer(response.status === 401 ? 'nobody' : 'open');
+      .then(({ response, error }) => {
+        if (!current) return;
+        // Nobody may enter whoever they are, so nothing behind it could say anything (ADM-028).
+        const code = (error as { code?: unknown } | undefined)?.code;
+        if (code === 'environment_suspended') setAnswer('suspended');
+        else setAnswer(response.status === 401 ? 'nobody' : 'open');
       })
       .catch(() => {
         if (current) setAnswer('open');
@@ -101,6 +120,20 @@ export function SignInGate({
     };
   }, []);
 
+  // Beside the page rather than in place of it, which may hold what somebody was writing.
+  useEffect(() => onEnvironmentSuspended(() => setSuspendedSince(true)), []);
+
   if (answer === undefined) return null;
+  if (answer === 'suspended') return <EnvironmentSuspended />;
+  if (answer === 'open' && suspendedSince) {
+    return (
+      <>
+        <p role="alert" className={styles['suspended']}>
+          {words('environment.suspended-notice')}
+        </p>
+        {children}
+      </>
+    );
+  }
   return answer === 'nobody' ? <SignInScreen here={here} /> : children;
 }

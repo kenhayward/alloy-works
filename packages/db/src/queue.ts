@@ -156,6 +156,9 @@ export function createJobQueue(url: string): JobQueue {
               and run_after <= now()
               and (locked_until is null or locked_until < now())
               and (${kinds === undefined} or kind = any(${[...(kinds ?? [])]}::text[]))
+              -- A job waits through its tenant's suspension rather than failing (TL-C).
+              and exists (select 1 from platform.tenant t
+                           where t.id = tenant_id and t.state = 'active')
             order by run_after, id
             for update skip locked
             limit 1)
@@ -193,6 +196,9 @@ export function createJobQueue(url: string): JobQueue {
          where finished_at is null and failed_at is null
            and attempts >= max_attempts
            and locked_until < now()
+           -- Its failing writes into the tenant, which waits with everything else (TL-C).
+           and exists (select 1 from platform.tenant t
+                        where t.id = tenant_id and t.state = 'active')
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
     },

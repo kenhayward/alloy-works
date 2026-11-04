@@ -66,6 +66,18 @@ export const SWEEPS_UNDER_REVIEW = {
 } as const;
 
 /**
+ * Which sweeps run in a tenant that is not active (ADM-045; tenant-lifecycle.md, TL-C). None yet, since
+ * a suspended tenant's dates and retention wait for the suspension to lift: a sweep added must say.
+ */
+export const SWEEPS_BY_STATE: {
+  readonly activeOnly: readonly string[];
+  readonly anyState: readonly string[];
+} = {
+  activeOnly: [...SWEEPS_UNDER_REVIEW.held, ...SWEEPS_UNDER_REVIEW.running],
+  anyState: [],
+};
+
+/**
  * What sign-ins leave behind: attempts and hand-offs nobody came back for, and sessions past their
  * last hour. All are refused once expired; this is what stops the rows accumulating for ever. Each
  * session ended is a sign-out by the system (IAM-013; the AU1 plan, AU1-F), recorded in the
@@ -76,7 +88,7 @@ export async function sweepExpiredSignIns(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     removed += await db.withTenant(
       tenant,
       async (trx) => {
@@ -126,7 +138,7 @@ export async function sweepExpiredSignIns(
  */
 export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       if (await held(db, tenant)) continue;
       removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
@@ -140,7 +152,7 @@ export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog)
 /** Query runs past their 13 months, in every tenant (the R18 plan, R18-D). */
 export async function sweepExpiredQueryRuns(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepQueryRuns(trx));
     } catch (error) {
@@ -156,7 +168,7 @@ export async function sweepExpiredRangePreviews(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepRangePreviews(trx));
     } catch (error) {
@@ -175,7 +187,7 @@ export async function sweepAbandonedGenerationRuns(
   log: WorkerLog,
 ): Promise<number> {
   let ended = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       ended += await db.withTenant(tenant, (trx) => sweepAbandonedRuns(trx));
     } catch (error) {
@@ -191,7 +203,7 @@ export async function sweepQueryEmbeddingsEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepQueryEmbeddings(trx));
     } catch (error) {
@@ -207,7 +219,7 @@ export async function sweepEmbeddingLagEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepEmbeddingLag(trx));
     } catch (error) {
@@ -248,7 +260,7 @@ export async function sweepUncheckedPublications(
 ): Promise<{ readonly queued: number; readonly left: number }> {
   let queued = 0;
   let left = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       if (await held(db, tenant)) continue;
       const waiting = await queue.waiting(tenant.id, 'check_pdf');
@@ -301,7 +313,7 @@ export async function sweepExpiredPreviews(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       const keys = await db.withTenant(tenant, (trx) => sweepPreviews(trx));
       if (keys.length === 0) continue;
@@ -340,7 +352,7 @@ export async function sweepExpiredPreviews(
  */
 export async function sweepStalePresence(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepPresence(trx));
     } catch (error) {
@@ -361,7 +373,7 @@ export async function foldNotificationDigests(
   now: Date = new Date(),
 ): Promise<number> {
   let made = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       if (await held(db, tenant)) continue;
       made += await db.withTenant(tenant, (trx) => foldDigests(trx, now));
@@ -384,7 +396,7 @@ export async function sweepDates(
 ): Promise<{ readonly effected: number; readonly lapsed: number }> {
   let effected = 0;
   let lapsed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       if (await held(db, tenant)) continue;
       const done = await db.withTenant(
@@ -411,7 +423,7 @@ export async function sweepOldNotifications(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       if (await held(db, tenant)) continue;
       removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
@@ -434,7 +446,7 @@ export async function sweepRestorations(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       const gaveUp = await queue.givenUp(tenant.id, 'restoration');
       const { store, expired } = await db.withTenant(tenant, async (trx) => {
@@ -471,7 +483,7 @@ export async function sweepExpiredTenantExports(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       const due = await db.withTenant(tenant, (trx) => tenantExportsDue(trx, now));
       if (due.length === 0) continue;
@@ -510,7 +522,7 @@ export async function sweepWebhookDeliveriesEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       removed += await db.withTenant(tenant, (trx) => sweepWebhookDeliveries(trx));
     } catch (error) {
@@ -531,7 +543,7 @@ export async function sweepImportsEverywhere(
 ): Promise<{ readonly warned: number; readonly swept: number }> {
   let warned = 0;
   let swept = 0;
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       const done = await db.withTenant(
         tenant,

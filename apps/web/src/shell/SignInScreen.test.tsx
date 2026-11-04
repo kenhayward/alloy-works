@@ -1,3 +1,4 @@
+import { createApiClient } from '@alloy-works/api-client';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -64,6 +65,42 @@ describe('the sign-in screen', () => {
       'href',
       '/v1/sign-in/organisation',
     );
+  });
+
+  it('ADM-028 says an environment is suspended, in place of the shell and of any way in', async () => {
+    serviceThat(
+      () => json(503, { code: 'environment_suspended', message: 'Suspended.' }),
+      () => json(200, ONE_WAY),
+    );
+    open();
+    expect(
+      await screen.findByRole('heading', { name: 'This environment is suspended' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nothing in it has been lost/)).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Modules' })).toBeNull();
+    expect(screen.queryByText('the workspace')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+  });
+
+  it('ADM-028 tells a page already open, and leaves what is on it where it is', async () => {
+    const me = { principalId: 'p', email: null, displayName: 'Ada' };
+    serviceThat(
+      () => json(200, me),
+      () => json(200, ONE_WAY),
+    );
+    open();
+    expect(await screen.findByText('the workspace')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    const fetchNow = globalThis.fetch;
+    vi.stubGlobal('fetch', async () =>
+      json(503, { code: 'environment_suspended', message: 'Suspended.' }),
+    );
+    await act(async () => {
+      await createApiClient({ baseUrl: window.location.origin }).GET('/v1/me');
+    });
+    vi.stubGlobal('fetch', fetchNow);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/just been suspended/);
+    expect(screen.getByText('the workspace')).toBeInTheDocument();
   });
 
   it("brings a person back to the page they asked for, a shared publication's link among them", async () => {

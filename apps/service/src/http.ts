@@ -67,6 +67,8 @@ export function logFailure(request: FastifyRequest, error: unknown, status: numb
     request.log.warn({ code: (error as AppError).code, attribution, status }, 'the source failed');
     return;
   }
+  // A suspended environment answering as it should, however many ask: nothing has failed (TL-B).
+  if (error instanceof AppError && error.code === 'environment_suspended') return;
   if (status >= 500) request.log.error({ err: error }, 'request failed');
 }
 

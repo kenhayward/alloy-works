@@ -1,8 +1,8 @@
-import type { Tenant } from '@alloy-works/db';
+import type { ResolvedTenant } from '@alloy-works/db';
 import { describe, expect, it } from 'vitest';
 import { cachedResolver } from './tenants.js';
 
-const acme: Tenant = { id: 'acme', schema: 't_acme', role: 't_acme' };
+const acme: ResolvedTenant = { id: 'acme', schema: 't_acme', role: 't_acme', state: 'active' };
 
 function fakeLookup() {
   const asked: string[] = [];
@@ -35,7 +35,7 @@ describe('cachedResolver', () => {
   });
 
   it('IAM-075 answers each hostname with its own tenant, never one it remembered for another host', async () => {
-    const beta: Tenant = { id: 'beta', schema: 't_beta', role: 't_beta' };
+    const beta: ResolvedTenant = { id: 'beta', schema: 't_beta', role: 't_beta', state: 'active' };
     const asked: string[] = [];
     const resolver = cachedResolver(
       async (hostname) => {

@@ -207,6 +207,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
+- **Suspending an environment.** The operator suspends one with a reason, from the `steward` command line, and lifts that the same way. Every route refuses within 30 seconds, an open stream ends, jobs and sweeps wait, and a person is told it is suspended, never why, though a download link already signed lives out its 5 minutes. Lifting loses nothing, and a webhook still being tried loses no time. An administrator cannot suspend from inside yet.
 - **Restoring the environment.** Someone holding `import_environment` restores a whole export from
   Administration's **Export** into an empty environment. It is checked first, as untrusted input, every
   digest and hash worked out again, and says what it would do. Each sign-in provider is mapped or kept

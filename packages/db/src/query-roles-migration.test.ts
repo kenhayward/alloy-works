@@ -274,6 +274,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0197_partial_exports',
       '0198_restoration',
       '0199_restoration_report',
+      '0200_tenant_state',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -418,6 +419,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0197_partial_exports',
       '0198_restoration',
       '0199_restoration_report',
+      '0200_tenant_state',
     ]);
 
     expect(await queryRoles(development)).toEqual([

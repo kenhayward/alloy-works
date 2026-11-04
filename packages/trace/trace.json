@@ -22453,13 +22453,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 798,
+      "line": 802,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 811,
+      "line": 815,
       "kind": "title"
     },
     {
@@ -23381,45 +23381,51 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 362,
+      "kind": "title"
+    },
+    {
       "id": "IAM-012",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 471,
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 283,
+      "line": 286,
       "kind": "title"
     },
     {
       "id": "IAM-041",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 204,
+      "line": 207,
       "kind": "title"
+    },
+    {
+      "id": "IAM-043",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 156,
+      "kind": "rule"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
       "line": 153,
-      "kind": "rule"
-    },
-    {
-      "id": "IAM-043",
-      "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 150,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 229,
+      "line": 232,
       "kind": "rule"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 225,
+      "line": 228,
       "kind": "title"
     },
     {
@@ -24848,6 +24854,12 @@
       "id": "IMP-024",
       "file": "apps/service/src/tenant-export-routes.test.ts",
       "line": 66,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "apps/service/src/tenant-gate.test.ts",
+      "line": 49,
       "kind": "title"
     },
     {
@@ -27551,15 +27563,21 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "apps/web/src/shell/SignInScreen.test.tsx",
+      "line": 70,
+      "kind": "title"
+    },
+    {
       "id": "ADM-051",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 170,
+      "line": 207,
       "kind": "title"
     },
     {
       "id": "IAM-011",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 99,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -29447,6 +29465,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "apps/worker/src/steward-commands.test.ts",
+      "line": 49,
+      "kind": "title"
+    },
+    {
       "id": "AST-007",
       "file": "apps/worker/src/strip.test.ts",
       "line": 30,
@@ -29456,6 +29480,18 @@
       "id": "IAM-013",
       "file": "apps/worker/src/sweep.test.ts",
       "line": 101,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "apps/worker/src/sweeps-by-state.test.ts",
+      "line": 14,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-045",
+      "file": "apps/worker/src/sweeps-by-state.test.ts",
+      "line": 6,
       "kind": "title"
     },
     {
@@ -29660,6 +29696,12 @@
       "id": "PUB-076",
       "file": "apps/worker/src/warm.test.ts",
       "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "apps/worker/src/webhooks.test.ts",
+      "line": 149,
       "kind": "title"
     },
     {
@@ -32101,13 +32143,19 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/tenant-database.test.ts",
-      "line": 136,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "SCH-008",
       "file": "packages/db/src/tenant-database.test.ts",
-      "line": 136,
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "packages/db/src/tenant-lifecycle.test.ts",
+      "line": 81,
       "kind": "title"
     },
     {
@@ -32821,13 +32869,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 289,
+      "line": 291,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 266,
+      "line": 268,
       "kind": "title"
     },
     {
@@ -33877,7 +33925,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1195,
+      "line": 1198,
       "kind": "title"
     },
     {
@@ -35438,6 +35486,18 @@
       "id": "TPL-071",
       "file": "packages/domain/src/template/resolve.test.ts",
       "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "packages/domain/src/tenancy/states.test.ts",
+      "line": 25,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-045",
+      "file": "packages/domain/src/tenancy/states.test.ts",
+      "line": 5,
       "kind": "title"
     },
     {

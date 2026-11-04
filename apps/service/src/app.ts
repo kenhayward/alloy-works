@@ -150,7 +150,6 @@ import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
 import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
-import { rendererFallback, serveRenderer } from './renderer.js';
 import type { SecretStore } from './secrets.js';
 import {
   createSession,
@@ -162,8 +161,9 @@ import {
 } from './sessions.js';
 import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.js';
 import { signState, verifyState } from './sign-in-state.js';
+import { rendererFallback, rendererRoutes, serveRenderer } from './renderer.js';
 import { streamToViewer } from './stream.js';
-import { cachedResolver } from './tenants.js';
+import { answersInAnyState, cachedResolver, environmentNotOpen } from './tenants.js';
 import {
   administeredTokenHandlers,
   bearerSecret,
@@ -220,6 +220,8 @@ export interface AppOptions extends HttpOptions {
   readonly events?: TenantListener;
   /** How long a stream lives before it ends and is read afresh; five minutes but in tests. */
   readonly streamLifetimeMs?: number;
+  /** How often a stream asks whether its tenant is still open: 30 seconds, but in tests (TL-B). */
+  readonly stateCheckMs?: number;
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
   readonly tenantCacheMs?: number;
@@ -393,6 +395,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
   if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
+  });
+  // Every route, those outside the contract too, and none has to remember (TL-B). Before they are
+  // added, since a hook reaches only the routes after it.
+  const pageFiles = options.rendererRoot ? rendererRoutes(options.rendererRoot) : new Set<string>();
+  app.addHook('onRequest', async (request) => {
+    if (answersInAnyState(request.routeOptions.url, pageFiles)) return;
+    const tenant = await tenants.resolve(request.hostname);
+    if (tenant && tenant.state !== 'active') throw environmentNotOpen();
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
   registerScim(app, { db, resolve: (hostname) => tenants.resolve(hostname) });
@@ -1079,6 +1089,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // keeps the sign-in address from sending anyone anywhere else.
       const tenant = await tenants.resolve(new URL(`http://${claimed.host}`).hostname);
       if (!tenant || tenant.id !== claimed.tenant) throw signInFailed();
+      // This address is no tenant's, so the gate saw none of it, and this writes into one (TL-B).
+      if (tenant.state !== 'active') throw environmentNotOpen();
       request.log = request.log.child({ tenant: tenant.id });
       reply.log = request.log;
       const attempt = await takeAttempt(tenant, 'google', hashToken(claimed.attempt));
@@ -1379,6 +1391,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         tenant,
         credential: request.credential,
         principalId,
+        stillOpen: async () => (await db.resolveHostname(request.hostname))?.state === 'active',
+        ...(options.stateCheckMs === undefined ? {} : { stateCheckMs: options.stateCheckMs }),
         ...(scope === undefined || components === undefined
           ? {}
           : {

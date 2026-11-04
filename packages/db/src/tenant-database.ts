@@ -1,10 +1,13 @@
-import type { AuditContext } from '@alloy-works/domain';
+import type { AuditContext, TenantState } from '@alloy-works/domain';
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
 import { AUDIT_SETTING, auditContextSetting } from './audit.js';
 import { createPool } from './pool.js';
 import { assertTenantRole } from './names.js';
 import type { Tenant } from './provision.js';
 import type { PlatformTables, TenantTables } from './tables.js';
+
+/** A tenant found by its hostname, with the state that decides whether it answers (TL-B). */
+export type ResolvedTenant = Tenant & { readonly state: TenantState };
 
 export interface TenantDatabase {
   /**
@@ -21,11 +24,15 @@ export interface TenantDatabase {
     options?: TenantTransactionOptions,
   ): Promise<T>;
   /** The tenant a hostname belongs to, from the platform table; undefined when none does. */
-  resolveHostname(hostname: string): Promise<Tenant | undefined>;
+  /** The tenant at a hostname, in whatever state it is: what to do about that is the caller's (TL-B). */
+  resolveHostname(hostname: string): Promise<ResolvedTenant | undefined>;
   /** The hostnames a tenant answers at, sorted. */
   hostnames(tenantId: string): Promise<string[]>;
   /** Every tenant, for work that visits each in turn. */
+  /** Every tenant with a schema, in any state: what must still be migrated. */
   tenants(): Promise<Tenant[]>;
+  /** Those that are active, which are the only ones a sweep or a delivery loop acts in (TL-C). */
+  liveTenants(): Promise<Tenant[]>;
   /** The tenant a job names; undefined when it has gone. */
   tenant(id: string): Promise<Tenant | undefined>;
   /** Who the connection is outside any tenant transaction. For tests and diagnostics. */
@@ -87,10 +94,10 @@ export function createTenantDatabase(
       const row = await db
         .selectFrom('platform.tenant_hostname as h')
         .innerJoin('platform.tenant as t', 't.id', 'h.tenant_id')
-        .select(['t.id', 't.schema_name', 't.role_name'])
+        .select(['t.id', 't.schema_name', 't.role_name', 't.state'])
         .where('h.hostname', '=', hostname.toLowerCase())
         .executeTakeFirst();
-      return row && { id: row.id, schema: row.schema_name, role: row.role_name };
+      return row && { id: row.id, schema: row.schema_name, role: row.role_name, state: row.state };
     },
 
     async hostnames(tenantId) {
@@ -107,6 +114,16 @@ export function createTenantDatabase(
       const rows = await db
         .selectFrom('platform.tenant')
         .select(['id', 'schema_name', 'role_name'])
+        .orderBy('id')
+        .execute();
+      return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));
+    },
+
+    async liveTenants() {
+      const rows = await db
+        .selectFrom('platform.tenant')
+        .select(['id', 'schema_name', 'role_name'])
+        .where('state', '=', 'active')
         .orderBy('id')
         .execute();
       return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));

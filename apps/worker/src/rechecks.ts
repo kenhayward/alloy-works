@@ -50,7 +50,7 @@ export async function recheckEntries(
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const due = new Map<Tenant, CheckableEntry[]>();
-  for (const tenant of await db.tenants()) {
+  for (const tenant of await db.liveTenants()) {
     try {
       due.set(tenant, await db.withTenant(tenant, (trx) => entriesDue(trx, PER_TENANT)));
     } catch (error) {

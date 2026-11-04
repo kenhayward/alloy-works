@@ -10,6 +10,9 @@ import {
   syncProviderGroups,
   type Tenant,
   type TenantDatabase,
+  createTenantDatabase,
+  resumeTenant,
+  suspendTenant,
 } from '@alloy-works/db';
 import {
   auditEvents,
@@ -354,6 +357,44 @@ describe('signing in with a Google account', () => {
     const refused = await callback(back);
     expect(refused.statusCode).toBe(401);
     expect(refused.headers.location).toBeUndefined();
+  });
+
+  it('ADM-028 admits nobody on the return from Google once the environment is suspended', async () => {
+    const steward = createTenantDatabase(db.stewardUrl);
+    const fresh = buildApp(
+      options({
+        google: { issuer: idp.issuer, clientId: 'alloy-google', signInHost: SIGN_IN },
+        tenantCacheMs: 0,
+      }),
+    );
+    const { back } = await atGoogle(DEV, 'ada');
+    const operator = { actorKind: 'vendor' } as const;
+    const people = () =>
+      tenantDb.withTenant(dev, async (trx) =>
+        Number(
+          (
+            await trx
+              .selectFrom('principal')
+              .select((eb) => eb.fn.countAll().as('count'))
+              .executeTakeFirstOrThrow()
+          ).count,
+        ),
+      );
+    const before = await people();
+    await steward.withTenant(dev, (trx) => suspendTenant(trx, dev, 'A test'), operator);
+    try {
+      const refused = await fresh.inject({
+        url: `${back.pathname}${back.search}`,
+        headers: { host: SIGN_IN },
+      });
+      expect(refused.statusCode).toBe(503);
+      expect(refused.json()).toMatchObject({ code: 'environment_suspended' });
+      expect(await people()).toBe(before);
+    } finally {
+      await steward.withTenant(dev, (trx) => resumeTenant(trx, dev), operator);
+      await steward.close();
+      await fresh.close();
+    }
   });
 
   it("will not hand a sign-in to an address the state's environment does not own", async () => {

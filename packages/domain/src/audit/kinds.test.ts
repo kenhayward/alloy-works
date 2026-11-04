@@ -145,6 +145,8 @@ describe('the audit kinds', () => {
       'import.refused',
       'import.restored',
       'import.review_ended',
+      'tenant.suspended',
+      'tenant.resumed',
       // The IM plan's (IM-F): an import accepted, and one abandoned.
       'import.accepted',
       'import.abandoned',

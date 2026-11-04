@@ -954,6 +954,17 @@ export const auditKindSpecs = {
     'packages/db/src/restoring.ts',
   ),
   'import.review_ended': kind(['IMP-048'], Restoring, 'apps/service/src/restorations.ts'),
+  // A tenant stopped and started again (ADM-028; tenant-lifecycle.md, TL-O).
+  'tenant.suspended': kind(
+    ['ADM-028'],
+    z.strictObject({ reason: z.string().min(1).max(2000) }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
+  'tenant.resumed': kind(
+    ['ADM-028'],
+    z.strictObject({ suspendedSeconds: z.number().int().nonnegative() }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
   'library.changed': kind(['LIB-056'], empty, LATER),
   'line.merged': kind(['LIF-045'], empty, LATER),
   'component.type_changed': kind(['MET-014'], empty, LATER),
