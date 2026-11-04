@@ -63,6 +63,7 @@ describe('the tenant database', () => {
     expect(await service.resolveHostname('DEV.acme.alloy.test')).toEqual({
       ...development,
       state: 'active',
+      kind: 'content',
     });
     expect(await service.resolveHostname('nobody.alloy.test')).toBeUndefined();
   });

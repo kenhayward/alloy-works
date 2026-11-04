@@ -39,6 +39,7 @@ const NOT_A_STATE: Readonly<Record<string, string>> = {
   'admin.failed': "an export's outcome: operational (D2), a Chip",
   'admin.approved': "an audit event's name, and the Workflows column for a state's flag",
   'admin.published': "an audit event's name",
+  'admin.organisation-change-closed': "what became of a tenant, inside an audit event's words",
   'data.revised-by-hand': "a provenance row's outcome, in its sentence",
   'data.accepted': "a provenance row's outcome, in its sentence",
   'data.resolved': "a provenance row's outcome, in its sentence",
