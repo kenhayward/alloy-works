@@ -69,8 +69,19 @@ export const PageQuery = z.object(pageQuery);
 export type PageQuery = z.infer<typeof PageQuery>;
 
 /** A page of a component's versions, on one of its lines. */
+const VersionsFound = z
+  .string()
+  .max(200)
+  .optional()
+  .describe('Only versions whose number begins so, or whose note or author says so');
+
+/** A page of a document's versions. */
+export const DocumentVersionsQuery = z.object({ ...pageQuery, q: VersionsFound });
+export type DocumentVersionsQuery = z.infer<typeof DocumentVersionsQuery>;
+
 export const VersionsQuery = z.object({
   ...pageQuery,
+  q: VersionsFound,
   line: LowercaseUuid.optional().describe(
     "A component's line, divergent or a language's, whose versions to list (LOC-012); its main line's where absent",
   ),

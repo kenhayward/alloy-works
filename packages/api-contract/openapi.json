@@ -71150,6 +71150,16 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only versions whose number begins so, or whose note or author says so",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
             "name": "line",
             "in": "query",
             "required": false,
@@ -72455,6 +72465,63 @@
                       "additionalProperties": {},
                       "description": "Its metadata values, by field"
                     },
+                    "delivery": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "description": "The system it came from",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "description": "The file delivered",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "sourceSha256": {
+                              "description": "That file, by its hash",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "askedBy": {
+                              "description": "Who asked for the delivery",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "key": {
+                              "type": "string",
+                              "description": "The delivery key"
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was written"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "source",
+                            "sourceSha256",
+                            "askedBy",
+                            "key",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Null for a version nobody delivered"
+                    },
                     "archived": {
                       "type": "boolean",
                       "description": "Whether the component is archived now"
@@ -72467,6 +72534,7 @@
                     "latest",
                     "content",
                     "values",
+                    "delivery",
                     "archived"
                   ]
                 },
@@ -72489,6 +72557,14 @@
                   },
                   "content": {},
                   "values": {},
+                  "delivery": {
+                    "from": "example",
+                    "source": "example",
+                    "sourceSha256": "example",
+                    "askedBy": "example",
+                    "key": "example",
+                    "at": "example"
+                  },
                   "archived": false
                 }
               }
@@ -210740,6 +210816,16 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only versions whose number begins so, or whose note or author says so",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -211355,6 +211441,63 @@
                       "additionalProperties": {},
                       "description": "Its metadata values, by field"
                     },
+                    "delivery": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "description": "The system it came from",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "description": "The file delivered",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "sourceSha256": {
+                              "description": "That file, by its hash",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "askedBy": {
+                              "description": "Who asked for the delivery",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "key": {
+                              "type": "string",
+                              "description": "The delivery key"
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was written"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "source",
+                            "sourceSha256",
+                            "askedBy",
+                            "key",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Null for a version nobody delivered"
+                    },
                     "archived": {
                       "type": "boolean",
                       "description": "Whether the document is archived now"
@@ -211368,6 +211511,7 @@
                     "outline",
                     "titles",
                     "values",
+                    "delivery",
                     "archived"
                   ]
                 },
@@ -211391,6 +211535,14 @@
                   "outline": {},
                   "titles": [],
                   "values": {},
+                  "delivery": {
+                    "from": "example",
+                    "source": "example",
+                    "sourceSha256": "example",
+                    "askedBy": "example",
+                    "key": "example",
+                    "at": "example"
+                  },
                   "archived": false
                 }
               }

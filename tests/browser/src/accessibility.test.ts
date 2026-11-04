@@ -1637,6 +1637,28 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         .getByRole('button', { name: /^Version \d/ })
         .nth(1)
         .click();
+      // One version taking the panel, then two chosen and compared, and back to the list.
+      await documentVersions
+        .getByRole('button', { name: /^Details of \d/ })
+        .first()
+        .click();
+      await check("one of the document's versions, taking the panel", {
+        shows: documentVersions.getByRole('heading', { name: /^Version \d/ }),
+      });
+      await page.keyboard.press('Escape');
+      await documentVersions.getByRole('button', { name: 'Compare two versions' }).click();
+      const choices = documentVersions.getByRole('checkbox', { name: /^Choose \d/ });
+      await choices.nth(1).check();
+      await choices.nth(0).check();
+      await check("the document's versions with two chosen to compare", {
+        shows: documentVersions.getByRole('button', { name: 'Swap' }),
+      });
+      await documentVersions.getByRole('button', { name: 'Compare', exact: true }).click();
+      await check("two of the document's versions compared", {
+        shows: documentVersions.getByRole('combobox', { name: 'Version A' }),
+      });
+      await documentVersions.getByRole('button', { name: 'Back to the versions' }).click();
+      await documentVersions.getByRole('button', { name: 'Compare two versions' }).click();
       await documentVersions
         .getByRole('button', { name: /^Restore \d/ })
         .first()

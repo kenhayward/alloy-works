@@ -1,6 +1,6 @@
 import type {
   DocumentRestorationView,
-  PageQuery,
+  DocumentVersionsQuery,
   RestorationView,
   RestoreAnswer,
   RestoreBody,
@@ -300,10 +300,10 @@ export function restoreHandlers() {
   return {
     listDocumentVersions: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as RestoreParams;
-      const query = request.query as PageQuery;
+      const query = request.query as DocumentVersionsQuery;
       const after = afterVersion(query.cursor);
       if (!(await readDocument(trx, id))) throw notFound();
-      return versionsPage(trx, id, query.limit, after);
+      return versionsPage(trx, id, query.limit, after, undefined, query.q);
     },
 
     previewDocumentRestore: async (

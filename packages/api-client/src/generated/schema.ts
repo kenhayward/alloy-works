@@ -30337,6 +30337,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                q?: string;
                 line?: string & (unknown & unknown);
             };
             header?: {
@@ -30814,6 +30815,14 @@ export interface operations {
                      *       },
                      *       "content": {},
                      *       "values": {},
+                     *       "delivery": {
+                     *         "from": "example",
+                     *         "source": "example",
+                     *         "sourceSha256": "example",
+                     *         "askedBy": "example",
+                     *         "key": "example",
+                     *         "at": "example"
+                     *       },
                      *       "archived": false
                      *     }
                      */
@@ -30847,6 +30856,21 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description Null for a version nobody delivered */
+                        delivery: {
+                            /** @description The system it came from */
+                            from: string | null;
+                            /** @description The file delivered */
+                            source: string | null;
+                            /** @description That file, by its hash */
+                            sourceSha256: string | null;
+                            /** @description Who asked for the delivery */
+                            askedBy: string | null;
+                            /** @description The delivery key */
+                            key: string;
+                            /** @description When it was written */
+                            at: string;
+                        } | null;
                         /** @description Whether the component is archived now */
                         archived: boolean;
                     };
@@ -71887,6 +71911,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                q?: string;
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -72105,6 +72130,14 @@ export interface operations {
                      *       "outline": {},
                      *       "titles": [],
                      *       "values": {},
+                     *       "delivery": {
+                     *         "from": "example",
+                     *         "source": "example",
+                     *         "sourceSha256": "example",
+                     *         "askedBy": "example",
+                     *         "key": "example",
+                     *         "at": "example"
+                     *       },
                      *       "archived": false
                      *     }
                      */
@@ -72143,6 +72176,21 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description Null for a version nobody delivered */
+                        delivery: {
+                            /** @description The system it came from */
+                            from: string | null;
+                            /** @description The file delivered */
+                            source: string | null;
+                            /** @description That file, by its hash */
+                            sourceSha256: string | null;
+                            /** @description Who asked for the delivery */
+                            askedBy: string | null;
+                            /** @description The delivery key */
+                            key: string;
+                            /** @description When it was written */
+                            at: string;
+                        } | null;
                         /** @description Whether the document is archived now */
                         archived: boolean;
                     };

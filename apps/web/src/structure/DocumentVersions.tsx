@@ -11,7 +11,8 @@ import {
 } from '../editor/restoreWords.js';
 import type { ListedVersion } from '../editor/VersionList.js';
 import { changeCounts } from '../editor/versionDays.js';
-import { VersionTimeline } from '../editor/VersionTimeline.js';
+import { VersionTimeline, type TimelineVersion } from '../editor/VersionTimeline.js';
+import { VersionCompare, VersionView } from '../editor/VersionViews.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from '../editor/VersionList.module.css';
 import { words } from '../words/words.js';
@@ -75,6 +76,13 @@ export function DocumentVersions({
   const [restoring, setRestoring] = useState<Restoring | null>(null);
   const [compared, setCompared] = useState<Compared | 'failed' | null>(null);
   const [read, setRead] = useState(0);
+  // A comparison or one version taking the panel; the list stays, hidden, keeping its pages.
+  const [view, setView] = useState<
+    | { readonly kind: 'compare'; readonly a: TimelineVersion; readonly b: TimelineVersion }
+    | { readonly kind: 'version'; readonly version: TimelineVersion }
+    | null
+  >(null);
+  const [known, setKnown] = useState<readonly TimelineVersion[]>([]);
   // The preview last asked for: an answer to an earlier one, arriving later, is not shown.
   const asked = useRef(0);
   // A restore sent and not yet answered: a second press sends nothing.
@@ -173,6 +181,21 @@ export function DocumentVersions({
     });
   };
 
+  const changesFrom = async (older: ListedVersion, newer: ListedVersion) => {
+    const answer = await client
+      .GET('/v1/documents/{id}/comparison', {
+        params: { path: { id }, query: { from: older.id, to: newer.id } },
+      })
+      .catch(() => undefined);
+    if (!answer?.data) return null;
+    const counted = changeCounts(answer.data.structure as readonly UnitChange[]);
+    // A value or a parameter changed is a change, though the outline's are counted by unit.
+    return {
+      ...counted,
+      changed: counted.changed + answer.data.values.length + answer.data.parameters.length,
+    };
+  };
+
   const restore = async (now: Restoring) => {
     if (sending.current || typeof now.preview !== 'object') return;
     sending.current = true;
@@ -203,32 +226,70 @@ export function DocumentVersions({
   const label = restoring && words('document.restore', { number: restoring.version.number });
   return (
     <div className={styles['panel']}>
-      <VersionTimeline
-        client={client}
-        id={id}
-        of="document"
-        read={read}
-        changesFrom={async (older, newer) => {
-          const answer = await client
-            .GET('/v1/documents/{id}/comparison', {
-              params: { path: { id }, query: { from: older.id, to: newer.id } },
-            })
-            .catch(() => undefined);
-          if (!answer?.data) return null;
-          const counted = changeCounts(answer.data.structure as readonly UnitChange[]);
-          // A value or a parameter changed is a change, though the outline's are counted by unit.
-          return {
-            ...counted,
-            changed: counted.changed + answer.data.values.length + answer.data.parameters.length,
-          };
-        }}
-        onCompare={(version, latest) => void compare(version, latest)}
-        {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
-      />
-      <details className={styles['decided']}>
-        <summary>{words('editor.who-decided-what')}</summary>
-        <ApprovalsList client={client} kind="document" id={id} key={latest} />
-      </details>
+      {view?.kind === 'compare' && (
+        <VersionCompare
+          client={client}
+          id={id}
+          of="document"
+          versions={known}
+          a={view.a}
+          b={view.b}
+          onCompare={(older, newer) => void compare(older, newer)}
+          onClose={() => {
+            setView(null);
+            setCompared(null);
+          }}
+        />
+      )}
+      {view?.kind === 'version' && (
+        <VersionView
+          client={client}
+          id={id}
+          of="document"
+          versions={known}
+          version={view.version}
+          changesFrom={changesFrom}
+          onCompare={(version, latest) => void compare(version, latest)}
+          {...(mayEdit
+            ? {
+                onRestore: (version: ListedVersion) => {
+                  setView(null);
+                  void preview(version);
+                },
+              }
+            : {})}
+          onGo={(version) => setView({ kind: 'version', version })}
+          onBack={() => setView(null)}
+        />
+      )}
+      <div hidden={view !== null} className={styles['listed']}>
+        <VersionTimeline
+          client={client}
+          id={id}
+          of="document"
+          read={read}
+          changesFrom={changesFrom}
+          onCompare={(version, latest) => void compare(version, latest)}
+          onCompareTwo={(a, b, versions) => {
+            setKnown(versions);
+            setRestoring(null);
+            setView({ kind: 'compare', a, b });
+          }}
+          onDetails={(version, versions) => {
+            setKnown(versions);
+            setCompared(null);
+            setRestoring(null);
+            setView({ kind: 'version', version });
+          }}
+          {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
+        />
+      </div>
+      {view === null && (
+        <details className={styles['decided']}>
+          <summary>{words('editor.who-decided-what')}</summary>
+          <ApprovalsList client={client} kind="document" id={id} key={latest} />
+        </details>
+      )}
       {compared === 'failed' && (
         <p className={styles['muted']}>{words('editor.the-comparison-could-not-be')}</p>
       )}

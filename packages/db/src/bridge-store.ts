@@ -481,3 +481,29 @@ export async function dropUnlisted(
     .where('name', 'in', [...names])
     .execute();
 }
+
+/**
+ * The written delivery that made a version, by its receipt (VP2's Delivery facts); a note says the same
+ * in words, and is never parsed. None on a schema before the bridge.
+ */
+export async function deliveryOfVersion(
+  trx: TenantTransaction,
+  version: string,
+): Promise<{ readonly key: string; readonly provenance: unknown; readonly at: Date } | undefined> {
+  const { rows: stored } = await sql<{ present: boolean }>`
+    select to_regclass(current_schema() || '.bridge_delivery') is not null as present`.execute(trx);
+  if (!stored[0]?.present) return undefined;
+  const row = await trx
+    .selectFrom('bridge_delivery')
+    .select(['key', 'provenance', 'finished_at'])
+    .where('state', '=', 'written')
+    .where(
+      sql<boolean>`receipt -> 'document' -> 'components' @> ${JSON.stringify([{ version }])}::jsonb`,
+    )
+    .orderBy('finished_at', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return row && row.key !== null && row.finished_at !== null
+    ? { key: row.key, provenance: row.provenance, at: row.finished_at }
+    : undefined;
+}

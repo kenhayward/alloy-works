@@ -710,7 +710,12 @@ export interface VersionPosition {
 export async function listVersions(
   trx: TenantTransaction,
   artifactId: string,
-  page: { readonly limit: number; readonly after?: VersionPosition },
+  page: {
+    readonly limit: number;
+    readonly after?: VersionPosition;
+    /** Only those whose number begins so, or whose note or author says so: its words, no pattern. */
+    readonly q?: string;
+  },
   /** A line's own versions (LOC-012; ADR-0063), by its id; the main line's where absent. */
   line?: string,
 ): Promise<{ readonly items: readonly ListedVersion[]; readonly next: VersionPosition | null }> {
@@ -719,6 +724,7 @@ export async function listVersions(
     return { items: [], next: null };
   }
   const { after } = page;
+  const asked = page.q?.trim().replace(/[\\%_]/gu, (each) => `\\${each}`);
   const rows = await trx
     .selectFrom('artifact_version as v')
     .leftJoin('principal as p', 'p.id', 'v.author_id')
@@ -740,6 +746,17 @@ export async function listVersions(
     // The main line's alone: a line's are numbered below it, and read only where named (ADR-0063).
     .$if(line === undefined, (query) => query.where('v.revision_no', '>=', 0))
     .$if(line !== undefined, (query) => query.where('v.line_id', '=', line!))
+    // A line's numbers are not the ones stored (ADR-0063), so it is found by its note and author.
+    .$if(asked !== undefined && asked !== '', (query) =>
+      query.where(
+        sql<boolean>`(v.note ilike ${`%${asked}%`} or p.display_name ilike ${`%${asked}%`}
+          ${
+            line === undefined
+              ? sql`or (v.revision_no || '.' || v.version_no) like ${`${asked}%`}`
+              : sql``
+          })`,
+      ),
+    )
     .$if(after !== undefined, (query) =>
       query.where(
         sql<boolean>`(v.revision_no, v.version_no) < (${after!.revision}, ${after!.version})`,

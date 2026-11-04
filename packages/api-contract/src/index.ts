@@ -12,6 +12,7 @@ export {
   ComponentQuery,
   ComponentTypeList,
   ComponentVersionList,
+  DocumentVersionsQuery,
   ComponentView,
   FieldView,
   CreateComponentBody,

@@ -25244,13 +25244,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 918,
+      "line": 935,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 881,
+      "line": 898,
       "kind": "title"
     },
     {
@@ -25274,55 +25274,55 @@
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 828,
+      "line": 845,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 828,
+      "line": 845,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 828,
+      "line": 845,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 472,
+      "line": 489,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 472,
+      "line": 489,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 585,
+      "line": 602,
       "kind": "title"
     },
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 741,
+      "line": 758,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 585,
+      "line": 602,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 472,
+      "line": 489,
       "kind": "title"
     },
     {
@@ -25334,13 +25334,13 @@
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 441,
+      "line": 458,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 441,
+      "line": 458,
       "kind": "title"
     },
     {
@@ -26670,9 +26670,21 @@
       "kind": "title"
     },
     {
+      "id": "VER-025",
+      "file": "apps/web/src/editor/VersionTimeline.test.tsx",
+      "line": 331,
+      "kind": "title"
+    },
+    {
       "id": "VER-060",
       "file": "apps/web/src/editor/VersionTimeline.test.tsx",
       "line": 116,
+      "kind": "title"
+    },
+    {
+      "id": "VER-025",
+      "file": "apps/web/src/editor/VersionViews.test.tsx",
+      "line": 73,
       "kind": "title"
     },
     {
@@ -30284,25 +30296,25 @@
     {
       "id": "API-067",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 148,
+      "line": 149,
       "kind": "title"
     },
     {
       "id": "API-068",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 101,
+      "line": 102,
       "kind": "title"
     },
     {
       "id": "API-071",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 215,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "API-076",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 351,
+      "line": 352,
       "kind": "title"
     },
     {

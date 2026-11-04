@@ -127,11 +127,16 @@ export async function versionsPage(
   limit: string | undefined,
   after: VersionPosition | undefined,
   line?: string,
+  q?: string,
 ) {
   const page = await listVersions(
     trx,
     id,
-    { limit: pageLimit(limit), ...(after === undefined ? {} : { after }) },
+    {
+      limit: pageLimit(limit),
+      ...(after === undefined ? {} : { after }),
+      ...(q === undefined ? {} : { q }),
+    },
     line,
   );
   // A line's version is never shown by the number it is stored at.
@@ -160,7 +165,7 @@ export async function versionsPage(
           ? null
           : { id: each.restoredFrom.id, number: number(each.restoredFrom) },
       // Newest first by a keyset: the first row of the first page is the line's latest.
-      current: after === undefined && at === 0,
+      current: after === undefined && q === undefined && at === 0,
       revision: revisionView(revisions.get(each.id)),
     })),
     next: versionCursor(page.next),
@@ -544,7 +549,7 @@ export function componentHandlers(
       if (artifact?.kind !== 'component') throw notFound();
       // A line's own history (LOC-012), closed or not; one the component does not hold is none.
       if (query.line !== undefined && !(await readLine(trx, id, query.line))) throw notFound();
-      return versionsPage(trx, id, query.limit, after, query.line);
+      return versionsPage(trx, id, query.limit, after, query.line, query.q);
     },
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {

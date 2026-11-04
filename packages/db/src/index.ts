@@ -1533,6 +1533,7 @@ export {
   recordUnlisted,
   refuseDelivery,
   startDelivery,
+  deliveryOfVersion,
   writeBridgeSettings,
   type BridgeElement,
   type BridgeSettings,

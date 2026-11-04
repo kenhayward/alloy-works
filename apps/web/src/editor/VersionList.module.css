@@ -70,3 +70,11 @@
   align-self: stretch;
   font-size: var(--size-13);
 }
+
+.listed {
+  display: contents;
+}
+
+.listed[hidden] {
+  display: none;
+}
