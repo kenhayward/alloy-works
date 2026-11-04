@@ -2,7 +2,7 @@ import type { Locator, Page } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
 
 import { SERVICE } from './testing/addresses.js';
-import { api } from './testing/api.js';
+import { api, edit, makeDocument, nodesOf } from './testing/api.js';
 import { checkAxe } from './testing/axe.js';
 import { makeComponent } from './testing/component.js';
 import { withPage } from './testing/page.js';
@@ -59,7 +59,63 @@ async function openComponent(page: Page, id: string): Promise<Locator> {
   return surface;
 }
 
+/** Leaving by the rail and by the browser's history, the toolbar gone each time and placed on return. */
+async function leaveAndReturn(page: Page, surface: Locator): Promise<void> {
+  const toolbar = page.getByRole('toolbar', { name: 'Table toolbar' });
+  const figure = surface.locator('figure').first();
+  const inPlace = async () => {
+    await toolbar.waitFor();
+    const at = await figure.boundingBox();
+    const bar = await toolbar.boundingBox();
+    expect((bar?.y ?? 0) + (bar?.height ?? 0)).toBeCloseTo((at?.y ?? 0) - 8, 0);
+    expect(bar?.x).toBeCloseTo(at?.x ?? 0, 0);
+  };
+  const rail = page.getByRole('navigation', { name: 'Modules' });
+  await surface.getByText('Row 1', { exact: true }).click();
+  await inPlace();
+
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await expect.poll(() => toolbar.count()).toBe(0);
+  await page.goBack();
+  await inPlace();
+
+  await rail.getByRole('link', { name: 'Terms', exact: true }).click();
+  await expect.poll(() => toolbar.count()).toBe(0);
+  await page.goBack();
+  await inPlace();
+
+  await page.goForward();
+  await expect.poll(() => toolbar.count()).toBe(0);
+}
+
 describe('a plain table in the browser (ADR-0079)', () => {
+  it('takes the toolbar away on leaving a component, and places it again on return (#960)', async () => {
+    const made = await makeComponent(api(), 'A table left behind', longTable);
+    await withPage(async (page) => {
+      await leaveAndReturn(page, await openComponent(page, made.id));
+    });
+  });
+
+  it('takes the toolbar away on leaving a document, and places it again on return (#960)', async () => {
+    const client = api();
+    const component = await makeComponent(client, 'A placed table', longTable);
+    const held = await makeDocument(client, 'A table left behind', ['Placed']);
+    const placed = await edit(client, held, {
+      operation: 'insert',
+      parent: nodesOf(held)[0]!.id,
+      position: 0,
+      node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+    });
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/documents/${placed.id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.locator('section.aw-canvas').getByText('Row 1', { exact: true }).click();
+      const surface = page.getByRole('textbox', { name: /^Content of / });
+      await surface.waitFor();
+      await leaveAndReturn(page, surface);
+    });
+  });
+
   it('stands the toolbar above the table without moving the text, and sticks it clear of the caret', async ({
     task,
   }) => {

@@ -26157,79 +26157,79 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1265,
+      "line": 1299,
       "kind": "title"
     },
     {
       "id": "AST-017",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1433,
+      "line": 1467,
       "kind": "title"
     },
     {
       "id": "AST-032",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1404,
+      "line": 1438,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1179,
+      "line": 1213,
       "kind": "title"
     },
     {
       "id": "AST-052",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1404,
+      "line": 1438,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 872,
+      "line": 906,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 561,
+      "line": 563,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1861,
+      "line": 1895,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1980,
+      "line": 2014,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 351,
+      "line": 353,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1711,
+      "line": 1745,
       "kind": "title"
     },
     {
       "id": "CNT-121",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1095,
+      "line": 1129,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 796,
+      "line": 798,
       "kind": "title"
     },
     {
@@ -36765,7 +36765,7 @@
     {
       "id": "CNT-077",
       "file": "tests/browser/src/table-toolbar.test.ts",
-      "line": 118,
+      "line": 174,
       "kind": "title"
     },
     {
