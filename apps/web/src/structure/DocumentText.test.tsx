@@ -184,7 +184,7 @@ describe("the document's text", () => {
         editor={(component, place) => {
           places.push({ number: place.number, openAt: place.openAt });
           return (
-            <button type="button" onClick={place.onDone}>
+            <button type="button" onClick={() => place.onDone()}>
               the editor for {component}
             </button>
           );
@@ -208,6 +208,33 @@ describe("the document's text", () => {
 
     await userEvent.click(screen.getByRole('button', { name: `the editor for ${PRINTER}` }));
     expect(asked.at(-1)).toBeNull();
+  });
+
+  it('says which version is being edited where the document shows an older one', () => {
+    const texts = new Map<string, unknown>([[PRINTER_NODE, printerText]]);
+    render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={new Map([[PRINTER, 'Install the printer']])}
+        texts={texts}
+        editing={PRINTER_NODE}
+        newer={{
+          client: {} as never,
+          byNode: new Map([
+            [
+              PRINTER_NODE,
+              { pinned: { id: 'v1', number: '0.1' }, newer: { id: 'v2', number: '0.3' } },
+            ],
+          ]),
+        }}
+        onEdit={() => undefined}
+        editor={() => <p>the editor</p>}
+      />,
+    );
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'You are editing version 0.3. This document shows version 0.1 until you choose otherwise.',
+    );
   });
 
   it('opens a card from the keyboard, with Enter on its text, the caret at the start', async () => {

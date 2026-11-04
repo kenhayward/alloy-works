@@ -121,6 +121,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  useLayoutEffect,
   type ReactNode,
   useContext,
 } from 'react';
@@ -313,7 +314,9 @@ export interface ComponentEditorProps {
    * Given where it is open in place (interface slice 13): Done then closes it, releasing the lock
    * first when this author holds one, and is offered to a reader as the way out.
    */
-  readonly onDone?: () => void;
+  readonly onDone?: (last?: ContentDocument) => void;
+  /** What stands in its place while it opens, so that nothing moves (the EP plan, EP2). */
+  readonly whileOpening?: ReactNode;
   /**
    * The document it is open in, in place: a version it saves reaches that document as its author
    * expects, so the warning before one (REU-008) names only the others.
@@ -579,6 +582,7 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  whileOpening,
   ownPage,
   hostDocument,
   termIndexes,
@@ -1304,6 +1308,24 @@ export function ComponentEditor({
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
   openAtRef.current = openAt;
+  // Keys typed after the click and before the text can take them, which would otherwise look like
+  // typing and then be gone (the EP plan, EP2). Only where nothing else holds the focus.
+  const typedEarly = useRef('');
+  const opening = loaded.state === 'loading' && whileOpening !== undefined && openAt !== undefined;
+  useLayoutEffect(() => {
+    if (!opening) return undefined;
+    const keep = (event: globalThis.KeyboardEvent) => {
+      if (document.activeElement !== document.body) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length === 1) typedEarly.current += event.key;
+      else if (event.key === 'Backspace') typedEarly.current = typedEarly.current.slice(0, -1);
+      else return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    document.addEventListener('keydown', keep, true);
+    return () => document.removeEventListener('keydown', keep, true);
+  }, [opening]);
   // The arrival last taken, on the surface it was taken on: StrictMode mounts a second surface.
   const takenArrival = useRef<{ surface: EditorView; arrival: number } | null>(null);
   const openReferenceRef = useRef(openReference);
@@ -1451,7 +1473,8 @@ export function ComponentEditor({
     return () => onMine(null);
   }, [onMine, component, surface]);
 
-  useEffect(() => {
+  // Before the frame paints, so that what stood in its place gives way to it in one (EP2).
+  useLayoutEffect(() => {
     if (!component || !place.current) return undefined;
     const opened = toEditor(parseContentDocument(component.content));
     if (!opened.editable) return undefined;
@@ -2243,10 +2266,18 @@ export function ComponentEditor({
     onSelectionHeld.current?.(selectionHeldNow.current);
   });
   useEffect(() => () => onSelectionHeld.current?.(false), []);
-  if (loaded.state === 'loading') return <Waiting>{say('editor.opening')}</Waiting>;
+  // The keys typed while it opened, once it is known whether it takes them.
+  useLayoutEffect(() => {
+    if (surface === null || session === null || typedEarly.current === '') return;
+    if (component?.mayEdit === true && isEditablePhase(session.phase) && !readingRef.current) {
+      surface.dispatch(surface.state.tr.insertText(typedEarly.current));
+    }
+    typedEarly.current = '';
+  });
+  if (loaded.state === 'loading') return whileOpening ?? <Waiting>{say('editor.opening')}</Waiting>;
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
-    <button type="button" onClick={onDone}>
+    <button type="button" onClick={() => onDone()}>
       {say('editor.done')}
     </button>
   );
@@ -2681,7 +2712,7 @@ export function ComponentEditor({
       await controls.current?.doneEditing();
       if (controls.current?.view().phase !== 'reading') return;
     }
-    onDone?.();
+    onDone?.(surface === null ? undefined : fromEditor(surface.state.doc));
   };
 
   // The band a page keeps above the desk (ADR-0056), and whether this is in one. The frame's line and
