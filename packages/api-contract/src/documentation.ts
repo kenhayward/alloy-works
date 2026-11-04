@@ -618,6 +618,9 @@ const operationTags = {
     'setModelRoute',
   ],
   Restoring: [
+    'getClosure',
+    'startClosure',
+    'cancelClosure',
     'createTenantRestoration',
     'listTenantRestorations',
     'getTenantRestoration',
@@ -1408,6 +1411,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Imported again, no document is made: each changed part becomes one suggestion against its component as it is now, by the person accepting, so an edit made in the space is never overwritten, its tracked changes and comments on top; each new part a new component placed in the earlier document after the part before it; and each component no part matched is kept and flagged on the document by a thread. A component the person accepting may not suggest on, or one deleted or archived since it was matched, is skipped and said, unless none can be suggested on. Only its importer may accept it, and they need create in the space. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.',
   abandonImport:
     'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
+  getClosure:
+    'Returns where this environment is in its life, what closing it would stop, how many legal holds would keep it, and whether the caller may give a closure up. While it is active this needs `close_environment`; while it is closing, anybody it still lets in may ask.',
+  startClosure:
+    'Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a finished whole export asked for in the last 24 hours, or `declined`.',
+  cancelClosure:
+    'Gives up closing this environment, which is possible until deletion begins, and loses nothing. The operator alone may cancel a closure the operator began. Needs `close_environment` and a sign-in in the last ten minutes.',
   createTenantRestoration:
     'Begins restoring this environment from an archive, waiting for its bytes. Needs `import_environment` and a recent sign-in, and no token can hold it.',
   listTenantRestorations:

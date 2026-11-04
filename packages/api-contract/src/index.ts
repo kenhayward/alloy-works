@@ -869,3 +869,4 @@ export {
   relationshipRoutes,
 } from './relationships.js';
 export { MyPreferences, preferenceRoutes } from './preferences.js';
+export { ClosureBody, ClosureView, closureRoutes } from './closure.js';

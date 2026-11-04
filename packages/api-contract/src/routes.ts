@@ -9,6 +9,7 @@ import { holdRoutes } from './holds.js';
 import { shareRoutes } from './shares.js';
 import { queryUsageRoutes } from './query-usage.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
+import { closureRoutes } from './closure.js';
 import { exportRoutes } from './exports.js';
 import { restorationRoutes } from './restorations.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
@@ -156,6 +157,7 @@ const ownRoutes = {
   },
   getTenant: {
     operationId: 'getTenant',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/tenant',
     summary: 'The environment this address serves, as its sign-in page shows it',
@@ -168,6 +170,7 @@ const ownRoutes = {
   },
   startOrganisationSignIn: {
     operationId: 'startOrganisationSignIn',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/organisation',
     summary: "Begin signing in with the organisation's identity provider",
@@ -182,6 +185,7 @@ const ownRoutes = {
   },
   finishOrganisationSignIn: {
     operationId: 'finishOrganisationSignIn',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/organisation/callback',
     summary: 'Where the identity provider returns; completes the sign-in',
@@ -196,6 +200,7 @@ const ownRoutes = {
   },
   startGoogleSignIn: {
     operationId: 'startGoogleSignIn',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/google',
     summary: 'Begin signing in with a Google account, by way of the one sign-in address',
@@ -230,6 +235,7 @@ const ownRoutes = {
   },
   completeGoogleSignIn: {
     operationId: 'completeGoogleSignIn',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/google/complete',
     summary: 'Redeems the one-time code from the sign-in address, and signs in',
@@ -268,6 +274,7 @@ const ownRoutes = {
   },
   signOut: {
     operationId: 'signOut',
+    openWhileClosing: true,
     method: 'POST',
     path: '/v1/sign-out',
     summary: 'End this session, wherever it is in use',
@@ -281,6 +288,7 @@ const ownRoutes = {
   },
   startReauthentication: {
     operationId: 'startReauthentication',
+    openWhileClosing: true,
     method: 'POST',
     path: '/v1/sessions/current/reauthentication',
     summary: 'Ask for this session to be signed in again, and say where to send the browser',
@@ -296,6 +304,7 @@ const ownRoutes = {
   },
   getMe: {
     operationId: 'getMe',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/me',
     summary: 'Who is signed in, and to which environment',
@@ -436,6 +445,7 @@ type Routes = typeof ownRoutes &
   typeof shareRoutes &
   typeof queryUsageRoutes &
   typeof datasetSourceRoutes &
+  typeof closureRoutes &
   typeof exportRoutes &
   typeof restorationRoutes &
   typeof modelEndpointRoutes &
@@ -520,6 +530,7 @@ export const routes: Routes = {
   ...shareRoutes,
   ...queryUsageRoutes,
   ...datasetSourceRoutes,
+  ...closureRoutes,
   ...exportRoutes,
   ...restorationRoutes,
   ...modelEndpointRoutes,

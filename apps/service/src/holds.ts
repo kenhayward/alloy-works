@@ -62,6 +62,14 @@ export function holdHandlers() {
         by: principalId,
       });
       if (answer.answer === 'target.missing') throw notFound();
+      if (answer.answer === 'environment_deleting') {
+        throw new AppError(
+          409,
+          'environment_deleting',
+          'This environment is being deleted.',
+          'LIF-021',
+        );
+      }
       if (answer.answer !== 'placed') throw emptyReason();
       return viewOf(trx, answer.id);
     },

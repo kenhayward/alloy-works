@@ -83,7 +83,8 @@ export function toBridgeAnswer(error: unknown): {
     };
   }
   // In the bridge's own closed list: to CT Studio a stopped environment is one to try again (TL-B).
-  if ((error as { code?: unknown } | null)?.code === 'environment_suspended') {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'environment_suspended' || code === 'environment_closing') {
     return { status: 503, body: UNAVAILABLE, unexpected: false };
   }
   if (unreachable(error)) return { status: 503, body: UNAVAILABLE, unexpected: true };

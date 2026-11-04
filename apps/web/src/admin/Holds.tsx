@@ -55,7 +55,7 @@ const named = (person: Person) => person.name ?? say('admin.somebody');
  * placed it, when and why, and its release; **Release** on one in force, which asks why. The one place
  * a hold's reason is shown. Placed from a component's or a document's page, or a space's row.
  */
-export function Holds({ client }: { client: Client }) {
+export function Holds({ client, lead }: { client: Client; lead?: string }) {
   const [load] = useState(
     () => () =>
       everyPage<HoldRow>((cursor) =>
@@ -72,7 +72,7 @@ export function Holds({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>{say('admin.a-legal-hold-keeps-a')}</p>
+        <p>{lead ?? say('admin.a-legal-hold-keeps-a')}</p>
       </div>
       <Shown read={read} failed={say('admin.the-legal-holds-could-not-be')}>
         {(rows) =>

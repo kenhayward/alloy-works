@@ -260,7 +260,20 @@ export {
   type TenantDatabaseOptions,
   type ResolvedTenant,
 } from './tenant-database.js';
-export { resumeTenant, suspendTenant, TenantStateRefused } from './tenant-lifecycle.js';
+export {
+  advanceClosure,
+  closureFacts,
+  isRecentWholeExport,
+  cancelClosing,
+  type ClosureOffer,
+  mayEnterWhileClosing,
+  ownTenantState,
+  type OwnTenantState,
+  resumeTenant,
+  startClosing,
+  suspendTenant,
+  TenantStateRefused,
+} from './tenant-lifecycle.js';
 export {
   artifactPlace,
   AuditContextMissing,

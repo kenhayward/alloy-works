@@ -33,25 +33,27 @@ export type AttentionView =
 export type PresentationView =
   paths['/v1/presentation']['get']['responses']['200']['content']['application/json'];
 
-const suspendedListeners = new Set<() => void>();
+type EnvironmentRefusal = 'environment_suspended' | 'environment_closing';
+
+const refusalListeners = new Set<(code: EnvironmentRefusal) => void>();
 
 /**
- * Told when any call finds its environment suspended (ADM-028), so a page already open can say so
- * however many places asked. Answers how to stop listening.
+ * Told when any call finds its environment suspended or closing (ADM-028, ADM-030), so a page already
+ * open can say so however many places asked. Answers how to stop listening.
  */
-export function onEnvironmentSuspended(listener: () => void): () => void {
-  suspendedListeners.add(listener);
-  return () => suspendedListeners.delete(listener);
+export function onEnvironmentRefused(listener: (code: EnvironmentRefusal) => void): () => void {
+  refusalListeners.add(listener);
+  return () => refusalListeners.delete(listener);
 }
 
-const noticeSuspended = async (response: Response): Promise<void> => {
+const noticeRefusal = async (response: Response): Promise<void> => {
   if (response.status !== 503) return;
   const body = (await response
     .clone()
     .json()
     .catch(() => undefined)) as { code?: unknown } | undefined;
-  if (body?.code !== 'environment_suspended') return;
-  for (const listener of suspendedListeners) listener();
+  if (body?.code !== 'environment_suspended' && body?.code !== 'environment_closing') return;
+  for (const listener of refusalListeners) listener(body.code);
 };
 
 /**
@@ -69,7 +71,7 @@ export function createApiClient(
     const said = saidLanguage();
     if (said !== undefined) request.headers.set('accept-language', said);
     const response = await (given ?? globalThis.fetch)(request);
-    void noticeSuspended(response);
+    void noticeRefusal(response);
     return response;
   };
   return createOpenApiClient<paths>({

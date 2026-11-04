@@ -72,6 +72,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listTenantExports: read,
   getTenantExport: read,
   downloadTenantExport: writes('export.downloaded'),
+  getClosure: read,
+  startClosure: writes('tenant.closing'),
+  cancelClosure: writes('tenant.closure_cancelled'),
   createTenantRestoration: { none: 'restoring' },
   listTenantRestorations: read,
   getTenantRestoration: read,
@@ -680,7 +683,12 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   },
   // The operator's command line, which no job or route reaches (TL-P).
   steward: {
-    state: writes('tenant.suspended', 'tenant.resumed'),
+    state: writes(
+      'tenant.suspended',
+      'tenant.resumed',
+      'tenant.closing',
+      'tenant.closure_cancelled',
+    ),
   },
   jobs: {
     sample_pdf: { none: 'derived' },
@@ -715,6 +723,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
     sweepExpiredTenantExports: { none: 'derived' },
+    sweepClosures: writes('tenant.retained', 'tenant.closed'),
     sweepRestorations: { none: 'derived' },
     sweepExpiredRangePreviews: { none: 'preview' },
     sweepAbandonedGenerationRuns: { none: 'derived' },

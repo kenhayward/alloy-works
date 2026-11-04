@@ -15,6 +15,7 @@ import { ModelSpending } from './ModelSpending.js';
 import { Webhooks } from './Webhooks.js';
 import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
+import { CloseEnvironment } from './Closure.js';
 import { Restore } from './Restore.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
@@ -586,6 +587,7 @@ export function Administration({
           <>
             <TenantExport client={client} />
             <Restore client={client} />
+            <CloseEnvironment client={client} />
           </>
         )}
         {shown === 'models' && <Models client={client} />}

@@ -82,6 +82,19 @@ describe('the sign-in screen', () => {
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
   });
 
+  it('ADM-030 says an environment past closing has closed, in place of the shell and any way in', async () => {
+    serviceThat(
+      () => json(503, { code: 'environment_closing', message: 'Closing.' }),
+      () => json(200, ONE_WAY),
+    );
+    open();
+    expect(
+      await screen.findByRole('heading', { name: 'This environment has closed' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('the workspace')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+  });
+
   it('ADM-028 tells a page already open, and leaves what is on it where it is', async () => {
     const me = { principalId: 'p', email: null, displayName: 'Ada' };
     serviceThat(

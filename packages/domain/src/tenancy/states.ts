@@ -13,6 +13,10 @@ export const TENANT_STATES = [
 
 export type TenantState = (typeof TENANT_STATES)[number];
 
+/** How long a closed tenant can still be brought back, and then how long it takes to go (IAM-086). */
+export const GRACE_DAYS = 30;
+export const DELETION_DAYS = 1;
+
 export const TENANT_EFFECT_CAPABILITIES = [
   'signInAndApi',
   'sharedPublicationLinks',
@@ -48,7 +52,7 @@ const CLOSING: Effects = {
   sharedPublicationLinks: 'stops',
   webhookDelivery: 'stops, dropped at deletion',
   backgroundWork: 'stops, except the export',
-  realtimeConnections: 'ends, but for those allowed',
+  realtimeConnections: 'ends',
   modelEndpoints: 'stops',
   searchIndexes: 'stops',
   notificationDelivery: 'stops',

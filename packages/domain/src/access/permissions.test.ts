@@ -30,6 +30,7 @@ describe('the permission set', () => {
       [
         'administer',
         'approve',
+        'close_environment',
         'comment',
         'configure_services',
         'configure_webhooks',

@@ -147,7 +147,9 @@ export function environmentAnswer(
   const code =
     typeof body === 'object' && body !== null ? (body as { code?: unknown }).code : undefined;
   if (status === 401 && code === 'unauthenticated') return 'environment';
-  if (status === 503 && code === 'environment_suspended') return 'environment';
+  if (status === 503 && (code === 'environment_suspended' || code === 'environment_closing')) {
+    return 'environment';
+  }
   if (status === 404 && code === 'tenant_not_found') return 'no-environment';
   return 'not-alloy-works';
 }

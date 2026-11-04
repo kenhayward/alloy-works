@@ -1028,6 +1028,7 @@ const VALID_INPUT: Readonly<
   requestAuditExport: { payload: {} },
   requestTenantExport: { payload: {} },
   createTenantRestoration: {},
+  startClosure: { payload: { name: 'Production', declined: true } },
   listTenantRestorations: {},
   getTenantRestoration: {},
   sendTenantRestorationArchive: {},

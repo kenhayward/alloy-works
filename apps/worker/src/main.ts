@@ -36,6 +36,7 @@ import {
   sweepExpiredQueryRuns,
   sweepExpiredPreviews,
   sweepExpiredTenantExports,
+  sweepClosures,
   sweepRestorations,
   sweepExpiredRangePreviews,
   sweepAbandonedGenerationRuns,
@@ -166,6 +167,9 @@ const sweep = setInterval(() => {
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired exports'))
     .catch((error: unknown) => log.error({ err: error }, 'export sweep failed'));
   // Presence past a minute, which no stream shows already (the PL plan, PL-C).
+  void sweepClosures(db, log).catch((error: unknown) =>
+    log.error({ err: error }, 'closure sweep failed'),
+  );
   void sweepRestorations(db, stores, queue, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept uploaded archives'))
     .catch((error: unknown) => log.error({ err: error }, 'restoration sweep failed'));

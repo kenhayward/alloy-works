@@ -61,6 +61,7 @@ export const starterRoles: readonly StarterRole[] = [
       'configure_services',
       'configure_webhooks',
       'import_environment',
+      'close_environment',
     ],
   },
   { name: 'Editing', permissions: ['edit'] },

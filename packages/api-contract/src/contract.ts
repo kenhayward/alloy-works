@@ -91,6 +91,8 @@ export interface RouteContract {
   readonly summary: string;
   /** Whether the hostname must name a tenant before the route runs. */
   readonly tenantScoped: boolean;
+  /** Still answers while its environment is closing or retained, for those it lets in (TL-A). */
+  readonly openWhileClosing?: true;
   /** What it checks. Anything but `none` needs a session, and the cross-tenant harness tests it. */
   readonly access: RouteAccess;
   /** Path parameters, named as the path names them. The service validates them before a handler. */

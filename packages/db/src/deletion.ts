@@ -44,6 +44,11 @@ export async function shareDeletion(trx: TenantTransaction): Promise<void> {
   await sql`select pg_advisory_xact_lock_shared(${DELETION_LOCK})`.execute(trx);
 }
 
+/** Taken by what depends on no hold or reference appearing meanwhile: a delete, a tenant's closing. */
+export async function excludeDeletionDependants(trx: TenantTransaction): Promise<void> {
+  await sql`select pg_advisory_xact_lock(${DELETION_LOCK})`.execute(trx);
+}
+
 /**
  * Whether the artifact aliased `alias` is deleted: its latest act, as `snapshot` sees it where a walk
  * gives one, else as the statement does, is `deleted`.

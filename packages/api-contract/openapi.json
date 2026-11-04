@@ -16217,7 +16217,8 @@
                               "rotate_secrets",
                               "configure_services",
                               "configure_webhooks",
-                              "import_environment"
+                              "import_environment",
+                              "close_environment"
                             ]
                           },
                           "allowed": {
@@ -16513,7 +16514,8 @@
                               "rotate_secrets",
                               "configure_services",
                               "configure_webhooks",
-                              "import_environment"
+                              "import_environment",
+                              "close_environment"
                             ]
                           },
                           "allowed": {
@@ -50175,6 +50177,996 @@
           },
           "403": {
             "description": "The caller may not design here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/closure": {
+      "delete": {
+        "operationId": "cancelClosure",
+        "summary": "Give up closing this environment, while that can still be done",
+        "description": "Gives up closing this environment, which is possible until deletion begins, and loses nothing. The operator alone may cancel a closure the operator began. Needs `close_environment` and a sign-in in the last ten minutes.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "close_environment",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Back as it was",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "suspended",
+                        "closing",
+                        "retained",
+                        "deleting",
+                        "deleted"
+                      ],
+                      "description": "Where this environment is in its life"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Its name, which closing asks to have typed"
+                    },
+                    "since": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "When it came to be in this state"
+                    },
+                    "graceEndsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "When closing can no longer be cancelled, unless a hold keeps it; null if not closing"
+                    },
+                    "closedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "person",
+                            "operator"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who began a closure: only the operator may cancel the operator's"
+                    },
+                    "holds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Legal holds in force, each of which keeps it all"
+                    },
+                    "graceDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "deletionDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "effects": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "What stops and what continues while it closes (ADM-045)"
+                    },
+                    "mayCancel": {
+                      "type": "boolean",
+                      "description": "Whether the one asking may give the closure up"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "name",
+                    "since",
+                    "graceEndsAt",
+                    "closedBy",
+                    "holds",
+                    "graceDays",
+                    "deletionDays",
+                    "effects",
+                    "mayCancel"
+                  ]
+                },
+                "example": {
+                  "state": "active",
+                  "name": "example",
+                  "since": "2026-01-01T00:00:00.000Z",
+                  "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                  "closedBy": "person",
+                  "holds": 0,
+                  "graceDays": 1,
+                  "deletionDays": 1,
+                  "effects": {},
+                  "mayCancel": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`close_environment`, or to begin one also `export_environment` and `export_audit`, is not held at this environment, or the sign-in is older than ten minutes, or the operator began this closure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It is not closing, or deletion has begun",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getClosure",
+        "summary": "Where this environment is in its life, and what closing it would do",
+        "description": "Returns where this environment is in its life, what closing it would stop, how many legal holds would keep it, and whether the caller may give a closure up. While it is active this needs `close_environment`; while it is closing, anybody it still lets in may ask.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "suspended",
+                        "closing",
+                        "retained",
+                        "deleting",
+                        "deleted"
+                      ],
+                      "description": "Where this environment is in its life"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Its name, which closing asks to have typed"
+                    },
+                    "since": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "When it came to be in this state"
+                    },
+                    "graceEndsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "When closing can no longer be cancelled, unless a hold keeps it; null if not closing"
+                    },
+                    "closedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "person",
+                            "operator"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who began a closure: only the operator may cancel the operator's"
+                    },
+                    "holds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Legal holds in force, each of which keeps it all"
+                    },
+                    "graceDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "deletionDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "effects": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "What stops and what continues while it closes (ADM-045)"
+                    },
+                    "mayCancel": {
+                      "type": "boolean",
+                      "description": "Whether the one asking may give the closure up"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "name",
+                    "since",
+                    "graceEndsAt",
+                    "closedBy",
+                    "holds",
+                    "graceDays",
+                    "deletionDays",
+                    "effects",
+                    "mayCancel"
+                  ]
+                },
+                "example": {
+                  "state": "active",
+                  "name": "example",
+                  "since": "2026-01-01T00:00:00.000Z",
+                  "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                  "closedBy": "person",
+                  "holds": 0,
+                  "graceDays": 1,
+                  "deletionDays": 1,
+                  "effects": {},
+                  "mayCancel": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`close_environment` is not held here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "startClosure",
+        "summary": "Close this environment, beginning its grace period",
+        "description": "Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a finished whole export asked for in the last 24 hours, or `declined`.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "close_environment",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "This environment's name, typed"
+                  },
+                  "export": {
+                    "description": "A whole export asked for in the last 24 hours, and finished",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "declined": {
+                    "description": "Whoever closes it refuses the export offered",
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "description": "An answer about the export is required: an export taken, or one declined"
+              },
+              "example": {
+                "name": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Closing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "suspended",
+                        "closing",
+                        "retained",
+                        "deleting",
+                        "deleted"
+                      ],
+                      "description": "Where this environment is in its life"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Its name, which closing asks to have typed"
+                    },
+                    "since": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "When it came to be in this state"
+                    },
+                    "graceEndsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "When closing can no longer be cancelled, unless a hold keeps it; null if not closing"
+                    },
+                    "closedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "person",
+                            "operator"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who began a closure: only the operator may cancel the operator's"
+                    },
+                    "holds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Legal holds in force, each of which keeps it all"
+                    },
+                    "graceDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "deletionDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "effects": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "What stops and what continues while it closes (ADM-045)"
+                    },
+                    "mayCancel": {
+                      "type": "boolean",
+                      "description": "Whether the one asking may give the closure up"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "name",
+                    "since",
+                    "graceEndsAt",
+                    "closedBy",
+                    "holds",
+                    "graceDays",
+                    "deletionDays",
+                    "effects",
+                    "mayCancel"
+                  ]
+                },
+                "example": {
+                  "state": "active",
+                  "name": "example",
+                  "since": "2026-01-01T00:00:00.000Z",
+                  "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                  "closedBy": "person",
+                  "holds": 0,
+                  "graceDays": 1,
+                  "deletionDays": 1,
+                  "effects": {},
+                  "mayCancel": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`close_environment`, or to begin one also `export_environment` and `export_audit`, is not held at this environment, or the sign-in is older than ten minutes, or the operator began this closure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It is not somewhere it can be closed from",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The name does not match, or the export was neither answered for nor recent",
             "content": {
               "application/json": {
                 "schema": {
@@ -241283,6 +242275,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "environmentState": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "suspended",
+                        "closing",
+                        "retained",
+                        "deleting",
+                        "deleted"
+                      ],
+                      "description": "Where this environment is in its life, which decides what its page offers"
+                    },
                     "id": {
                       "type": "string",
                       "description": "The principal, stable for as long as the environment exists"
@@ -241329,6 +242333,7 @@
                     }
                   },
                   "required": [
+                    "environmentState",
                     "id",
                     "displayName",
                     "email",
@@ -241339,6 +242344,7 @@
                   ]
                 },
                 "example": {
+                  "environmentState": "active",
                   "id": "example",
                   "displayName": "example",
                   "email": "example",
@@ -291502,7 +292508,8 @@
                                 "rotate_secrets",
                                 "configure_services",
                                 "configure_webhooks",
-                                "import_environment"
+                                "import_environment",
+                                "close_environment"
                               ]
                             }
                           }
@@ -291825,7 +292832,8 @@
                         "rotate_secrets",
                         "configure_services",
                         "configure_webhooks",
-                        "import_environment"
+                        "import_environment",
+                        "close_environment"
                       ]
                     },
                     "description": "What it holds, each once. Without read it can only be granted as a denial"
@@ -291887,7 +292895,8 @@
                               "rotate_secrets",
                               "configure_services",
                               "configure_webhooks",
-                              "import_environment"
+                              "import_environment",
+                              "close_environment"
                             ]
                           }
                         }
@@ -356318,6 +357327,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "suspended",
+                        "closing",
+                        "retained",
+                        "deleting",
+                        "deleted"
+                      ],
+                      "description": "Where it is in its life: anywhere but `active`, most people cannot enter"
+                    },
                     "name": {
                       "type": "string",
                       "description": "What this environment is called, as its own people see it"
@@ -356354,12 +357375,14 @@
                     }
                   },
                   "required": [
+                    "state",
                     "name",
                     "signIn",
                     "providers"
                   ]
                 },
                 "example": {
+                  "state": "active",
                   "name": "example",
                   "signIn": [],
                   "providers": []

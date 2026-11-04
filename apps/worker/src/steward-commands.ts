@@ -1,5 +1,7 @@
 import {
+  cancelClosing,
   resumeTenant,
+  startClosing,
   suspendTenant,
   TenantStateRefused,
   type TenantDatabase,
@@ -10,7 +12,14 @@ import {
  * organisation has a tenant of its own (TLd). It changes a tenant's state and reads no content, and each
  * act is an event in that tenant's log, naming the vendor (IAM-087).
  */
-const USAGE = 'steward suspend --tenant <id> --reason <why> | steward resume --tenant <id>';
+const USAGE =
+  'steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id>';
+const DONE: Readonly<Record<string, string>> = {
+  suspend: 'suspended',
+  resume: 'resumed',
+  close: 'closing',
+  cancel: 'its closure cancelled',
+};
 const OPERATOR = { actorKind: 'vendor' } as const;
 
 const option = (argv: readonly string[], name: string): string | undefined => {
@@ -26,10 +35,13 @@ export async function runSteward(
   const [command] = argv;
   const id = option(argv, 'tenant');
   const reason = option(argv, 'reason');
+  const notice = option(argv, 'notice');
   if (
     id === undefined ||
-    (command !== 'suspend' && command !== 'resume') ||
-    (command === 'suspend' && (!reason || reason.length > 2000))
+    command === undefined ||
+    DONE[command] === undefined ||
+    (command === 'suspend' && (!reason || reason.length > 2000)) ||
+    (command === 'close' && (!notice || notice.length > 2000))
   ) {
     deps.out(USAGE);
     return 2;
@@ -42,10 +54,13 @@ export async function runSteward(
   try {
     await deps.db.withTenant(
       tenant,
-      (trx) =>
-        command === 'suspend'
-          ? suspendTenant(trx, tenant, reason as string)
-          : resumeTenant(trx, tenant),
+      (trx) => {
+        if (command === 'suspend') return suspendTenant(trx, tenant, reason as string);
+        if (command === 'resume') return resumeTenant(trx, tenant);
+        // The export is offered, not taken: those allowed in may take it for the 30 days (TL-P).
+        if (command === 'close') return startClosing(trx, tenant, { notice: notice as string });
+        return cancelClosing(trx, tenant);
+      },
       OPERATOR,
     );
   } catch (error) {
@@ -53,6 +68,6 @@ export async function runSteward(
     deps.out(error.message);
     return 1;
   }
-  deps.out(`${id}: ${command === 'suspend' ? 'suspended' : 'resumed'}.`);
+  deps.out(`${id}: ${DONE[command]}.`);
   return 0;
 }
