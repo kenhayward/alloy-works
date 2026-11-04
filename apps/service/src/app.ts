@@ -89,6 +89,7 @@ import { sendStreamed } from './streamed.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
 import { closureHandlers } from './closure.js';
+import { organisationHandlers } from './organisation.js';
 import { restorationHandlers } from './restorations.js';
 import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
@@ -167,7 +168,13 @@ import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.j
 import { signState, verifyState } from './sign-in-state.js';
 import { rendererFallback, rendererRoutes, serveRenderer } from './renderer.js';
 import { streamToViewer } from './stream.js';
-import { answersInAnyState, cachedResolver, environmentNotOpen, refusalFor } from './tenants.js';
+import {
+  answersInAnyState,
+  cachedResolver,
+  environmentNotOpen,
+  kindRefusal,
+  refusalFor,
+} from './tenants.js';
 import {
   administeredTokenHandlers,
   bearerSecret,
@@ -414,6 +421,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
       bearer: authorization !== undefined && isBearer(authorization),
     });
     if (refusal) throw refusal;
+    const elsewhere = kindRefusal(tenant.kind, {
+      method: request.method,
+      route: request.routeOptions.url,
+    });
+    if (elsewhere) throw elsewhere;
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
   registerScim(app, { db, resolve: (hostname) => tenants.resolve(hostname) });
@@ -861,6 +873,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...tenantExportHandlers(tenantOf, options.objects),
     ...restorationHandlers(db, tenantOf, options.objects),
     ...closureHandlers(db, tenantOf),
+    ...organisationHandlers(tenantOf),
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
@@ -1313,6 +1326,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return {
         id: principal.principalId,
         environmentState: state,
+        environmentKind: (await tenants.resolve(request.hostname))?.kind ?? 'content',
         displayName: principal.displayName,
         email: principal.email,
         environment: profile.display_name,

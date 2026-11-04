@@ -25,6 +25,7 @@ export type PeopleList = z.infer<typeof PeopleList>;
 export const peopleRoutes = {
   listPeople: {
     operationId: 'listPeople',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/people',
     summary: "The environment's people, by name, for a user field",

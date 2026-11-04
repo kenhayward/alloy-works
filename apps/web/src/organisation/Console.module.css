@@ -1,0 +1,43 @@
+/* An organisation's own page: no shell around it, since its tenant has no content to move between. */
+.console {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: var(--space-32) var(--space-16);
+}
+
+.console > * + * {
+  margin-top: var(--space-16);
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+}
+
+.console table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.console th,
+.console td {
+  padding: var(--space-8);
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.console form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+}
+
+.console label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

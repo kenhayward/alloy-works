@@ -93,6 +93,7 @@ const forbidden = {
 export const invitationRoutes = {
   listInvitations: {
     operationId: 'listInvitations',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/invitations',
     summary: 'Every invitation, waiting or accepted, a page at a time',
@@ -111,6 +112,7 @@ export const invitationRoutes = {
   },
   invite: {
     operationId: 'invite',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/invitations',
     summary: 'Invite an address, so the person can be granted access before they first sign in',
@@ -129,6 +131,7 @@ export const invitationRoutes = {
   },
   withdrawInvitation: {
     operationId: 'withdrawInvitation',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/invitations/{id}',
     summary: 'Withdraw an invitation nobody has accepted, with its person and their grants',

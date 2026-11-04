@@ -142,6 +142,7 @@ const CLOSING = { ...CHANGING, changesAccess: true } as const;
 export const signInSettingsRoutes = {
   getSignInSettings: {
     operationId: 'getSignInSettings',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/sign-in-settings',
     summary: 'How people sign in to this environment: its providers, Google and session lifetimes',
@@ -155,6 +156,7 @@ export const signInSettingsRoutes = {
   },
   addProvider: {
     operationId: 'addProvider',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/sign-in-settings/providers',
     summary: 'Add an identity provider, or open one of the same issuer closed before',
@@ -171,6 +173,7 @@ export const signInSettingsRoutes = {
   },
   changeProvider: {
     operationId: 'changeProvider',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/sign-in-settings/providers/{id}',
     summary: 'Rename an identity provider, or change the claim its groups come in',
@@ -188,6 +191,7 @@ export const signInSettingsRoutes = {
   },
   replaceProviderSecret: {
     operationId: 'replaceProviderSecret',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/sign-in-settings/providers/{id}/secret',
     summary: "Replace an open identity provider's client secret",
@@ -205,6 +209,7 @@ export const signInSettingsRoutes = {
   },
   closeProvider: {
     operationId: 'closeProvider',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/sign-in-settings/providers/{id}/closure',
     summary: 'Close an identity provider, ending its sessions and its people’s tokens',
@@ -221,6 +226,7 @@ export const signInSettingsRoutes = {
   },
   turnScimOn: {
     operationId: 'turnScimOn',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/sign-in-settings/providers/{id}/scim',
     summary: 'Have an identity provider provision people and groups by SCIM',
@@ -237,6 +243,7 @@ export const signInSettingsRoutes = {
   },
   turnScimOff: {
     operationId: 'turnScimOff',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/sign-in-settings/providers/{id}/scim',
     summary: 'Stop an identity provider provisioning, ending its token',
@@ -252,6 +259,7 @@ export const signInSettingsRoutes = {
   },
   issueScimToken: {
     operationId: 'issueScimToken',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/sign-in-settings/providers/{id}/scim/token',
     summary: "Make a provider's SCIM token, shown this once, ending any before it",
@@ -270,6 +278,7 @@ export const signInSettingsRoutes = {
   },
   setGoogleSignIn: {
     operationId: 'setGoogleSignIn',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/sign-in-settings/google',
     summary: 'Open or close the Google route, and set the Workspace domains it admits',
@@ -288,6 +297,7 @@ export const signInSettingsRoutes = {
   },
   setSessionSettings: {
     operationId: 'setSessionSettings',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/sign-in-settings/sessions',
     summary: 'Set how long a session lasts; a shortening reaches open sessions at once',
@@ -302,6 +312,7 @@ export const signInSettingsRoutes = {
   },
   disablePerson: {
     operationId: 'disablePerson',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/principals/{id}/disablement',
     summary: 'Disable a person: their sessions and tokens end at once, and they sign in no more',
@@ -326,6 +337,7 @@ export const signInSettingsRoutes = {
   },
   enablePerson: {
     operationId: 'enablePerson',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/principals/{id}/disablement',
     summary: 'Enable a person disabled; what ended stays ended',

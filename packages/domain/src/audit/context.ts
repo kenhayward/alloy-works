@@ -34,9 +34,11 @@ export const AuditContext = z.discriminatedUnion('actorKind', [
     traceId: TraceId.optional(),
   }),
   z.strictObject({ actorKind: z.literal('vendor'), traceId: TraceId.optional() }),
+  // An organisation's tenant acted: the event there names who, under that tenant's erasure (TL-L).
+  z.strictObject({ actorKind: z.literal('organisation'), traceId: TraceId.optional() }),
   z.strictObject({ actorKind: z.literal('anonymous'), traceId: TraceId.optional() }),
 ]);
 
 export type AuditContext = z.infer<typeof AuditContext>;
 
-export const auditActorKinds = ['person', 'token', 'system', 'vendor', 'anonymous'] as const;
+export const auditActorKinds = ['person', 'token', 'system', 'vendor', 'anonymous', 'organisation'] as const;

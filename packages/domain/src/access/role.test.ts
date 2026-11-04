@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { permissions } from './permissions.js';
-import { allowable, checkRole, starterRoles } from './role.js';
+import { allowable, checkRole, organisationRole, starterRoles } from './role.js';
 
 describe('a role', () => {
   it('holds at least one permission from the closed set, each once', () => {
@@ -49,7 +49,7 @@ describe('a role', () => {
   });
 
   it('holds every permission in some starter role, so an administrator can grant any of them', () => {
-    const held = new Set(starterRoles.flatMap((role) => role.permissions));
+    const held = new Set([...starterRoles, organisationRole].flatMap((role) => role.permissions));
     expect(permissions.filter((permission) => !held.has(permission))).toEqual([]);
   });
 

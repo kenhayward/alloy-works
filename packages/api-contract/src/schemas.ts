@@ -126,6 +126,9 @@ export const About = z.object({
 export type About = z.infer<typeof About>;
 
 export const Me = z.object({
+  environmentKind: z
+    .enum(['content', 'organisation'])
+    .describe("Whether this is an organisation's own tenant, which holds no content"),
   environmentState: z
     .enum(TENANT_STATES)
     .describe('Where this environment is in its life, which decides what its page offers'),

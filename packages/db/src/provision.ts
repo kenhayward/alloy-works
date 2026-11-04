@@ -1,3 +1,4 @@
+import { organisationRole } from '@alloy-works/domain';
 import pg from 'pg';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
@@ -13,6 +14,8 @@ export interface NewTenant {
   readonly organisation: { readonly id: string; readonly name: string };
   readonly tenant: { readonly id: string; readonly name: string };
   readonly hostnames: readonly string[];
+  /** An organisation administers from a tenant of its own, holding no content (TL-K). */
+  readonly kind?: 'organisation';
 }
 
 /**
@@ -64,6 +67,12 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
        values ($1, $2, $3, $4, $5)`,
       [input.tenant.id, input.organisation.id, input.tenant.name, names.schema, names.role],
     );
+    if (input.kind) {
+      await client.query('update platform.tenant set kind = $1 where id = $2', [
+        input.kind,
+        input.tenant.id,
+      ]);
+    }
     for (const hostname of input.hostnames) {
       await client.query(
         'insert into platform.tenant_hostname (hostname, tenant_id) values ($1, $2)',
@@ -125,6 +134,17 @@ export async function createTenant(
       `insert into ${client.escapeIdentifier(tenant.schema)}.profile (display_name) values ($1)`,
       [input.tenant.name],
     );
+    if (input.kind === 'organisation') {
+      const schema = client.escapeIdentifier(tenant.schema);
+      await client.query(`insert into ${schema}.role (name, permissions) values ($1, $2)`, [
+        organisationRole.name,
+        organisationRole.permissions,
+      ]);
+      await client.query(
+        `update ${schema}.role set permissions = permissions || array['suspend_tenant']
+          where name = 'Administrator'`,
+      );
+    }
   } finally {
     await client.end();
   }

@@ -26,6 +26,7 @@ const tokenNotAllowed = {
 export const preferenceRoutes = {
   getMyPreferences: {
     operationId: 'getMyPreferences',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/me/preferences',
     summary: 'The caller’s own preferences',
@@ -39,6 +40,7 @@ export const preferenceRoutes = {
   },
   setMyPreferences: {
     operationId: 'setMyPreferences',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/me/preferences',
     summary: 'Choose the caller’s own preferences',

@@ -10,6 +10,7 @@ import { shareRoutes } from './shares.js';
 import { queryUsageRoutes } from './query-usage.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { closureRoutes } from './closure.js';
+import { organisationRoutes } from './organisation.js';
 import { exportRoutes } from './exports.js';
 import { restorationRoutes } from './restorations.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
@@ -157,6 +158,7 @@ const ownRoutes = {
   },
   getTenant: {
     operationId: 'getTenant',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/tenant',
@@ -170,6 +172,7 @@ const ownRoutes = {
   },
   startOrganisationSignIn: {
     operationId: 'startOrganisationSignIn',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/organisation',
@@ -185,6 +188,7 @@ const ownRoutes = {
   },
   finishOrganisationSignIn: {
     operationId: 'finishOrganisationSignIn',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/organisation/callback',
@@ -200,6 +204,7 @@ const ownRoutes = {
   },
   startGoogleSignIn: {
     operationId: 'startGoogleSignIn',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/google',
@@ -215,6 +220,7 @@ const ownRoutes = {
   },
   finishGoogleSignIn: {
     operationId: 'finishGoogleSignIn',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/sign-in/google/callback',
     summary:
@@ -235,6 +241,7 @@ const ownRoutes = {
   },
   completeGoogleSignIn: {
     operationId: 'completeGoogleSignIn',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/sign-in/google/complete',
@@ -274,6 +281,7 @@ const ownRoutes = {
   },
   signOut: {
     operationId: 'signOut',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'POST',
     path: '/v1/sign-out',
@@ -288,6 +296,7 @@ const ownRoutes = {
   },
   startReauthentication: {
     operationId: 'startReauthentication',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'POST',
     path: '/v1/sessions/current/reauthentication',
@@ -304,6 +313,7 @@ const ownRoutes = {
   },
   getMe: {
     operationId: 'getMe',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/me',
@@ -362,6 +372,7 @@ const ownRoutes = {
   },
   getAccess: {
     operationId: 'getAccess',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/access',
     summary: "The caller's own answer for every permission on a target",
@@ -377,6 +388,7 @@ const ownRoutes = {
   },
   explainAccess: {
     operationId: 'explainAccess',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/access/explain',
     summary: 'Every permission a principal has on a target, and the grants and level behind each',
@@ -446,6 +458,7 @@ type Routes = typeof ownRoutes &
   typeof queryUsageRoutes &
   typeof datasetSourceRoutes &
   typeof closureRoutes &
+  typeof organisationRoutes &
   typeof exportRoutes &
   typeof restorationRoutes &
   typeof modelEndpointRoutes &
@@ -531,6 +544,7 @@ export const routes: Routes = {
   ...queryUsageRoutes,
   ...datasetSourceRoutes,
   ...closureRoutes,
+  ...organisationRoutes,
   ...exportRoutes,
   ...restorationRoutes,
   ...modelEndpointRoutes,

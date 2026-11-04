@@ -88,6 +88,9 @@ const UNNAMED: Readonly<Record<string, string>> = {
   get system() {
     return words('admin.the-system');
   },
+  get organisation() {
+    return words('admin.the-organisation');
+  },
   get vendor() {
     return words('admin.the-vendor');
   },

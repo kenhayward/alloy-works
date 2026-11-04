@@ -164,9 +164,9 @@ export function createJobQueue(url: string): JobQueue {
               and exists (select 1 from platform.tenant t
                            where t.id = tenant_id
                              -- A tenant may queue anything, but only deletion claims a purge.
-                             and ((t.state = 'active' and kind <> 'tenant_purge')
-                                  or (t.state in ('closing', 'retained') and kind = 'tenant_export')
-                                  or (t.state = 'deleting' and kind = 'tenant_purge')))
+                             and ((t.state = 'active' and job.kind <> 'tenant_purge')
+                                  or (t.state in ('closing', 'retained') and job.kind = 'tenant_export')
+                                  or (t.state = 'deleting' and job.kind = 'tenant_purge')))
             order by run_after, id
             for update skip locked
             limit 1)
@@ -217,7 +217,7 @@ export function createJobQueue(url: string): JobQueue {
            and exists (select 1 from platform.tenant t
                         where t.id = tenant_id
                           and (t.state = 'active'
-                               or (t.state in ('closing', 'retained') and kind = 'tenant_export')))
+                               or (t.state in ('closing', 'retained') and job.kind = 'tenant_export')))
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
     },

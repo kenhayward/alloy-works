@@ -36,6 +36,8 @@ export const permissions = [
   'import_environment',
   // Closing the environment (ADM-030; tenant-lifecycle.md, TL-E): a person's act as well.
   'close_environment',
+  'suspend_environment',
+  'suspend_tenant',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -46,17 +48,19 @@ export type Permission = (typeof permissions)[number];
  * reads what its creator reads, so the readable sets that search, listings and the outline filter by
  * need know nothing of tokens. A token with no scopes reads and does nothing else.
  */
-export const tokenScopes: readonly Exclude<
-  Permission,
-  'read' | 'import_environment' | 'close_environment'
->[] = permissions.filter(
-  (
-    permission,
-  ): permission is Exclude<Permission, 'read' | 'import_environment' | 'close_environment'> =>
-    permission !== 'read' &&
-    permission !== 'import_environment' &&
-    permission !== 'close_environment',
-);
+const PERSONS_ACTS = [
+  'read',
+  'import_environment',
+  'close_environment',
+  'suspend_environment',
+  'suspend_tenant',
+] as const;
+
+export const tokenScopes: readonly Exclude<Permission, (typeof PERSONS_ACTS)[number]>[] =
+  permissions.filter(
+    (permission): permission is Exclude<Permission, (typeof PERSONS_ACTS)[number]> =>
+      !(PERSONS_ACTS as readonly string[]).includes(permission),
+  );
 
 export function isPermission(value: string): value is Permission {
   return (permissions as readonly string[]).includes(value);
@@ -86,6 +90,8 @@ export const externalCap: readonly Permission[] = [
   'configure_webhooks',
   'import_environment',
   'close_environment',
+  'suspend_environment',
+  'suspend_tenant',
 ];
 
 /**
@@ -102,6 +108,8 @@ export const administrativePermissions: readonly Permission[] = [
   'configure_webhooks',
   'import_environment',
   'close_environment',
+  'suspend_environment',
+  'suspend_tenant',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

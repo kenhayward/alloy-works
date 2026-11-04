@@ -62,6 +62,7 @@ export const starterRoles: readonly StarterRole[] = [
       'configure_webhooks',
       'import_environment',
       'close_environment',
+      'suspend_environment',
     ],
   },
   { name: 'Editing', permissions: ['edit'] },
@@ -69,3 +70,12 @@ export const starterRoles: readonly StarterRole[] = [
   { name: 'Query builder', permissions: ['read', 'use_connection'] },
   { name: 'Query writer', permissions: ['read', 'use_connection', 'write_sql'] },
 ];
+
+/**
+ * What an organisation's tenant has that no other does (tenant-lifecycle.md, TL-L), and what its
+ * Administrator gains there, so its first administrator can begin.
+ */
+export const organisationRole: StarterRole = {
+  name: 'Organisation administrator',
+  permissions: ['read', 'suspend_tenant'],
+};

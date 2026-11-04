@@ -7,7 +7,10 @@ import type { Tenant } from './provision.js';
 import type { PlatformTables, TenantTables } from './tables.js';
 
 /** A tenant found by its hostname, with the state that decides whether it answers (TL-B). */
-export type ResolvedTenant = Tenant & { readonly state: TenantState };
+export type ResolvedTenant = Tenant & {
+  readonly state: TenantState;
+  readonly kind: 'content' | 'organisation';
+};
 
 export interface TenantDatabase {
   /**
@@ -96,10 +99,18 @@ export function createTenantDatabase(
       const row = await db
         .selectFrom('platform.tenant_hostname as h')
         .innerJoin('platform.tenant as t', 't.id', 'h.tenant_id')
-        .select(['t.id', 't.schema_name', 't.role_name', 't.state'])
+        .select(['t.id', 't.schema_name', 't.role_name', 't.state', 't.kind'])
         .where('h.hostname', '=', hostname.toLowerCase())
         .executeTakeFirst();
-      return row && { id: row.id, schema: row.schema_name, role: row.role_name, state: row.state };
+      return (
+        row && {
+          id: row.id,
+          schema: row.schema_name,
+          role: row.role_name,
+          state: row.state,
+          kind: row.kind,
+        }
+      );
     },
 
     async hostnames(tenantId) {

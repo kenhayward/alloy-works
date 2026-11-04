@@ -69,6 +69,7 @@ export interface TenantTable {
   schema_name: string;
   role_name: string;
   state: ColumnType<TenantState, never, never>;
+  kind: ColumnType<'content' | 'organisation', never, never>;
   created_at: ColumnType<Date, never, never>;
 }
 

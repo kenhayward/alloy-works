@@ -211,6 +211,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0199_restoration_report',
       '0200_tenant_state',
       '0201_closing',
+      '0202_organisation',
     ]);
 
     const read = async () =>

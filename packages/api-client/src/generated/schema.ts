@@ -4975,6 +4975,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organisation/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This organisation's tenants, as metadata
+         * @description Lists this organisation's tenants: name, addresses, state and dates, and nothing of what is in them. Answers only at an organisation's own tenant, for a holder of `suspend_tenant`, by session.
+         */
+        get: operations["listOrganisationTenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/tenants/{id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Give up closing one of this organisation's tenants
+         * @description Gives up closing one of this organisation's tenants, while that can still be done and unless the operator began it. Recorded in both logs. Needs `suspend_tenant`.
+         */
+        delete: operations["cancelOrganisationClosure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/tenants/{id}/suspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop one of this organisation's tenants
+         * @description Stops one of this organisation's tenants. Recorded in both logs: this tenant's names the person and the reason, and the target's says the organisation did it and gives the reason. Needs `suspend_tenant`.
+         */
+        post: operations["suspendOrganisationTenant"];
+        /**
+         * Start one of this organisation's tenants again
+         * @description Starts one of this organisation's tenants again, with nothing lost, whoever stopped it. Recorded in both logs. Needs `suspend_tenant`.
+         */
+        delete: operations["liftOrganisationSuspension"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -7325,6 +7389,26 @@ export interface paths {
          * @description Accepts or rejects every pending suggestion on a component or across a document, or one person’s, oldest first: each accepted is its own version. One that no longer fits, is on a component somebody else holds, or that the caller may not edit, is left pending and said so.
          */
         post: operations["resolveSuggestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop this environment, for its organisation or the operator to lift
+         * @description Stops this environment for everyone, the caller included: nothing is lost, and only its organisation or the operator can start it again, so it is refused with `no_organisation_to_lift` where it has no organisation administering it. Needs `suspend_environment` and a sign-in in the last ten minutes. Session only.
+         */
+        post: operations["suspendEnvironment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11126,7 +11210,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant";
                             allowed: boolean;
                         }[];
                     };
@@ -11252,7 +11336,7 @@ export interface operations {
                         disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant";
                             allowed: boolean;
                             /**
                              * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -14978,7 +15062,7 @@ export interface operations {
                             at: string;
                             kind: string;
                             /** @enum {string} */
-                            actorKind: "person" | "token" | "system" | "vendor" | "anonymous";
+                            actorKind: "person" | "token" | "system" | "vendor" | "anonymous" | "organisation";
                             /** @description The principal who acted, by session or by token */
                             actor: string | null;
                             /** @description The token they acted by, where they did */
@@ -84028,6 +84112,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "environmentKind": "content",
                      *       "environmentState": "active",
                      *       "id": "example",
                      *       "displayName": "example",
@@ -84039,6 +84124,11 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /**
+                         * @description Whether this is an organisation's own tenant, which holds no content
+                         * @enum {string}
+                         */
+                        environmentKind: "content" | "organisation";
                         /**
                          * @description Where this environment is in its life, which decides what its page offers
                          * @enum {string}
@@ -88093,6 +88183,596 @@ export interface operations {
             };
             /** @description The caller does not administer this environment */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listOrganisationTenants: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its tenants */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The tenant */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /**
+                             * @description Where it is in its life
+                             * @enum {string}
+                             */
+                            state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                            /**
+                             * Format: date-time
+                             * @description When it came to be in this state
+                             */
+                            since: string;
+                            /** @description Who began a closure: an organisation may give up only a person's */
+                            closedBy: ("person" | "operator") | null;
+                            /** @description When a closure can no longer be given up */
+                            graceEndsAt: string | null;
+                            /** @description The addresses it answers at */
+                            hostnames: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    cancelOrganisationClosure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Back as it was: its tenants as they now stand */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The tenant */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /**
+                             * @description Where it is in its life
+                             * @enum {string}
+                             */
+                            state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                            /**
+                             * Format: date-time
+                             * @description When it came to be in this state
+                             */
+                            since: string;
+                            /** @description Who began a closure: an organisation may give up only a person's */
+                            closedBy: ("person" | "operator") | null;
+                            /** @description When a closure can no longer be given up */
+                            graceEndsAt: string | null;
+                            /** @description The addresses it answers at */
+                            hostnames: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Not a tenant of this organisation */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    suspendOrganisationTenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Why, recorded in the audit log and shown to nobody who is stopped */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stopped: its tenants as they now stand */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The tenant */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /**
+                             * @description Where it is in its life
+                             * @enum {string}
+                             */
+                            state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                            /**
+                             * Format: date-time
+                             * @description When it came to be in this state
+                             */
+                            since: string;
+                            /** @description Who began a closure: an organisation may give up only a person's */
+                            closedBy: ("person" | "operator") | null;
+                            /** @description When a closure can no longer be given up */
+                            graceEndsAt: string | null;
+                            /** @description The addresses it answers at */
+                            hostnames: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Not a tenant of this organisation */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    liftOrganisationSuspension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Started again: its tenants as they now stand */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The tenant */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /**
+                             * @description Where it is in its life
+                             * @enum {string}
+                             */
+                            state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                            /**
+                             * Format: date-time
+                             * @description When it came to be in this state
+                             */
+                            since: string;
+                            /** @description Who began a closure: an organisation may give up only a person's */
+                            closedBy: ("person" | "operator") | null;
+                            /** @description When a closure can no longer be given up */
+                            graceEndsAt: string | null;
+                            /** @description The addresses it answers at */
+                            hostnames: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suspend_tenant` is not held at this organisation's tenant */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Not a tenant of this organisation */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It is not somewhere this can be done from, or the operator began the closure */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -101850,7 +102530,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -101985,7 +102665,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
                 };
             };
         };
@@ -102013,7 +102693,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
                         };
                     };
                 };
@@ -122517,6 +123197,134 @@ export interface operations {
             };
             /** @description No such component or document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    suspendEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Why, recorded in the audit log and shown to nobody who is stopped */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stopped */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "suspended"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Where it now stands
+                         * @constant
+                         */
+                        state: "suspended";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suspend_environment` is not held, or the sign-in is older than ten minutes */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No organisation could lift it, or it is not active */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

@@ -86,6 +86,7 @@ const missing = {
 export const groupRoutes = {
   listGroups: {
     operationId: 'listGroups',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/groups',
     summary: 'Every group, with its members, a page at a time',
@@ -104,6 +105,7 @@ export const groupRoutes = {
   },
   createGroup: {
     operationId: 'createGroup',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/groups',
     summary:
@@ -133,6 +135,7 @@ export const groupRoutes = {
   },
   setGroupMembers: {
     operationId: 'setGroupMembers',
+    organisationTenant: true,
     method: 'PUT',
     path: '/v1/groups/{id}/members',
     summary: "Set the members of one of the environment's own groups",
@@ -159,6 +162,7 @@ export const groupRoutes = {
   },
   deleteGroup: {
     operationId: 'deleteGroup',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/groups/{id}',
     summary: 'Delete a group, with its memberships and every grant it holds',

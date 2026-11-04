@@ -2,6 +2,7 @@ import { createApiClient, onEnvironmentRefused } from '@alloy-works/api-client';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ClosingEnvironment } from '../admin/Closure.js';
+import { OrganisationHome } from '../organisation/Console.js';
 import { useWords } from '../words/words.js';
 import styles from './Connect.module.css';
 import { WaysIn } from './WaysIn.js';
@@ -118,7 +119,7 @@ export function SignInGate({
 }): React.ReactNode {
   const { words } = useWords();
   const [answer, setAnswer] = useState<
-    'nobody' | 'open' | 'suspended' | 'closing' | 'closed' | undefined
+    'nobody' | 'open' | 'suspended' | 'closing' | 'closed' | 'organisation' | undefined
   >();
   const [refusedSince, setRefusedSince] = useState<
     'environment_suspended' | 'environment_closing' | undefined
@@ -131,6 +132,10 @@ export function SignInGate({
       .then(({ response, error, data }) => {
         if (!current) return;
         // Those a closing environment still lets in meet what is left of it (TL-A).
+        if (data?.environmentKind === 'organisation') {
+          setAnswer('organisation');
+          return;
+        }
         const state = data?.environmentState;
         if (state === 'closing' || state === 'retained') {
           setAnswer('closing');
@@ -157,6 +162,7 @@ export function SignInGate({
   if (answer === undefined) return null;
   if (answer === 'suspended') return <EnvironmentSuspended />;
   if (answer === 'closed') return <EnvironmentClosed />;
+  if (answer === 'organisation') return <OrganisationHome client={client} />;
   if (answer === 'closing') return <ClosingEnvironment client={client} />;
   if (answer === 'open' && refusedSince !== undefined) {
     return (

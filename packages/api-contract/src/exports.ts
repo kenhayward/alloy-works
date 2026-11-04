@@ -98,6 +98,7 @@ const forbiddenWithTheLog = {
 export const exportRoutes = {
   requestTenantExport: {
     operationId: 'requestTenantExport',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'POST',
     path: '/v1/exports',
@@ -119,6 +120,7 @@ export const exportRoutes = {
   },
   listTenantExports: {
     operationId: 'listTenantExports',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports',
@@ -135,6 +137,7 @@ export const exportRoutes = {
   },
   getTenantExport: {
     operationId: 'getTenantExport',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports/{id}',
@@ -151,6 +154,7 @@ export const exportRoutes = {
   },
   downloadTenantExport: {
     operationId: 'downloadTenantExport',
+    organisationTenant: true,
     openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports/{id}/download',

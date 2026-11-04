@@ -194,6 +194,7 @@ const forbidden = {
 export const managingAccessRoutes = {
   listGrants: {
     operationId: 'listGrants',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/grants',
     summary: 'The grants made at one level, a page at a time',
@@ -213,6 +214,7 @@ export const managingAccessRoutes = {
   },
   listRoles: {
     operationId: 'listRoles',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/roles',
     summary: 'The roles a grant can name, with what each holds, a page at a time',
@@ -232,6 +234,7 @@ export const managingAccessRoutes = {
   },
   listPrincipals: {
     operationId: 'listPrincipals',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/principals',
     summary: 'The people a grant can name: everybody who has signed in or been invited',
@@ -251,6 +254,7 @@ export const managingAccessRoutes = {
   },
   createRole: {
     operationId: 'createRole',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/roles',
     summary: 'Make a role: a named set of permissions, which does nothing until it is granted',
@@ -276,6 +280,7 @@ export const managingAccessRoutes = {
 
   makeGrant: {
     operationId: 'makeGrant',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/grants',
     summary: 'Grant a role to a person or a group at one level, as an allow or a denial',
@@ -301,6 +306,7 @@ export const managingAccessRoutes = {
   },
   extendGrant: {
     operationId: 'extendGrant',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/grants/{id}/extension',
     summary: 'Extend access from outside the organisation, as a new grant replacing the old',
@@ -329,6 +335,7 @@ export const managingAccessRoutes = {
   },
   listExternalAccess: {
     operationId: 'listExternalAccess',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/access/external',
     summary: 'Everybody from outside the organisation, and everything each can reach',
@@ -342,6 +349,7 @@ export const managingAccessRoutes = {
   },
   removeGrant: {
     operationId: 'removeGrant',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/grants/{id}',
     summary: 'Remove a grant, unless it is the last that keeps this environment administered',
