@@ -24,10 +24,13 @@ interface WholeExport {
   readonly id: string;
   readonly scope: string;
   readonly state: string;
-  readonly finishedAt: string | null;
+  readonly requestedAt: string;
 }
 
 const RECENT_MS = 24 * 3_600_000;
+/** How often Administration looks for the export it offers, which is a job being written. */
+const FOLLOW_MS = 5000;
+const follow = (url: string) => window.location.assign(url);
 
 const saidFor = (error: unknown) => {
   const code = (error as { code?: string } | undefined)?.code;
@@ -39,17 +42,63 @@ const saidFor = (error: unknown) => {
   return words('admin.closure-could-not');
 };
 
+const isStale = (error: unknown) =>
+  (error as { code?: string } | undefined)?.code === 'reauthentication_required';
+
+/** Closing and giving it up ask for a recent sign-in, which is to be had from here (TL-E). */
+function SignInAgain({
+  client,
+  to,
+  go,
+}: {
+  client: Client;
+  to?: string;
+  go: (url: string) => void;
+}): React.JSX.Element {
+  const [failed, setFailed] = useState(false);
+  const ask = async () => {
+    setFailed(false);
+    try {
+      const { data } = await client.POST('/v1/sessions/current/reauthentication', {
+        body: to === undefined ? {} : { to },
+      });
+      if (data) go(data.url);
+      else setFailed(true);
+    } catch {
+      setFailed(true);
+    }
+  };
+  return (
+    <>
+      <button type="button" onClick={() => void ask()}>
+        {words('admin.closure-sign-in-button')}
+      </button>
+      {failed && <p role="alert">{words('admin.closure-could-not')}</p>}
+    </>
+  );
+}
+
 /**
  * Administration's way to close the environment (ADM-029, ADM-030): what it would stop, the export
  * offered first, and the name typed. Says nothing to anyone who may not close it.
  */
-export function CloseEnvironment({ client }: { client: Client }): React.ReactNode {
+export function CloseEnvironment({
+  client,
+  followMs = FOLLOW_MS,
+  go = follow,
+}: {
+  client: Client;
+  /** Given in tests, which need not wait. */
+  followMs?: number;
+  go?: (url: string) => void;
+}): React.ReactNode {
   const [view, setView] = useState<View | null>(null);
   const [exports, setExports] = useState<readonly WholeExport[]>([]);
   const [choice, setChoice] = useState<'export' | 'declined' | ''>('');
   const [name, setName] = useState('');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  const [stale, setStale] = useState(false);
 
   const read = useCallback(async () => {
     const [closure, listed] = await Promise.all([
@@ -64,15 +113,22 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
     void read().catch(() => undefined);
   }, [read]);
 
-  if (view === null) return null;
-
   const recent = exports.find(
     (each) =>
       each.scope === 'tenant' &&
       each.state === 'done' &&
-      each.finishedAt !== null &&
-      Date.now() - new Date(each.finishedAt).getTime() < RECENT_MS,
+      Date.now() - new Date(each.requestedAt).getTime() < RECENT_MS,
   );
+
+  // The export offered is asked for just above, and is a job: it may finish while this is open.
+  const looking = view !== null && recent === undefined;
+  useEffect(() => {
+    if (!looking) return undefined;
+    const timer = setInterval(() => void read().catch(() => undefined), followMs);
+    return () => clearInterval(timer);
+  }, [looking, followMs, read]);
+
+  if (view === null) return null;
 
   const close = async () => {
     setBusy(true);
@@ -85,6 +141,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
             : { name, declined: true as const },
       });
       if (!data) {
+        setStale(isStale(error));
         setSaid(saidFor(error));
         return;
       }
@@ -150,6 +207,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
         {words('admin.closure-close')}
       </button>
       {said !== '' && <p role="alert">{said}</p>}
+      {stale && <SignInAgain client={client} to="admin/export" go={go} />}
     </section>
   );
 }
@@ -158,10 +216,17 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
  * All a closing or retained environment shows those it still lets in (TL-A): where it stands, the way
  * to give it up, the export and the holds. Everything else refuses.
  */
-export function ClosingEnvironment({ client }: { client: Client }): React.JSX.Element {
+export function ClosingEnvironment({
+  client,
+  go = follow,
+}: {
+  client: Client;
+  go?: (url: string) => void;
+}): React.JSX.Element {
   const [view, setView] = useState<View | null>(null);
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  const [stale, setStale] = useState(false);
 
   useEffect(() => {
     void client
@@ -172,13 +237,21 @@ export function ClosingEnvironment({ client }: { client: Client }): React.JSX.El
       .catch(() => setSaid(words('admin.closure-could-not')));
   }, [client]);
 
+  const signOut = async () => {
+    await client.POST('/v1/sign-out').catch(() => undefined);
+    window.location.reload();
+  };
+
   const cancel = async () => {
     setBusy(true);
     setSaid('');
     try {
       const { data, error } = await client.DELETE('/v1/closure');
       if (data) window.location.reload();
-      else setSaid(saidFor(error));
+      else {
+        setStale(isStale(error));
+        setSaid(saidFor(error));
+      }
     } catch {
       setSaid(words('admin.closure-could-not'));
     } finally {
@@ -210,13 +283,17 @@ export function ClosingEnvironment({ client }: { client: Client }): React.JSX.El
       )}
       {view?.closedBy === 'operator' && <p>{words('admin.closure-operator')}</p>}
       {said !== '' && <p role="alert">{said}</p>}
+      {stale && <SignInAgain client={client} go={go} />}
+      <button type="button" onClick={() => void signOut()}>
+        {words('environment.closing-sign-out')}
+      </button>
       <section aria-labelledby="closing-export" className={styles['part']}>
         <h2 id="closing-export">{words('environment.closing-export')}</h2>
         <TenantExport client={client} />
       </section>
       <section aria-labelledby="closing-holds" className={styles['part']}>
         <h2 id="closing-holds">{words('environment.closing-holds')}</h2>
-        <Holds client={client} />
+        <Holds client={client} lead={words('environment.closing-holds-lead')} />
       </section>
     </main>
   );

@@ -1,4 +1,4 @@
-import { decide, type Permission, type TenantState } from '@alloy-works/domain';
+import { decide, GRACE_DAYS, type Permission, type TenantState } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts } from './access-facts.js';
 import { recordEvent } from './audit.js';
@@ -56,6 +56,7 @@ const moveClocksOn = async (trx: TenantTransaction, since: Date): Promise<number
   );
   const seconds = rows[0]!.seconds;
   const later = sql`make_interval(secs => ${seconds})`;
+  // One finished while it stood has its days from now, and none is ever finished in time to come.
   await sql`update webhook_delivery
        set created_at = created_at + ${later},
            first_attempt_at = first_attempt_at + ${later}
@@ -64,7 +65,8 @@ const moveClocksOn = async (trx: TenantTransaction, since: Date): Promise<number
      where failing_since is not null`.execute(trx);
   await sql`update import set touched_at = touched_at + ${later}
      where state in ('awaiting', 'reading', 'proposed')`.execute(trx);
-  await sql`update tenant_export set finished_at = finished_at + ${later}
+  await sql`update tenant_export
+       set finished_at = finished_at + (now() - greatest(finished_at, ${since}::timestamptz))
      where state = 'done'`.execute(trx);
   return seconds;
 };
@@ -167,7 +169,8 @@ const ownClosure = async (trx: TenantTransaction, tenant: Tenant): Promise<Date>
  */
 export async function cancelClosing(trx: TenantTransaction, tenant: Tenant): Promise<void> {
   const since = await change(trx, tenant, 'cancelled', null);
-  await moveClocksOn(trx, since);
+  // Back to a suspension, the time is credited when that is lifted, from when it began.
+  if ((await ownTenantState(trx)).state === 'active') await moveClocksOn(trx, since);
   await recordEvent(trx, { kind: 'tenant.closure_cancelled' });
 }
 
@@ -203,7 +206,8 @@ export async function advanceClosure(
   const { rows: taken } = await sql<{ taken: boolean }>`
     select exists (select 1 from tenant_export
                     where scope = 'tenant' and state = 'done'
-                      and requested_at >= ${own.since}::timestamptz - interval '1 day') as taken`.execute(
+                      and requested_at >= ${own.graceEndsAt}::timestamptz
+                                          - make_interval(days => ${GRACE_DAYS + 1})) as taken`.execute(
     trx,
   );
   await change(trx, tenant, 'deleting', null);
@@ -223,7 +227,10 @@ export async function closureFacts(
   return { ...own, name: profile.display_name, holds: rows[0]!.holds };
 }
 
-/** Whether this is a whole export, finished within the last so many hours (ADM-029). */
+/**
+ * Whether this is a whole export asked for within the last so many hours (ADM-029): the moment it holds,
+ * which no clock moves, as a suspension or a cancelled closure moves its `finished_at`.
+ */
 export async function isRecentWholeExport(
   trx: TenantTransaction,
   id: string,
@@ -232,6 +239,6 @@ export async function isRecentWholeExport(
   const { rows } = await sql<{ id: string }>`
     select id from tenant_export
      where id = ${id} and scope = 'tenant' and state = 'done'
-       and finished_at >= now() - make_interval(hours => ${hours})`.execute(trx);
+       and requested_at >= now() - make_interval(hours => ${hours})`.execute(trx);
   return rows.length > 0;
 }

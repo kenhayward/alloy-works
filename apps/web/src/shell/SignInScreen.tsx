@@ -91,6 +91,19 @@ function EnvironmentSuspended(): React.JSX.Element {
   );
 }
 
+/** Deletion has begun: there is no way in for anybody, and nothing left to offer them (TL-A). */
+function EnvironmentClosed(): React.JSX.Element {
+  const { words } = useWords();
+  return (
+    <main className={styles['connect']} data-app-region>
+      <div className={styles['card']}>
+        <h1>{words('environment.closed-title')}</h1>
+        <p>{words('environment.closed-body')}</p>
+      </div>
+    </main>
+  );
+}
+
 /**
  * Asks once, as a page loads, who is signed in, and shows nothing until the service answers. Only its
  * 401 is signed out: with no answer, or any other, the shell opens and the page says what it could not
@@ -104,7 +117,9 @@ export function SignInGate({
   children: React.ReactNode;
 }): React.ReactNode {
   const { words } = useWords();
-  const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | 'closing' | undefined>();
+  const [answer, setAnswer] = useState<
+    'nobody' | 'open' | 'suspended' | 'closing' | 'closed' | undefined
+  >();
   const [refusedSince, setRefusedSince] = useState<
     'environment_suspended' | 'environment_closing' | undefined
   >();
@@ -124,6 +139,8 @@ export function SignInGate({
         // Nobody may enter whoever they are, so nothing behind it could say anything (ADM-028).
         const code = (error as { code?: unknown } | undefined)?.code;
         if (code === 'environment_suspended') setAnswer('suspended');
+        // `/v1/me` stays open while it closes, so this is past that.
+        else if (code === 'environment_closing') setAnswer('closed');
         else setAnswer(response.status === 401 ? 'nobody' : 'open');
       })
       .catch(() => {
@@ -139,6 +156,7 @@ export function SignInGate({
 
   if (answer === undefined) return null;
   if (answer === 'suspended') return <EnvironmentSuspended />;
+  if (answer === 'closed') return <EnvironmentClosed />;
   if (answer === 'closing') return <ClosingEnvironment client={client} />;
   if (answer === 'open' && refusedSince !== undefined) {
     return (

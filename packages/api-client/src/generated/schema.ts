@@ -942,7 +942,7 @@ export interface paths {
         put?: never;
         /**
          * Close this environment, beginning its grace period
-         * @description Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a whole export finished in the last 24 hours, or `declined`.
+         * @description Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a finished whole export asked for in the last 24 hours, or `declined`.
          */
         post: operations["startClosure"];
         /**
@@ -22140,7 +22140,7 @@ export interface operations {
                     name: string;
                     /**
                      * Format: uuid
-                     * @description A whole export finished in the last 24 hours
+                     * @description A whole export asked for in the last 24 hours, and finished
                      */
                     export?: string;
                     /**

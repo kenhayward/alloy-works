@@ -26,12 +26,6 @@ export const environmentNotOpen = (state: TenantState) =>
         'ADM-030',
       );
 
-/** Either of those, as a path outside the API's own errors keeps them apart from a failure. */
-export const isEnvironmentRefusal = (error: unknown) => {
-  const code = (error as { code?: unknown } | null)?.code;
-  return code === 'environment_suspended' || code === 'environment_closing';
-};
-
 const CLOSING_ROUTES: ReadonlySet<string> = new Set(
   allRoutes
     .filter((route) => route.openWhileClosing)

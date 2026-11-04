@@ -21,11 +21,11 @@ const VIEW = {
 };
 
 /** A hand-written client: what each address answers. */
-const fake = (answers: Record<string, unknown>, post = vi.fn()) =>
+const fake = (answers: Record<string, unknown>, post = vi.fn(), remove = post) =>
   ({
     GET: (url: string) => Promise.resolve({ data: answers[url] }),
     POST: post,
-    DELETE: post,
+    DELETE: remove,
   }) as never;
 
 describe('closing an environment in Administration', () => {
@@ -65,7 +65,7 @@ describe('closing an environment in Administration', () => {
 
   it('ADM-029 offers a whole export finished in the last 24 hours, and not a partial one', async () => {
     const post = vi.fn().mockResolvedValue({ error: {} });
-    const finishedAt = new Date().toISOString();
+    const requestedAt = new Date().toISOString();
     render(
       <CloseEnvironment
         client={fake(
@@ -73,8 +73,8 @@ describe('closing an environment in Administration', () => {
             '/v1/closure': VIEW,
             '/v1/exports': {
               items: [
-                { id: 'a-space', scope: 'space', state: 'done', finishedAt },
-                { id: 'whole', scope: 'tenant', state: 'done', finishedAt },
+                { id: 'a-space', scope: 'space', state: 'done', requestedAt },
+                { id: 'whole', scope: 'tenant', state: 'done', requestedAt },
               ],
             },
           },
@@ -88,6 +88,41 @@ describe('closing an environment in Administration', () => {
     expect(post).toHaveBeenCalledWith('/v1/closure', {
       body: { name: 'Production', export: 'whole' },
     });
+  });
+
+  it('ADM-029 notices an export finishing, with no reload', async () => {
+    const answers: Record<string, unknown> = { '/v1/closure': VIEW, '/v1/exports': { items: [] } };
+    render(<CloseEnvironment client={fake(answers)} followMs={5} />);
+    expect(await screen.findByLabelText(/No whole export/)).toBeDisabled();
+    answers['/v1/exports'] = {
+      items: [{ id: 'w', scope: 'tenant', state: 'done', requestedAt: new Date().toISOString() }],
+    };
+    expect(await screen.findByLabelText(/Use the whole export/)).toBeEnabled();
+  });
+
+  it('ADM-030 offers to sign in again when closing asks for a recent sign-in', async () => {
+    const post = vi.fn((url: string) =>
+      Promise.resolve(
+        url === '/v1/closure'
+          ? { error: { code: 'reauthentication_required' } }
+          : { data: { url: '/elsewhere' } },
+      ),
+    );
+    const assign = vi.fn();
+    render(
+      <CloseEnvironment
+        client={fake({ '/v1/closure': VIEW, '/v1/exports': { items: [] } }, post)}
+        go={assign}
+      />,
+    );
+    await userEvent.click(await screen.findByLabelText(/without taking an export/));
+    await userEvent.type(screen.getByLabelText(/Type Production/), 'Production');
+    await userEvent.click(screen.getByRole('button', { name: 'Close this environment' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign in again' }));
+    expect(post).toHaveBeenCalledWith('/v1/sessions/current/reauthentication', {
+      body: { to: 'admin/export' },
+    });
+    expect(assign).toHaveBeenCalledWith('/elsewhere');
   });
 
   it('warns that a hold keeps everything', async () => {
@@ -150,6 +185,32 @@ describe('what a closing environment shows', () => {
       />,
     );
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('held');
-    expect(screen.getByText(/1 legal holds keep everything/)).toBeInTheDocument();
+    expect(screen.getByText(/1 legal hold keeps everything/)).toBeInTheDocument();
+    expect(screen.queryByText(/Place one from its page/)).toBeNull();
+  });
+
+  it('ADM-030 lets somebody with an old sign-in give it up, and always leave', async () => {
+    const post = vi.fn(() => Promise.resolve({ data: { url: '/elsewhere' } }));
+    const remove = vi.fn(() => Promise.resolve({ error: { code: 'reauthentication_required' } }));
+    const go = vi.fn();
+    render(
+      <ClosingEnvironment
+        client={fake(
+          {
+            ...base,
+            '/v1/closure': { ...VIEW, state: 'closing', closedBy: 'person', mayCancel: true },
+          },
+          post,
+          remove,
+        )}
+        go={go}
+      />,
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Give up closing it' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign in again' }));
+    expect(post).toHaveBeenCalledWith('/v1/sessions/current/reauthentication', { body: {} });
+    expect(go).toHaveBeenCalledWith('/elsewhere');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(post).toHaveBeenCalledWith('/v1/sign-out');
   });
 });

@@ -58,10 +58,22 @@ begin
     raise exception 'This login may not change a tenant''s state' using errcode = 'AW001';
   end if;
 
+  -- `state_since` is when what a person sees began, which clocks are moved on by: `retained` is a
+  -- closure carried on, and a suspension under a closure is still a suspension, its reason with it.
   update tenant set
     state = becomes,
-    state_since = now(),
-    state_reason = case when becomes in ('retained', 'deleting') then state_reason else reason end,
+    state_since = case
+      when becomes = 'retained' then state_since
+      when found_tenant.state = 'suspended' and becomes = 'closing' then state_since
+      when wanted = 'cancelled' and becomes = 'suspended' then state_since
+      else now()
+    end,
+    state_reason = case
+      when becomes in ('retained', 'deleting') then state_reason
+      when found_tenant.state = 'suspended' and becomes = 'closing' then state_reason
+      when wanted = 'cancelled' and becomes = 'suspended' then state_reason
+      else reason
+    end,
     closing_from = case
       when becomes = 'closing' then found_tenant.state
       when becomes in ('retained', 'deleting') then closing_from

@@ -36,7 +36,10 @@ export type ClosureView = z.infer<typeof ClosureView>;
 export const ClosureBody = z
   .strictObject({
     name: z.string().describe("This environment's name, typed"),
-    export: z.uuid().optional().describe('A whole export finished in the last 24 hours'),
+    export: z
+      .uuid()
+      .optional()
+      .describe('A whole export asked for in the last 24 hours, and finished'),
     declined: z.literal(true).optional().describe('Whoever closes it refuses the export offered'),
   })
   .describe('An answer about the export is required: an export taken, or one declined');

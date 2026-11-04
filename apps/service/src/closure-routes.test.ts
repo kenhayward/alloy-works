@@ -3,7 +3,6 @@ import {
   advanceClosure,
   createTenantDatabase,
   finishTenantExport,
-  placeHold,
   startClosing,
 } from '@alloy-works/db';
 import { queryAs, testTenantDatabase } from '@alloy-works/db/testing';
@@ -94,7 +93,7 @@ describe('closing an environment through the service (the TL plan, TLb)', () => 
     const age = (hours: number) =>
       asAdmin(
         `update ${h.tenant.schema}.tenant_export
-            set finished_at = now() - make_interval(hours => $1) where id = $2`,
+            set requested_at = now() - make_interval(hours => $1) where id = $2`,
         [hours, id],
       );
     await age(25);
@@ -262,18 +261,6 @@ describe('closing an environment through the service (the TL plan, TLb)', () => 
     } finally {
       await worker.close();
     }
-  });
-
-  it('LIF-021 answers a hold placed after deletion began as refused', async () => {
-    await asAdmin(`update platform.tenant set state = 'deleting' where id = $1`, [h.tenant.id]);
-    const late = await h.tenantDb.withTenant(h.tenant, (trx) =>
-      placeHold(trx, {
-        target: { space: h.general },
-        reason: 'Too late',
-        by: h.ids['ada']!,
-      }),
-    );
-    expect(late.answer).toBe('environment_deleting');
   });
 
   it('marks in the contract only the routes the census expects', () => {

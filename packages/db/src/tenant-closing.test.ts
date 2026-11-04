@@ -13,6 +13,7 @@ import { requestTenantExport, tenantExportsDue } from './tenant-export.js';
 import {
   advanceClosure,
   cancelClosing,
+  isRecentWholeExport,
   ownTenantState,
   startClosing,
   suspendTenant,
@@ -221,7 +222,120 @@ describe('closing a tenant (the TL plan, TLb)', () => {
     expect(await stateNow()).toBe('deleting');
   });
 
-  it('LIF-066 can still be cancelled while retained, since nothing has gone', async () => {
+  /** A whole export, finished the given number of days ago, and asked for then too. */
+  const exportFinished = async (daysAgo: number) => {
+    const made = await as((trx) => requestTenantExport(trx, ada));
+    await admin.query(
+      `update ${tenant.schema}.tenant_export
+          set state = 'done', object_key = 'k', sha256 = 'x',
+              requested_at = now() - make_interval(days => $1),
+              finished_at = now() - make_interval(days => $1)
+        where id = $2`,
+      [daysAgo, made.id],
+    );
+    return made.id;
+  };
+  const finishedDaysAgo = async (id: string) => {
+    const { rows } = await admin.query<{ days: number }>(
+      `select extract(epoch from now() - finished_at) / 86400 as days
+         from ${tenant.schema}.tenant_export where id = $1`,
+      [id],
+    );
+    return Number(rows[0]!.days);
+  };
+  const closedDaysAgo = (days: number) =>
+    admin.query(
+      `update platform.tenant
+          set state_since = now() - make_interval(days => $1),
+              grace_ends_at = now() - make_interval(days => $1 - 30)
+        where id = $2`,
+      [days, tenant.id],
+    );
+
+  it('ADM-030 gives an export back the whole of a closure cancelled from retained', async () => {
+    const spaces = await as((trx) =>
+      sql<{ id: string }>`select id from space limit 1`.execute(trx),
+    );
+    await as((trx) =>
+      placeHold(trx, { target: { space: spaces.rows[0]!.id }, reason: 'A dispute', by: ada }),
+    );
+    const before = await exportFinished(33);
+    await close();
+    await closedDaysAgo(31);
+    expect(await advance()).toBe('retained');
+    await as((trx) => cancelClosing(trx, tenant));
+    expect(await finishedDaysAgo(before)).toBeCloseTo(2, 1);
+  });
+
+  it('ADM-030 gives an export taken during a closure its days, never a date to come', async () => {
+    await close();
+    await closedDaysAgo(20);
+    const during = await exportFinished(10);
+    await as((trx) => cancelClosing(trx, tenant));
+    const days = await finishedDaysAgo(during);
+    expect(days).toBeGreaterThanOrEqual(0);
+    expect(days).toBeCloseTo(0, 1);
+  });
+
+  it('ADM-029 does not take an old export for a recent one, whatever a cancel did to its clock', async () => {
+    const old = await exportFinished(5);
+    await close();
+    await closedDaysAgo(5);
+    await as((trx) => cancelClosing(trx, tenant));
+    expect(await as((trx) => isRecentWholeExport(trx, old, 24))).toBe(false);
+    const fresh = await exportFinished(0);
+    expect(await as((trx) => isRecentWholeExport(trx, fresh, 24))).toBe(true);
+  });
+
+  it('ADM-029 records an export taken during the closure, though a hold kept it past its grace', async () => {
+    const spaces = await as((trx) =>
+      sql<{ id: string }>`select id from space limit 1`.execute(trx),
+    );
+    const placed = await as((trx) =>
+      placeHold(trx, { target: { space: spaces.rows[0]!.id }, reason: 'A dispute', by: ada }),
+    );
+    if (placed.answer !== 'placed') throw new Error(placed.answer);
+    await close();
+    await closedDaysAgo(40);
+    await exportFinished(35);
+    expect(await advance()).toBe('retained');
+    await as((trx) => releaseHold(trx, { hold: placed.id, reason: 'Settled', by: ada }));
+    expect(await advance()).toBe('deleting');
+    expect(await events('tenant.closed')).toMatchObject([{ detail: { exportTaken: true } }]);
+  });
+
+  it('ADM-028 keeps a suspension as it was through a closure given up, its reason and its time', async () => {
+    const operator = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
+      steward.withTenant(tenant, work, OPERATOR);
+    await operator((trx) => suspendTenant(trx, tenant, 'Unpaid'));
+    await admin.query(
+      `update platform.tenant set state_since = now() - interval '10 days' where id = $1`,
+      [tenant.id],
+    );
+    await operator((trx) => startClosing(trx, tenant, { notice: 'Contract 9 ended' }));
+    await operator((trx) => cancelClosing(trx, tenant));
+    expect(await stateNow()).toBe('suspended');
+    const { rows } = await admin.query<{ state_reason: string; days: number }>(
+      `select state_reason, extract(epoch from now() - state_since) / 86400 as days
+         from platform.tenant where id = $1`,
+      [tenant.id],
+    );
+    expect(rows[0]!.state_reason).toBe('Unpaid');
+    expect(Number(rows[0]!.days)).toBeCloseTo(10, 1);
+  });
+
+  it('gives up on an export whose worker died while its tenant closes', async () => {
+    await close();
+    const kept = await as((trx) => requestTenantExport(trx, ada));
+    await admin.query(
+      `update platform.job set attempts = max_attempts, locked_until = now() - interval '1 second'
+        where subject_id = $1`,
+      [kept.id],
+    );
+    expect((await queue.abandoned()).map((job) => job.subjectId)).toContain(kept.id);
+  });
+
+  it('ADM-030 can still be cancelled while retained, since nothing has gone', async () => {
     const spaces = await as((trx) =>
       sql<{ id: string }>`select id from space limit 1`.execute(trx),
     );

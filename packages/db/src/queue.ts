@@ -199,9 +199,12 @@ export function createJobQueue(url: string): JobQueue {
          where finished_at is null and failed_at is null
            and attempts >= max_attempts
            and locked_until < now()
-           -- Its failing writes into the tenant, which waits with everything else (TL-C).
+           -- Its failing writes into the tenant, which waits with everything else but the export
+           -- a closing tenant's grace period is for (TL-C), as claim has it.
            and exists (select 1 from platform.tenant t
-                        where t.id = tenant_id and t.state = 'active')
+                        where t.id = tenant_id
+                          and (t.state = 'active'
+                               or (t.state in ('closing', 'retained') and kind = 'tenant_export')))
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
     },

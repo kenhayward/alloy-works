@@ -1405,7 +1405,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getClosure:
     'Returns where this environment is in its life, what closing it would stop, how many legal holds would keep it, and whether the caller may give a closure up. While it is active this needs `close_environment`; while it is closing, anybody it still lets in may ask.',
   startClosure:
-    'Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a whole export finished in the last 24 hours, or `declined`.',
+    'Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a finished whole export asked for in the last 24 hours, or `declined`.',
   cancelClosure:
     'Gives up closing this environment, which is possible until deletion begins, and loses nothing. The operator alone may cancel a closure the operator began. Needs `close_environment` and a sign-in in the last ten minutes.',
   createTenantRestoration:
