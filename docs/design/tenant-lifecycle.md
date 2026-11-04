@@ -172,6 +172,10 @@ tenant for its event and the function, then as the target's for its event. A clo
 reverse. Creating a tenant cannot be one transaction, since it has no log yet: the request is the organisation's event,
 and the steward writes IAM-060's on creation. A provider's copy is by job, and likewise.
 
+As built: the starter role is seeded only in an organisation's tenant, whose Administrator also gains
+`suspend_tenant`, so the first administrator can act. It holds `read` and `suspend_tenant` until TLe brings the rest.
+The organisation's event is `organisation.changed`, naming the tenant, the change and who did it.
+
 **The target's log names no outside person.** Its event says `organisation` or `operator` with the organisation's event
 id, a new `AuditContext` kind with no label. The person's name is in the organisation's log alone, under that tenant's
 erasure, or erasing them would have to reach every sibling.

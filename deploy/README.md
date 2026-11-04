@@ -215,7 +215,8 @@ either, and gives Grace **Query builder**, holding `use_connection` alone there,
 without writing SQL. It also gives Ada **Full access (development)**, every permission across the
 whole environment, so every part of the product can be tried as her.
 
-Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
+An organisation's own tenant, holding no content, is at `http://org.acme.localhost:8088`, where Ada administers
+too. Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers
 at `http://127.0.0.1:8088`, which is what the end-to-end suite uses and what to reach for when
 `*.localhost` does not resolve on your machine.
