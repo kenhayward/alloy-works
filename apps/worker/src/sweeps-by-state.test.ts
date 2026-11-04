@@ -4,8 +4,8 @@ import * as sweeps from './sweep.js';
 
 describe('moving closures on (the TL plan, TLb)', () => {
   it('names the closure sweep as the one that runs for every state', () => {
-    expect(SWEEPS_BY_STATE.anyState).toEqual(['sweepClosures']);
-    expect(SWEEPS_BY_STATE.activeOnly).not.toContain('sweepClosures');
+    expect(sweeps.SWEEPS_BY_STATE.anyState).toEqual(['sweepClosures']);
+    expect(sweeps.SWEEPS_BY_STATE.activeOnly).not.toContain('sweepClosures');
   });
 });
 

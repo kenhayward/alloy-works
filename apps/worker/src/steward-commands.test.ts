@@ -8,6 +8,7 @@ import {
 } from '@alloy-works/db';
 import {
   freshDatabase,
+  queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
@@ -15,6 +16,7 @@ import {
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runSteward } from './steward-commands.js';
+import { sweepClosures } from './sweep.js';
 
 const HOST = 'steward.alloy.test';
 
@@ -59,7 +61,7 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
     expect((await service.resolveHostname(HOST))?.state).toBe('active');
   });
 
-  it('ADM-030 closes a tenant at a contract\'s end with a notice, and only the operator cancels it', async () => {
+  it("ADM-030 closes a tenant at a contract's end with a notice, and only the operator cancels it", async () => {
     expect(await run('close', '--tenant', tenant.id)).toBe(2);
     expect(await run('close', '--tenant', tenant.id, '--notice', 'Contract 7 ended')).toBe(0);
     expect((await service.resolveHostname(HOST))?.state).toBe('closing');
@@ -70,6 +72,32 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
     expect(rows[0]).toMatchObject({ actor_kind: 'vendor', detail: { notice: 'Contract 7 ended' } });
     expect(await run('cancel', '--tenant', tenant.id)).toBe(0);
     expect((await service.resolveHostname(HOST))?.state).toBe('active');
+  });
+
+  it('ADM-030 begins deletion once the grace period is over, and not before', async () => {
+    const worker = testTenantDatabase(db.workerUrl);
+    const log = { info: () => undefined, error: () => undefined } as never;
+    try {
+      expect(await run('close', '--tenant', tenant.id, '--notice', 'Contract 8 ended')).toBe(0);
+      expect(await sweepClosures(worker, log)).toBe(0);
+      expect((await service.resolveHostname(HOST))?.state).toBe('closing');
+      await queryAs(
+        db.adminUrl,
+        `update platform.tenant set grace_ends_at = now() - interval '1 second' where id = $1`,
+        [tenant.id],
+      );
+      expect(await sweepClosures(worker, log)).toBe(1);
+      expect((await service.resolveHostname(HOST))?.state).toBe('deleting');
+    } finally {
+      await queryAs(
+        db.adminUrl,
+        `update platform.tenant
+            set state = 'active', closing_from = null, closing_by = null, grace_ends_at = null
+          where id = $1`,
+        [tenant.id],
+      );
+      await worker.close();
+    }
   });
 
   it('refuses a suspension with no reason, an unknown tenant, a command it does not know and a change that does not apply', async () => {

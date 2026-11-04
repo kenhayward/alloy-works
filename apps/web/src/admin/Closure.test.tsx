@@ -101,7 +101,11 @@ describe('closing an environment in Administration', () => {
 });
 
 describe('what a closing environment shows', () => {
-  const base = { '/v1/exports': { items: [] }, '/v1/holds': { items: [] }, '/v1/spaces': { items: [] } };
+  const base = {
+    '/v1/exports': { items: [] },
+    '/v1/holds': { items: [] },
+    '/v1/spaces': { items: [] },
+  };
 
   it('offers a holder the way back, and says when it goes', async () => {
     render(

@@ -44,7 +44,11 @@ const CLOSING_ROUTES: ReadonlySet<string> = new Set(
  */
 export function refusalFor(
   state: TenantState,
-  request: { readonly method: string; readonly route: string | undefined; readonly bearer: boolean },
+  request: {
+    readonly method: string;
+    readonly route: string | undefined;
+    readonly bearer: boolean;
+  },
 ): AppError | undefined {
   if (state === 'active') return undefined;
   if (

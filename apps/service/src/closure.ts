@@ -76,10 +76,7 @@ const offerOf = async (trx: TenantTransaction, body: ClosureBody): Promise<Closu
   return { export: body.export };
 };
 
-export function closureHandlers(
-  db: TenantDatabase,
-  tenantOf: (request: FastifyRequest) => Tenant,
-) {
+export function closureHandlers(db: TenantDatabase, tenantOf: (request: FastifyRequest) => Tenant) {
   const mayCancel = async (trx: TenantTransaction, principalId: string) => {
     const facts = await loadFacts(trx, principalId, { kind: 'tenant' });
     return facts !== undefined && decide('close_environment', facts).allowed;

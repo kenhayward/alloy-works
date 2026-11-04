@@ -46,11 +46,9 @@ describe('closing an environment through the service (the TL plan, TLb)', () => 
     h.cookies['alice'] = h.cookies[await h.session('alice')]!;
   });
 
-  const asAdmin = (text: string, values: unknown[]) =>
-    queryAs(h.db.adminUrl, text, values);
+  const asAdmin = (text: string, values: unknown[]) => queryAs(h.db.adminUrl, text, values);
   const NAME = 'Production';
-  const close = (as = 'ada') =>
-    h.call(as, 'POST', '/v1/closure', { name: NAME, declined: true });
+  const close = (as = 'ada') => h.call(as, 'POST', '/v1/closure', { name: NAME, declined: true });
 
   it('ADM-030 lets only a holder of close_environment close it, and no token', async () => {
     expect((await close('alice')).statusCode).toBe(403);
@@ -140,7 +138,10 @@ describe('closing an environment through the service (the TL plan, TLb)', () => 
     )) {
       const answer = await h.app.inject({
         method: method as 'GET',
-        url: url.replace(/(?<!:):\w+/g, 'x').replace('::', ':').replace('*', 'x'),
+        url: url
+          .replace(/(?<!:):\w+/g, 'x')
+          .replace('::', ':')
+          .replace('*', 'x'),
         headers: { host: HOST },
       });
       if (answer.statusCode !== 503) open.push(`${method} ${url}`);

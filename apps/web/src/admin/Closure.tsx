@@ -1,7 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useState } from 'react';
 
-import styles from './Administration.module.css';
+import styles from './Closure.module.css';
 import { TenantExport } from './TenantExport.js';
 import { Holds } from './Holds.js';
 import { words, type WordKey } from '../words/words.js';
@@ -100,7 +100,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
   const answered = choice === 'declined' || (choice === 'export' && recent !== undefined);
 
   return (
-    <section aria-labelledby="closing-heading" className={styles['section']}>
+    <section aria-labelledby="closing-heading" className={styles['close']}>
       <h3 id="closing-heading">{words('admin.closure-heading')}</h3>
       <p>
         {words('admin.closure-explains', { grace: view.graceDays, deletion: view.deletionDays })}
@@ -116,7 +116,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
       )}
       <fieldset>
         <legend>{words('admin.closure-export-legend')}</legend>
-        <label>
+        <label className={styles['choice']}>
           <input
             type="radio"
             name="closure-export"
@@ -128,7 +128,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
             ? words('admin.closure-export-none')
             : words('admin.closure-export-taken')}
         </label>
-        <label>
+        <label className={styles['choice']}>
           <input
             type="radio"
             name="closure-export"
@@ -138,7 +138,7 @@ export function CloseEnvironment({ client }: { client: Client }): React.ReactNod
           {words('admin.closure-export-declined')}
         </label>
       </fieldset>
-      <label>
+      <label className={styles['typed']}>
         {words('admin.closure-type-name', { name: view.name })}
         <input value={name} onChange={(event) => setName(event.target.value)} />
       </label>
@@ -187,7 +187,7 @@ export function ClosingEnvironment({ client }: { client: Client }): React.JSX.El
   };
 
   return (
-    <main className={styles['section']}>
+    <main className={styles['page']} data-app-region>
       <h1>
         {view?.state === 'retained'
           ? words('environment.retained-title')

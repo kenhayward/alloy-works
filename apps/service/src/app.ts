@@ -938,10 +938,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     getTenant: async (request) => {
       const tenant = tenantOf(request);
       const { profile, state } = await db.withTenant(tenant, async (trx) => ({
-        profile: await trx
-          .selectFrom('profile')
-          .select('display_name')
-          .executeTakeFirstOrThrow(),
+        profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
         state: (await ownTenantState(trx)).state,
       }));
       // The ways in, so a sign-in page offers Google to somebody from outside where it may.

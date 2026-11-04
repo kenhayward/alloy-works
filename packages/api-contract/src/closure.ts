@@ -12,12 +12,18 @@ export const ClosureView = z.object({
   graceEndsAt: z.iso
     .datetime()
     .nullable()
-    .describe('When closing can no longer be cancelled, unless a hold keeps it; null if not closing'),
+    .describe(
+      'When closing can no longer be cancelled, unless a hold keeps it; null if not closing',
+    ),
   closedBy: z
     .enum(['person', 'operator'])
     .nullable()
     .describe("Who began a closure: only the operator may cancel the operator's"),
-  holds: z.number().int().nonnegative().describe('Legal holds in force, each of which keeps it all'),
+  holds: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe('Legal holds in force, each of which keeps it all'),
   graceDays: z.number().int().positive(),
   deletionDays: z.number().int().positive(),
   effects: z

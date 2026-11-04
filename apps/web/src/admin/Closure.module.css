@@ -1,0 +1,52 @@
+/* All that is left of an environment while it closes, standing alone. */
+.page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--space-32) var(--space-16);
+}
+
+.page > * + * {
+  margin-top: var(--space-16);
+}
+
+.close {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+}
+
+.close fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  margin: 0;
+  padding: var(--space-16);
+  border: 1px solid var(--border);
+}
+
+.close legend {
+  padding: 0 var(--space-4);
+}
+
+.close ul {
+  margin: 0;
+  padding-left: var(--space-16);
+}
+
+.close h4 {
+  margin: 0;
+}
+
+.choice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.typed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
