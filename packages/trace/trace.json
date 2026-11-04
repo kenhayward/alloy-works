@@ -22466,13 +22466,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 803,
+      "line": 812,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 816,
+      "line": 825,
       "kind": "title"
     },
     {
@@ -22812,6 +22812,30 @@
       "kind": "title"
     },
     {
+      "id": "ADM-029",
+      "file": "apps/service/src/closure-routes.test.ts",
+      "line": 79,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-030",
+      "file": "apps/service/src/closure-routes.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-045",
+      "file": "apps/service/src/closure-routes.test.ts",
+      "line": 111,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-066",
+      "file": "apps/service/src/closure-routes.test.ts",
+      "line": 235,
+      "kind": "title"
+    },
+    {
       "id": "REU-032",
       "file": "apps/service/src/cohort-routes.test.ts",
       "line": 148,
@@ -23030,7 +23054,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2340,
+      "line": 2341,
       "kind": "title"
     },
     {
@@ -25518,6 +25542,18 @@
       "kind": "title"
     },
     {
+      "id": "ADM-029",
+      "file": "apps/web/src/admin/Closure.test.tsx",
+      "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-030",
+      "file": "apps/web/src/admin/Closure.test.tsx",
+      "line": 103,
+      "kind": "title"
+    },
+    {
       "id": "API-074",
       "file": "apps/web/src/admin/CtStudio.test.tsx",
       "line": 199,
@@ -27612,15 +27648,21 @@
       "kind": "title"
     },
     {
+      "id": "ADM-030",
+      "file": "apps/web/src/shell/SignInScreen.test.tsx",
+      "line": 85,
+      "kind": "title"
+    },
+    {
       "id": "ADM-051",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 207,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "IAM-011",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 136,
+      "line": 149,
       "kind": "title"
     },
     {
@@ -29510,7 +29552,13 @@
     {
       "id": "ADM-028",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 49,
+      "line": 51,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-030",
+      "file": "apps/worker/src/steward-commands.test.ts",
+      "line": 64,
       "kind": "title"
     },
     {
@@ -29528,13 +29576,13 @@
     {
       "id": "ADM-028",
       "file": "apps/worker/src/sweeps-by-state.test.ts",
-      "line": 14,
+      "line": 21,
       "kind": "title"
     },
     {
       "id": "ADM-045",
       "file": "apps/worker/src/sweeps-by-state.test.ts",
-      "line": 6,
+      "line": 13,
       "kind": "title"
     },
     {
@@ -32184,6 +32232,36 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "packages/db/src/tenant-closing.test.ts",
+      "line": 307,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-029",
+      "file": "packages/db/src/tenant-closing.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-030",
+      "file": "packages/db/src/tenant-closing.test.ts",
+      "line": 107,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-021",
+      "file": "packages/db/src/tenant-closing.test.ts",
+      "line": 352,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-066",
+      "file": "packages/db/src/tenant-closing.test.ts",
+      "line": 199,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "packages/db/src/tenant-database.test.ts",
       "line": 139,
@@ -32798,13 +32876,13 @@
     {
       "id": "IAM-034",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 82,
+      "line": 86,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 99,
+      "line": 103,
       "kind": "title"
     },
     {
@@ -32912,13 +32990,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 291,
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 268,
+      "line": 271,
       "kind": "title"
     },
     {
@@ -33968,7 +34046,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1199,
+      "line": 1201,
       "kind": "title"
     },
     {
@@ -35534,13 +35612,13 @@
     {
       "id": "ADM-028",
       "file": "packages/domain/src/tenancy/states.test.ts",
-      "line": 25,
+      "line": 31,
       "kind": "title"
     },
     {
       "id": "ADM-045",
       "file": "packages/domain/src/tenancy/states.test.ts",
-      "line": 5,
+      "line": 11,
       "kind": "title"
     },
     {
