@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.235.0 - 2026-11-04 (PR #TBC)
+## 0.235.0 - 2026-11-04 (PR #966)
 
 A component's own page now shares the document's header, menus, modes, side dock and panels, so a control added for one reaches the other.
 
