@@ -397,12 +397,13 @@
 /* An approval, a diamond above its week. */
 .graphApproval {
   position: absolute;
-  top: -10px;
-  left: 50%;
+  inset-block-start: -10px;
+  inset-inline: 0;
   width: 6px;
   height: 6px;
+  margin-inline: auto;
   background: var(--ok);
-  transform: translateX(-50%) rotate(45deg);
+  transform: rotate(45deg);
 }
 
 .finding {
