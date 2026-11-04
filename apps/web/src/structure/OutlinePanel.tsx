@@ -357,6 +357,10 @@ export interface OutlinePanelProps {
   readonly onReloadComponents?: () => void;
   /** The node a link names, and which arrival of it this is: each arrival is taken to the node. */
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
+  /** The node last clicked in the text: chosen, with the focus and the text left where they are. */
+  readonly pointed?: { readonly node: string; readonly arrival: number } | null;
+  /** What the panel says of the version a reference resolves to, once the page has read it. */
+  readonly versionOf?: (node: OutlineViewNode) => string | undefined;
   /** A node's shareable address (STR-044), shown for the selected node. */
   readonly linkOf?: (node: string) => string;
   /** Where a component the selected node places is used, as the page offers it (STR-075; R14-B). */
@@ -477,6 +481,8 @@ export function OutlinePanel({
   usedIn,
   onSelected = () => {},
   inView = null,
+  pointed = null,
+  versionOf,
   marks,
   referencesTo,
   sectionFields,
@@ -597,6 +603,20 @@ export function OutlinePanel({
       onNotice(say('document.the-linked-part-is-not'));
     }
   }, [linked, nodes, onNotice]);
+
+  // The part clicked in the text: the tree and the panel follow, and nothing takes the focus.
+  const pointedTaken = useRef<number | null>(null);
+  useEffect(() => {
+    if (pointed === null || pointedTaken.current === pointed.arrival) return;
+    pointedTaken.current = pointed.arrival;
+    if (!placeOf(nodes, pointed.node)) return;
+    setActive(pointed.node);
+    setHighlighted(null);
+    const item = items.current.get(pointed.node);
+    if (item && pane.current !== null) {
+      revealInPane(pane.current, item.querySelector<HTMLElement>('[data-row]') ?? item);
+    }
+  }, [pointed, nodes]);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
   // first node otherwise - so a node removed, or an outline somebody else changed, never leaves the
@@ -813,6 +833,7 @@ export function OutlinePanel({
         : [],
     usedIn,
     fieldCount: sectionFields?.length ?? 0,
+    version: versionOf?.(node),
   });
   const referring = (id: string) =>
     referencesTo !== undefined && (
