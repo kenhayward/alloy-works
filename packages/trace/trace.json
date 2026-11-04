@@ -36727,6 +36727,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-070",
+      "file": "tests/browser/src/moving-on.test.ts",
+      "line": 77,
+      "kind": "title"
+    },
+    {
+      "id": "COL-010",
+      "file": "tests/browser/src/moving-on.test.ts",
+      "line": 77,
+      "kind": "title"
+    },
+    {
+      "id": "REU-008",
+      "file": "tests/browser/src/moving-on.test.ts",
+      "line": 176,
+      "kind": "title"
+    },
+    {
       "id": "STR-035",
       "file": "tests/browser/src/navigation.test.ts",
       "line": 339,

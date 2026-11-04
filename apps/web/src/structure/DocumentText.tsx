@@ -84,7 +84,7 @@ export interface Place {
   /** How many characters into the text it was opened, for the caret; absent if not by the text. */
   readonly openAt?: number;
   /** Closes it, as Done does, with what it last held. */
-  readonly onDone: (last?: ContentDocument) => void;
+  readonly onDone: (last?: ContentDocument, cut?: string) => void;
   /** What stands in its place while it opens: the text as it was read (the EP plan, EP2). */
   readonly whileOpening?: React.ReactNode;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
@@ -585,6 +585,8 @@ export function DocumentText({
   texts,
   editing = null,
   onEdit,
+  onLeave,
+  onEmptySheet,
   editor,
   editable,
   present,
@@ -635,7 +637,11 @@ export function DocumentText({
   /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
-  onEdit?: (node: string | null, last?: ContentDocument) => void;
+  onEdit?: (node: string | null, last?: ContentDocument, cut?: string) => void;
+  /** A click that moves on from the part open, anywhere but another part's text (the EP plan, EP5). */
+  onLeave?: () => void;
+  /** A click on empty sheet, while a part is open. */
+  onEmptySheet?: () => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
   editor?: (component: string, place: Place) => React.ReactNode;
   /**
@@ -773,6 +779,7 @@ export function DocumentText({
     [bindingStates],
   );
 
+  const pressedOn = useRef<EventTarget | null>(null);
   // The component open in place on this page, whichever occurrence it was opened from.
   const openComponent = useMemo(() => {
     const find = (nodes: readonly OutlineViewNode[]): string | null => {
@@ -794,7 +801,9 @@ export function DocumentText({
       <div
         className={styles['measured']}
         // A component's heading is within its box, which answers for the whole of it.
-        {...(node.type === 'section' && onPointedAt ? { onClick: () => onPointedAt(node.id) } : {})}
+        {...(node.type === 'section' && onPointedAt
+          ? { onClick: (event: React.MouseEvent) => pointedAt(node.id, event.target) }
+          : {})}
       >
         <Heading depth={depth}>
           {at !== undefined && (
@@ -808,6 +817,14 @@ export function DocumentText({
     );
   };
 
+  // A click on another part or a section's heading moves on from the one open, but not one on what
+  // stands there to be pressed, such as a part's comment symbol.
+  const pointedAt = (node: string, target: EventTarget) => {
+    onPointedAt?.(node);
+    if (editing === null || editing === node) return;
+    if (target instanceof Element && target.closest('button, a, input') !== null) return;
+    onLeave?.();
+  };
   const render = (nodes: readonly OutlineViewNode[], depth: number): React.ReactNode =>
     nodes.map((node) =>
       node.type === 'section' ? (
@@ -833,7 +850,7 @@ export function DocumentText({
             className={styles['component']}
             data-component=""
             data-editing={editing === node.id}
-            onClick={onPointedAt ? () => onPointedAt(node.id) : undefined}
+            onClick={onPointedAt ? (event) => pointedAt(node.id, event.target) : undefined}
           >
             {/* One stack in the gutter, which moves no text, and wraps sideways on a short part. */}
             {(openComments?.byNode.has(node.id) === true ||
@@ -946,7 +963,7 @@ export function DocumentText({
                         }
                       : {}),
                     ...(onSaved ? { onSaved } : {}),
-                    onDone: (last) => onEdit?.(null, last),
+                    onDone: (last, cut) => onEdit?.(null, last, cut),
                     ...(texts?.has(node.id)
                       ? {
                           whileOpening: (
@@ -992,6 +1009,23 @@ export function DocumentText({
       style={canvas.style}
       data-boundaries={boundaries ? 'shown' : undefined}
       aria-label={say('document.the-document-s-text')}
+      onMouseDown={(event) => {
+        pressedOn.current = event.target;
+      }}
+      onClick={(event) => {
+        // Empty sheet by the native target, both ends of the press, with nothing selected: a drag
+        // and a portalled toolbar or dialog look like a click here otherwise.
+        const { target, currentTarget } = event;
+        const empty = (at: EventTarget | null) =>
+          at instanceof Element &&
+          currentTarget.contains(at) &&
+          at.closest(
+            '[data-component], [data-node] h1, [data-node] h2, [data-node] h3, [data-node] h4, [data-node] h5, [data-node] h6',
+          ) === null;
+        if (editing === null || !empty(target) || !empty(pressedOn.current)) return;
+        if (window.getSelection()?.isCollapsed === false) return;
+        onEmptySheet?.();
+      }}
     >
       {render(outline.nodes, 1)}
     </section>

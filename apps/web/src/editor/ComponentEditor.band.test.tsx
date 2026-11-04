@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState, type ReactNode } from 'react';
+import { cloneElement, useState, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { InPlaceBand } from './InPlaceBand.js';
@@ -60,6 +60,93 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
     await surface();
     expect(screen.queryByRole('toolbar', { name: 'Part toolbar' })).toBeNull();
     expect(screen.queryByRole('toolbar', { name: 'Table toolbar' })).toBeNull();
+  });
+});
+
+/** A page asking the open editor to close, as a document does when its reader moves on. */
+function Asking({
+  page,
+  onlyIfUnchanged = false,
+}: {
+  page: ReactElement;
+  onlyIfUnchanged?: boolean;
+}) {
+  const [leaving, setLeaving] = useState<{ arrival: number; onlyIfUnchanged: boolean } | null>(
+    null,
+  );
+  return (
+    <>
+      <button type="button" onClick={() => setLeaving({ arrival: 1, onlyIfUnchanged })}>
+        Move on
+      </button>
+      {cloneElement(page, { leaving } as never)}
+    </>
+  );
+}
+
+describe('moving on from a part open in place (the EP plan, EP5)', () => {
+  const moving = (answers: Parameters<typeof open>[0], onlyIfUnchanged = false) => {
+    const closed: unknown[] = [];
+    const stayed: boolean[] = [];
+    const opening = open(
+      answers,
+      quick,
+      false,
+      {
+        onDone: (...args: unknown[]) => closed.push(args),
+        onStay: (blocked: boolean) => stayed.push(blocked),
+      },
+      undefined,
+      (page) => <Asking page={page} onlyIfUnchanged={onlyIfUnchanged} />,
+    );
+    return { ...opening, closed, stayed };
+  };
+  const moveOn = () => userEvent.click(screen.getByRole('button', { name: 'Move on' }));
+
+  it('closes a part with nothing changed, asking nothing', async () => {
+    const { surface, closed, stayed } = moving({
+      'GET /v1/components/{id}': () => json(200, opened()),
+    });
+    await surface();
+    await moveOn();
+    await waitFor(() => expect(closed).toHaveLength(1));
+    expect(stayed).toEqual([]);
+  });
+
+  it('keeps a part with changes open on a click on empty sheet, and says nothing of it', async () => {
+    const { surface, closed, stayed } = moving(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, lock),
+        ...saves,
+      },
+      true,
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText('A', 1));
+    await moveOn();
+    await waitFor(() => expect(stayed).toEqual([false]));
+    expect(closed).toEqual([]);
+  });
+
+  it('keeps open what cannot be saved, as closing would destroy the words: someone else holds it', async () => {
+    const { surface, closed, stayed } = moving({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () =>
+        json(409, {
+          code: 'lock_held',
+          message: 'held',
+          traceId: 't',
+          holder: { id: 'grace', name: 'Grace' },
+          expectedRelease: '2026-09-16T09:15:00.000Z',
+        }),
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText('A', 1));
+    await screen.findByRole('button', { name: 'Try again' });
+    await moveOn();
+    await waitFor(() => expect(stayed).toEqual([true]));
+    expect(closed).toEqual([]);
   });
 });
 

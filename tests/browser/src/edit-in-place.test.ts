@@ -368,7 +368,9 @@ describe('clicking into a document, in Chromium', () => {
 
       // Reading stays clean.
       await page.getByRole('button', { name: 'Done editing' }).click();
-      await page.getByRole('radio', { name: 'Reading' }).check();
+      const reading = page.getByRole('radio', { name: 'Reading' });
+      await reading.click();
+      await expect.poll(() => reading.isChecked()).toBe(true);
       await expect.poll(() => theirs.count()).toBe(0);
     });
   });
