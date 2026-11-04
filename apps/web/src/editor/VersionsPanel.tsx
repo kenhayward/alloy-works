@@ -15,9 +15,8 @@ import {
   type RestoreAnswer,
   type RestoreRefusal,
 } from './restoreWords.js';
-import type { ListedVersion } from './VersionList.js';
 import { changeCounts } from './versionDays.js';
-import { VersionTimeline, type TimelineVersion } from './VersionTimeline.js';
+import { VersionTimeline, type ListedVersion, type TimelineVersion } from './VersionTimeline.js';
 import { VersionCompare, VersionView } from './VersionViews.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from './VersionList.module.css';

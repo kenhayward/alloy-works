@@ -6,7 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Icon } from './Icon.js';
 import styles from './ComponentDetail.module.css';
-import { VersionList } from './VersionList.js';
+import { VersionsPanel } from './VersionsPanel.js';
 import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -28,7 +28,8 @@ function excerptOf(content: unknown): string | null {
 
 /**
  * The chosen component beside the list (the Ledger's components screen, ADR-0046): its facts as chips,
- * Open and Give access, the start of its text and its latest versions. Where it is used waits for a
+ * Open and Give access, the start of its text and its Versions panel, without Restore: that is the
+ * editor's, where the caller's right to is known. Where it is used waits for a
  * route that can say (the LG plan, LG-H).
  */
 export function ComponentDetail({
@@ -91,11 +92,8 @@ export function ComponentDetail({
           text !== undefined && <p className={styles['text']}>{text}</p>
         )}
       </section>
-      <section className={styles['section']} aria-labelledby={`${heading}-versions`}>
-        <h3 id={`${heading}-versions`} className={styles['label']}>
-          {say('editor.versions')}
-        </h3>
-        <VersionList client={client} id={item.id} limit={3} />
+      <section className={styles['section']} aria-label={say('editor.versions')}>
+        <VersionsPanel client={client} id={item.id} />
       </section>
     </aside>
   );

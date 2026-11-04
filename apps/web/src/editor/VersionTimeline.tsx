@@ -11,7 +11,6 @@ import { readStanding } from '../lifecycle/Workflow.js';
 import { Lozenge, StateLozenge, seededKind, type LozengeKind } from '../states/Lozenge.js';
 import { Avatar } from '../review/ThreadFaces.js';
 import { words } from '../words/words.js';
-import type { ListedVersion } from './VersionList.js';
 import { ActivityGraph, type ActivityWeek } from './ActivityGraph.js';
 import { nextChoice } from './VersionViews.js';
 import {
@@ -25,6 +24,17 @@ import {
 import styles from './VersionTimeline.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
+
+/** A version as the list shows it. */
+export interface ListedVersion {
+  readonly id: string;
+  readonly number: string;
+  readonly createdAt: string;
+  readonly author: string | null;
+  readonly note: string | null;
+  /** The version's number it was restored from (VER-033), or null. */
+  readonly restoredFrom: string | null;
+}
 
 interface Revision {
   readonly number: number;
@@ -159,7 +169,7 @@ function VersionSearch({ onFind }: { onFind: (q: string) => void }) {
         type="search"
         maxLength={200}
         aria-label={words('editor.search-versions')}
-        placeholder={words('editor.search-versions')}
+        placeholder={words('editor.search-versions-short')}
         value={typing}
         onChange={(event) => {
           setTyping(event.target.value);
