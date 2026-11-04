@@ -11,6 +11,7 @@ import { Waiting } from '../states/Waiting.js';
 import styles from '../structure/DocumentList.module.css';
 import { TranslationChips, type TranslationSaid } from './Translations.js';
 import { words } from '../words/words.js';
+import { stateWord } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -44,15 +45,15 @@ const STATUSES: readonly Status[] = [
 function filterWords(status: Status): string {
   switch (status) {
     case 'outOfDate':
-      return words('translation.out-of-date');
+      return stateWord('outOfDate');
     case 'untranslated':
-      return words('translation.untranslated');
+      return stateWord('untranslated');
     case 'inTranslation':
-      return words('translation.in-translation');
+      return stateWord('inTranslation');
     case 'machineDrafted':
-      return words('translation.machine-drafted');
+      return stateWord('machineDrafted');
     default:
-      return words('translation.translated');
+      return stateWord('translated');
   }
 }
 

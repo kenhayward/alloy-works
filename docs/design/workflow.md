@@ -16,6 +16,7 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                                                                                                                                                                 |
 | **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                                                                                                                                                                   |
 | **LIF-005** | One state at a time (the transition table's latest row), shown wherever the artifact appears: both headers, both lists, search, the picker, the Part panel, Home's attention, the inbox and a baseline's page (the document's state now) ([In the interface](#state))                                                |
+| **LIF-078** | `Lozenge`: icon and words for every state, an edge and ink in the system text colour in a high-contrast mode ([the guide](../interface/lifecycle-states.md), [ADR-0081](../decisions/0081-lifecycle-states-are-lozenges.md))                                                                                         |
 | **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                                                                                                                                                                     |
 | **LIF-003** | Gates, below: a transition needs a permission alone, or is a gate needing approvals by whoever may approve                                                                                                                                                                                                           |
 | **LIF-008** | Each approval a row: who, when, the version, the gate (`workflow_approval`)                                                                                                                                                                                                                                          |
@@ -106,7 +107,7 @@ transitions the reader may take (none while archived); both lists and search res
 component's stream for the artifact itself or a component in it the viewer may read, and nobody else
 (`stream.ts`).
 
-**In the interface** (WF1b): a lozenge (`StateLozenge`; the seed's three in their tones, any other
+**In the interface** (WF1b, and [the guide](../interface/lifecycle-states.md)): a lozenge (`StateLozenge`; the seed's three in their tones, any other
 state neutral) in the document and component headers beside Archived, both lists, the space pane,
 search results, beside the component Add component would place, and in the Part panel for a placed
 component the reader may read (from the listing of what they may, so never another). Each transition

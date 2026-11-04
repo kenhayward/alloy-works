@@ -6,6 +6,7 @@ import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -59,7 +60,9 @@ export function DatesChips({ dates }: { dates: Dates | undefined }) {
   return (
     <>
       {dates.effectiveAt !== null && (
-        <Chip>{words('lifecycle.effective', { day: dayOfInstant(dates.effectiveAt) })}</Chip>
+        <Lozenge kind="effective">
+          {words('lifecycle.effective', { day: dayOfInstant(dates.effectiveAt) })}
+        </Lozenge>
       )}
       {dates.reviewBy !== null && (
         <Chip>
@@ -70,13 +73,13 @@ export function DatesChips({ dates }: { dates: Dates | undefined }) {
           })}
         </Chip>
       )}
-      {dates.pastReview && <Chip tone="warn">{words('lifecycle.past-review')}</Chip>}
+      {dates.pastReview && <Lozenge kind="pastReview" />}
       {dates.effectiveFrom !== null && (
-        <Chip tone="info">
+        <Lozenge kind="pending">
           {words('lifecycle.its-latest-revision-takes-effect', {
             day: dayOfInstant(dates.effectiveFrom),
           })}
-        </Chip>
+        </Lozenge>
       )}
     </>
   );

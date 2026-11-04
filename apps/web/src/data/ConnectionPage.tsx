@@ -42,6 +42,7 @@ import {
 } from './shapes.js';
 import { isUses, PagedUses, type Uses } from './uses.js';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -711,7 +712,7 @@ export function ConnectionPage({
           <Chip className={styles['mono']}>
             {words('data.version', { number: view.version.number })}
           </Chip>
-          {retired && <Chip tone="warn">{words('data.retired')}</Chip>}
+          {retired && <Lozenge kind="retired" />}
           <ManageAccessLink
             client={client}
             target={`artifact:${view.id}`}

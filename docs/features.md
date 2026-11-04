@@ -1303,6 +1303,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   documents or both, in every space or in one. Every keep reaching one applies and the longest wins,
   counted from its latest version; nothing is ever deleted because a keep has passed. Setting and
   clearing a keep are audited. Through the API, `GET` and `PUT /v1/retention`.
+- **States.** A document's, a component's, a publication's, a baseline's, a thread's, a suggestion's, a
+  reviewer's, a translation's and a binding's state is shown one way everywhere: a lozenge with an icon and
+  its words, never colour alone, in either theme and in a high-contrast mode
+  ([the guide](interface/lifecycle-states.md)).
 - **Workflow states.** Every component and document is in one state of its kind's workflow, a new
   one in Draft, shown in its header, both lists, search results, beside a component **Add component**
   would place and, for a placed component you may read, in the Part panel. Each transition you may

@@ -7579,13 +7579,22 @@
       "line": 43
     },
     {
+      "id": "LIF-078",
+      "area": "LIF",
+      "statement": "A state must be told by its words and a mark as well as by colour, and must stay told in a high-contrast mode",
+      "tranche": "T9",
+      "status": "Specified",
+      "document": "LIF-lifecycle-workflow-and-audit.md",
+      "line": 44
+    },
+    {
       "id": "LIF-048",
       "area": "LIF",
       "statement": "State must belong to the artifact rather than to a revision: an artifact must be in exactly one state at a time in each line of revisions it has (LIF-005, LIF-044), and a revision must be an immutable designation made when a gate was passed, which never changes state afterwards",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "LIF-049",
@@ -7594,7 +7603,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "LIF-054",
@@ -7603,7 +7612,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "LIF-058",
@@ -7612,7 +7621,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "LIF-061",
@@ -7621,7 +7630,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 48
+      "line": 49
     },
     {
       "id": "LIF-050",
@@ -7630,7 +7639,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 49
+      "line": 50
     },
     {
       "id": "LIF-008",
@@ -7639,7 +7648,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 74
+      "line": 75
     },
     {
       "id": "LIF-009",
@@ -7648,7 +7657,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 75
+      "line": 76
     },
     {
       "id": "LIF-010",
@@ -7657,7 +7666,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 76
+      "line": 77
     },
     {
       "id": "LIF-011",
@@ -7666,7 +7675,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 77
+      "line": 78
     },
     {
       "id": "LIF-012",
@@ -7675,7 +7684,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 78
+      "line": 79
     },
     {
       "id": "LIF-013",
@@ -7684,7 +7693,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 79
+      "line": 80
     },
     {
       "id": "LIF-014",
@@ -7693,7 +7702,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 80
+      "line": 81
     },
     {
       "id": "LIF-051",
@@ -7702,7 +7711,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 81
+      "line": 82
     },
     {
       "id": "LIF-052",
@@ -7711,7 +7720,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 82
+      "line": 83
     },
     {
       "id": "LIF-053",
@@ -7720,7 +7729,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 83
+      "line": 84
     },
     {
       "id": "LIF-036",
@@ -7729,7 +7738,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "LIF-037",
@@ -7738,7 +7747,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "LIF-038",
@@ -7747,7 +7756,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "LIF-039",
@@ -7756,7 +7765,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "LIF-040",
@@ -7765,7 +7774,7 @@
       "tranche": "Constraint",
       "status": "Superseded by LIF-077",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "LIF-077",
@@ -7774,7 +7783,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "LIF-041",
@@ -7783,7 +7792,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "LIF-042",
@@ -7792,7 +7801,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "LIF-043",
@@ -7801,7 +7810,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "LIF-044",
@@ -7810,7 +7819,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "LIF-045",
@@ -7819,7 +7828,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "LIF-046",
@@ -7828,7 +7837,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "LIF-047",
@@ -7837,7 +7846,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "LIF-015",
@@ -7846,7 +7855,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "LIF-016",
@@ -7855,7 +7864,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "LIF-017",
@@ -7864,7 +7873,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "LIF-018",
@@ -7873,7 +7882,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "LIF-059",
@@ -7882,7 +7891,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "LIF-060",
@@ -7891,7 +7900,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "LIF-019",
@@ -7900,7 +7909,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "LIF-020",
@@ -7909,7 +7918,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "LIF-021",
@@ -7918,7 +7927,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "LIF-022",
@@ -7927,7 +7936,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "LIF-023",
@@ -7936,7 +7945,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "LIF-024",
@@ -7945,7 +7954,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "LIF-025",
@@ -7954,7 +7963,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "LIF-026",
@@ -7963,7 +7972,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-067",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "LIF-067",
@@ -7972,7 +7981,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "LIF-068",
@@ -7981,7 +7990,7 @@
       "tranche": "T9",
       "status": "Superseded by LIF-075",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "LIF-075",
@@ -7990,7 +7999,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "LIF-076",
@@ -7999,7 +8008,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 200
+      "line": 201
     },
     {
       "id": "LIF-027",
@@ -8008,7 +8017,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 201
+      "line": 202
     },
     {
       "id": "LIF-028",
@@ -8017,7 +8026,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "LIF-029",
@@ -8026,7 +8035,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "LIF-030",
@@ -8035,7 +8044,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "LIF-031",
@@ -8044,7 +8053,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "LIF-032",
@@ -8053,7 +8062,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "LIF-055",
@@ -8062,7 +8071,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "LIF-056",
@@ -8071,7 +8080,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "LIF-057",
@@ -8080,7 +8089,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-073",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "LIF-073",
@@ -8089,7 +8098,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "LIF-074",
@@ -8098,7 +8107,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "LIF-062",
@@ -8107,7 +8116,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "LIF-063",
@@ -8116,7 +8125,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "LIF-064",
@@ -8125,7 +8134,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-069",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "LIF-069",
@@ -8134,7 +8143,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "LIF-070",
@@ -8143,7 +8152,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "LIF-071",
@@ -8152,7 +8161,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "LIF-072",
@@ -8161,7 +8170,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "LIF-065",
@@ -8170,7 +8179,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "LIF-066",
@@ -8179,7 +8188,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "LIF-033",
@@ -8188,7 +8197,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 250
+      "line": 251
     },
     {
       "id": "LIF-034",
@@ -8197,7 +8206,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 251
+      "line": 252
     },
     {
       "id": "LIF-035",
@@ -8206,7 +8215,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 252
+      "line": 253
     },
     {
       "id": "LOC-001",
@@ -15156,37 +15165,37 @@
       "id": "LIF-N01",
       "statement": "**Not an electronic signature provider.** The product records an attested act; a qualified signature is somebody else's business",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 261
+      "line": 262
     },
     {
       "id": "LIF-N02",
       "statement": "**No editing or deletion of audit entries**, by anybody, including an administrator",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 262
+      "line": 263
     },
     {
       "id": "LIF-N03",
       "statement": "**No workflow scripting.** Transitions are declared, not programmed; an escape hatch here becomes an unauditable path",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 263
+      "line": 264
     },
     {
       "id": "LIF-N04",
       "statement": "**Not a records management system** for anything other than this product's own content",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 264
+      "line": 265
     },
     {
       "id": "LIF-N05",
       "statement": "**No branching by copying.** A divergent line (LIF-044) is a declared relationship between revisions of one artifact, never a duplicate artifact somebody keeps in step by hand",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 265
+      "line": 266
     },
     {
       "id": "LIF-N06",
       "statement": "**Not a version control system.** Divergence here is a regulated fact - two revisions effective in two places - not a development workflow. Nothing rebases, cherry-picks, replays or rewrites history",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 266
+      "line": 267
     },
     {
       "id": "LOC-N01",
@@ -16020,49 +16029,49 @@
       "question": "**Which regimes are targeted first?** 21 CFR Part 11, SOX and GxP overlap but differ in what they require of a signature and a record",
       "settledBy": "The first customer. It decides how much of section 4 is needed at once",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 272
+      "line": 273
     },
     {
       "id": "LIF-Q02",
       "question": "**Is the audit log write-once at the storage layer, or only by policy?** LIF-025 says impossible through any product surface, which is weaker than immutable",
       "settledBy": "The storage decision, and whether an auditor will accept application-enforced immutability",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 273
+      "line": 274
     },
     {
       "id": "LIF-Q03",
       "question": "**How does erasure of personal data work against LIF-025 (see VER-038)?**",
       "settledBy": "One design decision covering both, taken with legal input",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 274
+      "line": 275
     },
     {
       "id": "LIF-Q04",
       "question": "**Do components have their own lifecycle, or only documents?** A component approved once and reused in forty reports is attractive and hard",
       "settledBy": "**Settled: yes, and it is not optional.** Customers were unambiguous - an approved component carries value on its own and stays approved while the document around it is still being polished. Section 5, LIF-036 to LIF-041, with \"latest approved\" as a third reference mode",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 275
+      "line": 276
     },
     {
       "id": "LIF-Q05",
       "question": "**How far does bringing a divergent line back go (LIF-045)?** Choosing a side is simple and loses work; reconciling two changed revisions is a three-way merge of content, which is a large piece of work",
       "settledBy": "The first customer who diverges and then converges. Until then LIF-045 requires comparison, an explicit act and a record of what was left behind, which is the part that cannot be added later",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 276
+      "line": 277
     },
     {
       "id": "LIF-Q06",
       "question": "**What happens by default when a review date passes and nobody acts (LIF-059)?** A state change is safe and disruptive; a flag is gentle and ignorable",
       "settledBy": "**Answered (ADR-0061): visibility alone** by default; LIF-059 lets a workflow definition declare a state change or an escalation instead",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 277
+      "line": 278
     },
     {
       "id": "LIF-Q07",
       "question": "**Is the scope a revision is effective for (LIF-042) the same axis as a profiling condition (**REU**)?** A plant and a market look like conditions, and effectiveness is a property of a revision rather than of content",
       "settledBy": "A decision with **REU**. Sharing the axis makes one vocabulary; separating them stops a content filter deciding what is legally in force",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 278
+      "line": 279
     },
     {
       "id": "LOC-Q01",
@@ -21458,6 +21467,10 @@
         {
           "id": "LIF-005",
           "howItIsMet": "One state at a time (the transition table's latest row), shown wherever the artifact appears: both headers, both lists, search, the picker, the Part panel, Home's attention, the inbox and a baseline's page (the document's state now) ([In the interface](#state))"
+        },
+        {
+          "id": "LIF-078",
+          "howItIsMet": "`Lozenge`: icon and words for every state, an edge and ink in the system text colour in a high-contrast mode ([the guide](../interface/lifecycle-states.md), [ADR-0081](../decisions/0081-lifecycle-states-are-lozenges.md))"
         },
         {
           "id": "SCH-060",
@@ -27168,13 +27181,13 @@
     {
       "id": "LOC-010",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1783,
+      "line": 1798,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1836,
+      "line": 1851,
       "kind": "title"
     },
     {
@@ -27568,6 +27581,18 @@
       "kind": "title"
     },
     {
+      "id": "LIF-005",
+      "file": "apps/web/src/states/Lozenge.test.tsx",
+      "line": 86,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-078",
+      "file": "apps/web/src/states/Lozenge.test.tsx",
+      "line": 11,
+      "kind": "title"
+    },
+    {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
       "line": 1072,
@@ -27714,13 +27739,13 @@
     {
       "id": "DAT-022",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 465,
+      "line": 474,
       "kind": "title"
     },
     {
       "id": "DAT-024",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 465,
+      "line": 474,
       "kind": "title"
     },
     {
@@ -27732,7 +27757,7 @@
     {
       "id": "DAT-060",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 533,
+      "line": 542,
       "kind": "title"
     },
     {
@@ -27744,13 +27769,19 @@
     {
       "id": "DAT-091",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 395,
+      "line": 404,
       "kind": "title"
     },
     {
       "id": "DAT-115",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 525,
+      "line": 534,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-078",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 249,
       "kind": "title"
     },
     {
@@ -28152,7 +28183,7 @@
     {
       "id": "LIF-061",
       "file": "apps/web/src/structure/DocumentPage.workflow.test.tsx",
-      "line": 144,
+      "line": 147,
       "kind": "title"
     },
     {
@@ -36397,6 +36428,12 @@
       "id": "CNT-138",
       "file": "tests/browser/src/forced-colors.test.ts",
       "line": 47,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-078",
+      "file": "tests/browser/src/forced-colors.test.ts",
+      "line": 149,
       "kind": "title"
     },
     {

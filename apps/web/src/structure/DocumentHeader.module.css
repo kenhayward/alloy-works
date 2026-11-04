@@ -92,18 +92,6 @@
   font-weight: 500;
 }
 
-.step[aria-current][data-kind='draft'] {
-  color: var(--warn);
-}
-
-.step[aria-current][data-kind='inReview'] {
-  color: var(--accent-text);
-}
-
-.step[aria-current][data-kind='approved'] {
-  color: var(--ok);
-}
-
 .step[aria-current] .dot {
   background: currentcolor;
 }

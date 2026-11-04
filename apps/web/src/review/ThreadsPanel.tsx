@@ -45,6 +45,7 @@ import {
   type Reading,
   type Show,
 } from './threadFilters.js';
+import { Lozenge, stateWord } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -112,7 +113,7 @@ const SHOW_WORDS: Record<Show, () => string> = {
   mine: () => say('review.raised-by-me'),
   assistant: () => say('review.from-the-assistant'),
   internal: () => say('review.internal-only'),
-  resolved: () => say('review.resolved'),
+  resolved: () => stateWord('resolved'),
 };
 const SHOW_ICONS: Record<Show, string> = {
   all: 'Lists',
@@ -1273,7 +1274,7 @@ export function ThreadsPanel({
                           {say('review.internal')}
                         </Chip>
                       )}
-                      {thread.resolvedAt !== null && <Chip>{say('review.resolved')}</Chip>}
+                      {thread.resolvedAt !== null && <Lozenge kind="resolved" size="small" />}
                       {thread.new && <span className={styles['newDot']} aria-hidden="true" />}
                     </span>
                     <span className={styles['anchor']} data-orphaned={thread.orphaned || undefined}>

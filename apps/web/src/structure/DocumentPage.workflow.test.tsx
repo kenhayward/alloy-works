@@ -52,10 +52,13 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     const fake = service(outline([section(METHOD, 'Method')]), { moves: { submit: IN_REVIEW } });
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
-    expect(screen.getByText('Draft')).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Draft').closest('li')).toHaveAttribute('aria-current', 'step');
 
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    expect(await screen.findByText('In review')).toHaveAttribute('aria-current', 'step');
+    expect((await screen.findByText('In review')).closest('li')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
     expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
     // Its first transition is the one primary, and every other is the Document menu's.
     expect(screen.getByRole('button', { name: 'Return' })).toBeInTheDocument();

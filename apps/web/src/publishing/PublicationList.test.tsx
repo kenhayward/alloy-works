@@ -66,6 +66,39 @@ function listed() {
 afterEach(() => window.localStorage.clear());
 
 describe('the publications list', () => {
+  it('says a publication a gate approved is approved, and a baseline’s is not', async () => {
+    const fetching = vi.fn(async () =>
+      json(200, {
+        items: [
+          {
+            ...publication('ffffffff-0000-4000-8000-000000000002', MANUAL, 'Gate', '1.9'),
+            approval: 'approved',
+          },
+          {
+            ...publication('ffffffff-0000-4000-8000-000000000001', GUIDE, 'Person', '2.0'),
+            approval: 'baseline',
+          },
+        ],
+        next: null,
+        total: 2,
+        facets: { spaces: [], documents: [] },
+      }),
+    ) as unknown as typeof fetch;
+    render(
+      <PublicationList
+        client={createApiClient({ baseUrl: 'http://publications.test', fetch: fetching })}
+      />,
+    );
+
+    const row = async (name: string) =>
+      within((await screen.findByRole('link', { name })).closest('tr')!);
+    expect((await row('Gate')).getByText('Approved')).toHaveAttribute('data-kind', 'approved');
+    expect((await row('Person')).getByText('Not approved')).toHaveAttribute(
+      'data-kind',
+      'notApproved',
+    );
+  });
+
   it('lists each publication as a row, filters by document, and links each to its page', async () => {
     render(<PublicationList client={listed()} />);
 

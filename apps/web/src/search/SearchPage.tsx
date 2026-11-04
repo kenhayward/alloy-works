@@ -3,7 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { Chip } from '../parts/Chip.js';
-import { StateLozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge } from '../states/Lozenge.js';
 import { PlaceIntoButton } from '../structure/PlaceSection.js';
 import { TranslationChips, type TranslationSaid } from '../translation/Translations.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
@@ -636,13 +636,13 @@ export function SearchPage({
                     <h2 data-content>
                       {link === null ? item.title : <a href={link}>{item.title}</a>}
                     </h2>
-                    {item.state && <StateLozenge state={item.state} />}
+                    {item.state && <StateLozenge size="small" state={item.state} />}
                     {(item.lines?.length ?? 0) > 0 && (
-                      <Chip>
+                      <Lozenge kind="diverged" size="small">
                         {words('search.diverged', {
                           lines: formats().list(item.lines!, { type: 'unit', style: 'short' }),
                         })}
-                      </Chip>
+                      </Lozenge>
                     )}
                     <TranslationChips translations={item.translations} />
                     {/* Found by meaning answers another question than by words (SCH-014). */}

@@ -105,7 +105,7 @@ describe("Administration's Legal holds", () => {
     expect(
       within(untitled).getByRole('button', { name: 'Release the hold on the publication' }),
     ).toBeInTheDocument();
-    expect(within(untitled).getByText('In force')).toHaveAttribute('data-tone', 'neutral');
+    expect(within(untitled).getByText('In force')).toHaveAttribute('data-tone', 'warn');
   });
 
   it('says so to somebody who may not see the holds', async () => {

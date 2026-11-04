@@ -11,6 +11,7 @@ import { GeneratedContent } from './GeneratedContent.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { formats, words, wordsWith } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -372,11 +373,8 @@ export function PublicationPage({
             {words('publishing.from', { version: shown.version })}
           </Chip>
           <Chip>{formats}</Chip>
-          {shown.approved ? (
-            <Chip tone="ok">{words('publishing.approved')}</Chip>
-          ) : (
-            <Chip tone="warn">{words('publishing.not-approved')}</Chip>
-          )}
+          {shown.approved ? <Lozenge kind="approved" /> : <Lozenge kind="notApproved" />}
+          {shown.superseded && <Lozenge kind="superseded" />}
           <span className={styles['published']}>
             {words('publishing.published-by-on', {
               who: shown.publisher ?? words('publishing.somebody-in-sentence'),

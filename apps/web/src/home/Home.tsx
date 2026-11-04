@@ -178,7 +178,7 @@ function WaitingItem({ item }: { item: Waiting }) {
         </span>
       </span>
       {/* Its state now, wherever it appears (LIF-005); a connection has none. */}
-      {item.state && <StateLozenge state={item.state} />}
+      {item.state && <StateLozenge size="small" state={item.state} />}
       <a
         className={styles['attentionAction']}
         href={words.href}

@@ -9,9 +9,9 @@ import {
   type OfferedAxis,
 } from '../editor/ConditionDialog.js';
 import { Modal } from '../layouts/Modal.js';
-import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -96,25 +96,25 @@ export function ScopeChips({
   return (
     <>
       {scope.scope.length > 0 && (
-        <Chip>
+        <Lozenge kind="effective">
           {words('lifecycle.effective-for', {
             scopes: formats().list(
               scope.scope.map((each) => said(each.axis, each.value)),
               { type: 'unit' },
             ),
           })}
-        </Chip>
+        </Lozenge>
       )}
       {scope.pending.map((each) => (
         <span key={`${each.axis}:${each.value}`}>
-          <Chip tone="info">
+          <Lozenge kind="pending">
             {words('lifecycle.revision-waits-on-for-the', {
               revision: each.revision,
               named: each.party.name === null ? 'no' : 'yes',
               party: each.party.name ?? '',
               scope: said(each.axis, each.value),
             })}
-          </Chip>
+          </Lozenge>
           {each.mayAccept && (
             <button type="button" disabled={busy} onClick={() => void accept(each)}>
               {words('lifecycle.accept-revision-for', {

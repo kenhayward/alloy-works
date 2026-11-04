@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import styles from './BaselinesTab.module.css';
 import { baselineLink, comparisonLink } from './links.js';
 import { formats, words } from '../words/words.js';
+import { Lozenge, stateWord } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -22,10 +23,10 @@ const SHOWN: Record<Show, string> = {
     return words('document.all');
   },
   get current() {
-    return words('document.current');
+    return stateWord('current');
   },
   get superseded() {
-    return words('document.superseded');
+    return stateWord('superseded');
   },
 };
 
@@ -229,11 +230,13 @@ export function BaselinesTab({
                     when: when.format(new Date(baseline.madeAt)),
                   })}
                 </span>
-                <span className={styles['note']}>
-                  {baseline.superseded === null
-                    ? words('document.current')
-                    : words('document.superseded-by', { value1: nameOf(baseline.superseded.by) })}
-                </span>
+                {baseline.superseded === null ? (
+                  <Lozenge kind="current" size="small" />
+                ) : (
+                  <Lozenge kind="superseded" size="small">
+                    {words('document.superseded-by', { value1: nameOf(baseline.superseded.by) })}
+                  </Lozenge>
+                )}
                 <div className={styles['controls']}>
                   <label htmlFor={`${heading}-against`}>{words('document.compare-with')}</label>
                   <select

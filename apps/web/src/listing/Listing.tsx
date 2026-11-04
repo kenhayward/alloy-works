@@ -3,6 +3,7 @@ import { useId } from 'react';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { words } from '../words/words.js';
+import { stateWord } from '../states/Lozenge.js';
 
 /** A sort a listing view offers: the listing's sort and order, and what a reader is told. */
 export interface SortOption {
@@ -121,7 +122,7 @@ export function ArchivedFilter({
           checked={chosen}
           onChange={(event) => onChoose(event.target.checked)}
         />
-        <span className={styles['optionName']}>{words('listing.archived')}</span>
+        <span className={styles['optionName']}>{stateWord('archived')}</span>
       </label>
       <label className={styles['option']}>
         <input

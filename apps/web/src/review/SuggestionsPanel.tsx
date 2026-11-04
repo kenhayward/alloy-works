@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { Redline } from '../compare/Redline.js';
 import styles from './ThreadsPanel.module.css';
 import { formats, words, wordsWith } from '../words/words.js';
+import { Lozenge, stateWord } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -40,27 +41,13 @@ interface Opened extends SuggestionSummary {
 type Show = 'pending' | 'resolved' | 'all';
 const SHOWN: Record<Show, string> = {
   get pending() {
-    return words('review.pending');
+    return stateWord('pending');
   },
   get resolved() {
-    return words('review.resolved');
+    return stateWord('resolved');
   },
   get all() {
     return words('review.all');
-  },
-};
-const STATE_WORDS: Record<SuggestionSummary['state'], string> = {
-  get pending() {
-    return words('review.pending');
-  },
-  get accepted() {
-    return words('review.accepted');
-  },
-  get rejected() {
-    return words('review.rejected');
-  },
-  get withdrawn() {
-    return words('review.withdrawn');
   },
 };
 
@@ -366,7 +353,7 @@ export function SuggestionsPanel({
                     )}
                   </button>
                   <span className={styles['note']}>{when(each.madeAt)}</span>
-                  <span className={styles['state']}>{STATE_WORDS[each.state]}</span>
+                  <Lozenge kind={each.state} size="small" />
                   {each.stale !== null && each.stale.length > 0 && (
                     <span className={styles['state']}>{staleWords(each.stale)}</span>
                   )}

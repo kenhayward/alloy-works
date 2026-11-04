@@ -5,7 +5,7 @@ import { useAdministers } from '../access/ManageAccessLink.js';
 import { Modal } from '../layouts/Modal.js';
 import { useLifecycleActs } from '../lifecycle/Workflow.js';
 import { MenuBar } from '../parts/MenuBar.js';
-import { seededKind } from '../states/Lozenge.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { HeaderSlot } from '../shell/HeaderSlot.js';
 import { usePageShown } from '../shell/Status.js';
 import { buildMenus, type CommandState, type StyleItem } from '../shell/commands/menus.js';
@@ -33,13 +33,17 @@ function Stepper({
         <li
           key={state.key}
           className={styles['step']}
-          {...(state.key === current.key
-            ? { 'aria-current': 'step' as const, 'data-kind': seededKind(current.key) }
-            : {})}
+          {...(state.key === current.key ? { 'aria-current': 'step' as const } : {})}
           data-content
         >
-          <span className={styles['dot']} aria-hidden="true" />
-          {state.name}
+          {state.key === current.key ? (
+            <StateLozenge state={current} size="small" />
+          ) : (
+            <>
+              <span className={styles['dot']} aria-hidden="true" />
+              {state.name}
+            </>
+          )}
         </li>
       ))}
       {progress !== undefined && <li className={styles['progress']}>{progress}</li>}

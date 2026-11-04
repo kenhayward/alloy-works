@@ -1649,7 +1649,13 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('published', { shows: opened });
       await opened.click();
       await check('the publication page', {
-        shows: [page.locator('#publication-title'), page.getByText(/Not approved/).first()],
+        shows: [
+          page.locator('#publication-title'),
+          page
+            .getByText(/Not approved/)
+            .locator('visible=true')
+            .first(),
+        ],
         hides: [tree],
       });
       // Shared outside the organisation (the R17 plan): the dialog, then the share it lists. An address

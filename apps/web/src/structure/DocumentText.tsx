@@ -1,7 +1,7 @@
 import { IconButton } from '../parts/IconButton.js';
 import { Icon } from '../editor/Icon.js';
 import type { createApiClient } from '@alloy-works/api-client';
-import { statusWords, type TranslationSaid } from '../translation/Translations.js';
+import { statusWords, translationKind, type TranslationSaid } from '../translation/Translations.js';
 import type { OverrideView } from './overrides.js';
 import { Chip } from '../parts/Chip.js';
 import {
@@ -738,7 +738,7 @@ export function DocumentText({
                 )}
                 {node.component === null ? (
                   <>
-                    <Lozenge kind="notYoursToRead">{say('document.not-yours-to-read')}</Lozenge>
+                    <Lozenge kind="notYoursToRead" size="small" />
                     {movedParts?.includes(node.id) === true && (
                       <span>{say('moving.part-moved-with-threads')}</span>
                     )}
@@ -766,20 +766,19 @@ export function DocumentText({
                       <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
                     )}
                     {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
-                      <Chip>
+                      <Lozenge kind="diverged" size="small">
                         {say('document.main-line-also', {
                           value1: diverged!.get(node.id)!.join(', '),
                         })}
-                      </Chip>
+                      </Lozenge>
                     )}
                     {(translated?.get(node.id) ?? []).map((each) => (
-                      <Chip
-                        key={each.language}
-                        {...(each.status === 'translated' ? {} : { tone: 'warn' as const })}
-                      >{`${each.language}: ${statusWords(each)}`}</Chip>
+                      <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
+                        {`${each.language}: ${statusWords(each)}`}
+                      </Lozenge>
                     ))}
                     {pastReview?.has(node.id) === true && (
-                      <Chip tone="warn">{say('document.past-review')}</Chip>
+                      <Lozenge kind="pastReview" size="small" />
                     )}
                     {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
                       <Chip>{say('document.overridden-here')}</Chip>

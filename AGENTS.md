@@ -176,6 +176,7 @@ pnpm app           # dev server and Electron shell
 - **Shell decisions go in `shell.ts`**, pure and tested; `main.ts` stays thin. Pin cross-process
   names in `apps/desktop/src/shell.test.ts`.
 - **The renderer builds with `base: './'`** for `file://`.
+- **A state of content is shown only through `Lozenge`, in icon and words**: [`docs/interface/lifecycle-states.md`](docs/interface/lifecycle-states.md).
 - **No em or en dashes in user-facing text** (UI, catalogues, fragments, changelog). Code, comments
   and internal docs are exempt.
 - **No real user data anywhere**, fixtures included. Invent names (`Ada`, `Grace`); report evidence

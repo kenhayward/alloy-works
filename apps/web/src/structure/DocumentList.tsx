@@ -17,8 +17,7 @@ import {
 } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
 import { DeletedList } from '../lifecycle/Deleted.js';
-import { Chip } from '../parts/Chip.js';
-import { Lozenge, StateLozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge, stateWord } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
@@ -34,19 +33,19 @@ const PUBLISHING: readonly { readonly state: Publishing; readonly label: string 
   {
     state: 'published',
     get label() {
-      return words('document.published');
+      return stateWord('published');
     },
   },
   {
     state: 'changedSince',
     get label() {
-      return words('document.changed-since');
+      return stateWord('changedSince');
     },
   },
   {
     state: 'neverPublished',
     get label() {
-      return words('document.never-published');
+      return stateWord('neverPublished');
     },
   },
 ];
@@ -408,24 +407,20 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                       <a className={styles['title']} href={documentLink(item.id)} data-content>
                         {item.title}
                       </a>
-                      {archived && <Chip>{words('document.archived')}</Chip>}
+                      {archived && <Lozenge kind="archived" size="small" />}
                     </td>
                     <td className={styles['muted']} data-content>
                       {item.space.name}
                     </td>
                     <td>{item.version}</td>
                     <td>
-                      {item.state !== null && <StateLozenge state={item.state} />}
-                      {item.pastReview && <Chip tone="warn">{words('document.past-review')}</Chip>}
+                      {item.state !== null && <StateLozenge size="small" state={item.state} />}
+                      {item.pastReview && <Lozenge kind="pastReview" size="small" />}
                     </td>
                     <td className={styles['number']}>{item.sections ?? ''}</td>
                     <td className={styles['number']}>{item.components ?? ''}</td>
                     <td>
-                      {item.publishing !== null && (
-                        <Lozenge kind={item.publishing}>
-                          {PUBLISHING.find((each) => each.state === item.publishing)?.label}
-                        </Lozenge>
-                      )}
+                      {item.publishing !== null && <Lozenge kind={item.publishing} size="small" />}
                     </td>
                     <td className={styles['muted']}>
                       {item.changedAt !== null && (

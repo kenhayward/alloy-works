@@ -159,27 +159,6 @@
   white-space: nowrap;
 }
 
-.state {
-  font-weight: 600;
-}
-
-.state[data-state='holding'] {
-  color: var(--ok);
-}
-
-.state:is(
-  [data-state='stale'],
-  [data-state='waiting'],
-  [data-state='definition'],
-  [data-state='published']
-) {
-  color: var(--warn);
-}
-
-.state[data-state='failed'] {
-  color: var(--danger);
-}
-
 .more {
   display: flex;
   flex-wrap: wrap;

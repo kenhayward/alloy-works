@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { StateLozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge } from '../states/Lozenge.js';
 import {
   layoutWordsSchema,
   numberingSchemeSchema,
@@ -314,9 +314,7 @@ export function BaselinePage({
         </h1>
         <div className={styles['facts']}>
           <Chip>{say('document.version', { version: shown.version })}</Chip>
-          <Chip tone={shown.superseded ? 'warn' : 'neutral'}>
-            {shown.superseded ? say('document.superseded') : say('document.current')}
-          </Chip>
+          <Lozenge kind={shown.superseded ? 'superseded' : 'current'} />
           <span className={styles['note']}>
             {say('document.made-by-on', { madeBy: shown.madeBy, when })}
           </span>
@@ -326,7 +324,7 @@ export function BaselinePage({
               {wordsWith(
                 'document.the-document-now',
                 {},
-                { state: <StateLozenge state={shown.state} /> },
+                { state: <StateLozenge size="small" state={shown.state} /> },
               )}
             </span>
           )}

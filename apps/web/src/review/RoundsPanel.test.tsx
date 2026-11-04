@@ -76,7 +76,7 @@ describe('the Rounds panel in Review (the RR plan, Task 4)', () => {
     expect(reviewers).toHaveTextContent('GraceNot started');
     expect(screen.getByText('0 of 1 done.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Start' }));
-    await waitFor(() => expect(reviewers).toHaveTextContent('In progress, 2 threads'));
+    await waitFor(() => expect(reviewers).toHaveTextContent('In progress 2 threads'));
     await userEvent.click(screen.getByRole('button', { name: 'Done, nothing to say' }));
     expect(await screen.findByText('Everybody has reviewed it.')).toBeInTheDocument();
     expect(reviewers).toHaveTextContent('Done, nothing to say');
