@@ -14,7 +14,9 @@ import { JobRefused } from './refusal.js';
 
 const BLOCK = 512;
 /** More than any one row holds: an outline's or a table's content is far below it. */
-const MAX_LINE_BYTES = 256 * 1024 * 1024;
+const MAX_LINE_BYTES = 64 * 1024 * 1024;
+/** What a page may hold in memory: past it a page ends early, however few rows that is. */
+const MAX_PAGE_BYTES = 32 * 1024 * 1024;
 const ENTRY =
   /^(manifest\.json|schema\.json|secrets\.jsonl|references\.jsonl|tables\/[a-z0-9_]{1,63}\.jsonl\.gz|objects\/[0-9a-f]{64})$/;
 
@@ -24,6 +26,7 @@ const invalid = (message: string) => new JobRefused('export_invalid', message);
 export function unpackArchive(path: string, folder: string): readonly string[] {
   const fd = openSync(path, 'r');
   const names: string[] = [];
+  const seen = new Set<string>();
   try {
     const header = Buffer.alloc(BLOCK);
     let position = 0;
@@ -57,7 +60,8 @@ export function unpackArchive(path: string, folder: string): readonly string[] {
       }
       if (type !== '0' && type !== '\0') throw invalid(`The archive holds an unexpected ${name}.`);
       if (!ENTRY.test(name)) throw invalid(`The archive holds an unexpected ${name}.`);
-      if (names.includes(name)) throw invalid(`The archive holds ${name} twice.`);
+      if (seen.has(name)) throw invalid(`The archive holds ${name} twice.`);
+      seen.add(name);
       const size = paxSize ?? stated;
       if (!Number.isSafeInteger(size)) throw invalid('An entry in the archive is damaged.');
       paxSize = undefined;
@@ -127,6 +131,7 @@ export async function* tablePages(
   });
   void failure.catch(() => undefined);
   let page: string[] = [];
+  let held = 0;
   const reading = lines[Symbol.asyncIterator]();
   for (;;) {
     const next = await Promise.race([reading.next(), failure]);
@@ -134,9 +139,11 @@ export async function* tablePages(
     const line = next.value;
     if (line === '') continue;
     page.push(line);
-    if (page.length === pageSize) {
+    held += line.length;
+    if (page.length === pageSize || held >= MAX_PAGE_BYTES) {
       yield page;
       page = [];
+      held = 0;
     }
   }
   if (page.length > 0) yield page;

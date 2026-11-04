@@ -480,6 +480,7 @@ per machine, and the same object store the service signs links against:
 pnpm --filter @alloy-works/worker fetch-typst     # Typst 0.15.1 into .tools/, checked against its hash
 cp deploy/worker.env.example deploy/worker.env
 pnpm --filter @alloy-works/worker dev
+RESTORER_DATABASE_URL=postgres://aw_restorer:aw_restorer_dev@127.0.0.1:5432/alloy_dev pnpm --filter @alloy-works/worker exec tsx src/restorer.ts  # only to restore an export
 ```
 
 The worker's own test suite needs Docker running as well as Postgres and the object store: it runs

@@ -65,22 +65,25 @@ async function viewOf(
     plan: made.plan as TenantRestorationView['plan'],
     answers: made.answers as TenantRestorationView['answers'],
     refusal: made.refusal,
+    report: made.report as TenantRestorationView['report'],
     providers: rows.map((row) => row.issuer),
   };
 }
 
-/** Every provider and every secret the plan names, answered, and each answer naming something real. */
-const answersMeetPlan = (
+/** What the plan names and the answers do not, or answer with nothing real: named, each (ADM-054). */
+const unanswered = (
   plan: NonNullable<TenantRestoration['plan']>,
   answers: TenantRestorationAnswers,
   providers: readonly string[],
-) => {
+): readonly string[] => {
   const secrets = new Set(answers.switchedOff);
-  return (
-    plan.issuers.every(({ issuer }) => issuer in answers.issuers) &&
-    Object.values(answers.issuers).every((to) => to === null || providers.includes(to)) &&
-    plan.secrets.every(({ reference }) => secrets.has(reference))
-  );
+  return [
+    ...plan.issuers.map(({ issuer }) => issuer).filter((issuer) => !(issuer in answers.issuers)),
+    ...Object.values(answers.issuers).filter(
+      (to): to is string => to !== null && !providers.includes(to),
+    ),
+    ...plan.secrets.map(({ reference }) => reference).filter((each) => !secrets.has(each)),
+  ];
 };
 
 const reviewView = (found: Awaited<ReturnType<typeof restoreReview>>): RestoreReview => ({
@@ -185,17 +188,16 @@ export function restorationHandlers(
       if (found.state !== 'previewed' || !found.plan) throw notWaiting();
       const answers = request.body as TenantRestorationAnswers;
       const providers = await trx.selectFrom('identity_provider').select('issuer').execute();
-      if (
-        !answersMeetPlan(
-          found.plan,
-          answers,
-          providers.map((row) => row.issuer),
-        )
-      ) {
+      const open = unanswered(
+        found.plan,
+        answers,
+        providers.map((row) => row.issuer),
+      );
+      if (open.length > 0) {
         throw new AppError(
           400,
           'restoration_answer_invalid',
-          'Answer for every provider and every secret, naming a provider this environment has.',
+          `Answer for every provider and secret, naming a provider this environment has: ${open.slice(0, 20).join(', ')}.`,
         );
       }
       const answered = await answerRestoration(trx, found.id, answers);

@@ -25580,13 +25580,13 @@
     {
       "id": "IMP-039",
       "file": "apps/web/src/admin/Restore.test.tsx",
-      "line": 78,
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "IMP-052",
       "file": "apps/web/src/admin/Restore.test.tsx",
-      "line": 106,
+      "line": 107,
       "kind": "title"
     },
     {
@@ -29094,6 +29094,24 @@
       "kind": "title"
     },
     {
+      "id": "IMP-039",
+      "file": "apps/worker/src/partial-restoration.test.ts",
+      "line": 241,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-042",
+      "file": "apps/worker/src/partial-restoration.test.ts",
+      "line": 474,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-052",
+      "file": "apps/worker/src/partial-restoration.test.ts",
+      "line": 470,
+      "kind": "title"
+    },
+    {
       "id": "AST-007",
       "file": "apps/worker/src/publish.test.ts",
       "line": 965,
@@ -29282,7 +29300,7 @@
     {
       "id": "AST-030",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 619,
+      "line": 736,
       "kind": "title"
     },
     {
@@ -29294,13 +29312,13 @@
     {
       "id": "IMP-042",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 834,
+      "line": 962,
       "kind": "title"
     },
     {
       "id": "IMP-044",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 683,
+      "line": 629,
       "kind": "title"
     },
     {
@@ -29421,6 +29439,12 @@
       "id": "IMP-018",
       "file": "apps/worker/src/tenant-export.test.ts",
       "line": 262,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-019",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 133,
       "kind": "title"
     },
     {

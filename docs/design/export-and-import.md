@@ -106,6 +106,9 @@ having no credential and being off, named in the report. Foreign keys forbid dro
 (`generation_run`, `principal.provider_id`). Refused while any is unanswered (ADM-054, Ken). A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
 restored and is listed as left out; so is the environment's store credential.
 
+As built, only **Arrive switched off** is offered: a value is set afterwards through its kind's own route, and `import_binding` is not
+built. A model or connection with no credential cannot run, and is refused as it would be unset; an extension's switch is turned off too.
+
 **EI-H. Restored events are renumbered, and say so.** `audit_event.sequence` is the read's cursor, and the
 restorer's sign-ins hold the low numbers. Each restored event takes a new sequence and its original `at`, with
 `audit_restored (sequence, original_sequence, restore_id)` beside it, its `audit_label` rows remapped with it, and reads "Restored from an export" in the
@@ -152,7 +155,7 @@ counts, and its groups, externals and service identities. Each issuer needs an a
 keeping subjects, or **keep as they are**, those people arriving unable to sign in. An actor is never reassigned; a
 mapping changes how a principal signs in, not who it is. If the restorer's issuer and subject are in the archive, that
 restored principal wins, the fresh one gives up its identity (`provider_id` and `provider_key` too) and they sign in
-again; the preview refuses unless that principal is enabled, not erased and would administer, so nobody is locked out (IN-B).
+again; applying refuses, undoing everything, unless that principal is enabled, not erased and would administer, so nobody is locked out (IN-B).
 If they are not in it, they keep their principal and Administrator grant.
 
 **EI-O. Tar, not ZIP.** A ZIP without its 64-bit extension stops at 65,000 entries and 4 GB, which format 1 refuses as
@@ -177,8 +180,14 @@ audit and everything else stay out, and the manifest says so. Definitions always
 them. What a row names and the archive lacks is in `references.jsonl` by identity, or by value where followed. It runs
 in one read-only cut like a whole export, and the asker's readable set, read first, bounds what is seeded.
 
+**EI-S. A part comes in as a dry run, then for good.** The same code runs for both, the preview rolled back, so it says what
+will happen here rather than what the archive holds. One transaction as the owner, user triggers off on the tables the
+archive holds alone, so writers to those wait, the wait bounded by a 30 second lock timeout. A part holding access or audit is refused,
+whatever its manifest says. A renumbered row whose required parent was already here is taken as already here, so
+importing twice adds nothing. A part does not hold its dates back: EI-M is for a tenant restored whole.
+
 ## Not designed
 
-A whole-tenant archive into a tenant in use, or a part picked out of one (EI-D); restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
+A whole-tenant archive into a tenant in use, or a part picked out of one (EI-D); moving what arrives to another space on the way in; restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
 what is already here; a scheduled export; encrypting an archive with a passphrase (it is permissioned, expiring and
 audited, IMP-044); XML vocabularies (IMP-016).

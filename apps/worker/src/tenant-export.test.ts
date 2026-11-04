@@ -130,7 +130,7 @@ describe("the tenant's export, from the queue to the store (the R21 plan, R21-B)
     return { asked, written, bytes: await store.get(written.key!) };
   };
 
-  it('API-044 IMP-021 IMP-043 writes a whole tenant that a reader knowing only the format guide reads back and checks', async () => {
+  it('API-044 IMP-019 IMP-021 IMP-043 writes a whole tenant that a reader knowing only the format guide reads back and checks', async () => {
     // A document placing a component, so an outline's nodes are among the digests checked.
     const part = await service.withTenant(tenant, async (trx) => {
       const made = await createComponent(trx, {

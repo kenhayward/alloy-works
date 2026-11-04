@@ -1,4 +1,5 @@
 import {
+  archiveHeldElsewhere,
   expiredRestorationArchives,
   forgetRestorationArchive,
   restorationJobGaveUp,
@@ -443,9 +444,12 @@ export async function sweepRestorations(
           expired: await expiredRestorationArchives(trx, now),
         };
       });
-      for (const { id, key } of expired) {
-        await store.remove(key);
-        await db.withTenant(tenant, (trx) => forgetRestorationArchive(trx, id));
+      for (const { id, key, sha256 } of expired) {
+        await db.withTenant(tenant, async (trx) => {
+          const elsewhere = await archiveHeldElsewhere(trx, { key, sha256 }, { restoration: id });
+          if (!elsewhere) await store.remove(key);
+          await forgetRestorationArchive(trx, id);
+        });
         removed += 1;
       }
     } catch (error) {
@@ -474,7 +478,16 @@ export async function sweepExpiredTenantExports(
       const store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
       for (const { id, key } of due) {
         try {
-          await store.remove(key);
+          await db.withTenant(tenant, async (trx) => {
+            // An archive may be waiting to come back in, by the same key.
+            const sha256 = key.slice(key.lastIndexOf('/') + 1);
+            const elsewhere = await archiveHeldElsewhere(
+              trx,
+              { key, sha256 },
+              { tenantExport: id },
+            );
+            if (!elsewhere) await store.remove(key);
+          });
           await db.withTenant(tenant, (trx) => expireTenantExport(trx, id));
           removed += 1;
         } catch (error) {

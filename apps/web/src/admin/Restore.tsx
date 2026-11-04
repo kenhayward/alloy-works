@@ -6,7 +6,24 @@ import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
+interface Report {
+  readonly added: Readonly<Record<string, number>>;
+  readonly already: Readonly<Record<string, number>>;
+  readonly skipped: Readonly<Record<string, number>>;
+  readonly conflictCount: number;
+}
+const sum = (counts: Readonly<Record<string, number>>) =>
+  Object.values(counts).reduce((total, rows) => total + rows, 0);
+const reportWords = (report: Report, done: boolean) =>
+  words(done ? 'admin.restore-part-did' : 'admin.restore-part-would', {
+    added: sum(report.added),
+    already: sum(report.already),
+    conflicts: report.conflictCount,
+    skipped: sum(report.skipped),
+  });
+
 interface Plan {
+  readonly would?: Report;
   readonly tables: Readonly<Record<string, number>>;
   readonly missingObjects: readonly string[];
   readonly secrets: readonly { readonly reference: string; readonly kind: string }[];
@@ -20,6 +37,7 @@ interface Restoration {
   readonly state: string;
   readonly plan: Plan | null;
   readonly refusal: { readonly code: string; readonly message: string } | null;
+  readonly report: Report | null;
   readonly providers: readonly string[];
 }
 interface Review {
@@ -146,7 +164,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
   return (
     <section aria-labelledby="restore-heading">
       <h3 id="restore-heading">{words('admin.restore-heading')}</h3>
-      <p>{words('admin.restore-intro')}</p>
+      <p className={styles['muted']}>{words('admin.restore-intro')}</p>
 
       {review?.underReview && (
         <div role="group" aria-label={words('admin.restore-review-heading')}>
@@ -164,23 +182,29 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
       )}
 
       {!review?.restoredAt && !plan && !following && (
-        <label className={styles['field']}>
-          {words('admin.restore-choose')}
-          <input
-            type="file"
-            accept=".tar,application/x-tar"
-            disabled={busy}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void send(file);
-            }}
-          />
-        </label>
+        <div className={styles['lead']}>
+          <label>
+            {words('admin.restore-choose')}
+            <input
+              type="file"
+              accept=".tar,application/x-tar"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void send(file);
+              }}
+            />
+          </label>
+        </div>
       )}
 
       {current?.state === 'checking' && <p role="status">{words('admin.restore-checking')}</p>}
       {current?.state === 'applying' && <p role="status">{words('admin.restore-applying')}</p>}
-      {current?.state === 'restored' && <p role="status">{words('admin.restore-done')}</p>}
+      {current?.state === 'restored' && (
+        <p role="status">
+          {current.report ? reportWords(current.report, true) : words('admin.restore-done')}
+        </p>
+      )}
       {(current?.state === 'refused' || current?.state === 'failed') && current.refusal && (
         <p role="alert">{current.refusal.message}</p>
       )}
@@ -202,6 +226,12 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
               services: plan.serviceIdentities,
             })}
           </p>
+          {plan.would && (
+            <>
+              <p>{reportWords(plan.would, false)}</p>
+              <p>{words('admin.restore-part-waits')}</p>
+            </>
+          )}
           {plan.missingObjects.length > 0 && (
             <p role="alert">
               {words('admin.restore-missing', { count: plan.missingObjects.length })}
@@ -214,12 +244,18 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
                 value={mapped[issuer] ?? KEEP}
                 onChange={(event) => setMapped((was) => ({ ...was, [issuer]: event.target.value }))}
               >
-                <option value={KEEP}>{words('admin.restore-issuer-keep')}</option>
-                {current.providers.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
-                  </option>
-                ))}
+                <option value={KEEP}>
+                  {current.providers.includes(issuer)
+                    ? words('admin.restore-issuer-here')
+                    : words('admin.restore-issuer-keep')}
+                </option>
+                {current.providers
+                  .filter((provider) => provider !== issuer)
+                  .map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider}
+                    </option>
+                  ))}
               </select>
             </label>
           ))}
@@ -234,7 +270,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
             </>
           )}
           <button type="submit" disabled={busy}>
-            {words('admin.restore-apply')}
+            {plan.would ? words('admin.restore-apply-part') : words('admin.restore-apply')}
           </button>
         </form>
       )}

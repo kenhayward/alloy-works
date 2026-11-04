@@ -31,6 +31,7 @@ const row = (state: string, over: Record<string, unknown> = {}) => ({
   plan: state === 'previewed' ? PLAN : null,
   answers: null,
   refusal: null,
+  report: null,
   providers: ['https://here.example'],
   ...over,
 });
@@ -109,6 +110,27 @@ describe('Restore in Administration (the EI plan, EIc)', () => {
     ]);
     render(<Restore client={client} />);
     expect((await screen.findByRole('alert')).textContent).toBe('This holds a space.');
+  });
+
+  it('IMP-039 says what a part would add, and what it did', async () => {
+    const report = {
+      added: { artifact: 3 },
+      already: { space: 1 },
+      conflicts: [],
+      conflictCount: 0,
+      skipped: {},
+      cleared: {},
+      settingsLeft: [],
+    };
+    const part = row('previewed', { plan: { ...PLAN, secrets: [], would: report } });
+    const first = service([part]);
+    const shown = render(<Restore client={first.client} />);
+    expect(await screen.findByText(/3 rows to add/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Bring this in' })).toBeTruthy();
+    shown.unmount();
+    const after = service([row('restored', { report })]);
+    render(<Restore client={after.client} />);
+    expect((await screen.findByRole('status')).textContent).toContain('3 rows');
   });
 
   it('holds dates and reminders until the review is ended', async () => {

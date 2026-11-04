@@ -3,6 +3,57 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.231.0 - 2026-11-04 (PR #939)
+
+Export and import closed (the EI plan): everything in an environment comes out in a form readable without this product, a whole export restores into an empty environment, and a part comes into one in use.
+
+### Added
+
+- **An export holds the whole environment.** Export everything now writes everything at one moment, people, access, threads, settings and the audit log among them, as a tar archive with a schema and a guide that lets anyone read it without this product. Secrets are only referred to, never included. It needs both Export environment and Export audit.
+- **Export a part.** Administration's Export can also write the configuration alone or one space, bringing what it refers to from other spaces or listing it. The API does the same for a document or a publication. A part holds no audit log or access, and holds only what the asker may read.
+- **Restore an environment from its export.** Administration's Export now takes an archive back: it is checked first, as untrusted input, and says what it would do. Every sign-in provider and secret is answered for, and then all of it arrives, or nothing does. A whole export goes only into an empty environment.
+- Its people, versions and audit log arrive as they were. The log's events keep their instants and are marked as restored, with their original numbers. Connections, model endpoints, extensions and webhooks arrive switched off, to be given their secrets afterwards.
+- A restored environment holds its dates and reminders until someone has looked at what falls due.
+- `import_environment`, a permission of its own, held by Administrators and by no token.
+- **Bring a part into an environment in use.** An export of the configuration, a space, a document or a publication now comes back through Restore. It says what it would add and what it would leave, gives nobody access, and overwrites nothing: bringing the same part in twice adds nothing the second time.
+
+### Changed
+
+- **Signed out, you go straight to sign in.** A page opened with nobody signed in shows a sign-in screen with the ways in your environment offers, instead of the application around an empty page, and brings you back to the page you asked for, a shared publication's link included. It says so if the environment offers no way in. A session that ends while you work leaves the page as it is, with your unsaved text.
+
+### Fixed
+
+- Two flaky editor tests. The cross-reference dialog test now waits for the dialog's own focus
+  effect to land before asserting it, and the definition-list test waits for the save that holds
+  the finished list rather than the first PUT to reach the transport, which under load can be an
+  intermediate autosave. Fixes #763 and #507.
+- The connector's memory-ceiling test bound its child's peak at the 371 MiB measured on a quiet
+  runner; a loaded CI runner sits a little above it. The bound is now 400 MiB, which still catches
+  a pathology and still fits four runs beside the supervisor in the container. Fixes #553.
+- The warm compile tests allowed 120s each; one took 121s on a loaded CI runner and timed out
+  before its retry passed. Both now allow 180s. Fixes #722.
+- Choosing a part in the outline while a document's placed components were still arriving left the
+  page at the top: the text was not yet tall enough to reach the part, so the scroll was lost. The
+  choice now waits for the texts, as following a link to a part does, and goes there once they have
+  taken their room. Fixes #453 and #747.
+- The five-hundred-node navigation test took 37s on a quiet machine and crossed the suite's 120s
+  default on a loaded CI runner. It now allows 180s. Fixes #757.
+- The canvas test that opens a component in place measured the text before the line holding an inline
+  image had taken its size, so the image loading moved the text a few pixels between the two reads.
+  The document now waits for every image to be sized before anything is measured, as opening a
+  component already did. Fixes #639 and #640.
+- The style measurement test polled for the document page to render with the default five seconds; a
+  loaded runner can take longer for the first render, and the poll timed out before the page drew.
+  The polls now allow 30s, as the wait beside them already did. Fixes #813.
+- The query definition test hit the connector's concurrency cap when the suite ran its tests in
+  parallel: the connector answered 503 `connector_busy` and said to try again in a moment, and the
+  test took the refusal as a failure. It now waits a moment and tries again, as the connector says.
+  Fixes #478.
+- The document parameter test resolved a binding through the connector and read its held result
+  blindly; when the connector was busy at its cap the resolve answered a failure instead, and the
+  test threw. It now tries again when the connector says it is busy, as it says. Fixes #633.
+- **A flaky test on a loaded runner.** The test that refuses the values past the most a vocabulary holds was recorded as a flake (issue #861): on a busy CI runner its first attempt needed more than the default 5s timeout and was retried. The domain suite now gives itself 30s, as the other suites' configs do, and a refresh whose values are all ones the module made skips the final parse that only repeated checks already done.
+
 ## 0.230.0 - 2026-11-03 (PR #929)
 
 A plain table's floating toolbar and the Table tab as a map closed (the TT plan): the quick changes sit on the table, and the panel stays on the tab you have open.

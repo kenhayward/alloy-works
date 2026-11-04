@@ -284159,6 +284159,100 @@
                                       "type": "string"
                                     },
                                     "description": "What is made again here, and from what"
+                                  },
+                                  "would": {
+                                    "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                                    "type": "object",
+                                    "properties": {
+                                      "added": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "description": "Rows added, by table"
+                                      },
+                                      "already": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "description": "Rows already here, the same or matched, and left: by table"
+                                      },
+                                      "conflicts": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "table": {
+                                              "type": "string"
+                                            },
+                                            "id": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "table",
+                                            "id"
+                                          ]
+                                        },
+                                        "description": "The first hundred rows here with other content, left as they are"
+                                      },
+                                      "conflictCount": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "skipped": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                      },
+                                      "cleared": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "description": "Optional references to what is not here, written empty, by table"
+                                      },
+                                      "settingsLeft": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "description": "This environment's settings, left as they are"
+                                      }
+                                    },
+                                    "required": [
+                                      "added",
+                                      "already",
+                                      "conflicts",
+                                      "conflictCount",
+                                      "skipped",
+                                      "cleared",
+                                      "settingsLeft"
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -284241,6 +284335,107 @@
                             ],
                             "description": "Why it stopped. Nothing has changed."
                           },
+                          "report": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "added": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "description": "Rows added, by table"
+                                  },
+                                  "already": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "description": "Rows already here, the same or matched, and left: by table"
+                                  },
+                                  "conflicts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "table": {
+                                          "type": "string"
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "table",
+                                        "id"
+                                      ]
+                                    },
+                                    "description": "The first hundred rows here with other content, left as they are"
+                                  },
+                                  "conflictCount": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "skipped": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                  },
+                                  "cleared": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "description": "Optional references to what is not here, written empty, by table"
+                                  },
+                                  "settingsLeft": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "This environment's settings, left as they are"
+                                  }
+                                },
+                                "required": [
+                                  "added",
+                                  "already",
+                                  "conflicts",
+                                  "conflictCount",
+                                  "skipped",
+                                  "cleared",
+                                  "settingsLeft"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "What a part did, once applied"
+                          },
                           "providers": {
                             "type": "array",
                             "items": {
@@ -284257,6 +284452,7 @@
                           "plan",
                           "answers",
                           "refusal",
+                          "report",
                           "providers"
                         ]
                       }
@@ -284581,6 +284777,100 @@
                                 "type": "string"
                               },
                               "description": "What is made again here, and from what"
+                            },
+                            "would": {
+                              "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows added, by table"
+                                },
+                                "already": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows already here, the same or matched, and left: by table"
+                                },
+                                "conflicts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "table": {
+                                        "type": "string"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "table",
+                                      "id"
+                                    ]
+                                  },
+                                  "description": "The first hundred rows here with other content, left as they are"
+                                },
+                                "conflictCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "skipped": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                },
+                                "cleared": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Optional references to what is not here, written empty, by table"
+                                },
+                                "settingsLeft": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "This environment's settings, left as they are"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "already",
+                                "conflicts",
+                                "conflictCount",
+                                "skipped",
+                                "cleared",
+                                "settingsLeft"
+                              ]
                             }
                           },
                           "required": [
@@ -284663,6 +284953,107 @@
                       ],
                       "description": "Why it stopped. Nothing has changed."
                     },
+                    "report": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "added": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows added, by table"
+                            },
+                            "already": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows already here, the same or matched, and left: by table"
+                            },
+                            "conflicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "table": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "table",
+                                  "id"
+                                ]
+                              },
+                              "description": "The first hundred rows here with other content, left as they are"
+                            },
+                            "conflictCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "skipped": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows needing what neither the archive nor this environment holds, by table"
+                            },
+                            "cleared": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Optional references to what is not here, written empty, by table"
+                            },
+                            "settingsLeft": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "This environment's settings, left as they are"
+                            }
+                          },
+                          "required": [
+                            "added",
+                            "already",
+                            "conflicts",
+                            "conflictCount",
+                            "skipped",
+                            "cleared",
+                            "settingsLeft"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What a part did, once applied"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -284679,6 +285070,7 @@
                     "plan",
                     "answers",
                     "refusal",
+                    "report",
                     "providers"
                   ]
                 },
@@ -284708,6 +285100,15 @@
                   "refusal": {
                     "code": "example",
                     "message": "example"
+                  },
+                  "report": {
+                    "added": {},
+                    "already": {},
+                    "conflicts": [],
+                    "conflictCount": -9007199254740991,
+                    "skipped": {},
+                    "cleared": {},
+                    "settingsLeft": []
                   },
                   "providers": []
                 }
@@ -285042,6 +285443,100 @@
                                 "type": "string"
                               },
                               "description": "What is made again here, and from what"
+                            },
+                            "would": {
+                              "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows added, by table"
+                                },
+                                "already": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows already here, the same or matched, and left: by table"
+                                },
+                                "conflicts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "table": {
+                                        "type": "string"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "table",
+                                      "id"
+                                    ]
+                                  },
+                                  "description": "The first hundred rows here with other content, left as they are"
+                                },
+                                "conflictCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "skipped": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                },
+                                "cleared": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Optional references to what is not here, written empty, by table"
+                                },
+                                "settingsLeft": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "This environment's settings, left as they are"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "already",
+                                "conflicts",
+                                "conflictCount",
+                                "skipped",
+                                "cleared",
+                                "settingsLeft"
+                              ]
                             }
                           },
                           "required": [
@@ -285124,6 +285619,107 @@
                       ],
                       "description": "Why it stopped. Nothing has changed."
                     },
+                    "report": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "added": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows added, by table"
+                            },
+                            "already": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows already here, the same or matched, and left: by table"
+                            },
+                            "conflicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "table": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "table",
+                                  "id"
+                                ]
+                              },
+                              "description": "The first hundred rows here with other content, left as they are"
+                            },
+                            "conflictCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "skipped": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows needing what neither the archive nor this environment holds, by table"
+                            },
+                            "cleared": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Optional references to what is not here, written empty, by table"
+                            },
+                            "settingsLeft": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "This environment's settings, left as they are"
+                            }
+                          },
+                          "required": [
+                            "added",
+                            "already",
+                            "conflicts",
+                            "conflictCount",
+                            "skipped",
+                            "cleared",
+                            "settingsLeft"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What a part did, once applied"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -285140,6 +285736,7 @@
                     "plan",
                     "answers",
                     "refusal",
+                    "report",
                     "providers"
                   ]
                 },
@@ -285169,6 +285766,15 @@
                   "refusal": {
                     "code": "example",
                     "message": "example"
+                  },
+                  "report": {
+                    "added": {},
+                    "already": {},
+                    "conflicts": [],
+                    "conflictCount": -9007199254740991,
+                    "skipped": {},
+                    "cleared": {},
+                    "settingsLeft": []
                   },
                   "providers": []
                 }
@@ -285593,6 +286199,100 @@
                                 "type": "string"
                               },
                               "description": "What is made again here, and from what"
+                            },
+                            "would": {
+                              "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows added, by table"
+                                },
+                                "already": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows already here, the same or matched, and left: by table"
+                                },
+                                "conflicts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "table": {
+                                        "type": "string"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "table",
+                                      "id"
+                                    ]
+                                  },
+                                  "description": "The first hundred rows here with other content, left as they are"
+                                },
+                                "conflictCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "skipped": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                },
+                                "cleared": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Optional references to what is not here, written empty, by table"
+                                },
+                                "settingsLeft": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "This environment's settings, left as they are"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "already",
+                                "conflicts",
+                                "conflictCount",
+                                "skipped",
+                                "cleared",
+                                "settingsLeft"
+                              ]
                             }
                           },
                           "required": [
@@ -285675,6 +286375,107 @@
                       ],
                       "description": "Why it stopped. Nothing has changed."
                     },
+                    "report": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "added": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows added, by table"
+                            },
+                            "already": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows already here, the same or matched, and left: by table"
+                            },
+                            "conflicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "table": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "table",
+                                  "id"
+                                ]
+                              },
+                              "description": "The first hundred rows here with other content, left as they are"
+                            },
+                            "conflictCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "skipped": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows needing what neither the archive nor this environment holds, by table"
+                            },
+                            "cleared": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Optional references to what is not here, written empty, by table"
+                            },
+                            "settingsLeft": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "This environment's settings, left as they are"
+                            }
+                          },
+                          "required": [
+                            "added",
+                            "already",
+                            "conflicts",
+                            "conflictCount",
+                            "skipped",
+                            "cleared",
+                            "settingsLeft"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What a part did, once applied"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -285691,6 +286492,7 @@
                     "plan",
                     "answers",
                     "refusal",
+                    "report",
                     "providers"
                   ]
                 },
@@ -285720,6 +286522,15 @@
                   "refusal": {
                     "code": "example",
                     "message": "example"
+                  },
+                  "report": {
+                    "added": {},
+                    "already": {},
+                    "conflicts": [],
+                    "conflictCount": -9007199254740991,
+                    "skipped": {},
+                    "cleared": {},
+                    "settingsLeft": []
                   },
                   "providers": []
                 }
@@ -285996,7 +286807,7 @@
       "post": {
         "operationId": "applyTenantRestoration",
         "summary": "Restore it: a job applies all of it or nothing",
-        "description": "Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.",
+        "description": "Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers. A part goes into an environment in use, adding what is not here and overwriting nothing: writers to the tables it holds wait while it runs.",
         "tags": [
           "Restoring"
         ],
@@ -286195,6 +287006,100 @@
                                 "type": "string"
                               },
                               "description": "What is made again here, and from what"
+                            },
+                            "would": {
+                              "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows added, by table"
+                                },
+                                "already": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows already here, the same or matched, and left: by table"
+                                },
+                                "conflicts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "table": {
+                                        "type": "string"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "table",
+                                      "id"
+                                    ]
+                                  },
+                                  "description": "The first hundred rows here with other content, left as they are"
+                                },
+                                "conflictCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "skipped": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                },
+                                "cleared": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Optional references to what is not here, written empty, by table"
+                                },
+                                "settingsLeft": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "This environment's settings, left as they are"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "already",
+                                "conflicts",
+                                "conflictCount",
+                                "skipped",
+                                "cleared",
+                                "settingsLeft"
+                              ]
                             }
                           },
                           "required": [
@@ -286277,6 +287182,107 @@
                       ],
                       "description": "Why it stopped. Nothing has changed."
                     },
+                    "report": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "added": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows added, by table"
+                            },
+                            "already": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows already here, the same or matched, and left: by table"
+                            },
+                            "conflicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "table": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "table",
+                                  "id"
+                                ]
+                              },
+                              "description": "The first hundred rows here with other content, left as they are"
+                            },
+                            "conflictCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "skipped": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows needing what neither the archive nor this environment holds, by table"
+                            },
+                            "cleared": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Optional references to what is not here, written empty, by table"
+                            },
+                            "settingsLeft": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "This environment's settings, left as they are"
+                            }
+                          },
+                          "required": [
+                            "added",
+                            "already",
+                            "conflicts",
+                            "conflictCount",
+                            "skipped",
+                            "cleared",
+                            "settingsLeft"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What a part did, once applied"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -286293,6 +287299,7 @@
                     "plan",
                     "answers",
                     "refusal",
+                    "report",
                     "providers"
                   ]
                 },
@@ -286322,6 +287329,15 @@
                   "refusal": {
                     "code": "example",
                     "message": "example"
+                  },
+                  "report": {
+                    "added": {},
+                    "already": {},
+                    "conflicts": [],
+                    "conflictCount": -9007199254740991,
+                    "skipped": {},
+                    "cleared": {},
+                    "settingsLeft": []
                   },
                   "providers": []
                 }
@@ -286759,6 +287775,100 @@
                                 "type": "string"
                               },
                               "description": "What is made again here, and from what"
+                            },
+                            "would": {
+                              "description": "A part's dry run: what it would add and leave here, as this environment stands",
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows added, by table"
+                                },
+                                "already": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows already here, the same or matched, and left: by table"
+                                },
+                                "conflicts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "table": {
+                                        "type": "string"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "table",
+                                      "id"
+                                    ]
+                                  },
+                                  "description": "The first hundred rows here with other content, left as they are"
+                                },
+                                "conflictCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "skipped": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Rows needing what neither the archive nor this environment holds, by table"
+                                },
+                                "cleared": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Optional references to what is not here, written empty, by table"
+                                },
+                                "settingsLeft": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "This environment's settings, left as they are"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "already",
+                                "conflicts",
+                                "conflictCount",
+                                "skipped",
+                                "cleared",
+                                "settingsLeft"
+                              ]
                             }
                           },
                           "required": [
@@ -286841,6 +287951,107 @@
                       ],
                       "description": "Why it stopped. Nothing has changed."
                     },
+                    "report": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "added": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows added, by table"
+                            },
+                            "already": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows already here, the same or matched, and left: by table"
+                            },
+                            "conflicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "table": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "table",
+                                  "id"
+                                ]
+                              },
+                              "description": "The first hundred rows here with other content, left as they are"
+                            },
+                            "conflictCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "skipped": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Rows needing what neither the archive nor this environment holds, by table"
+                            },
+                            "cleared": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Optional references to what is not here, written empty, by table"
+                            },
+                            "settingsLeft": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "This environment's settings, left as they are"
+                            }
+                          },
+                          "required": [
+                            "added",
+                            "already",
+                            "conflicts",
+                            "conflictCount",
+                            "skipped",
+                            "cleared",
+                            "settingsLeft"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What a part did, once applied"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -286857,6 +288068,7 @@
                     "plan",
                     "answers",
                     "refusal",
+                    "report",
                     "providers"
                   ]
                 },
@@ -286886,6 +288098,15 @@
                   "refusal": {
                     "code": "example",
                     "message": "example"
+                  },
+                  "report": {
+                    "added": {},
+                    "already": {},
+                    "conflicts": [],
+                    "conflictCount": -9007199254740991,
+                    "skipped": {},
+                    "cleared": {},
+                    "settingsLeft": []
                   },
                   "providers": []
                 }
