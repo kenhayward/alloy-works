@@ -992,6 +992,8 @@ describe('routes that check a permission', () => {
       url: `/v1/baselines/${reportBaseline}/threads`,
       status: 404,
     }),
+    readDocumentActivity: () => ({ url: `/v1/documents/${report}/activity`, status: 404 }),
+    readComponentActivity: () => ({ url: `/v1/components/${dosing}/activity`, status: 404 }),
     compareDocumentVersions: () => ({
       url: `/v1/documents/${report}/comparison?from=${MISSING}&to=${MISSING}`,
       status: 404,

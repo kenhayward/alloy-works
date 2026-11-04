@@ -526,6 +526,8 @@ export {
   versionContents,
   latestVersionsOf,
   listVersions,
+  versionActivity,
+  type WeekOfActivity,
   readVersion,
   headingOf,
   recordVersion,

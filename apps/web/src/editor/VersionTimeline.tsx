@@ -12,6 +12,7 @@ import { Lozenge, StateLozenge, seededKind, type LozengeKind } from '../states/L
 import { Avatar } from '../review/ThreadFaces.js';
 import { words } from '../words/words.js';
 import type { ListedVersion } from './VersionList.js';
+import { ActivityGraph, type ActivityWeek } from './ActivityGraph.js';
 import { nextChoice } from './VersionViews.js';
 import {
   dayKey,
@@ -62,6 +63,12 @@ const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digi
 
 /** The collapsed days, remembered by this browser per artifact, as the panes' are (the plan, D9). */
 const everyDayKey = (id: string) => `aw.versions.${id}.collapsed`;
+const graphKey = (id: string) => `aw.versions.${id}.graph`;
+/** The graph stands of itself from this many versions: fewer need no overview (the handoff). */
+const GRAPH_FROM = 20;
+const PUBLICATION_PAGES = 5;
+const sameRead = (held: readonly unknown[], now: readonly unknown[]) =>
+  held.length === now.length && held.every((each, at) => Object.is(each, now[at]));
 
 const FORMAT_WORDS: Readonly<Record<string, () => string>> = {
   pdf: () => words('editor.format-pdf'),
@@ -136,6 +143,33 @@ function dayKinds(
  * says its state and where it stands; and a document's baselines and publications fall where they
  * happened, in rows of their own, neither of them a version.
  */
+/** Holds its own text, so typing does not draw a long list again: the service is asked on Enter. */
+function VersionSearch({ onFind }: { onFind: (q: string) => void }) {
+  const [typing, setTyping] = useState('');
+  return (
+    <form
+      role="search"
+      className={styles['search']}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onFind(typing.trim());
+      }}
+    >
+      <input
+        type="search"
+        maxLength={200}
+        aria-label={words('editor.search-versions')}
+        placeholder={words('editor.search-versions')}
+        value={typing}
+        onChange={(event) => {
+          setTyping(event.target.value);
+          if (event.target.value === '') onFind('');
+        }}
+      />
+    </form>
+  );
+}
+
 export function VersionTimeline({
   client,
   id,
@@ -180,6 +214,24 @@ export function VersionTimeline({
   );
   const [copied, setCopied] = useState<string | null>(null);
   const [choosing, setChoosing] = useState(false);
+  // What the list is narrowed to: by the service's own query, or to one kind of row.
+  const [finding, setFinding] = useState<{
+    readonly q?: string;
+    readonly before?: string;
+    readonly author?: string;
+    readonly only?: 'revisions';
+  }>({});
+  const [rowsOnly, setRowsOnly] = useState<'baselines' | 'publications' | null>(null);
+  const [filtering, setFiltering] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [activity, setActivity] = useState<readonly ActivityWeek[] | null>(null);
+  const [graph, setGraph] = useState<'shown' | 'hidden' | null>(() => {
+    const stored = kept(graphKey(id));
+    return stored === 'shown' || stored === 'hidden' ? stored : null;
+  });
+  // The line's latest, known from the list unnarrowed, whatever a search has narrowed it to.
+  const [head, setHead] = useState<TimelineVersion | null>(null);
+  const [people, setPeople] = useState<ReadonlyMap<string, string>>(new Map());
   const [chosen, setChosen] = useState<readonly string[]>([]);
   const [everyDayCollapsed, setEveryDayCollapsed] = useState(() => kept(everyDayKey(id)) === 'yes');
   // Days differing from that, one by one: today stays open when earlier days were left folded.
@@ -201,7 +253,7 @@ export function VersionTimeline({
   }, [client, id, line, read, of]);
 
   const versionsFrom = (cursor: string | null) => {
-    const query = cursor === null ? {} : { cursor };
+    const query = { ...finding, ...(cursor === null ? {} : { cursor }) };
     return of === 'document'
       ? client.GET('/v1/documents/{id}/versions', { params: { path: { id }, query } })
       : client.GET('/v1/components/{id}/versions', {
@@ -240,15 +292,52 @@ export function VersionTimeline({
       superseded: each.superseded === true,
     }));
 
+  const narrowed = Object.keys(finding).length > 0;
+  const listOf = useRef<readonly unknown[]>([]);
+
   useEffect(() => {
     let current = true;
-    setVersions(undefined);
-    setOpened(null);
+    const weeks =
+      of === 'document'
+        ? client.GET('/v1/documents/{id}/activity', { params: { path: { id } } })
+        : client.GET('/v1/components/{id}/activity', {
+            params: { path: { id }, query: line === undefined ? {} : { line } },
+          });
+    weeks
+      .then(({ data }) => {
+        if (current) setActivity(data?.weeks ?? null);
+      })
+      .catch(() => current && setActivity(null));
+    return () => {
+      current = false;
+    };
+  }, [client, id, line, read, of]);
+
+  useEffect(() => {
+    let current = true;
+    // Narrowing keeps the list, and so the search box and its focus, until the answer comes.
+    const whose = [client, id, line, read, of];
+    if (!sameRead(listOf.current, whose)) {
+      setVersions(undefined);
+      setOpened(null);
+    }
+    listOf.current = whose;
     versionsFrom(null)
       .then(({ data }) => {
         if (!current) return;
-        setVersions(data ? shownVersions(data) : null);
+        const shown = data ? shownVersions(data) : null;
+        setVersions(shown);
         setNext(data?.next ?? null);
+        if (shown?.[0] && !narrowed) setHead(shown[0]);
+        if (shown) {
+          setPeople((held) => {
+            const now = new Map(held);
+            for (const each of shown) {
+              if (each.authorId !== null) now.set(each.authorId, each.author ?? '');
+            }
+            return now;
+          });
+        }
       })
       .catch(() => current && setVersions(null));
     if (of === 'document') {
@@ -272,11 +361,25 @@ export function VersionTimeline({
           );
         })
         .catch(() => current && setBaselines(null));
-      publicationsFrom(null)
-        .then(({ data }) => {
+      const reaching = async () => {
+        let page = await publicationsFrom(null);
+        let held = page.data ? shownPublications(page.data) : null;
+        // Going to a date reads back until it is reached, within reason: past that, the older button.
+        const until = finding.before === undefined ? null : new Date(finding.before).getTime();
+        for (let more = 0; until !== null && more < PUBLICATION_PAGES; more += 1) {
+          const last = held?.[held.length - 1];
+          if (!page.data?.next || !last || last.at.getTime() <= until) break;
+          page = await publicationsFrom(page.data.next);
+          if (!page.data) break;
+          held = [...(held ?? []), ...shownPublications(page.data)];
+        }
+        return { held, next: page.data?.next ?? null };
+      };
+      reaching()
+        .then(({ held, next: onward }) => {
           if (!current) return;
-          setPublications(data ? shownPublications(data) : null);
-          setNextPublications(data?.next ?? null);
+          setPublications(held);
+          setNextPublications(onward);
         })
         .catch(() => current && setPublications(null));
     }
@@ -285,7 +388,7 @@ export function VersionTimeline({
     };
     // Each read is of what these name; the helpers close over nothing else.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, id, line, read, of]);
+  }, [client, id, line, read, of, finding]);
 
   const older = async () => {
     const [moreVersions, morePublications] = await Promise.all([
@@ -309,10 +412,10 @@ export function VersionTimeline({
   if (versions === undefined) return null;
   if (versions === null)
     return <p className={styles['muted']}>{words('editor.the-versions-could-not-be')}</p>;
-  if (versions.length === 0)
+  if (versions.length === 0 && !narrowed)
     return <p className={styles['muted']}>{words('editor.no-version-has-been-saved')}</p>;
 
-  const latest = versions[0]!;
+  const latest = (narrowed ? head : versions[0]) ?? versions[0]!;
   const open = (version: TimelineVersion, at: number) => {
     const ask = (asked.current += 1);
     if (opened === version.id) {
@@ -331,12 +434,34 @@ export function VersionTimeline({
     });
   };
 
+  const versionsNarrowed =
+    finding.q !== undefined || finding.author !== undefined || finding.only !== undefined;
+  const reached = (row: Timed) =>
+    finding.before === undefined || row.at.getTime() <= new Date(finding.before).getTime();
+  const goTo = (before: Date) => setFinding((now) => ({ ...now, before: before.toISOString() }));
+  const narrow = (change: Partial<typeof finding> | null) =>
+    setFinding((now) => {
+      const next_ = { ...now, ...change };
+      return Object.fromEntries(
+        Object.entries(next_).filter(([, value]) => value !== undefined && value !== ''),
+      );
+    });
+  const totalVersions = (activity ?? []).reduce((sum, week) => sum + week.versions, 0);
+  const graphShown =
+    activity !== null && (graph ?? (totalVersions >= GRAPH_FROM ? 'shown' : 'hidden')) === 'shown';
+  const rememberGraph = (now: 'shown' | 'hidden') => {
+    setGraph(now);
+    keep(graphKey(id), now);
+  };
   const rows = timelineRows({
-    versions,
-    baselines: baselines ?? [],
-    publications: publications ?? [],
-    olderVersions: next !== null,
-    olderPublications: nextPublications !== null,
+    // A narrowed list is of versions alone, but that going to a date moves all three.
+    versions: rowsOnly ? [] : versions,
+    baselines:
+      rowsOnly === 'publications' || versionsNarrowed ? [] : (baselines ?? []).filter(reached),
+    publications:
+      rowsOnly === 'baselines' || versionsNarrowed ? [] : (publications ?? []).filter(reached),
+    olderVersions: rowsOnly === null && next !== null,
+    olderPublications: rowsOnly !== 'baselines' && !versionsNarrowed && nextPublications !== null,
   });
   const days = daysOf(rows);
   const isCollapsed = (key: string) => turned.has(key) !== everyDayCollapsed;
@@ -610,6 +735,106 @@ export function VersionTimeline({
           <Icon name={anyOpen ? 'Collapse every day' : 'Expand every day'} size={16} />
         </IconButton>
       </div>
+      {graphShown && activity && (
+        <ActivityGraph
+          weeks={activity}
+          shown={
+            versions.length > 0 && !narrowed
+              ? { from: versions[versions.length - 1]!.at, to: versions[0]!.at }
+              : null
+          }
+          onGo={goTo}
+          onHide={() => rememberGraph('hidden')}
+        />
+      )}
+      <div className={styles['finding']}>
+        <VersionSearch onFind={(q) => narrow({ q })} />
+        <IconButton
+          label={words('editor.filter-versions')}
+          pressed={filtering}
+          onClick={() => setFiltering((now) => !now)}
+        >
+          <Icon name="Filter" size={16} />
+        </IconButton>
+        <IconButton
+          label={words('editor.go-to-a-date')}
+          pressed={picking}
+          onClick={() => setPicking((now) => !now)}
+        >
+          <Icon name="Go to a date" size={16} />
+        </IconButton>
+        {!graphShown && activity !== null && (
+          <IconButton
+            label={words('editor.show-the-activity-graph')}
+            onClick={() => rememberGraph('shown')}
+          >
+            <Icon name="Activity graph" size={16} />
+          </IconButton>
+        )}
+      </div>
+      {picking && (
+        <input
+          type="date"
+          aria-label={words('editor.go-to-a-date')}
+          onChange={(event) => {
+            const parts = event.target.value.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(Number.isNaN)) return narrow({ before: '' });
+            // The end of that day, in the reader's own zone.
+            goTo(new Date(parts[0]!, parts[1]! - 1, parts[2]!, 23, 59, 59, 999));
+          }}
+        />
+      )}
+      {filtering && (
+        <div className={styles['filters']}>
+          <label>
+            {words('editor.filter-person')}
+            <select
+              value={finding.author ?? ''}
+              onChange={(event) => narrow({ author: event.target.value })}
+            >
+              <option value="">{words('editor.filter-anyone')}</option>
+              {[...people].map(([person, name]) => (
+                <option key={person} value={person}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={finding.only === 'revisions'}
+              onChange={(event) => {
+                narrow(event.target.checked ? { only: 'revisions' } : { only: undefined as never });
+              }}
+            />
+            {words('editor.only-revisions')}
+          </label>
+          {of === 'document' && (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rowsOnly === 'baselines'}
+                  onChange={(event) => setRowsOnly(event.target.checked ? 'baselines' : null)}
+                />
+                {words('editor.only-baselines')}
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rowsOnly === 'publications'}
+                  onChange={(event) => setRowsOnly(event.target.checked ? 'publications' : null)}
+                />
+                {words('editor.only-publications')}
+              </label>
+            </>
+          )}
+        </div>
+      )}
+      {narrowed && rows.length === 0 && (
+        <p className={styles['muted']}>{words('editor.nothing-found')}</p>
+      )}
       {baselines === null && (
         <p className={styles['muted']}>{words('editor.the-baselines-could-not-be-read')}</p>
       )}

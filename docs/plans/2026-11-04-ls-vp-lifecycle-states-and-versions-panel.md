@@ -225,6 +225,8 @@ SCH-058 and LOC-012's titles and accessible names.
 oldest, checkboxes in name and role), the bar, the Compare view, quick choices. The one-version view:
 facts, approvals, changes, delivery (shortened hash, Copy in full, no sideways scroll), baselines.
 
+**VP3 built.** Differs from below: Only deliveries is dropped (not on the list's read; ADR-0082). Measured at 500 rows in Chromium on a development build (ADR-0082), so no virtualising. VER-051's budget stands on `content.test.ts`; the document comparison route was not timed against it.
+
 **VP3, finding.** `versions` gains `before` and filters; a weekly `activity` route with approvals;
 the graph (D10), search, Filter, Go to a date. Measures against VER-051's budget. ADR-0082, the panel's
 decisions; `README.md` and `features.md`; close.

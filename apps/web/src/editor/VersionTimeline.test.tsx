@@ -66,6 +66,7 @@ function service(
     versions?: readonly unknown[][];
     baselines?: readonly unknown[] | null;
     publications?: readonly unknown[][] | null;
+    activity?: readonly unknown[];
   } = {},
 ) {
   const asked: string[] = [];
@@ -81,6 +82,9 @@ function service(
     }
     if (url.pathname === `/v1/documents/${DOCUMENT}`) {
       return json(200, { state: { key: 'draft', name: 'Draft' }, transitions: [], gates: [] });
+    }
+    if (url.pathname.endsWith('/activity')) {
+      return json(200, { weeks: answers.activity ?? [] });
     }
     if (url.pathname.endsWith('/baselines')) {
       return answers.baselines === null
@@ -361,5 +365,75 @@ describe('the versions timeline', () => {
     expect(compareTwo.mock.calls[0]?.[1]).toMatchObject({ number: '1.3' });
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(screen.getByRole('status')).toHaveTextContent('Choose two versions to compare');
+  });
+
+  it('searches through the service, saying so where nothing is like it, and clears', async () => {
+    const { client, asked } = service();
+    drawn(client);
+    await list();
+    const search = screen.getByRole('searchbox', { name: 'Number, note or person' });
+    await userEvent.type(search, 'dosing{Enter}');
+    await waitFor(() => expect(asked.some((each) => each.includes('q=dosing'))).toBe(true));
+    await userEvent.clear(search);
+    await waitFor(() => expect(asked[asked.length - 1]).not.toContain('q='));
+  });
+
+  it('filters by person and to revisions through the service, and to one kind of row on the page', async () => {
+    const { client, asked } = service({
+      baselines: [baseline()],
+      publications: [[publication()]],
+    });
+    drawn(client);
+    const rows = await list();
+    await userEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Only baselines' }));
+    expect(rows.querySelector('[data-version]')).toBeNull();
+    expect(rows.querySelector('[data-publication]')).toBeNull();
+    expect(rows.querySelector('[data-baseline]')).not.toBeNull();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Only baselines' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Only revisions' }));
+    await waitFor(() => expect(asked.some((each) => each.includes('only=revisions'))).toBe(true));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), 'a');
+    await waitFor(() => expect(asked.some((each) => each.includes('author=a'))).toBe(true));
+  });
+
+  it('goes to a date: the list reaches back to the end of that day', async () => {
+    const { client, asked } = service();
+    drawn(client);
+    await list();
+    await userEvent.click(screen.getByRole('button', { name: 'Go to a date' }));
+    await userEvent.type(
+      screen.getByLabelText('Go to a date', { selector: 'input' }),
+      '2026-10-05',
+    );
+    await waitFor(() => expect(asked.some((each) => each.includes('before='))).toBe(true));
+  });
+
+  it('shows the activity graph of itself from twenty versions, remembering a choice to hide it', async () => {
+    const { client } = service({
+      activity: [{ start: '2026-10-05', versions: 25, approvals: 1 }],
+    });
+    const { unmount } = render(
+      <VersionTimeline client={client} id={DOCUMENT} changesFrom={async () => null} />,
+    );
+    const graph = await screen.findByRole('slider', { name: 'Versions a week' });
+    expect(graph).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Hide the activity graph' }));
+    expect(screen.queryByRole('slider')).toBeNull();
+    unmount();
+    render(<VersionTimeline client={client} id={DOCUMENT} changesFrom={async () => null} />);
+    expect(
+      await screen.findByRole('button', { name: 'Show the activity graph' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('slider')).toBeNull();
+  });
+
+  it('keeps the graph out of the way below twenty versions, until asked for', async () => {
+    const { client } = service({
+      activity: [{ start: '2026-10-05', versions: 3, approvals: 0 }],
+    });
+    drawn(client);
+    await userEvent.click(await screen.findByRole('button', { name: 'Show the activity graph' }));
+    expect(await screen.findByRole('slider', { name: 'Versions a week' })).toBeInTheDocument();
   });
 });

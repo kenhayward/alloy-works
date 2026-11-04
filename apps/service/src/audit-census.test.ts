@@ -254,6 +254,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listBaselineThreads: read,
   compareComponentVersions: read,
   compareDocumentVersions: read,
+  readDocumentActivity: read,
+  readComponentActivity: read,
   compareBaseline: read,
   compareBaselineResolved: read,
   listChangesSince: read,

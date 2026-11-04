@@ -350,3 +350,90 @@
   flex-wrap: wrap;
   gap: var(--space-4);
 }
+
+/* The activity graph (the plan, D10): one control, its bars no buttons. */
+.graph {
+  --version-graph: 46px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.graphBars {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 0;
+  height: var(--version-graph);
+  padding-block-start: 10px;
+}
+
+.graphWeek {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  min-width: 0;
+  height: 100%;
+  cursor: pointer;
+}
+
+.graphBar {
+  width: 100%;
+  min-height: 1px;
+  background: var(--strong-border);
+}
+
+.graphWeek[data-shown] .graphBar {
+  background: var(--accent);
+}
+
+.graphWeek[data-chosen] {
+  outline: 1px solid var(--accent);
+}
+
+/* An approval, a diamond above its week. */
+.graphApproval {
+  position: absolute;
+  inset-block-start: -10px;
+  inset-inline: 0;
+  width: 6px;
+  height: 6px;
+  margin-inline: auto;
+  background: var(--ok);
+  transform: rotate(45deg);
+}
+
+.finding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.search {
+  display: flex;
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.search input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
