@@ -203,7 +203,12 @@ describe('the service', () => {
 
   it('says nothing of the versions behind it to somebody not signed in', async () => {
     const answered = await app.inject({ url: '/v1/tenant', headers: { host: 'acme.alloy.test' } });
-    expect(Object.keys(answered.json() as object).sort()).toEqual(['name', 'providers', 'signIn', 'state']);
+    expect(Object.keys(answered.json() as object).sort()).toEqual([
+      'name',
+      'providers',
+      'signIn',
+      'state',
+    ]);
   });
 
   it('refuses a hostname that serves no environment, before any tenant data is touched', async () => {
