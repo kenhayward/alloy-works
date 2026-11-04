@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.231.0 - 2026-11-03 (PR #939)
+## 0.231.0 - 2026-11-04 (PR #939)
 
 Export and import closed (the EI plan): everything in an environment comes out in a form readable without this product, a whole export restores into an empty environment, and a part comes into one in use.
 
