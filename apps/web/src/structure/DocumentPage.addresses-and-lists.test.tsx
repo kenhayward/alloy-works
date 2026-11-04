@@ -489,7 +489,9 @@ describe('the address of every node', () => {
                 lock: null,
               },
             ],
-            versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+            versions: [
+              { id: 'vvvvvvvv-0000-4000-8000-000000000001', number: '0.2', content: printer },
+            ],
           });
         }
         return fake.fetch(request);
@@ -530,6 +532,46 @@ describe('the address of every node', () => {
       expect(box).not.toBeNull();
       expect(box).not.toMatch(/border|background/);
       expect(text.querySelector('[data-component]')).not.toBeNull();
+    });
+
+    it('chooses the part clicked in the text, for the Part panel and the address, and moves nothing', async () => {
+      const text = await openOneScroll();
+      const panel = screen.getByRole('tabpanel', { name: 'Part' });
+      // The first node until something else is chosen.
+      expect(within(panel).getByText(/^Section/)).toBeInTheDocument();
+      const scrolled = vi.fn();
+      Element.prototype.scrollIntoView = scrolled;
+
+      await userEvent.click(within(text).getByText('Unbox the printer.'));
+
+      const part = screen.getByRole('tabpanel', { name: 'Part' });
+      expect(within(part).getByText(/^Component/)).toBeInTheDocument();
+      // Which version, by its number, wherever the panel is read (the EP plan, EP1).
+      expect(within(part).getByText(/^Version .*latest/)).toBeInTheDocument();
+      expect(window.location.hash).toContain(`/nodes/${REFERENCE}`);
+      expect(scrolled).not.toHaveBeenCalled();
+      // The tree says so, with the focus left alone.
+      expect(
+        within(screen.getByRole('tree')).getByRole('treeitem', { selected: true }),
+      ).toHaveTextContent(/Install the printer/);
+      expect(screen.getByRole('tree').contains(document.activeElement)).toBe(false);
+    });
+
+    it('chooses a section by its heading, leaving the tab that is showing alone', async () => {
+      const text = await openOneScroll();
+      await userEvent.click(within(text).getByText('Unbox the printer.'));
+      const tabs = screen.getByRole('tablist', { name: 'Document panels' });
+      await userEvent.click(within(tabs).getByRole('tab', { name: 'Threads' }));
+
+      await userEvent.click(within(text).getByRole('heading', { name: /Setting up/ }));
+
+      expect(within(tabs).getByRole('tab', { name: 'Threads' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      expect(
+        within(screen.getByRole('tree')).getByRole('treeitem', { selected: true }),
+      ).toHaveTextContent(/Setting up/);
     });
 
     it("CNT-073 shows a component's edges and label on hover, on focus and under Show boundaries, and never otherwise", async () => {

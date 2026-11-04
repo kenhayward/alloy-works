@@ -489,6 +489,7 @@ export function DocumentText({
   translated,
   overridesOf,
   onOverride,
+  onPointedAt,
   choosing,
   bindingStates = null,
   onProvenance,
@@ -555,6 +556,8 @@ export function DocumentText({
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
   /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
   onOverride?: (node: string) => void;
+  /** A part clicked or opened in the text, in any mode: the page chooses it (the EP plan, EP1). */
+  onPointedAt?: (node: string) => void;
   /**
    * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
    * reader who may restructure the document. Without it the label says the version and offers nothing.
@@ -622,6 +625,7 @@ export function DocumentText({
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
   const open = (node: string) => (at: number) => {
     setOpenAt(at);
+    onPointedAt?.(node);
     onEdit?.(node);
   };
   const numbers = useMemo(
@@ -685,7 +689,11 @@ export function DocumentText({
     // In a holder the measure wide on the canvas, so the heading's indents and alignment stand inside
     // the measure while its section and component keep the column's width (issue #333).
     return (
-      <div className={styles['measured']}>
+      <div
+        className={styles['measured']}
+        // A component's heading is within its box, which answers for the whole of it.
+        {...(node.type === 'section' && onPointedAt ? { onClick: () => onPointedAt(node.id) } : {})}
+      >
         <Heading depth={depth}>
           {at !== undefined && (
             <>
@@ -719,7 +727,12 @@ export function DocumentText({
           data-marked={marked === node.id ? 'true' : undefined}
           data-changed={changed?.has(node.id) === true ? 'true' : undefined}
         >
-          <div className={styles['component']} data-component="" data-editing={editing === node.id}>
+          <div
+            className={styles['component']}
+            data-component=""
+            data-editing={editing === node.id}
+            onClick={onPointedAt ? () => onPointedAt(node.id) : undefined}
+          >
             {openComments?.byNode.has(node.id) === true && (
               <CommentGlyph
                 comments={openComments.byNode.get(node.id)!}

@@ -377,6 +377,8 @@ export interface PartFacts {
   readonly placed: readonly ComponentChoice[];
   readonly usedIn: ((component: ComponentChoice) => ReactNode) | undefined;
   readonly fieldCount: number;
+  /** The version a reference resolves to, by its number, once the page has read it. */
+  readonly version?: string | undefined;
 }
 
 const MODE_WORDS = {
@@ -410,7 +412,7 @@ function PartIdentity({
   /** The address the clipboard would not take, to be copied by hand (the plan, R7). */
   uncopied: string | null;
 }) {
-  const { node, names, state, number, fieldCount } = facts;
+  const { node, names, state, number, fieldCount, version } = facts;
   const unreadable = node.type === 'reference' && node.component === null;
   const count = node.type === 'section' ? componentsBeneath(node) : 0;
   const name = nodeName(node, names);
@@ -472,7 +474,7 @@ function PartIdentity({
             </Chip>
           )}
           {node.type === 'reference' && !unreadable && (
-            <Chip className={part['chip']}>{MODE_WORDS[node.mode.kind]()}</Chip>
+            <Chip className={part['chip']}>{version ?? MODE_WORDS[node.mode.kind]()}</Chip>
           )}
         </div>
       </div>
