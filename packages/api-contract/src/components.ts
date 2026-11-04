@@ -75,13 +75,20 @@ const VersionsFound = z
   .optional()
   .describe('Only versions whose number begins so, or whose note or author says so');
 
+const VersionsNarrowed = {
+  q: VersionsFound,
+  before: z.iso.datetime().optional().describe('Only versions made at this instant or before it'),
+  author: LowercaseUuid.optional().describe('Only versions this person made'),
+  only: z.literal('revisions').optional().describe('revisions: only versions a gate designated'),
+};
+
 /** A page of a document's versions. */
-export const DocumentVersionsQuery = z.object({ ...pageQuery, q: VersionsFound });
+export const DocumentVersionsQuery = z.object({ ...pageQuery, ...VersionsNarrowed });
 export type DocumentVersionsQuery = z.infer<typeof DocumentVersionsQuery>;
 
 export const VersionsQuery = z.object({
   ...pageQuery,
-  q: VersionsFound,
+  ...VersionsNarrowed,
   line: LowercaseUuid.optional().describe(
     "A component's line, divergent or a language's, whose versions to list (LOC-012); its main line's where absent",
   ),
@@ -257,6 +264,20 @@ export const ComponentVersionList = z.object({
   next: nextCursor,
 });
 export type ComponentVersionList = z.infer<typeof ComponentVersionList>;
+
+/** Versions and approvals a week, for the activity graph (the plan, D10). */
+export const VersionActivityView = z.object({
+  weeks: z
+    .array(
+      z.object({
+        start: z.string().describe('The Monday it began, in UTC, as YYYY-MM-DD'),
+        versions: z.number().int(),
+        approvals: z.number().int(),
+      }),
+    )
+    .describe('Oldest first; a week with neither is left out'),
+});
+export type VersionActivityView = z.infer<typeof VersionActivityView>;
 
 export const Lock = z.object({
   holder: z.object({ id: z.string(), name: z.string().nullable() }),
@@ -606,6 +627,30 @@ export const componentRoutes = {
       },
       404: {
         description: 'No such component in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  readComponentActivity: {
+    operationId: 'readComponentActivity',
+    method: 'GET',
+    path: '/v1/components/{id}/activity',
+    summary: "A component's versions and approvals a week",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ComponentParams,
+    query: z.object({
+      line: LowercaseUuid.optional().describe("A line's, where named; else the main line's"),
+    }),
+    responses: {
+      200: { description: 'Each week with any, oldest first', schema: VersionActivityView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a reader of the component may read its history',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component the caller may read, or no such line of it',
         schema: ErrorBody,
       },
     },

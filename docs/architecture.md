@@ -1818,7 +1818,7 @@ browser tab and in an Electron window alike.
 ## The interface
 
 The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
-[the LG plan](plans/2026-10-08-lg-the-ledger-interface.md); every state of content a `Lozenge`, held by `states/lozenge-guard.test.ts` and `eslint/state-words.js` ([ADR-0081](decisions/0081-lifecycle-states-are-lozenges.md)); drawings in
+[the LG plan](plans/2026-10-08-lg-the-ledger-interface.md); every state of content a `Lozenge`, held by `states/lozenge-guard.test.ts` and `eslint/state-words.js` ([ADR-0081](decisions/0081-lifecycle-states-are-lozenges.md); the Versions panel a timeline, `editor/VersionTimeline.tsx`, `VersionViews.tsx` and `ActivityGraph.tsx` over `versionActivity` and `revisionStanding`, [ADR-0082](decisions/0082-the-versions-panel-is-a-timeline.md)); drawings in
 [`interface/handoffs/ledger/`](interface/handoffs/ledger/README.md)).
 
 - **Themes.** `tokens.css` holds one block per theme; `themes.ts` resolves Auto by

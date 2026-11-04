@@ -26,7 +26,13 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { listVersions, recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import {
+  listVersions,
+  recordVersion,
+  substanceOf,
+  versionActivity,
+  type StoredVersion,
+} from './versions.js';
 import { latestRevisionsOf, moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
@@ -448,5 +454,30 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
     expect(await found('100%')).toEqual([next.version.id]);
     expect(await found('1_0')).toEqual([]);
     expect(await found('nothing like it')).toEqual([]);
+  });
+
+  it('narrows versions to a person, to revisions and to those before an instant', async () => {
+    const first = await component('Narrowed');
+    await approve(first);
+    const second = await edit(first);
+    const ids = async (narrowing: object) =>
+      (
+        await as((trx) => listVersions(trx, first.artifactId, { limit: 10, ...narrowing }))
+      ).items.map((each) => each.id);
+    expect(await ids({ only: 'revisions' })).toEqual([first.id]);
+    expect(await ids({ author: ada })).toEqual([second.id, first.id]);
+    expect(await ids({ author: grace })).toEqual([]);
+    expect(await ids({ before: new Date(second.createdAt.getTime() + 1) })).toContain(second.id);
+    expect(await ids({ before: new Date(first.createdAt.getTime() - 1) })).toEqual([]);
+  });
+
+  it('counts versions and approvals a week, for the activity graph', async () => {
+    const first = await component('Active');
+    await approve(first);
+    await edit(first);
+    const weeks = await as((trx) => versionActivity(trx, first.artifactId));
+    expect(weeks).toEqual([
+      { start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), versions: 2, approvals: 1 },
+    ]);
   });
 });

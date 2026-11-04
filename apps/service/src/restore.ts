@@ -12,6 +12,7 @@ import {
   previewRestore,
   readableComponents,
   readDocument,
+  versionActivity,
   resolveOccurrences,
   restoreVersion,
   versionTitles,
@@ -303,7 +304,13 @@ export function restoreHandlers() {
       const query = request.query as DocumentVersionsQuery;
       const after = afterVersion(query.cursor);
       if (!(await readDocument(trx, id))) throw notFound();
-      return versionsPage(trx, id, query.limit, after, undefined, query.q);
+      return versionsPage(trx, id, query.limit, after, undefined, query);
+    },
+
+    readDocumentActivity: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as RestoreParams;
+      if (!(await readDocument(trx, id))) throw notFound();
+      return { weeks: [...(await versionActivity(trx, id))] };
     },
 
     previewDocumentRestore: async (

@@ -174,6 +174,9 @@ const ADMIN: Record<string, readonly string[]> = {
   Publication: ['M4 12 20 4l-4 16-5-6z', 'm11 14 9-10'],
   Download: ['M12 4v11', 'm7 11 5 5 5-5', 'M5 20h14'],
   'Day open': ['m6 9.5 6 6 6-6'],
+  Filter: ['M4 6h16', 'M7 12h10', 'M10 18h4'],
+  'Go to a date': ['M5 6h14v14H5z', 'M5 10h14', 'M9 3v4', 'M15 3v4'],
+  'Activity graph': ['M5 20v-6', 'M10 20V9', 'M15 20v-9', 'M20 20V5'],
   'Collapse every day': ['m7 10 5-5 5 5', 'm7 19 5-5 5 5'],
   'Expand every day': ['m7 5 5 5 5-5', 'm7 14 5 5 5-5'],
   // The Part tab's link field (ADR-0054): one sheet over another.

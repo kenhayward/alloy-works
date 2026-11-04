@@ -715,6 +715,12 @@ export async function listVersions(
     readonly after?: VersionPosition;
     /** Only those whose number begins so, or whose note or author says so: its words, no pattern. */
     readonly q?: string;
+    /** Only those made at this instant or before it: Go to a date. */
+    readonly before?: Date;
+    /** Only those this person made. */
+    readonly author?: string;
+    /** Only those a gate designated. */
+    readonly only?: 'revisions';
   },
   /** A line's own versions (LOC-012; ADR-0063), by its id; the main line's where absent. */
   line?: string,
@@ -746,6 +752,21 @@ export async function listVersions(
     // The main line's alone: a line's are numbered below it, and read only where named (ADR-0063).
     .$if(line === undefined, (query) => query.where('v.revision_no', '>=', 0))
     .$if(line !== undefined, (query) => query.where('v.line_id', '=', line!))
+    .$if(page.before !== undefined, (query) => query.where('v.created_at', '<=', page.before!))
+    .$if(page.author !== undefined, (query) =>
+      UUID.test(page.author!)
+        ? query.where('v.author_id', '=', page.author!)
+        : query.where(sql<boolean>`false`),
+    )
+    .$if(page.only === 'revisions', (query) =>
+      query.where(({ exists, selectFrom }) =>
+        exists(
+          selectFrom('revision_designation as d')
+            .select('d.version_id')
+            .whereRef('d.version_id', '=', 'v.id'),
+        ),
+      ),
+    )
     // A line's numbers are not the ones stored (ADR-0063), so it is found by its note and author.
     .$if(asked !== undefined && asked !== '', (query) =>
       query.where(
@@ -789,6 +810,53 @@ export async function listVersions(
         ? { revision: last.revision_no, version: last.version_no }
         : null,
   };
+}
+
+/** One week of an artifact's history: when it began (UTC, a Monday), and what happened in it. */
+export interface WeekOfActivity {
+  readonly start: string;
+  readonly versions: number;
+  readonly approvals: number;
+}
+
+/**
+ * An artifact's versions and approvals a week, oldest first, on one line or the main line: weeks with
+ * neither are left out, and one statement reads them all (the plan, D10).
+ */
+export async function versionActivity(
+  trx: TenantTransaction,
+  artifactId: string,
+  line?: string,
+): Promise<readonly WeekOfActivity[]> {
+  if (!UUID.test(artifactId) || (line !== undefined && !UUID.test(line))) return [];
+  const { rows: stored } = await sql<{ present: boolean }>`
+    select to_regclass(current_schema() || '.workflow_approval') is not null as present`.execute(
+    trx,
+  );
+  const { rows } = await sql<{ start: string; versions: number; approvals: number }>`
+    with made as (
+      select date_trunc('week', v.created_at at time zone 'UTC') as week, count(*)::int as versions
+        from artifact_version v
+       where v.artifact_id = ${artifactId}::uuid
+         and ${line === undefined ? sql`v.revision_no >= 0` : sql`v.line_id = ${line}::uuid`}
+       group by 1
+    ), approved as (
+      ${
+        stored[0]?.present
+          ? sql`select date_trunc('week', a.at at time zone 'UTC') as week, count(*)::int as approvals
+                  from workflow_approval a
+                  join artifact_version v on v.id = a.version_id
+                 where a.artifact_id = ${artifactId}::uuid and a.decision = 'approved'
+                   and ${line === undefined ? sql`v.revision_no >= 0` : sql`v.line_id = ${line}::uuid`}
+                 group by 1`
+          : sql`select null::timestamp as week, 0 as approvals where false`
+      }
+    )
+    select to_char(coalesce(m.week, a.week), 'YYYY-MM-DD') as start,
+           coalesce(m.versions, 0) as versions, coalesce(a.approvals, 0) as approvals
+      from made m full join approved a on a.week = m.week
+     order by 1`.execute(trx);
+  return rows;
 }
 
 export async function latestVersion(
