@@ -723,6 +723,8 @@ export function ComponentEditor({
   // this page draws anything of a component, there is nothing to keep.
   const closeForLeaving = useRef<() => void>(() => undefined);
   closeForLeaving.current = () => onDone?.();
+  /** Whether Shift-F6 has just walked back to the text, so that the next one leaves it. */
+  const backAtText = useRef(false);
   const leavingAnswered = useRef(0);
   useEffect(() => {
     if (!leaving || leavingAnswered.current === leaving.arrival) return;
@@ -2204,7 +2206,10 @@ export function ComponentEditor({
    * forwards and at the last going backwards, rather than guessing which region the author meant.
    */
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) {
+      if (event.key !== 'Shift') backAtText.current = false;
+      return;
+    }
     const ring = [
       // In a document the application enters at the text, so the text comes first and F6 goes on from
       // it to the toolbars and the panels; last, it would leave at once and they could not be reached.
@@ -2234,6 +2239,14 @@ export function ComponentEditor({
       -1,
     );
     const back = event.shiftKey;
+    // In a document Shift-F6 from the text goes to the last stop and walks back to the text, and only
+    // then leaves: the text is first in the ring, but the panels are still to be reached backwards.
+    if (inFrame && back && ring.length > 1 && ring[at] === place.current && !backAtText.current) {
+      event.preventDefault();
+      land(ring[ring.length - 1]!);
+      return;
+    }
+    backAtText.current = inFrame && back && at === 1;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
     const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);

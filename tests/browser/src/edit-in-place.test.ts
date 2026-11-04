@@ -375,6 +375,41 @@ describe('clicking into a document, in Chromium', () => {
     });
   });
 
+  it('CNT-077 goes back from the text through the toolbar to the text, then out, by Shift-F6', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText('First words.').first().click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+      const surface = page.getByRole('textbox', { name: /^Content of / });
+      const holds = (locator: typeof bar) =>
+        locator.evaluate((own) => own.contains(document.activeElement));
+      // On from the text to a toolbar, and straight back.
+      await page.keyboard.press('F6');
+      await page.keyboard.press('Shift+F6');
+      await expect.poll(() => holds(surface)).toBe(true);
+      await page.keyboard.press('ArrowRight');
+      // Backwards from the text, the panels and the toolbar come before the application.
+      for (let pressed = 0; pressed < 12 && !(await holds(bar)); pressed++) {
+        await page.keyboard.press('Shift+F6');
+      }
+      expect(await holds(bar)).toBe(true);
+      // The formatting toolbar, the text, then out of the page.
+      await page.keyboard.press('Shift+F6');
+      await page.keyboard.press('Shift+F6');
+      await expect.poll(() => holds(surface)).toBe(true);
+      await page.keyboard.press('Shift+F6');
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('section.aw-canvas') === null),
+        )
+        .toBe(true);
+    });
+  });
+
   it('CNT-077 goes from the text to the toolbar and on to the application by F6', async () => {
     const { document: id } = await twoParts();
     await withPage(async (page) => {
