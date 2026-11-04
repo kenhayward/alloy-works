@@ -54,7 +54,7 @@ import {
   TransitionButtons,
   type Standing,
 } from '../lifecycle/Workflow.js';
-import { StateLozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge } from '../states/Lozenge.js';
 import { DetailPage } from '../parts/DetailPage.js';
 import { IconButton } from '../parts/IconButton.js';
 import type { PanelTab } from '../parts/PanelTabs.js';
@@ -1513,7 +1513,7 @@ export function QueryDefinitionPage({
             <Chip>{words('data.in-2', { name: shown.space.name })}</Chip>
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
-            {retired && <Chip tone="warn">{words('data.retired')}</Chip>}
+            {retired && <Lozenge kind="retired" />}
             {shown.definition.description !== '' && (
               <span className={styles['described']} data-content>
                 {shown.definition.description}

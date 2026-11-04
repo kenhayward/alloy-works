@@ -41,6 +41,7 @@ is why they are allowed to.
 | **LIF-005** | An artifact must be in exactly one state at a time, and the state must be visible wherever it appears                                                                                                                                                                                  | T9         | Specified |
 | **LIF-006** | A state must be able to make an artifact read-only, so that approved content cannot be edited without a transition back                                                                                                                                                                | Constraint | Specified |
 | **LIF-007** | Workflow definitions must be versioned, and an artifact must record the definition version it is moving under                                                                                                                                                                          | T9         | Specified |
+| **LIF-078** | A state must be told by its words and a mark as well as by colour, and must stay told in a high-contrast mode                                                                                                                                                                          | T9         | Specified |
 | **LIF-048** | State must belong to the artifact rather than to a revision: an artifact must be in exactly one state at a time in each line of revisions it has (LIF-005, LIF-044), and a revision must be an immutable designation made when a gate was passed, which never changes state afterwards | Constraint | Specified |
 | **LIF-049** | Reworking an approved artifact must move the artifact to a declared working state while the approved revision stays designated, effective and available to everything referencing it. The next revision is designated by the next gate, not by beginning the rework                    | Constraint | Specified |
 | **LIF-054** | Every version of a workflow definition ever used must remain retrievable for as long as any artifact or audit entry references it, so that the rules something moved under can be reconstructed rather than inferred (LIF-007)                                                         | Constraint | Specified |
@@ -433,3 +434,13 @@ Ken agreed the redraft after T9's fourth phase (the WF4 plan).
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 76, of which 4 superseded | 77, of which 5 superseded |
+
+### Lifecycle states as lozenges (ADR-0081), 2026-11-04
+
+| What was found                                                                                                                                     | Change            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| CNT-138 asks that suggestions, comment anchors and redlines not rest on colour; nothing asked it of a state, which LIF-005 shows everywhere (#946) | **LIF-078** added |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 77, of which 5 superseded | 78, of which 5 superseded |

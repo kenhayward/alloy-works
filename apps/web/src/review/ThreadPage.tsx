@@ -10,6 +10,7 @@ import { reviewThreadLink } from '../structure/links.js';
 import { anchorValues, personValues } from './ThreadsPanel.js';
 import styles from './ThreadPage.module.css';
 import { formats, words, wordsWith } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Part = { readonly text: string } | { readonly mention: string };
@@ -152,12 +153,12 @@ export function ThreadPage({
           )}
           {shown.resolution && (
             <p>
-              <Chip tone="ok">
+              <Lozenge kind="resolved">
                 {words('review.resolved-by', {
                   ...personValues(shown.resolution.by),
                   at: when(shown.resolution.at),
                 })}
-              </Chip>
+              </Lozenge>
             </p>
           )}
           <ol className={styles['threadMessages']}>

@@ -16,7 +16,7 @@ import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Empty } from '../states/Empty.js';
-import { StateLozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge, stateWord } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { whenChanged } from './changed.js';
 import { ComponentDetail } from './ComponentDetail.js';
@@ -205,7 +205,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
       remove: () => setTypesChosen((held) => toggled(held, type)),
     })),
     ...(archived
-      ? [{ key: 'archived', name: words('editor.archived'), remove: () => setArchived(false) }]
+      ? [{ key: 'archived', name: stateWord('archived'), remove: () => setArchived(false) }]
       : []),
   ];
   const shownItem = items.find((item) => item.id === shown) ?? null;
@@ -356,7 +356,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       <a className={styles['title']} href={`#/components/${item.id}`}>
                         {item.title}
                       </a>
-                      {archived && <Chip>{words('editor.archived')}</Chip>}
+                      {archived && <Lozenge kind="archived" size="small" />}
                       <span className={styles['where']} data-content>
                         {`${item.space.name}, ${item.language}`}
                       </span>
@@ -366,14 +366,14 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                     </td>
                     <td className={styles['code']}>{item.version}</td>
                     <td>
-                      {item.state && <StateLozenge state={item.state} />}
+                      {item.state && <StateLozenge size="small" state={item.state} />}
                       {/* Past its review-by day (LIF-018; WF5-H). */}
-                      {item.pastReview === true && (
-                        <Chip tone="warn">{words('editor.past-review')}</Chip>
-                      )}
+                      {item.pastReview === true && <Lozenge kind="pastReview" size="small" />}
                       {/* Diverged, naming its lines (LIF-046; the R16 plan, R16-E). */}
                       {(item.lines?.length ?? 0) > 0 && (
-                        <Chip>{words('editor.diverged', { value1: item.lines!.join(', ') })}</Chip>
+                        <Lozenge kind="diverged" size="small">
+                          {words('editor.diverged', { value1: item.lines!.join(', ') })}
+                        </Lozenge>
                       )}
                       {/* Each translation's status (LOC-016; the TE plan, TE-B). */}
                       <TranslationChips translations={item.translations} />

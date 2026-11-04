@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import type { RevisionShown } from './bindingContexts.js';
 import { words } from '../words/words.js';
+import { stateWord } from '../states/Lozenge.js';
 
 /** What an act recording a resolution says of the values revised by hand standing (DAT-060). */
 export interface RevisionDecision {
@@ -73,7 +74,7 @@ export function useRevisionAsk(): {
           <dl>
             <dt>{words('document.the-query-returned')}</dt>
             <dd>{open.queried}</dd>
-            <dt>{words('document.revised-by-hand-2')}</dt>
+            <dt>{stateWord('revisedByHand')}</dt>
             {open.standing.map((each) => (
               <dd key={each.id}>
                 {words('document.by-2', {

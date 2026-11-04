@@ -7,6 +7,7 @@ import { Chip } from '../parts/Chip.js';
 import { documentLink, nodeLink } from '../structure/links.js';
 import styles from './VersionPages.module.css';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -99,7 +100,7 @@ function Head({
       </h1>
       <div className={styles['versionFacts']}>
         <Chip tone="info">{words('versions.version', { number: version.number })}</Chip>
-        {archived && <Chip tone="warn">{words('versions.archived')}</Chip>}
+        {archived && <Lozenge kind="archived" />}
       </div>
       <p className={styles['versionNote']}>{versionSentence(version, latest)}</p>
     </header>

@@ -153,8 +153,7 @@ import {
   TransitionButtons,
   type Standing,
 } from '../lifecycle/Workflow.js';
-import { StateLozenge } from '../states/Lozenge.js';
-import { Chip } from '../parts/Chip.js';
+import { Lozenge, StateLozenge } from '../states/Lozenge.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
@@ -2799,9 +2798,9 @@ export function ComponentEditor({
               title={header.title}
               className={styles['archive']}
             />
-            {archived && <Chip>{say('editor.archived')}</Chip>}
+            {archived && <Lozenge kind="archived" />}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
-            {(heldNow || shown.onHold === true) && <Chip>{say('editor.on-hold')}</Chip>}
+            {(heldNow || shown.onHold === true) && <Lozenge kind="onHold" />}
             {standing && (
               <TransitionButtons
                 client={client}

@@ -4,6 +4,7 @@ import { Chip } from '../parts/Chip.js';
 import { Pager, pageOf } from '../parts/Pager.js';
 import styles from './uses.module.css';
 import { formats, words } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 /** What uses something: those the caller may read, by title, and how many more there are (D3-M). */
 export interface Uses {
@@ -108,7 +109,7 @@ export function PagedUses({
               <a href={link(each.id)} data-content>
                 {each.title}
               </a>
-              {each.retired && <Chip tone="warn">{words('data.retired')}</Chip>}
+              {each.retired && <Lozenge kind="retired" size="small" />}
             </li>
           ))}
         </ul>

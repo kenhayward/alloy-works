@@ -1,35 +1,47 @@
 import type { BindingState } from './bindingContexts.js';
-import { words } from '../words/words.js';
+import { stateWord, type LozengeKind } from '../states/Lozenge.js';
 
 /** A binding's state in the Data tab, one of the design's (bindings.md, "The Data tab"). */
 export type DataState =
   'never' | 'stale' | 'failed' | 'waiting' | 'definition' | 'revised' | 'published' | 'holding';
 
-/** Each state in words, in the design's order, which the filter offers them in. */
+/** Each state's lozenge, in the design's order, which the filter offers them in. */
+export const DATA_STATE_KINDS = {
+  never: 'neverResolved',
+  stale: 'changedSinceResolved',
+  failed: 'failed',
+  waiting: 'revisionWaiting',
+  definition: 'definitionChanged',
+  revised: 'revisedByHand',
+  published: 'changedSincePublished',
+  holding: 'holding',
+} as const satisfies Record<DataState, LozengeKind>;
+
+/** Each state in words, as the filter names them. */
 export const DATA_STATE_WORDS = {
   get never() {
-    return words('document.never-resolved');
+    return stateWord(DATA_STATE_KINDS.never);
   },
   get stale() {
-    return words('document.changed-since-resolved');
+    return stateWord(DATA_STATE_KINDS.stale);
   },
   get failed() {
-    return words('document.failed-3');
+    return stateWord(DATA_STATE_KINDS.failed);
   },
   get waiting() {
-    return words('document.revision-waiting');
+    return stateWord(DATA_STATE_KINDS.waiting);
   },
   get definition() {
-    return words('document.definition-changed');
+    return stateWord(DATA_STATE_KINDS.definition);
   },
   get revised() {
-    return words('document.revised-by-hand-2');
+    return stateWord(DATA_STATE_KINDS.revised);
   },
   get published() {
-    return words('document.changed-since-published');
+    return stateWord(DATA_STATE_KINDS.published);
   },
   get holding() {
-    return words('document.holding');
+    return stateWord(DATA_STATE_KINDS.holding);
   },
 } as const satisfies Record<DataState, string>;
 

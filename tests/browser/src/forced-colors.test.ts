@@ -145,4 +145,27 @@ describe('annotations in forced colours', () => {
       { forcedColors: true },
     );
   });
+
+  it('LIF-078 keeps a state told in a high-contrast mode, by its icon, its words and an edge', async () => {
+    const client = api();
+    const document = await makeDocument(client, 'A state in forced colours', ['Method']);
+
+    await withPage(
+      async (page) => {
+        await page.goto(`${SERVICE}/#/documents/${document.id}`);
+        const lozenge = page.locator('[data-lozenge]', { hasText: 'Draft' }).first();
+        await lozenge.waitFor({ state: 'visible' });
+        expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(true);
+        const canvasText = await systemColour(page, 'CanvasText');
+        expect(
+          await lozenge.evaluate((element) => {
+            const style = getComputedStyle(element);
+            return [style.borderTopStyle, style.borderTopColor, style.color];
+          }),
+        ).toEqual(['solid', canvasText, canvasText]);
+        expect(await lozenge.locator('svg path').count()).toBe(1);
+      },
+      { forcedColors: true },
+    );
+  });
 });

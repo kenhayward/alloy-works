@@ -316,7 +316,87 @@ const MIRRORED = new Set([
 
 const mirroring = (name: string) => (MIRRORED.has(name) ? { 'data-mirrored': '' } : {});
 
+const CIRCLE = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0';
+const CLOCK = `${CIRCLE}M12 7v5l3 2`;
+const WARNING = 'M12 3l9.5 17h-19zM12 10v4M12 17h.01';
+const DASH = 'M5 12h14';
+const PENCIL = 'M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z';
+const CROSS_CIRCLE = `${CIRCLE}M15 9l-6 6M9 9l6 6`;
+const TICK = 'M5 13l4 4L19 7';
+
+/** Each lozenge's icon, on a 24px grid (docs/interface/lifecycle-states.md); `state:` and its kind. */
+const STATES: Record<string, string> = {
+  draft: CIRCLE,
+  beingEdited: PENCIL,
+  returned: 'M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
+  inReview: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  inApproval: CLOCK,
+  approved: `${CIRCLE}M8 12l3 3 5-6`,
+  effective: `${CIRCLE}M12 7.5l1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4z`,
+  published: 'M22 2l-7 20-4-9-9-4zM22 2 11 13',
+  changedSince: WARNING,
+  notApproved: `${CIRCLE}M8 12h8`,
+  pastReview: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  onHold: 'M8 5v14M16 5v14',
+  released: 'M4 11h16v10H4zM8 11V7a4 4 0 0 1 7.5-2',
+  superseded: 'M5 12h14M13 6l6 6-6 6',
+  current: `${CIRCLE}M12 12h.01`,
+  archived: 'M3 4h18v5H3zM5 9v11h14V9M10 13h4',
+  retired: 'M12 3v9M6.5 7a8 8 0 1 0 11 0',
+  neverPublished: DASH,
+  notYoursToRead: 'M4 11h16v10H4zM8 11V7a4 4 0 0 1 8 0v4',
+  diverged:
+    'M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6M18 9a9 9 0 0 1-9 9',
+  pending: 'M7 3h10M7 21h10M8 3v3l4 6 4-6V3M8 21v-3l4-6 4 6v3',
+  accepted: TICK,
+  rejected: 'M6 6l12 12M18 6 6 18',
+  withdrawn: CROSS_CIRCLE,
+  resolved: 'M4 4h16v16H4zM8 12l3 3 5-6',
+  notStarted: CIRCLE,
+  inProgress: 'M21 12a9 9 0 1 1-3-6.7M21 3v6h-6',
+  complete: TICK,
+  closed: 'M4 4h16v16H4zM9 12h6',
+  untranslated: DASH,
+  machineDrafted: 'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',
+  inTranslation: CLOCK,
+  translated: `${CIRCLE}M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18`,
+  outOfDate: WARNING,
+  neverResolved: DASH,
+  changedSinceResolved: WARNING,
+  failed: CROSS_CIRCLE,
+  revisionWaiting: CLOCK,
+  definitionChanged: WARNING,
+  revisedByHand: PENCIL,
+  changedSincePublished: WARNING,
+  holding: TICK,
+  retracted: CROSS_CIRCLE,
+  corrected: PENCIL,
+  state: 'M5 5h14v14H5z',
+};
+
 export function Icon({ name, size = 16 }: { name: string; size?: number }) {
+  if (name.startsWith('state:')) {
+    const kind = name.slice('state:'.length);
+    return (
+      <svg
+        className={styles['path']}
+        data-icon={name}
+        {...(kind === 'superseded' || kind === 'returned' ? { 'data-mirrored': '' } : {})}
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={size > 11 ? 2.4 : 2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...(kind === 'draft' ? { strokeDasharray: '3 3.2' } : {})}
+      >
+        <path d={STATES[kind]} />
+      </svg>
+    );
+  }
   const letter = LETTERS[name];
   if (letter !== undefined) {
     return (

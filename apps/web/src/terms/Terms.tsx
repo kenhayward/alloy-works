@@ -211,7 +211,7 @@ export function Terms({ client }: { readonly client: Client }) {
                       </a>
                     </td>
                     <td data-content>{each.abbreviation ?? ''}</td>
-                    <td>{each.state && <StateLozenge state={each.state} />}</td>
+                    <td>{each.state && <StateLozenge size="small" state={each.state} />}</td>
                   </tr>
                 ))}
               </tbody>

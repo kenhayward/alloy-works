@@ -19,7 +19,7 @@ import {
   type RevisionShown,
   type SinceDiffers,
 } from './bindingContexts.js';
-import { DATA_STATE_WORDS, dataState, type DataState } from './dataStates.js';
+import { DATA_STATE_KINDS, DATA_STATE_WORDS, dataState, type DataState } from './dataStates.js';
 import styles from './DataTab.module.css';
 import { codeOf, identityRefusal, NOT_HELD, whoseView } from './ownView.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
@@ -27,6 +27,7 @@ import { useRevisionAsk, type RevisionDecision } from './RevisionAsk.js';
 import { settleBinding, undecidedIn } from './settleBinding.js';
 import { noteFailures, tableFailures, type TableRows } from './tableRows.js';
 import { formats, words as say } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -395,7 +396,7 @@ export function DataTab({
                   : []),
                 ...(failure !== undefined ? [failure] : []),
                 ...(state.definitionChanged && shown !== 'definition'
-                  ? [DATA_STATE_WORDS.definition]
+                  ? [<Lozenge kind={DATA_STATE_KINDS.definition} size="small" />]
                   : []),
                 ...(since !== null ? [since] : []),
                 // A person's values (DAT-115), standing or lapsed, and a cell's row gone (DAT-063).
@@ -444,9 +445,7 @@ export function DataTab({
                     </IconButton>
                   </span>
                   <span className={styles['facts']} data-line="">
-                    <span className={styles['state']} data-state={shown}>
-                      {DATA_STATE_WORDS[shown]}
-                    </span>
+                    <Lozenge kind={DATA_STATE_KINDS[shown]} size="small" data-state={shown} />
                     {' · '}
                     {state.definition === null
                       ? say('document.a-definition-you-may-not')

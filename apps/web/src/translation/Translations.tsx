@@ -3,10 +3,10 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
-import { Chip } from '../parts/Chip.js';
 import { lineAddress } from '../lifecycle/Lines.js';
 import styles from '../lifecycle/Hold.module.css';
 import { words, wordsWith } from '../words/words.js';
+import { Lozenge, stateWord, type LozengeKind } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -58,23 +58,33 @@ export interface TranslationSaid {
 export function statusWords(status: TranslationNow['status']): string {
   switch (status.status) {
     case 'untranslated':
-      return words('translation.untranslated');
+      return stateWord('untranslated');
     case 'translated':
-      return words('translation.translated');
+      return stateWord('translated');
     case 'outOfDate':
       return status.retranslate === false
         ? words('translation.out-of-date-no-retranslation')
         : words('translation.out-of-date-needs-retranslating');
     case 'machineDrafted':
-      return words('translation.machine-drafted');
+      return stateWord('machineDrafted');
     case 'inTranslation':
-      return words('translation.in-translation');
+      return stateWord('inTranslation');
     default:
       return status.status;
   }
 }
 
-/** Each language's status as its chip, out of date first (LOC-016; the TE plan, TE-B). */
+/** A status's lozenge, of LOC-030's set; one a later service adds is a neutral fact. */
+export const translationKind = (status: string): LozengeKind =>
+  status === 'untranslated' ||
+  status === 'translated' ||
+  status === 'outOfDate' ||
+  status === 'machineDrafted' ||
+  status === 'inTranslation'
+    ? status
+    : 'state';
+
+/** Each language's status as its lozenge, out of date first (LOC-016; the TE plan, TE-B). */
 export function TranslationChips({
   translations,
 }: {
@@ -84,9 +94,9 @@ export function TranslationChips({
     (a, b) => Number(b.status === 'outOfDate') - Number(a.status === 'outOfDate'),
   );
   return ordered.map((each) => (
-    <Chip key={each.language} {...(each.status === 'translated' ? {} : { tone: 'warn' as const })}>
+    <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
       {`${each.language}: ${statusWords(each)}`}
-    </Chip>
+    </Lozenge>
   ));
 }
 

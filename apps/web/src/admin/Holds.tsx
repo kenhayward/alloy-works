@@ -2,11 +2,11 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useState } from 'react';
 
 import { everyPage } from '../paging.js';
-import { Chip } from '../parts/Chip.js';
 import { HoldDialog, releaseHold } from '../lifecycle/Hold.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
 import { formats, words as say } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -114,10 +114,12 @@ export function Holds({ client }: { client: Client }) {
                     </td>
                     <td>
                       {hold.released === null ? (
-                        <Chip>{say('admin.in-force')}</Chip>
+                        <Lozenge kind="onHold" size="small">
+                          {say('admin.in-force')}
+                        </Lozenge>
                       ) : (
                         <>
-                          <Chip>{say('admin.released')}</Chip>
+                          <Lozenge kind="released" size="small" />
                           <br />
                           <span className={styles['muted']}>
                             {say('admin.released-by-at', {

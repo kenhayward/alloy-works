@@ -17,6 +17,7 @@ import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
 import { formats, words as say, wordsWith } from '../words/words.js';
+import { Lozenge } from '../states/Lozenge.js';
 
 export { FOLLOW_CAP_MS, FOLLOW_MS, nextFollow } from './following.js';
 
@@ -28,6 +29,8 @@ interface Listed {
   readonly publisher: { readonly displayName: string | null };
   readonly publishedAt: string;
   readonly formats: readonly string[];
+  /** Only a gate's is approved: `none` and `baseline` are drafts still (WF2-I). */
+  readonly approval?: string;
 }
 
 type Publish =
@@ -143,6 +146,7 @@ function listedIn(value: unknown): Listed[] | undefined {
       ? [
           {
             id: item.id,
+            ...(typeof item.approval === 'string' ? { approval: item.approval } : {}),
             version: { number: item.version.number },
             publisher: {
               displayName:
@@ -536,9 +540,13 @@ export function Publishing({
                   when: when(each.publishedAt),
                 })}
               </a>{' '}
-              {each.formats.length > 0
-                ? say('publishing.formats-not-approved', { formats: formatsWords(each.formats) })
-                : say('publishing.not-approved-2')}
+              {each.formats.length > 0 && (
+                <>{say('publishing.formats-in', { formats: formatsWords(each.formats) })} </>
+              )}
+              <Lozenge
+                kind={each.approval === 'approved' ? 'approved' : 'notApproved'}
+                size="small"
+              />
             </li>
           ))}
         </ul>

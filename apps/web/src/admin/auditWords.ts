@@ -1,5 +1,6 @@
 import type { AuditKind } from '@alloy-works/domain';
 import { words } from '../words/words.js';
+import { stateWord } from '../states/Lozenge.js';
 
 /**
  * **The audit log's kinds in words** (the AU2 plan, AU-O): what each event says happened, as the Audit
@@ -20,7 +21,7 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
     return words('admin.approved');
   },
   get 'artifact.archived'() {
-    return words('admin.archived');
+    return stateWord('archived');
   },
   get 'artifact.deleted'() {
     return words('admin.deleted');

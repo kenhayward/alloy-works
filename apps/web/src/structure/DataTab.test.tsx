@@ -246,6 +246,15 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     );
   });
 
+  it('LIF-078 says a definition changed as a lozenge when another state leads the row', () => {
+    const waiting = { version: 'next', provenance, taken: value('North Quay') };
+    drawn(states(view(FIRST, 'waits', 'North', { definitionChanged: true, waiting })));
+    expect(within(rowOf('waits')).getByText('Definition changed')).toHaveAttribute(
+      'data-kind',
+      'definitionChanged',
+    );
+  });
+
   it("says which of the document's parameters changed a binding that reads them, beside its other reasons (TP2-E)", () => {
     const stale = (id: string, over: Record<string, unknown>) => {
       const base = view(FIRST, id, 'North');
