@@ -28369,6 +28369,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-074",
+      "file": "apps/web/src/structure/LockGlyph.test.tsx",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "TPL-026",
       "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
       "line": 173,
@@ -36682,6 +36688,12 @@
       "id": "COL-071",
       "file": "tests/browser/src/document-panes.test.ts",
       "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-074",
+      "file": "tests/browser/src/edit-in-place.test.ts",
+      "line": 301,
       "kind": "title"
     },
     {

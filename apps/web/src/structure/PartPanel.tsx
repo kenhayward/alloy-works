@@ -379,6 +379,8 @@ export interface PartFacts {
   readonly fieldCount: number;
   /** The version a reference resolves to, by its number, once the page has read it. */
   readonly version?: string | undefined;
+  /** Who holds it now, in words (CNT-074), where anyone does. */
+  readonly heldSaid?: string | undefined;
 }
 
 const MODE_WORDS = {
@@ -412,7 +414,7 @@ function PartIdentity({
   /** The address the clipboard would not take, to be copied by hand (the plan, R7). */
   uncopied: string | null;
 }) {
-  const { node, names, state, number, fieldCount, version } = facts;
+  const { node, names, state, number, fieldCount, version, heldSaid } = facts;
   const unreadable = node.type === 'reference' && node.component === null;
   const count = node.type === 'section' ? componentsBeneath(node) : 0;
   const name = nodeName(node, names);
@@ -479,6 +481,7 @@ function PartIdentity({
         </div>
       </div>
       {unreadable && <p className={part['note']}>{say('document.may-not-read-this-component')}</p>}
+      {heldSaid !== undefined && <p className={part['note']}>{heldSaid}</p>}
       {uncopied !== null && (
         <input
           readOnly

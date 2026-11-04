@@ -1082,6 +1082,8 @@
   "editor.list.summary": "{total, plural, one {# component you may read} other {# components you may read}}. Showing 1 to {shown}.",
   "editor.list.summary-archived": "{total, plural, one {# archived component you may read} other {# archived components you may read}}. Showing 1 to {shown}.",
   "editor.held.someone-else": "Someone else",
+  "editor.held.you-here": "You are editing this component.",
+  "editor.held.you-elsewhere": "You are editing this component in another window, or left it open earlier.",
   "editor.held.editing": "{who} is editing this component.",
   "editor.held.back-at": "{who} is editing this component, expected back at {time}.",
   "editor.held.back-on": "{who} is editing this component, expected back at {time} on {day}.",

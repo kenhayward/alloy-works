@@ -39,7 +39,7 @@ import {
   type RefObject,
 } from 'react';
 
-import { heldSentence } from '../editor/held.js';
+import { heldSentence, lockSentence } from '../editor/held.js';
 import type { Freshness, LivePresence } from './live.js';
 import { presenceWords } from './PeopleHere.js';
 import type { BindingActs } from '../editor/ComponentEditor.js';
@@ -288,6 +288,46 @@ function CommentGlyph({
 }
 
 /**
+ * Who holds a component, in the gutter (the EP plan, EP7; CNT-074): seen without hovering, a button so
+ * keyboard and touch get the words, and a click opens the Part panel. Not a lozenge: it says who holds
+ * a session, not a state of content (`lifecycle-states.md`). It goes when the lock lapses, which no
+ * event says; a lock the reader is using here renews itself, and goes when the stream says it has.
+ */
+export function LockGlyph({
+  lock,
+  openHere,
+  onOpen,
+}: {
+  lock: NonNullable<Editable['lock']>;
+  openHere: boolean;
+  onOpen: () => void;
+}) {
+  const release = new Date(lock.expectedRelease).getTime();
+  const inUseHere = lock.yours && openHere;
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const left = release - Date.now();
+    if (inUseHere || left <= 0) return undefined;
+    // setTimeout holds no more than this; a longer wait simply looks again.
+    const timer = setTimeout(() => setTick((was) => was + 1), Math.min(left + 1, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [release, inUseHere, tick]);
+  if (!inUseHere && release <= Date.now()) return null;
+  const said = lockSentence(lock, openHere);
+  return (
+    <IconButton
+      className={styles['lockGlyph']}
+      data-lock={lock.yours ? 'yours' : 'theirs'}
+      label={said}
+      tooltip={said}
+      onClick={onOpen}
+    >
+      <Icon name={lock.yours ? 'Lock yours' : 'Lock held'} size={14} />
+    </IconButton>
+  );
+}
+
+/**
  * A component's text, rendered once for its content and set into the card: markup, not a view.
  * Given `onOpen`, the text is the way into the component's editor (interface slice 13): a click
  * opens it with the caret where the click landed, and Enter opens it from the keyboard, the text
@@ -506,6 +546,7 @@ export function DocumentText({
   threadMarks,
   threadCounts,
   openComments,
+  onLock,
   onSuggest,
   newer,
   movedParts,
@@ -597,6 +638,8 @@ export function DocumentText({
   threadMarks?: ReadonlyMap<string, readonly Placed[]>;
   /** In Review, how many threads stand on each node as a whole: a component or a section. */
   threadCounts?: ReadonlyMap<string, number>;
+  /** Shows who holds each part in the gutter, and opens the Part panel: Authoring and Review's. */
+  onLock?: () => void;
   /** The open comments on each component, newest first, and what opens one, for its gutter glyph. */
   openComments?: {
     readonly byNode: ReadonlyMap<
@@ -736,11 +779,24 @@ export function DocumentText({
             data-editing={editing === node.id}
             onClick={onPointedAt ? () => onPointedAt(node.id) : undefined}
           >
-            {openComments?.byNode.has(node.id) === true && (
-              <CommentGlyph
-                comments={openComments.byNode.get(node.id)!}
-                onOpen={openComments.open}
-              />
+            {/* One stack in the gutter, which moves no text, and wraps sideways on a short part. */}
+            {(openComments?.byNode.has(node.id) === true ||
+              (onLock !== undefined && editable?.get(node.id)?.lock)) && (
+              <div className={styles['gutter']}>
+                {onLock !== undefined && editable?.get(node.id)?.lock && (
+                  <LockGlyph
+                    lock={editable.get(node.id)!.lock!}
+                    openHere={openComponent !== null && openComponent === node.component}
+                    onOpen={onLock}
+                  />
+                )}
+                {openComments?.byNode.has(node.id) === true && (
+                  <CommentGlyph
+                    comments={openComments.byNode.get(node.id)!}
+                    onOpen={openComments.open}
+                  />
+                )}
+              </div>
             )}
             {/* The component's label (CNT-073): what it is, which version and how it is placed
                 (CNT-162), whether the reader may edit it and who holds it, and Open - seen on hover, on

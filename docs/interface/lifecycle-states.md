@@ -74,6 +74,10 @@ Words are in the catalogue and paths in `Icon.tsx`, on a 24px grid; a test holds
 table together. A kind may stand ready with no caller; a screen shows one only when the service answers it.
 **Returned and Not approved are different:** one is a step in a workflow, the other a fact about a publication.
 
+**The lock symbol is not a lozenge** (the EP plan, EP7; ADR-0081). A padlock in a part's gutter, green with a tick when you hold it
+and amber with a keyhole when someone else does, says who holds an editing session, not a state of content. The `notYoursToRead`
+lozenge's padlock stands with its words, in a label, and means something else.
+
 ## Which things have which states
 
 | Thing                                              | Its state, first                                     | Conditions after it                                                  |

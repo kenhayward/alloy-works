@@ -258,6 +258,9 @@ const ADMIN: Record<string, readonly string[]> = {
   Search: ['M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z', 'm20 20-4.8-4.8'],
   Show: ['M4 5h16l-6 7.5V19l-4-2v-4.5z'],
   Internal: ['M6 11h12v9H6z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3'],
+  // Who holds a part (the EP plan, EP7): the padlock with a tick for yours, a keyhole for another's.
+  'Lock yours': ['M6 11h12v9H6z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3', 'm9.3 15.4 2 2 3.4-3.8'],
+  'Lock held': ['M6 11h12v9H6z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3', 'M12 14.2v2.8'],
   Mention: [
     'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z',
     'M15.5 8.5V13a2.5 2.5 0 0 0 5 0v-1A8.5 8.5 0 1 0 17 19.4',

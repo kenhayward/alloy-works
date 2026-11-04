@@ -377,6 +377,8 @@ export interface OutlinePanelProps {
    * broken references and failed values its text holds. None where nothing does.
    */
   readonly marks?: ReadonlyMap<string, NodeMarks>;
+  /** Who holds each part, in words, for the Part panel. */
+  readonly heldSaid?: ReadonlyMap<string, string>;
   /**
    * What in this document refers to a node or to anything in it, from outside it (STR-074): listed in
    * the Part panel, and named before the node is removed. `checking` until the page first knows, and
@@ -484,6 +486,7 @@ export function OutlinePanel({
   pointed = null,
   versionOf,
   marks,
+  heldSaid,
   referencesTo,
   sectionFields,
   schemas,
@@ -819,6 +822,7 @@ export function OutlinePanel({
         ? undefined
         : numberIf(node.id),
     state: placedState(node),
+    heldSaid: heldSaid?.get(node.id),
     address: linkOf?.(node.id),
     references:
       referencesTo === undefined
@@ -1149,6 +1153,7 @@ export function OutlinePanel({
             </span>
             {marksWords(marks?.get(node.id)).length > 0 && (
               <span id={`${labelId}-marks`} className={styles['nodeMarks']}>
+                {marks?.get(node.id)?.heldBy !== undefined && <Icon name="Lock held" size={11} />}{' '}
                 {marksWords(marks?.get(node.id)).join('; ')}
               </span>
             )}
