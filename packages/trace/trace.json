@@ -14500,13 +14500,22 @@
       "line": 103
     },
     {
+      "id": "VER-060",
+      "area": "VER",
+      "statement": "A version list must say which versions are revisions and whether each is pending, effective, superseded or never in force, and a document's must show its baselines and publications where they fall",
+      "tranche": "T9",
+      "status": "Specified",
+      "document": "VER-versioning-baselines-and-comparison.md",
+      "line": 104
+    },
+    {
       "id": "VER-022",
       "area": "VER",
       "statement": "A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "VER-023",
@@ -14515,7 +14524,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "VER-054",
@@ -14524,7 +14533,7 @@
       "tranche": "Constraint",
       "status": "Superseded by VER-055",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "VER-055",
@@ -14533,7 +14542,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "VER-043",
@@ -14542,7 +14551,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "VER-046",
@@ -14551,7 +14560,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "VER-049",
@@ -14560,7 +14569,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "VER-050",
@@ -14569,7 +14578,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "VER-051",
@@ -14578,7 +14587,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "VER-024",
@@ -14587,7 +14596,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 126
+      "line": 127
     },
     {
       "id": "VER-025",
@@ -14596,7 +14605,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 127
+      "line": 128
     },
     {
       "id": "VER-026",
@@ -14605,7 +14614,7 @@
       "tranche": "T3",
       "status": "Superseded by VER-045",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 128
+      "line": 129
     },
     {
       "id": "VER-027",
@@ -14614,7 +14623,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "VER-028",
@@ -14623,7 +14632,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "VER-029",
@@ -14632,7 +14641,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "VER-030",
@@ -14641,7 +14650,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "VER-031",
@@ -14650,7 +14659,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "VER-045",
@@ -14659,7 +14668,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "VER-032",
@@ -14668,7 +14677,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "VER-033",
@@ -14677,7 +14686,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "VER-034",
@@ -14686,7 +14695,7 @@
       "tranche": "T3",
       "status": "Superseded by VER-044",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "VER-035",
@@ -14695,7 +14704,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "VER-044",
@@ -14704,7 +14713,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "VER-036",
@@ -14713,7 +14722,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "VER-037",
@@ -14722,7 +14731,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 172
+      "line": 173
     },
     {
       "id": "VER-038",
@@ -14731,7 +14740,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "VER-047",
@@ -14740,7 +14749,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "VER-048",
@@ -14749,7 +14758,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "VER-039",
@@ -14758,7 +14767,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "VER-040",
@@ -14767,7 +14776,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "VER-041",
@@ -14776,7 +14785,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "VER-053",
@@ -14785,7 +14794,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 189
+      "line": 190
     }
   ],
   "nonRequirements": [
@@ -15477,25 +15486,25 @@
       "id": "VER-N01",
       "statement": "**No editing of history.** A version is never amended; corrections move forwards",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "VER-N02",
       "statement": "**No branching of documents.** A variant of a report is a profile or a separate document, not a branch (**REU**)",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "VER-N03",
       "statement": "**No automatic versioning on a timer.** A version is a positive act (CNT-070)",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "VER-N04",
       "statement": "**Iterations are not history.** They are recovery, they are private, and they expire",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 209
+      "line": 210
     }
   ],
   "questions": [
@@ -16414,35 +16423,35 @@
       "question": "**What is the default iteration retention window (VER-004)?** Too short loses work; too long is storage spent on keystrokes",
       "settledBy": "Observed authoring behaviour. A day is a plausible starting guess and no more than a guess. [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) makes the cost concrete: the expiry sweep is cheap, the storage is not",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "VER-Q02",
       "question": "**How is resolved-output comparison implemented (VER-031)?** It needs two full publishing runs, or a resolved intermediate that can be diffed",
       "settledBy": "The publishing engine decision, since comparing rendered PDFs is not the same as comparing what produced them",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "VER-Q03",
       "question": "**How is erasure reconciled with immutability (VER-038)?**",
       "settledBy": "A design decision with legal input, taken once and recorded",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "VER-Q04",
       "question": "**Which gates take a baseline automatically (VER-021), and is that the default?** That it can happen is settled; what is open is which gates do it and whether a tenant starts with it on - every approval producing one is tidy and may also produce thousands nobody wanted",
       "settledBy": "Whether lifecycle gates in practice are frequent or rare, and what the first regulated customer's gate map looks like",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "VER-Q05",
       "question": "**What is the similarity threshold in VER-028?** The number is tuned against one case and is the least defensible thing the spike produced, and VER-029 makes its consequence visible rather than correct",
       "settledBy": "Real content, in volume. Until then a match by similarity is reported as such (VER-029), which is what stops the number being relied on silently",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 219
+      "line": 220
     }
   ],
   "designs": [
@@ -21525,6 +21534,10 @@
           "howItIsMet": "A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate"
         },
         {
+          "id": "VER-060",
+          "howItIsMet": "`revision` on each version listed, with `revisionStanding` read over every line but a language's, as `effectiveAt` reads them; a document's `VersionTimeline` merging `baselines` and `publications` by time"
+        },
+        {
           "id": "DAT-121",
           "howItIsMet": "Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft"
         },
@@ -22453,13 +22466,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 802,
+      "line": 803,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 815,
+      "line": 816,
       "kind": "title"
     },
     {
@@ -23017,7 +23030,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2338,
+      "line": 2340,
       "kind": "title"
     },
     {
@@ -23143,25 +23156,25 @@
     {
       "id": "CNT-182",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 266,
+      "line": 317,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 167,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 167,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 193,
+      "line": 244,
       "kind": "title"
     },
     {
@@ -25219,139 +25232,145 @@
     {
       "id": "LIF-001",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 161,
+      "line": 163,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 161,
+      "line": 163,
       "kind": "title"
+    },
+    {
+      "id": "LIF-004",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 918,
+      "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
       "line": 881,
-      "kind": "rule"
-    },
-    {
-      "id": "LIF-004",
-      "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 844,
       "kind": "title"
     },
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 312,
+      "line": 314,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 332,
+      "line": 334,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 312,
+      "line": 314,
       "kind": "title"
     },
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 791,
+      "line": 828,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 791,
+      "line": 828,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 791,
+      "line": 828,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 435,
+      "line": 472,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 435,
+      "line": 472,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 548,
+      "line": 585,
       "kind": "title"
     },
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 704,
+      "line": 741,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 548,
+      "line": 585,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 435,
+      "line": 472,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 355,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 404,
+      "line": 441,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 404,
+      "line": 441,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 177,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 287,
+      "line": 289,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 224,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 355,
+      "line": 357,
+      "kind": "title"
+    },
+    {
+      "id": "VER-060",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 406,
       "kind": "title"
     },
     {
@@ -26651,45 +26670,51 @@
       "kind": "title"
     },
     {
+      "id": "VER-060",
+      "file": "apps/web/src/editor/VersionTimeline.test.tsx",
+      "line": 116,
+      "kind": "title"
+    },
+    {
       "id": "CNT-111",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 67,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "CNT-112",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 67,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "CNT-113",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 92,
+      "line": 101,
       "kind": "title"
     },
     {
       "id": "COL-026",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 92,
+      "line": 101,
       "kind": "title"
     },
     {
       "id": "LOC-012",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 359,
+      "line": 377,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 80,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 206,
+      "line": 215,
       "kind": "title"
     },
     {
@@ -26768,6 +26793,12 @@
       "id": "LIB-019",
       "file": "apps/web/src/editor/terming.test.ts",
       "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "VER-060",
+      "file": "apps/web/src/editor/versionDays.test.ts",
+      "line": 31,
       "kind": "title"
     },
     {
@@ -27853,7 +27884,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2614,
+      "line": 2615,
       "kind": "title"
     },
     {
@@ -28231,25 +28262,25 @@
     {
       "id": "SCH-058",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 124,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 135,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 135,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "VER-044",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 171,
+      "line": 178,
       "kind": "title"
     },
     {
@@ -32377,37 +32408,37 @@
     {
       "id": "LOC-007",
       "file": "packages/db/src/translation.test.ts",
-      "line": 175,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "LOC-012",
       "file": "packages/db/src/translation.test.ts",
-      "line": 380,
+      "line": 381,
       "kind": "title"
     },
     {
       "id": "LOC-013",
       "file": "packages/db/src/translation.test.ts",
-      "line": 223,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "LOC-014",
       "file": "packages/db/src/translation.test.ts",
-      "line": 264,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "packages/db/src/translation.test.ts",
-      "line": 264,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "LOC-040",
       "file": "packages/db/src/translation.test.ts",
-      "line": 321,
+      "line": 322,
       "kind": "title"
     },
     {
@@ -33925,7 +33956,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1198,
+      "line": 1199,
       "kind": "title"
     },
     {
@@ -36439,7 +36470,7 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1412,
+      "line": 1420,
       "kind": "title"
     },
     {
