@@ -53,6 +53,9 @@ export async function bootstrapLoginRoles(
           `alter role ${role} login noinherit nosuperuser nocreaterole nocreatedb password ${client.escapeLiteral(passwords[key])}`,
         );
       }
+      // What the steward removes a tenant's roles with, and its admin option on each is what limits it
+      // to them (the TL plan, S1). Nothing else can make or drop a role.
+      await client.query('alter role aw_steward createrole');
       // Every tenant role is a member of this one. It holds the rights a tenant has outside its own
       // schema - today, putting its own work on the queue - so the queue grants one role, not each.
       const group = await client.query('select 1 from pg_roles where rolname = $1', ['aw_tenant']);
@@ -81,7 +84,9 @@ export async function prepareDatabase(adminUrl: string): Promise<void> {
       const table = await client.query(`select to_regclass('platform.tenant') as found`);
       if (table.rows[0]?.found) {
         const { rows } = await client.query<{ role_name: string }>(
-          'select role_name from platform.tenant',
+          // A row outlives its roles once deleted (TL-I).
+          `select role_name from platform.tenant
+            where exists (select from pg_roles r where r.rolname = role_name)`,
         );
         for (const row of rows) {
           const role = client.escapeIdentifier(assertTenantRole(row.role_name));
@@ -89,7 +94,9 @@ export async function prepareDatabase(adminUrl: string): Promise<void> {
           await client.query(`grant aw_tenant to ${role}`);
           // Tenants from before the restorer's login exist too (the EI plan, EIc).
           await client.query(`grant ${owner}, ${role} to aw_restorer with inherit false`);
-          await client.query(`grant ${role} to aw_steward with inherit false`);
+          await client.query(
+            `grant ${owner}, ${role} to aw_steward with inherit false, admin true`,
+          );
         }
       }
       await client.query('revoke create on schema public from public');

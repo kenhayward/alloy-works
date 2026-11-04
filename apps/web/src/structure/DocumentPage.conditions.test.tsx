@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import {
   item,
@@ -11,6 +11,10 @@ import {
   section,
   service,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 shimRangeMeasurement();
 

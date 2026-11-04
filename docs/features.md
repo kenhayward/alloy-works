@@ -214,7 +214,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   both export permissions, can sign in, by session and never by token, and they see only the closure, the
   export and the holds. It can be given up with nothing lost, though the operator's closure, begun from the
   `steward` command line with a notice, only by the operator. A legal hold keeps everything past the 30
-  days until the last is released. Deletion itself is not built yet: a closure past that waits at `deleting`.
+  days until the last is released. Then, within a day, a process of its own removes the environment's addresses,
+  stored objects, credential, delivered tables, database schema and roles, checks they are gone, and leaves a record naming nobody:
+  [the guide](guides/closing-an-environment.md) sets out the timetable, and what it does not promise of backups.
 - **Restoring the environment.** Someone holding `import_environment` restores a whole export from
   Administration's **Export** into an empty environment. It is checked first, as untrusted input, every
   digest and hash worked out again, and says what it would do. Each sign-in provider is mapped or kept
@@ -1251,6 +1253,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   matters to an author: who else holds its component, how many broken references its text holds, and
   how many values failed to arrive.
 - **Versions as a timeline.** A component's or document's Versions panel lists its versions by day, each day folding to one line, one press folding or opening every day, remembered per document in this browser. A version opens in place with what changed from the one before. A revision says the state its gate moved it to and where it stands, computed when read: pending, effective, superseded or replaced before it took effect (`revision` on `GET .../versions`). A version has no state of its own. A document's baselines and publications fall where they happened, in rows of their own. Any two of a document's versions compare by outline, values and parameters (`GET /v1/documents/{id}/comparison`), and two chosen in **Compare two versions** take the panel, each to be chosen again from the list or by `q` on `GET .../versions`, with quick choices. One version can take the panel too: facts to the second, its approvals, what changed, its delivery (`delivery` on `GET .../versions/{version}`) and its baselines.
+- **The Part panel.** A part's panel says what it is, where it sits and its key facts, with its acts as icons in the head, then Layout, Fields, Readers and Links folding beneath, each saying what it holds in a line when shut, and what is open remembered in this browser. **Number it** takes over a number typed at the start of a title, where it is the number the part would take, as one undoable act (`set` naming `title`; STR-076). A component's row in Links says whether it is used only here or elsewhere too.
 - **Finding a version.** The panel searches by number, note or person (`q`), filters by person, to revisions, to baselines or to publications, and goes to a date (`before`). An activity graph shows versions a week and approvals over the last year (`GET .../activity`), one control moved by the arrow keys, standing of itself from 20 versions.
 - **Comparison.** A component's Versions panel lists each version, who cut it and when, and
   **Compare** shows what changed since an earlier one as a redline: text added underlined, removed

@@ -43,6 +43,9 @@ export interface DeliveredStore {
     plans: readonly bridge.TablePlan[],
     source: { sha256: string; recipeId: string },
   ): Promise<DeliveredWritten | DeliveredRefused>;
+  /** All it holds of a tenant, its schema and read account, as that tenant is deleted (TL-I). */
+  removeTenant(tenantId: string): Promise<void>;
+  holdsTenant(tenantId: string): Promise<boolean>;
   close(): Promise<void>;
 }
 
@@ -288,6 +291,26 @@ export function createDeliveredStore(url: string): DeliveredStore {
         if (error instanceof ValueInvalid) return error.refusal;
         throw error;
       }
+    },
+
+    async removeTenant(tenantId) {
+      const { schema, account } = tenantNames(tenantId);
+      await db.transaction().execute(async (trx) => {
+        await sql`drop schema if exists ${sql.id(schema)} cascade`.execute(trx);
+        const { rows } = await sql`select 1 from pg_roles where rolname = ${account}`.execute(trx);
+        if (rows.length > 0) {
+          await sql`drop owned by ${sql.id(account)}`.execute(trx);
+          await sql`drop role ${sql.id(account)}`.execute(trx);
+        }
+      });
+    },
+
+    async holdsTenant(tenantId) {
+      const { schema, account } = tenantNames(tenantId);
+      const { rows } = await sql<{ held: boolean }>`
+        select exists (select from pg_namespace where nspname = ${schema})
+            or exists (select from pg_roles where rolname = ${account}) as held`.execute(db);
+      return rows[0]!.held;
     },
 
     async close() {

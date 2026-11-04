@@ -172702,6 +172702,1457 @@
                               "recto"
                             ]
                           },
+                          "title": {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "text"
+                                    },
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "marks": {
+                                      "default": [],
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "emphasis"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "strong"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "underline"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "subscript"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "superscript"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "inlineCode"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "quotedPhrase"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "definedTerm"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "term": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "term"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "condition"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "axis": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "values": {
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "axis",
+                                              "values"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "suggestion"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "operation": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "insert",
+                                                  "delete",
+                                                  "replace"
+                                                ]
+                                              },
+                                              "author": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "operation",
+                                              "author"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "comment"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "threadId": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "threadId"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "hyperlink"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "href": {
+                                                "type": "string"
+                                              },
+                                              "title": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "href"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "language"
+                                              },
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "tag": {
+                                                "type": "string",
+                                                "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "id",
+                                              "tag"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "equation"
+                                    },
+                                    "mathml": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "latex": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "mathml"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "footnote"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "anchor": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "span"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "cell"
+                                            },
+                                            "key": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "key"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "cellPosition"
+                                            },
+                                            "row": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "column": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "row",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "table"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "keyed"
+                                            },
+                                            "key": {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "additionalProperties": {
+                                                "type": [
+                                                  "string",
+                                                  "boolean"
+                                                ]
+                                              }
+                                            },
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "key",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "column"
+                                            },
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    },
+                                    "content": {
+                                      "type": "array",
+                                      "items": {}
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id",
+                                    "anchor",
+                                    "content"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "crossReference"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "target": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "block"
+                                            },
+                                            "block": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "block"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "component"
+                                            },
+                                            "component": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "block": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "component",
+                                            "block"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "node"
+                                            },
+                                            "node": {
+                                              "type": "string",
+                                              "pattern": "^[a-z2-7]{26}$"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "node"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "entry"
+                                            },
+                                            "entry": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "entry"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    },
+                                    "display": {
+                                      "type": "string",
+                                      "enum": [
+                                        "number",
+                                        "title",
+                                        "numberAndTitle",
+                                        "page",
+                                        "relative"
+                                      ]
+                                    },
+                                    "withoutPages": {
+                                      "type": "string",
+                                      "enum": [
+                                        "number",
+                                        "title",
+                                        "numberAndTitle"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id",
+                                    "target",
+                                    "display"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "citation"
+                                    },
+                                    "entry": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "locator": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "entry"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "indexMarker"
+                                    },
+                                    "term": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "sub": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "see": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "seeAlso": {
+                                      "minItems": 1,
+                                      "maxItems": 10,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 200
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "term"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "variable"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "binding"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    },
+                                    "parameters": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "literal": {
+                                                "anyOf": [
+                                                  {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "maxLength": 1000
+                                                      },
+                                                      {
+                                                        "type": "boolean"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "minItems": 1,
+                                                    "maxItems": 50,
+                                                    "type": "array",
+                                                    "items": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "maxLength": 1000
+                                                        },
+                                                        {
+                                                          "type": "boolean"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "literal"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "document": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                              }
+                                            },
+                                            "required": [
+                                              "document"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "mode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "checked",
+                                        "pinned"
+                                      ]
+                                    },
+                                    "take": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "column": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "key": {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "maxLength": 1000
+                                                  },
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "column": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "key",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id",
+                                    "query",
+                                    "parameters",
+                                    "mode",
+                                    "take"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "messageForm"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "plural"
+                                    },
+                                    "binding": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "binding"
+                                        },
+                                        "id": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "query": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "version": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "parameters": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string",
+                                            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                          },
+                                          "additionalProperties": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "literal": {
+                                                    "anyOf": [
+                                                      {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "maxLength": 1000
+                                                          },
+                                                          {
+                                                            "type": "boolean"
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
+                                                      {
+                                                        "minItems": 1,
+                                                        "maxItems": 50,
+                                                        "type": "array",
+                                                        "items": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string",
+                                                              "maxLength": 1000
+                                                            },
+                                                            {
+                                                              "type": "boolean"
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "literal"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "document": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "document"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "mode": {
+                                          "type": "string",
+                                          "enum": [
+                                            "checked",
+                                            "pinned"
+                                          ]
+                                        },
+                                        "take": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "column": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "column"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "key": {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "maxLength": 1000
+                                                      },
+                                                      {
+                                                        "type": "boolean"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "column": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "key",
+                                                "column"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "id",
+                                        "query",
+                                        "parameters",
+                                        "mode",
+                                        "take"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "arms": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "enum": [
+                                          "zero",
+                                          "one",
+                                          "two",
+                                          "few",
+                                          "many",
+                                          "other",
+                                          "=0",
+                                          "=1",
+                                          "=2",
+                                          "=3",
+                                          "=4",
+                                          "=5",
+                                          "=6",
+                                          "=7",
+                                          "=8",
+                                          "=9"
+                                        ]
+                                      },
+                                      "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "text"
+                                                },
+                                                "value": {
+                                                  "type": "string"
+                                                },
+                                                "marks": {
+                                                  "default": [],
+                                                  "type": "array",
+                                                  "items": {
+                                                    "oneOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "emphasis"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "strong"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "underline"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "subscript"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "superscript"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "inlineCode"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "quotedPhrase"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "definedTerm"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "term": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "term"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "condition"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "axis": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "values": {
+                                                            "minItems": 1,
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string",
+                                                              "minLength": 1
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "axis",
+                                                          "values"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "suggestion"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "operation": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "insert",
+                                                              "delete",
+                                                              "replace"
+                                                            ]
+                                                          },
+                                                          "author": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "operation",
+                                                          "author"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "comment"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "threadId": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "threadId"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "hyperlink"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "href": {
+                                                            "type": "string"
+                                                          },
+                                                          "title": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "href"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string",
+                                                            "const": "language"
+                                                          },
+                                                          "id": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          "tag": {
+                                                            "type": "string",
+                                                            "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "type",
+                                                          "id",
+                                                          "tag"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      }
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "value"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "messageValue"
+                                                }
+                                              },
+                                              "required": [
+                                                "type"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id",
+                                    "kind",
+                                    "binding",
+                                    "arms"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "image"
+                                    },
+                                    "asset": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    },
+                                    "follow": {
+                                      "type": "string",
+                                      "const": "latest"
+                                    },
+                                    "imageStyle": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "alternative": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "own"
+                                            },
+                                            "text": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "text"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "inherited"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "decorative"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "asset",
+                                    "imageStyle",
+                                    "alternative"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          },
                           "mode": {
                             "oneOf": [
                               {

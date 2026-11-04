@@ -522,3 +522,33 @@ describe('the names a tenant takes', () => {
     expect(tenantNames(hashed).schema).toMatch(/__[0-9a-f]{8}$/);
   });
 });
+
+describe('removing a tenant from the delivery store (the TL plan, TLc)', () => {
+  let store: DeliveredStore;
+
+  beforeAll(async () => {
+    const server = new pg.Client({ connectionString: SERVER.toString() });
+    await server.connect();
+    const { rowCount } = await server.query('select 1 from pg_database where datname = $1', [
+      DATABASE,
+    ]);
+    if (rowCount === 0) await server.query(`create database ${DATABASE}`);
+    await server.end();
+    store = createDeliveredStore(urlFor());
+  });
+
+  afterAll(() => store.close());
+
+  it('IAM-086 takes its schema and read account, again if asked, and leaves a neighbour', async () => {
+    const id = `gone${randomBytes(4).toString('hex')}`;
+    const neighbour = `${id}x`;
+    await store.ensure(id);
+    await store.ensure(neighbour);
+    expect(await store.holdsTenant(id)).toBe(true);
+    await store.removeTenant(id);
+    await store.removeTenant(id);
+    expect(await store.holdsTenant(id)).toBe(false);
+    expect(await store.holdsTenant(neighbour)).toBe(true);
+    await store.removeTenant(neighbour);
+  });
+});

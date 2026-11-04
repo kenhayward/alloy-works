@@ -9,7 +9,12 @@ import {
   ListAccessKeysCommand,
   PutUserPolicyCommand,
 } from '@aws-sdk/client-iam';
-import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { seal } from './seal.js';
 import type { StoreCredentials, StoreSettings } from './settings.js';
 
@@ -112,17 +117,27 @@ export async function removeTenantStore(
   tenant: Tenant,
 ): Promise<void> {
   const iam = iamClient(settings, admin);
-  try {
-    const existing = await iam.send(new ListAccessKeysCommand({ UserName: tenant.role }));
-    for (const key of existing.AccessKeyMetadata ?? []) {
-      await iam.send(
-        new DeleteAccessKeyCommand({ UserName: tenant.role, AccessKeyId: key.AccessKeyId }),
-      );
+  // Each step on its own, so run again after stopping part way it still reaches the rest.
+  const unlessGone = async (step: () => Promise<unknown>) => {
+    try {
+      await step();
+    } catch (error) {
+      if ((error as { name?: string }).name !== 'NoSuchEntityException') throw error;
     }
-    await iam.send(new DeleteUserPolicyCommand({ UserName: tenant.role, PolicyName: POLICY }));
-    await iam.send(new DeleteUserCommand({ UserName: tenant.role }));
-  } catch (error) {
-    if ((error as { name?: string }).name !== 'NoSuchEntityException') throw error;
+  };
+  try {
+    await unlessGone(async () => {
+      const existing = await iam.send(new ListAccessKeysCommand({ UserName: tenant.role }));
+      for (const key of existing.AccessKeyMetadata ?? []) {
+        await iam.send(
+          new DeleteAccessKeyCommand({ UserName: tenant.role, AccessKeyId: key.AccessKeyId }),
+        );
+      }
+    });
+    await unlessGone(() =>
+      iam.send(new DeleteUserPolicyCommand({ UserName: tenant.role, PolicyName: POLICY })),
+    );
+    await unlessGone(() => iam.send(new DeleteUserCommand({ UserName: tenant.role })));
   } finally {
     iam.destroy();
   }
@@ -141,4 +156,78 @@ export async function setUpTenantStore(options: {
     accessKeyId: credentials.accessKeyId,
     sealedSecret: seal(options.sealingKey, options.tenant.id, credentials.secretAccessKey),
   });
+}
+
+const adminS3 = (settings: StoreSettings, admin: StoreCredentials) =>
+  new S3Client({
+    endpoint: settings.endpoint,
+    region: settings.region,
+    credentials: admin,
+    forcePathStyle: true,
+  });
+
+/**
+ * Removes every object under a tenant's prefix, with the administrative credential, since the tenant's
+ * own is gone by now (tenant-lifecycle.md, TL-I). The prefix ends in a slash: a neighbour whose id begins
+ * with this one's has none of it.
+ */
+export async function deleteTenantObjects(
+  settings: StoreSettings,
+  admin: StoreCredentials,
+  tenant: Tenant,
+): Promise<void> {
+  const s3 = adminS3(settings, admin);
+  try {
+    for (;;) {
+      const listed = await s3.send(
+        new ListObjectsV2Command({ Bucket: settings.bucket, Prefix: tenantPrefix(tenant) }),
+      );
+      const keys = (listed.Contents ?? []).map((object) => ({ Key: object.Key! }));
+      if (keys.length === 0) return;
+      const answer = await s3.send(
+        new DeleteObjectsCommand({ Bucket: settings.bucket, Delete: { Objects: keys } }),
+      );
+      // A 200 with refusals inside it: listing and asking again would go on for ever.
+      if ((answer.Errors ?? []).length > 0) {
+        throw new Error(`${answer.Errors!.length} objects of ${tenant.id} would not go`);
+      }
+    }
+  } finally {
+    s3.destroy();
+  }
+}
+
+/** What a purge's report says of the store, by asking it. */
+export async function tenantStoreRemaining(
+  settings: StoreSettings,
+  admin: StoreCredentials,
+  tenant: Tenant,
+): Promise<{ readonly objects: number; readonly credentialPresent: boolean }> {
+  const s3 = adminS3(settings, admin);
+  const iam = iamClient(settings, admin);
+  try {
+    const listed = await s3.send(
+      new ListObjectsV2Command({ Bucket: settings.bucket, Prefix: tenantPrefix(tenant) }),
+    );
+    let credentialPresent = false;
+    try {
+      const keys = await iam.send(new ListAccessKeysCommand({ UserName: tenant.role }));
+      credentialPresent = (keys.AccessKeyMetadata ?? []).length > 0;
+    } catch (error) {
+      if ((error as { name?: string }).name !== 'NoSuchEntityException') throw error;
+    }
+    return { objects: listed.KeyCount ?? (listed.Contents ?? []).length, credentialPresent };
+  } finally {
+    s3.destroy();
+    iam.destroy();
+  }
+}
+
+/** All the steward asks of the store, bound to the one credential it alone holds. */
+export function storeForPurging(settings: StoreSettings, admin: StoreCredentials) {
+  return {
+    removeCredential: (tenant: Tenant) => removeTenantStore(settings, admin, tenant),
+    deleteObjects: (tenant: Tenant) => deleteTenantObjects(settings, admin, tenant),
+    remaining: (tenant: Tenant) => tenantStoreRemaining(settings, admin, tenant),
+  };
 }

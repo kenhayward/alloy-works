@@ -100,7 +100,8 @@ export function Segmented({
             if (!disabled) onChange(option.value);
           }}
         >
-          {option.icon !== undefined ? <Icon name={option.icon} /> : (option.label ?? option.name)}
+          {option.icon !== undefined && <Icon name={option.icon} />}
+          {option.icon === undefined ? (option.label ?? option.name) : option.label}
         </button>
       ))}
     </div>

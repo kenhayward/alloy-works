@@ -203,29 +203,6 @@
   min-width: 0;
 }
 
-.partRow > a.named {
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The places referring to a node (STR-074), one link a line. */
-.referring {
-  display: grid;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* WCAG 2.2's target size: a line of its own is still 24px tall. */
-.referring a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-}
-
 .stack {
   display: grid;
   justify-items: start;
@@ -280,11 +257,6 @@
   color: var(--muted);
 }
 
-.mono {
-  font-family: var(--mono);
-  font-size: var(--size-12);
-}
-
 /* The browser's checkbox drawn as a switch: a track, and a knob that crosses it when on. */
 .switch {
   appearance: none;
@@ -323,19 +295,6 @@
 .switch:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-.foot {
-  padding-top: var(--space-12);
-  border-top: 1px solid var(--border);
-}
-
-.remove {
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--danger);
 }
 
 .hiddenInput {

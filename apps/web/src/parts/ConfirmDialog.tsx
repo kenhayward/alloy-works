@@ -15,6 +15,7 @@ export function ConfirmDialog({
   detail,
   keep,
   act,
+  waiting = false,
   onKeep,
   onAct,
 }: {
@@ -24,6 +25,8 @@ export function ConfirmDialog({
   detail?: React.ReactNode;
   keep: string;
   act: string;
+  /** What acting needs is not given yet, such as a reason: pressing it does nothing. */
+  waiting?: boolean;
   onKeep: () => void;
   /** The removal; it rejects where it failed, so it may be tried again. */
   onAct: () => Promise<void>;
@@ -52,9 +55,9 @@ export function ConfirmDialog({
           type="button"
           className={styles['danger']}
           data-tone="danger"
-          aria-disabled={acting}
+          aria-disabled={acting || waiting}
           onClick={() => {
-            if (busy.current) return;
+            if (busy.current || waiting) return;
             busy.current = true;
             setActing(true);
             // Done, it stays done until its owner closes it; failed, it may be pressed again.

@@ -3,6 +3,7 @@ import { sql } from 'kysely';
 import { loadFacts } from './access-facts.js';
 import { recordEvent } from './audit.js';
 import { excludeDeletionDependants } from './deletion.js';
+import { PURGE_ATTEMPTS } from './tenant-purge.js';
 import type { Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -212,6 +213,9 @@ export async function advanceClosure(
   );
   await change(trx, tenant, 'deleting', null);
   await recordEvent(trx, { kind: 'tenant.closed', detail: { exportTaken: taken[0]!.taken } });
+  // The steward's from here (TL-I). In this transaction, so deletion never begins with nobody to do it.
+  await sql`insert into platform.job (tenant_id, kind, max_attempts)
+            values (${tenant.id}, 'tenant_purge', ${PURGE_ATTEMPTS})`.execute(trx);
   return 'deleting';
 }
 

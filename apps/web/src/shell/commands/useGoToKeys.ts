@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { modalOpen } from '../Status.js';
 
 const STORE = 'alloy-works.go-to-keys';
 const WAIT_MS = 1500;
@@ -55,7 +56,7 @@ export function useGoToKeys(): void {
       }
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       const from = event.target instanceof Element ? event.target : null;
-      if (from?.closest(TAKEN) || document.querySelector('[aria-modal="true"]') !== null) {
+      if (from?.closest(TAKEN) || modalOpen()) {
         stop();
         return;
       }

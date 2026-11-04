@@ -30,6 +30,7 @@ export type JobKind =
   | 'cohort'
   | 'tenant_export'
   | 'restoration'
+  | 'tenant_purge'
   | 'range'
   | 'embed'
   | 'import'
@@ -86,6 +87,8 @@ export interface JobQueue {
     readonly kinds?: readonly string[];
   }): Promise<Job | undefined>;
   complete(job: Job): Promise<void>;
+  /** Not yet, which is no failure: taken again after this long, with the attempt given back. */
+  postpone(job: Job, ms: number): Promise<void>;
   /** Retries while attempts remain; says which it did. The reason is a kind, never a message. */
   fail(
     job: Job,
@@ -160,8 +163,10 @@ export function createJobQueue(url: string): JobQueue {
               -- tenant's one job is its export, which is what its grace period is for (TL-C).
               and exists (select 1 from platform.tenant t
                            where t.id = tenant_id
-                             and (t.state = 'active'
-                                  or (t.state in ('closing', 'retained') and kind = 'tenant_export')))
+                             -- A tenant may queue anything, but only deletion claims a purge.
+                             and ((t.state = 'active' and kind <> 'tenant_purge')
+                                  or (t.state in ('closing', 'retained') and kind = 'tenant_export')
+                                  or (t.state = 'deleting' and kind = 'tenant_purge')))
             order by run_after, id
             for update skip locked
             limit 1)
@@ -190,6 +195,14 @@ export function createJobQueue(url: string): JobQueue {
                        run_after = now() + make_interval(secs => ${retryInMs / 1000}::double precision)
                  where id = ${job.id}::bigint`.execute(db);
       return 'retry';
+    },
+
+    async postpone(job, ms) {
+      await sql`update platform.job
+                   set attempts = greatest(attempts - 1, 0),
+                       locked_until = null,
+                       run_after = now() + make_interval(secs => ${ms / 1000}::double precision)
+                 where id = ${job.id}::bigint`.execute(db);
     },
 
     async abandoned() {

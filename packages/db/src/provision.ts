@@ -51,8 +51,10 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
     await client.query(
       `grant ${id(names.owner)}, ${id(names.role)} to aw_restorer with inherit false`,
     );
-    // Only to record a change of state in the tenant's own log, beside making it (TL-A).
-    await client.query(`grant ${id(names.role)} to aw_steward with inherit false`);
+    // To record a change of state in the tenant's own log, and in time to remove both (TL-A, TL-I).
+    await client.query(
+      `grant ${id(names.owner)}, ${id(names.role)} to aw_steward with inherit false, admin true`,
+    );
     await client.query(
       'insert into platform.organisation (id, name) values ($1, $2) on conflict (id) do nothing',
       [input.organisation.id, input.organisation.name],

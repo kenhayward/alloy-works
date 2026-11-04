@@ -4,6 +4,7 @@ import {
   startClosing,
   suspendTenant,
   TenantStateRefused,
+  type StewardDatabase,
   type TenantDatabase,
 } from '@alloy-works/db';
 
@@ -13,7 +14,7 @@ import {
  * act is an event in that tenant's log, naming the vendor (IAM-087).
  */
 const USAGE =
-  'steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id>';
+  'steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id> | steward report --tenant <id>';
 const DONE: Readonly<Record<string, string>> = {
   suspend: 'suspended',
   resume: 'resumed',
@@ -30,12 +31,26 @@ const option = (argv: readonly string[], name: string): string | undefined => {
 /** 0 done, 1 refused, 2 not understood. */
 export async function runSteward(
   argv: readonly string[],
-  deps: { readonly db: TenantDatabase; readonly out: (line: string) => void },
+  deps: {
+    readonly db: TenantDatabase;
+    readonly steward: StewardDatabase;
+    readonly out: (line: string) => void;
+  },
 ): Promise<number> {
   const [command] = argv;
   const id = option(argv, 'tenant');
   const reason = option(argv, 'reason');
   const notice = option(argv, 'notice');
+  // What remains of a tenant, which may be no more than its record (TL-J).
+  if (command === 'report' && id !== undefined) {
+    const record = await deps.steward.record(id);
+    if (!record) {
+      deps.out(`There is no tenant ${id}.`);
+      return 1;
+    }
+    deps.out(JSON.stringify(record));
+    return 0;
+  }
   if (
     id === undefined ||
     command === undefined ||
