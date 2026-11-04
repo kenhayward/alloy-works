@@ -97,6 +97,8 @@ export function open(
   extra: Partial<React.ComponentProps<typeof ComponentEditor>> = {},
   /** Where given, the editor is set in this presentation, as a page sets it (themes.md, W8). */
   presentation?: unknown,
+  /** Where given, what the page stands in, such as the workspace's `PageShown`. */
+  around: (page: React.JSX.Element) => React.JSX.Element = (page) => page,
 ) {
   const { client, asked } = service(
     presentation === undefined
@@ -115,12 +117,13 @@ export function open(
       {...extra}
     />
   );
-  const placed =
+  const placed = around(
     presentation === undefined ? (
       editor
     ) : (
       <PresentationProvider client={client}>{editor}</PresentationProvider>
-    );
+    ),
+  );
   render(strict ? <StrictMode>{placed}</StrictMode> : placed);
   const surface = async () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
