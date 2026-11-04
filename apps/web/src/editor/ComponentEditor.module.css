@@ -277,3 +277,14 @@
   border-radius: 0;
   background: transparent;
 }
+
+/* A component's title, typed in its heading: set as the heading is, so nothing moves (EP6). */
+.headingTitle {
+  cursor: text;
+  white-space: pre-wrap;
+}
+
+.headingTitle:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

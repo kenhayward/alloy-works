@@ -115,8 +115,9 @@ function useFollow(
   const byKey = useRef(false);
   useEffect(() => {
     if (view === null) return undefined;
-    const key = () => {
-      byKey.current = true;
+    const key = (event: globalThis.KeyboardEvent) => {
+      // Moving the focus away moves no caret.
+      if (event.key !== 'F6' && event.key !== 'Tab' && event.key !== 'Shift') byKey.current = true;
     };
     const pointer = () => {
       byKey.current = false;

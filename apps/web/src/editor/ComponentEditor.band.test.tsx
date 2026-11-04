@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cloneElement, useState, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -46,6 +46,27 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
     expect(menu).toHaveAttribute('aria-expanded', 'true');
     await userEvent.keyboard('{Escape}');
     expect(menu).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('CNT-077 is reached by F6 after the formatting toolbar, and goes back by Shift-F6', async () => {
+    open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    // From the formatting toolbar, the stop before it. From the text, the walk: jsdom has no caret.
+    const formatting = within(await screen.findByTestId('band')).getByRole('toolbar', {
+      name: 'Formatting',
+    });
+    within(formatting).getAllByRole('button')[0]!.focus();
+    await userEvent.keyboard('{F6}');
+    expect(bar.contains(document.activeElement)).toBe(true);
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(formatting.contains(document.activeElement)).toBe(true);
   });
 
   it('is no toolbar on a component with nothing to close, until the cursor is in a table', async () => {
@@ -127,6 +148,53 @@ describe('moving on from a part open in place (the EP plan, EP5)', () => {
     await moveOn();
     await waitFor(() => expect(stayed).toEqual([false]));
     expect(closed).toEqual([]);
+  });
+
+  it('CNT-191 saves a title changed in the heading alone, cutting a version on moving on', async () => {
+    const host = document.createElement('span');
+    document.body.append(host);
+    const closed: unknown[][] = [];
+    let answer: (response: Response) => void = () => undefined;
+    const { surface, asked } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+        'POST /v1/components/{id}/versions': () =>
+          json(201, { version: { id: 'v2', number: '0.2' }, outcome: 'cut' }),
+        'DELETE /v1/components/{id}/lock': () =>
+          json(200, { outcome: 'cut', version: { id: 'v2', number: '0.2' } }),
+        ...saves,
+      },
+      quick,
+      false,
+      {
+        titleHost: host,
+        titleFirst: true,
+        onDone: (...args: unknown[]) => closed.push(args),
+      },
+      undefined,
+      (page) => (
+        <Banded>
+          <Asking page={page} />
+        </Banded>
+      ),
+    );
+    await surface();
+    const field = within(host).getByRole('textbox', { name: 'Title' });
+    field.textContent = 'Set up the printer';
+    fireEvent.input(field);
+    // Moved on from while the claim the first key started is still on the wire: it waits for the answer.
+    await moveOn();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(closed).toEqual([]);
+    answer(json(200, lock));
+    await waitFor(() => expect(closed).toHaveLength(1));
+    const routes = asked.map((each) => each.route);
+    expect(routes.some((each) => each.startsWith('PUT '))).toBe(true);
+    expect(routes).toContain('DELETE /v1/components/{id}/lock');
   });
 
   it('keeps open what cannot be saved, as closing would destroy the words: someone else holds it', async () => {

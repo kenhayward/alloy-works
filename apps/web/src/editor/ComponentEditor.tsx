@@ -104,6 +104,7 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
+import { HeadingTitle } from './HeadingTitle.js';
 import { InPlaceBand } from './InPlaceBand.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
@@ -321,6 +322,9 @@ export interface ComponentEditorProps {
   readonly leaving?: { readonly arrival: number; readonly onlyIfUnchanged: boolean } | null;
   /** It stays open after all: the reach question cancelled, or changes it cannot yet save (`blocked`). */
   readonly onStay?: (blocked: boolean) => void;
+  /** Where its title is typed in its heading, and whether the heading was what was clicked (EP6). */
+  readonly titleHost?: HTMLElement | null | undefined;
+  readonly titleFirst?: boolean | undefined;
   /** What stands in its place while it opens, so that nothing moves (the EP plan, EP2). */
   readonly whileOpening?: ReactNode;
   /**
@@ -588,6 +592,8 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  titleHost,
+  titleFirst,
   leaving,
   onStay,
   whileOpening,
@@ -717,6 +723,8 @@ export function ComponentEditor({
   // this page draws anything of a component, there is nothing to keep.
   const closeForLeaving = useRef<() => void>(() => undefined);
   closeForLeaving.current = () => onDone?.();
+  /** Whether Shift-F6 has just walked back to the text, so that the next one leaves it. */
+  const backAtText = useRef(false);
   const leavingAnswered = useRef(0);
   useEffect(() => {
     if (!leaving || leavingAnswered.current === leaving.arrival) return;
@@ -2198,8 +2206,14 @@ export function ComponentEditor({
    * forwards and at the last going backwards, rather than guessing which region the author meant.
    */
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) {
+      if (event.key !== 'Shift') backAtText.current = false;
+      return;
+    }
     const ring = [
+      // In a document the application enters at the text, so the text comes first and F6 goes on from
+      // it to the toolbars and the panels; last, it would leave at once and they could not be reached.
+      ...(inFrame ? [place.current] : []),
       headerRegion.current,
       toolbarRegion.current,
       tableToolbarRegion.current,
@@ -2211,7 +2225,7 @@ export function ComponentEditor({
       valueRegion.current,
       pasteRegion.current,
       recoveryRegion.current,
-      place.current,
+      ...(inFrame ? [] : [place.current]),
       metadataRegion.current,
       // A region in a panel that is not shown, such as the fields in Attributes while Versions is,
       // is no stop: the focus cannot land in what is hidden.
@@ -2225,14 +2239,23 @@ export function ComponentEditor({
       -1,
     );
     const back = event.shiftKey;
+    // In a document Shift-F6 from the text goes to the last stop and walks back to the text, and only
+    // then leaves: the text is first in the ring, but the panels are still to be reached backwards.
+    if (inFrame && back && ring.length > 1 && ring[at] === place.current && !backAtText.current) {
+      event.preventDefault();
+      land(ring[ring.length - 1]!);
+      return;
+    }
+    backAtText.current = inFrame && back && at === 1;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
-    // The toolbar stands on the page's layer, in none of the application's regions: it wraps instead.
-    const past =
-      at >= 0 &&
-      ring[at] !== tableToolbarRegion.current &&
-      (back ? at === 0 : at === ring.length - 1);
-    if (past && event.currentTarget.closest('[data-app-region]') !== null) return;
+    const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);
+    if (past && event.currentTarget.closest('[data-app-region]') !== null) {
+      // The toolbar stands on the page's layer, in none of the application's regions, so the key goes
+      // on from the text, whose region it is, or it would be held in this ring for good.
+      if (ring[at] === tableToolbarRegion.current) place.current?.focus();
+      return;
+    }
     event.preventDefault();
     const next =
       at < 0 ? (back ? ring.length - 1 : 0) : (at + (back ? -1 : 1) + ring.length) % ring.length;
@@ -3420,6 +3443,22 @@ export function ComponentEditor({
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
         {inFrame && reachQuestion && createPortal(reachQuestion, document.body)}
+        {inFrame &&
+          titleHost != null &&
+          header &&
+          headerEditable &&
+          createPortal(
+            <HeadingTitle
+              title={header.title}
+              label={say('editor.title')}
+              focusFirst={titleFirst === true}
+              onChange={(title) => {
+                changeHeader('title', title);
+              }}
+              onLeave={() => surface?.focus()}
+            />,
+            titleHost,
+          )}
         {ownPage !== undefined && header && stripTail}
         {ownPage !== undefined && header && chrome}
         {inBand &&

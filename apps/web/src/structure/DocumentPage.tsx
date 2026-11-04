@@ -31,6 +31,7 @@ import {
   type TemplateParameter,
   type ThreadAnchor,
   type StoredProfile,
+  type SectionViewNode,
 } from '@alloy-works/domain';
 import { TEXT_CLASS } from '@alloy-works/editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -92,7 +93,8 @@ import { useOwnViewAsk } from './OwnViewAsk.js';
 import textStyles from './DocumentText.module.css';
 import { DocumentText, PartStanding, type Editable, type Place } from './DocumentText.js';
 import { dataState } from './dataStates.js';
-import type { NodeMarks } from './OutlinePanel.js';
+import type { NodeMarks, Titling } from './OutlinePanel.js';
+import { heldBack, TitleField } from './PartPanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
 import { OverrideDialog } from './OverrideDialog.js';
 import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
@@ -1510,13 +1512,18 @@ export function DocumentPage({
     };
   }, [client, id, heldVersion, knownAttempt]);
 
+  // A title changed in a part just closed stands until the listing is next read (the EP plan, EP6).
+  const [retitled, setRetitled] = useState<ReadonlyMap<string, string>>(new Map());
   const names: Names = useMemo(
     () =>
       components.state === 'loaded'
-        ? new Map(components.items.map((each) => [each.id, each.title]))
+        ? new Map(components.items.map((each) => [each.id, retitled.get(each.id) ?? each.title]))
         : null,
-    [components],
+    [components, retitled],
   );
+  // Which section's title is being typed in its heading, and what it needs from the panel's queue.
+  const [titleOpen, setTitleOpen] = useState<string | null>(null);
+  const titling = useRef<Titling | null>(null);
 
   const opened = loaded.state === 'open' ? loaded.document : null;
   // A preview of the version the page holds, asked for beside Publish and shown in a pane beside the
@@ -2817,6 +2824,7 @@ export function DocumentPage({
                   {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
                   marks={outlineMarks}
                   heldSaid={heldSaid}
+                  titling={titling}
                   standing={(node) =>
                     node.type === 'reference' ? (
                       <div className={textStyles['standing']}>
@@ -3664,6 +3672,27 @@ export function DocumentPage({
                     {...(principalId === undefined || !authoring
                       ? {}
                       : {
+                          ...(document.mayEdit
+                            ? {
+                                titleField: {
+                                  open: titleOpen,
+                                  onOpen: setTitleOpen,
+                                  heldBack: (node: SectionViewNode) => heldBack(node.title),
+                                  field: (node: SectionViewNode, className: string) =>
+                                    titling.current === null ? null : (
+                                      <TitleField
+                                        node={node}
+                                        onNotice={setNotice}
+                                        {...titling.current}
+                                        inHeading={{
+                                          className,
+                                          onClosed: () => setTitleOpen(null),
+                                        }}
+                                      />
+                                    ),
+                                },
+                              }
+                            : {}),
                           onLeave: () => {
                             // A click on another part's text has already said where to.
                             if (afterLeaving.current === null) leaveFor({ node: null });
@@ -3694,6 +3723,15 @@ export function DocumentPage({
                               (overridesByNode.get(closing.id)?.length ?? 0) === 0
                             ) {
                               setTexts((was) => new Map(was).set(closing.id, last));
+                            }
+                            const titleNow = (last as { title?: unknown } | undefined)?.title;
+                            if (
+                              typeof titleNow === 'string' &&
+                              closing?.type === 'reference' &&
+                              closing.component !== null
+                            ) {
+                              const component = closing.component;
+                              setRetitled((was) => new Map(was).set(component, titleNow));
                             }
                             // Taken up as it closes: where the reader went, and any mode they chose.
                             const next = afterLeaving.current;
