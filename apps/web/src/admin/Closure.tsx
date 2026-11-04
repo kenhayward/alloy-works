@@ -210,8 +210,14 @@ export function ClosingEnvironment({ client }: { client: Client }): React.JSX.El
       )}
       {view?.closedBy === 'operator' && <p>{words('admin.closure-operator')}</p>}
       {said !== '' && <p role="alert">{said}</p>}
-      <TenantExport client={client} />
-      <Holds client={client} />
+      <section aria-labelledby="closing-export" className={styles['part']}>
+        <h2 id="closing-export">{words('environment.closing-export')}</h2>
+        <TenantExport client={client} />
+      </section>
+      <section aria-labelledby="closing-holds" className={styles['part']}>
+        <h2 id="closing-holds">{words('environment.closing-holds')}</h2>
+        <Holds client={client} />
+      </section>
     </main>
   );
 }
