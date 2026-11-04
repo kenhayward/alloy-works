@@ -48,6 +48,27 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
     expect(menu).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('CNT-077 is reached by F6 after the formatting toolbar, and goes back by Shift-F6', async () => {
+    open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    // From the formatting toolbar, the stop before it. From the text, the walk: jsdom has no caret.
+    const formatting = within(await screen.findByTestId('band')).getByRole('toolbar', {
+      name: 'Formatting',
+    });
+    within(formatting).getAllByRole('button')[0]!.focus();
+    await userEvent.keyboard('{F6}');
+    expect(bar.contains(document.activeElement)).toBe(true);
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(formatting.contains(document.activeElement)).toBe(true);
+  });
+
   it('is no toolbar on a component with nothing to close, until the cursor is in a table', async () => {
     const { surface } = open(
       { 'GET /v1/components/{id}': () => json(200, opened()) },

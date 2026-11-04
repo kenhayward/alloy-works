@@ -26168,9 +26168,15 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
+      "line": 51,
+      "kind": "title"
+    },
+    {
       "id": "CNT-191",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 132,
+      "line": 153,
       "kind": "title"
     },
     {
@@ -36725,6 +36731,12 @@
       "id": "CNT-074",
       "file": "tests/browser/src/edit-in-place.test.ts",
       "line": 301,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "tests/browser/src/edit-in-place.test.ts",
+      "line": 378,
       "kind": "title"
     },
     {

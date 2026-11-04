@@ -375,6 +375,36 @@ describe('clicking into a document, in Chromium', () => {
     });
   });
 
+  it('CNT-077 goes from the text to the toolbar and on to the application by F6', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText('First words.').first().click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+      // The formatting toolbar, then this one.
+      await page.keyboard.press('F6');
+      await page.keyboard.press('F6');
+      await expect
+        .poll(() => bar.evaluate((own) => own.contains(document.activeElement)))
+        .toBe(true);
+      await page.keyboard.press('F6');
+      // Out of the editor's ring, not held in it.
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('[data-app-region]') !== null),
+        )
+        .toBe(true);
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('section.aw-canvas') === null),
+        )
+        .toBe(true);
+    });
+  });
+
   it('shows the rule alone on hover, in forced colours too', async () => {
     const { document: id } = await twoParts();
     await withPage(async (page) => {

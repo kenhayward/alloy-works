@@ -2206,6 +2206,9 @@ export function ComponentEditor({
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
     const ring = [
+      // In a document the application enters at the text, so the text comes first and F6 goes on from
+      // it to the toolbars and the panels; last, it would leave at once and they could not be reached.
+      ...(inFrame ? [place.current] : []),
       headerRegion.current,
       toolbarRegion.current,
       tableToolbarRegion.current,
@@ -2217,7 +2220,7 @@ export function ComponentEditor({
       valueRegion.current,
       pasteRegion.current,
       recoveryRegion.current,
-      place.current,
+      ...(inFrame ? [] : [place.current]),
       metadataRegion.current,
       // A region in a panel that is not shown, such as the fields in Attributes while Versions is,
       // is no stop: the focus cannot land in what is hidden.
@@ -2233,12 +2236,13 @@ export function ComponentEditor({
     const back = event.shiftKey;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
-    // The toolbar stands on the page's layer, in none of the application's regions: it wraps instead.
-    const past =
-      at >= 0 &&
-      ring[at] !== tableToolbarRegion.current &&
-      (back ? at === 0 : at === ring.length - 1);
-    if (past && event.currentTarget.closest('[data-app-region]') !== null) return;
+    const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);
+    if (past && event.currentTarget.closest('[data-app-region]') !== null) {
+      // The toolbar stands on the page's layer, in none of the application's regions, so the key goes
+      // on from the text, whose region it is, or it would be held in this ring for good.
+      if (ring[at] === tableToolbarRegion.current) place.current?.focus();
+      return;
+    }
     event.preventDefault();
     const next =
       at < 0 ? (back ? ring.length - 1 : 0) : (at + (back ? -1 : 1) + ring.length) % ring.length;
