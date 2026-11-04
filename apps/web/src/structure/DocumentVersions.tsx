@@ -9,7 +9,7 @@ import {
   type RestoreAnswer,
   type RestoreRefusal,
 } from '../editor/restoreWords.js';
-import type { ListedVersion } from '../editor/VersionList.js';
+import type { ListedVersion } from '../editor/VersionTimeline.js';
 import { changeCounts } from '../editor/versionDays.js';
 import { VersionTimeline, type TimelineVersion } from '../editor/VersionTimeline.js';
 import { VersionCompare, VersionView } from '../editor/VersionViews.js';

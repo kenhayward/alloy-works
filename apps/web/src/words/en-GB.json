@@ -815,6 +815,7 @@
   "editor.go-to-a-date": "Go to a date",
   "editor.filter-versions": "Filter",
   "editor.search-versions": "Number, note or person",
+  "editor.search-versions-short": "Search versions",
   "editor.filter-person": "Person",
   "editor.filter-anyone": "Anyone",
   "editor.only-revisions": "Only revisions",
