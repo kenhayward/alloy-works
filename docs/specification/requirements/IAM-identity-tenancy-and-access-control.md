@@ -600,3 +600,7 @@ Not a review. Ken agreed the TL plan (issues #941 and #942): ADM-N03 already rul
 | IAM-079 asks for shared billing               | **IAM-079 superseded by IAM-085**: administration and identity provider |
 | IAM-058 calls the grace period the same clock | **IAM-058 superseded by IAM-086**: 30 days, then 1, waiting for holds   |
 | IAM-Q08 asked how many days                   | Settled by IAM-086                                                      |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 84, of which 7 superseded and 1 withdrawn | 86, of which 9 superseded and 1 withdrawn |

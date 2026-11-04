@@ -113,6 +113,7 @@ describe('the committed trace.json', () => {
     // 1628, from 1627 (2026-11-01): STY-086, superseding STY-066 (SY).
     // 1631, from 1628 (2026-11-02): CNT-188, CNT-189 and CNT-190 (AP).
     // 1634, from 1633 (2026-11-03): GEN-062, the assistant proposes outline changes
+    // 1641, from 1639 (2026-11-04): IAM-085 and IAM-086 (TL).
     expect(model.requirements).toHaveLength(1641);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
