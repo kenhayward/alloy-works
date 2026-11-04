@@ -26,6 +26,8 @@ import {
   listComponentTypes,
   listReadableComponents,
   listVersions,
+  versionRevisions,
+  type VersionRevision,
   listSpacesFor,
   newestUncutIteration,
   readLock,
@@ -125,11 +127,16 @@ export async function versionsPage(
   limit: string | undefined,
   after: VersionPosition | undefined,
   line?: string,
+  q?: string,
 ) {
   const page = await listVersions(
     trx,
     id,
-    { limit: pageLimit(limit), ...(after === undefined ? {} : { after }) },
+    {
+      limit: pageLimit(limit),
+      ...(after === undefined ? {} : { after }),
+      ...(q === undefined ? {} : { q }),
+    },
     line,
   );
   // A line's version is never shown by the number it is stored at.
@@ -143,10 +150,11 @@ export async function versionsPage(
             ...(each.restoredFrom ? [each.restoredFrom.id] : []),
           ]),
         );
+  const revisions = await versionRevisions(trx, id);
   const number = (version: { id: string; revision: number; version: number }) =>
     shown.get(version.id)?.number ?? `${version.revision}.${version.version}`;
   return {
-    items: page.items.map((each) => ({
+    items: page.items.map((each, at) => ({
       id: each.id,
       number: number(each),
       createdAt: each.createdAt.toISOString(),
@@ -156,10 +164,27 @@ export async function versionsPage(
         each.restoredFrom === null
           ? null
           : { id: each.restoredFrom.id, number: number(each.restoredFrom) },
+      // Newest first by a keyset: the first row of the first page is the line's latest.
+      current: after === undefined && q === undefined && at === 0,
+      revision: revisionView(revisions.get(each.id)),
     })),
     next: versionCursor(page.next),
   };
 }
+
+/** A revision as a version list says it (VER-060). */
+const revisionView = (revision: VersionRevision | undefined) => {
+  if (revision === undefined) return null;
+  const standing = revision.standing;
+  return {
+    number: revision.number,
+    at: revision.at.toISOString(),
+    state: { ...revision.state },
+    standing: standing?.standing ?? null,
+    scopes: standing?.standing === 'effective' ? standing.scopes.map((each) => ({ ...each })) : [],
+    supersededBy: standing?.standing === 'superseded' ? standing.by : null,
+  };
+};
 
 /** A listing's cursor is the last id it gave, spelled so nobody is tempted to read it as one. */
 export function afterCursor(cursor: string | undefined): string | undefined {
@@ -524,7 +549,7 @@ export function componentHandlers(
       if (artifact?.kind !== 'component') throw notFound();
       // A line's own history (LOC-012), closed or not; one the component does not hold is none.
       if (query.line !== undefined && !(await readLine(trx, id, query.line))) throw notFound();
-      return versionsPage(trx, id, query.limit, after, query.line);
+      return versionsPage(trx, id, query.limit, after, query.line, query.q);
     },
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {

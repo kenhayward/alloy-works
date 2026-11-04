@@ -276,6 +276,11 @@ export const PublicationSummary = z.object({
     .describe(
       '`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice',
     ),
+  superseded: z
+    .boolean()
+    .describe(
+      'Whether a later publication of a later version, under the same profile, replaces it (PUB-059)',
+    ),
   baseline: z.string().nullable().describe('The baseline it was made from, or null'),
   formats: z.array(z.string()),
 });

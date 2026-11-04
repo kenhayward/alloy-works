@@ -1,6 +1,8 @@
 import {
   effectiveRevision,
+  revisionStanding,
   scopeSchema,
+  type RevisionStanding,
   type Scope,
   type ScopedRevision,
 } from '@alloy-works/domain';
@@ -11,9 +13,9 @@ import { axesByKey } from './definitions.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
-import { linesStored } from './lines.js';
+import { linesStored, translationStored } from './lines.js';
 import { datesStored } from './dates.js';
-import { gatesStored, type Revision } from './workflow.js';
+import { definitionById, gatesStored, type Revision } from './workflow.js';
 
 /**
  * **Scopes** (workflow.md, "Scopes"; the R15 plan, R15-A to R15-E): the condition axis values a
@@ -350,10 +352,19 @@ export async function effectiveAt(
   if (!(await gatesStored(trx))) return { revision: null, why: 'none' };
   const dated = await datesStored(trx);
   const scoped = await scopesStored(trx);
+  // A translation's revision is never another language's, or the source's (the TR plan, TR-G).
+  const translated = await translationStored(trx);
   const { rows } = await sql<{ revision_no: number; version_id: string; at: Date }>`
     select d.revision_no, d.version_id, d.at
       from revision_designation d
      where d.artifact_id = ${artifactId}::uuid and d.at <= ${at}
+       and ${
+         translated
+           ? sql`not exists (select 1 from artifact_version v
+                               join artifact_line l on l.id = v.line_id
+                              where v.id = d.version_id and l.language is not null)`
+           : sql`true`
+       }
        and ${
          dated
            ? sql`not exists (select 1 from revision_effective e
@@ -398,4 +409,111 @@ export async function effectiveAt(
     revision: { number: row.revision_no, versionId: row.version_id, at: row.at },
     why: matched ? 'scoped' : 'unscoped',
   };
+}
+
+/** A version a gate designated, as a version list says it (VER-060). */
+export interface VersionRevision {
+  readonly number: number;
+  readonly at: Date;
+  /** The state its gate moved it to, which never changes (LIF-048). */
+  readonly state: { readonly key: string; readonly name: string };
+  /** Where it stands now; none for a translation's, whose rule is its source's (translation.ts). */
+  readonly standing: RevisionStanding | null;
+}
+
+/**
+ * An artifact's revisions by version, in one statement: over every line but a language's, as
+ * `effectiveAt` reads them, so a standing never disagrees with what is effective. Now is the database's,
+ * the clock each designation was stamped by.
+ */
+export async function versionRevisions(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<ReadonlyMap<string, VersionRevision>> {
+  if (!(await gatesStored(trx))) return new Map();
+  const dated = await datesStored(trx);
+  const scoped = await scopesStored(trx);
+  const translated = await translationStored(trx);
+  const { rows } = await sql<{
+    version_id: string;
+    revision_no: number;
+    at: Date;
+    definition_id: string;
+    state: string;
+    translation: boolean;
+    effective_at: Date | null;
+    scopes: readonly { axis: string; value: string; acceptedAt: string | null }[];
+    now: Date;
+  }>`
+    select d.version_id, d.revision_no, d.at, d.definition_id,
+           (select t.to_state from workflow_transition t
+             where t.artifact_id = d.artifact_id and t.version_id = d.version_id
+               and t.transition = d.transition
+             order by t.id limit 1) as state,
+           ${
+             translated
+               ? sql`exists (select 1 from artifact_version v
+                              join artifact_line l on l.id = v.line_id
+                             where v.id = d.version_id and l.language is not null)`
+               : sql`false`
+           } as translation,
+           ${
+             dated
+               ? sql`(select e.effective_at from revision_effective e
+                       where e.version_id = d.version_id)`
+               : sql`null::timestamptz`
+           } as effective_at,
+           ${
+             scoped
+               ? sql`coalesce((
+                   select json_agg(json_build_object(
+                            'axis', s.axis, 'value', s.value,
+                            'acceptedAt', case when s.party_principal is null and s.party_group is null
+                                               then d.at else a.at end)
+                            order by s.axis, s.value)
+                     from revision_scope s
+                     left join revision_acceptance a
+                       on a.version_id = s.version_id and a.axis = s.axis and a.value = s.value
+                    where s.version_id = d.version_id), '[]'::json)`
+               : sql`'[]'::json`
+           } as scopes,
+           now() as now
+      from revision_designation d
+     where d.artifact_id = ${artifactId}::uuid`.execute(trx);
+  if (rows.length === 0) return new Map();
+  const standings = revisionStanding(
+    rows
+      .filter((row) => !row.translation)
+      .map((row) => ({
+        number: row.revision_no,
+        designatedAt: row.at,
+        effectiveAt: row.effective_at,
+        scopes: row.scopes.map((each) => ({
+          axis: each.axis,
+          value: each.value,
+          acceptedAt: each.acceptedAt === null ? null : new Date(each.acceptedAt),
+        })),
+      })),
+    rows[0]!.now,
+  );
+  const definitions = new Map<string, Awaited<ReturnType<typeof definitionById>>>();
+  for (const id of new Set(rows.map((row) => row.definition_id))) {
+    definitions.set(id, await definitionById(trx, id));
+  }
+  return new Map(
+    rows.map((row) => [
+      row.version_id,
+      {
+        number: row.revision_no,
+        at: row.at,
+        state: {
+          key: row.state,
+          name:
+            definitions.get(row.definition_id)?.body.states.find((each) => each.key === row.state)
+              ?.name ?? row.state,
+        },
+        standing: standings.get(row.revision_no) ?? null,
+      },
+    ]),
+  );
 }

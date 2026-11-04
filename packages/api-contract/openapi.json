@@ -27018,6 +27018,37 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The document's version it names, which is not all it pins"
+                    },
+                    "gate": {
+                      "description": "The transition whose gate took it (VER-059); null for one a person made",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "digest": {
                       "type": "string",
                       "pattern": "^[0-9a-f]{64}$",
@@ -27468,6 +27499,8 @@
                     "name",
                     "madeBy",
                     "madeAt",
+                    "version",
+                    "gate",
                     "digest",
                     "superseded",
                     "pins",
@@ -27484,6 +27517,11 @@
                     "name": "example"
                   },
                   "madeAt": "2026-01-01T00:00:00.000Z",
+                  "version": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "gate": "example",
                   "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                   "superseded": {
                     "by": "00000000-0000-4000-8000-000000000001",
@@ -30187,6 +30225,37 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The document's version it names, which is not all it pins"
+                    },
+                    "gate": {
+                      "description": "The transition whose gate took it (VER-059); null for one a person made",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "digest": {
                       "type": "string",
                       "pattern": "^[0-9a-f]{64}$",
@@ -30246,6 +30315,8 @@
                     "name",
                     "madeBy",
                     "madeAt",
+                    "version",
+                    "gate",
                     "digest",
                     "superseded"
                   ]
@@ -30259,6 +30330,11 @@
                     "name": "example"
                   },
                   "madeAt": "2026-01-01T00:00:00.000Z",
+                  "version": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "gate": "example",
                   "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                   "superseded": {
                     "by": "00000000-0000-4000-8000-000000000001",
@@ -31242,6 +31318,37 @@
                           "format": "date-time",
                           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ],
+                          "description": "The document's version it names, which is not all it pins"
+                        },
+                        "gate": {
+                          "description": "The transition whose gate took it (VER-059); null for one a person made",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
                         "digest": {
                           "type": "string",
                           "pattern": "^[0-9a-f]{64}$",
@@ -31301,6 +31408,8 @@
                         "name",
                         "madeBy",
                         "madeAt",
+                        "version",
+                        "gate",
                         "digest",
                         "superseded"
                       ]
@@ -34152,6 +34261,11 @@
                       "name": "example"
                     },
                     "madeAt": "2026-01-01T00:00:00.000Z",
+                    "version": {
+                      "id": "00000000-0000-4000-8000-000000000001",
+                      "number": "example"
+                    },
+                    "gate": "example",
                     "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                     "superseded": {
                       "by": "00000000-0000-4000-8000-000000000001",
@@ -72028,6 +72142,16 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only versions whose number begins so, or whose note or author says so",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
             "name": "line",
             "in": "query",
             "required": false,
@@ -72132,6 +72256,106 @@
                               }
                             ],
                             "description": "The earlier version it was restored from (VER-033); null for any other"
+                          },
+                          "current": {
+                            "type": "boolean",
+                            "description": "Whether it is the latest version of the line listed"
+                          },
+                          "revision": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "The revision it was designated (VER-015)"
+                                  },
+                                  "at": {
+                                    "type": "string",
+                                    "description": "When its gate passed"
+                                  },
+                                  "state": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "The state its gate moved it to, which never changes"
+                                  },
+                                  "standing": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "pending",
+                                          "effective",
+                                          "superseded",
+                                          "neverInForce"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "`pending`: approved and not yet in force anywhere; `effective`: in force, in `scopes` where it is scoped; `superseded`: was in force and now holds nowhere; `neverInForce`: replaced before it took effect; null for a translation's revision, which follows its source"
+                                  },
+                                  "scopes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "axis": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "axis",
+                                        "value"
+                                      ]
+                                    },
+                                    "description": "Where it is in force: empty where it is unscoped, or not in force"
+                                  },
+                                  "supersededBy": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The revision that displaced it, if one has"
+                                  }
+                                },
+                                "required": [
+                                  "number",
+                                  "at",
+                                  "state",
+                                  "standing",
+                                  "scopes",
+                                  "supersededBy"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Null for a version no gate designated"
                           }
                         },
                         "required": [
@@ -72140,7 +72364,9 @@
                           "createdAt",
                           "author",
                           "note",
-                          "restoredFrom"
+                          "restoredFrom",
+                          "current",
+                          "revision"
                         ]
                       }
                     },
@@ -73231,6 +73457,63 @@
                       "additionalProperties": {},
                       "description": "Its metadata values, by field"
                     },
+                    "delivery": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "description": "The system it came from",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "description": "The file delivered",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "sourceSha256": {
+                              "description": "That file, by its hash",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "askedBy": {
+                              "description": "Who asked for the delivery",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "key": {
+                              "type": "string",
+                              "description": "The delivery key"
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was written"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "source",
+                            "sourceSha256",
+                            "askedBy",
+                            "key",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Null for a version nobody delivered"
+                    },
                     "archived": {
                       "type": "boolean",
                       "description": "Whether the component is archived now"
@@ -73243,6 +73526,7 @@
                     "latest",
                     "content",
                     "values",
+                    "delivery",
                     "archived"
                   ]
                 },
@@ -73265,6 +73549,14 @@
                   },
                   "content": {},
                   "values": {},
+                  "delivery": {
+                    "from": "example",
+                    "source": "example",
+                    "sourceSha256": "example",
+                    "askedBy": "example",
+                    "key": "example",
+                    "at": "example"
+                  },
                   "archived": false
                 }
               }
@@ -101687,6 +101979,37 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           },
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ],
+                            "description": "The document's version it names, which is not all it pins"
+                          },
+                          "gate": {
+                            "description": "The transition whose gate took it (VER-059); null for one a person made",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "digest": {
                             "type": "string",
                             "pattern": "^[0-9a-f]{64}$",
@@ -101746,6 +102069,8 @@
                           "name",
                           "madeBy",
                           "madeAt",
+                          "version",
+                          "gate",
                           "digest",
                           "superseded"
                         ]
@@ -102093,6 +102418,37 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The document's version it names, which is not all it pins"
+                    },
+                    "gate": {
+                      "description": "The transition whose gate took it (VER-059); null for one a person made",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "digest": {
                       "type": "string",
                       "pattern": "^[0-9a-f]{64}$",
@@ -102152,6 +102508,8 @@
                     "name",
                     "madeBy",
                     "madeAt",
+                    "version",
+                    "gate",
                     "digest",
                     "superseded"
                   ]
@@ -102165,6 +102523,11 @@
                     "name": "example"
                   },
                   "madeAt": "2026-01-01T00:00:00.000Z",
+                  "version": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "gate": "example",
                   "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                   "superseded": {
                     "by": "00000000-0000-4000-8000-000000000001",
@@ -159837,6 +160200,670 @@
         }
       }
     },
+    "/v1/documents/{id}/comparison": {
+      "get": {
+        "operationId": "compareDocumentVersions",
+        "summary": "Two versions of a document compared, by its outline, values and parameters",
+        "description": "Compares any two versions of a document by what a version of it records: its outline, its metadata values and its parameters. A reference to a component the caller may not read is withheld on both sides. It names no text: a tracking reference's text has its own chain, and a baseline's comparison answers that.",
+        "tags": [
+          "Comparison"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The older version"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The newer version"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The two versions and what differs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
+                    },
+                    "from": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ]
+                    },
+                    "to": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ]
+                    },
+                    "older": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The older version's outline, withheld"
+                    },
+                    "newer": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The newer version's outline, withheld"
+                    },
+                    "structure": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "string",
+                                "const": "inserted"
+                              },
+                              "newer": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "parent": {
+                                "type": "string"
+                              },
+                              "after": {
+                                "description": "The unit it stands after under its parent, or null first",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "newer",
+                              "type",
+                              "parent",
+                              "after"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "string",
+                                "const": "deleted"
+                              },
+                              "older": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "parent": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "older",
+                              "type",
+                              "parent"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "string",
+                                "const": "matched"
+                              },
+                              "older": {
+                                "type": "string"
+                              },
+                              "newer": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "parent": {
+                                "type": "string"
+                              },
+                              "matched": {
+                                "type": "string",
+                                "enum": [
+                                  "identity",
+                                  "similarity"
+                                ],
+                                "description": "How the two were found to be one"
+                              },
+                              "moved": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "after": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "after"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "edited": {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "ops": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "op": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "keep",
+                                                    "insert",
+                                                    "delete"
+                                                  ]
+                                                },
+                                                "text": {
+                                                  "type": "string",
+                                                  "description": "The text, an inline node that is not text standing as U+FFFC"
+                                                }
+                                              },
+                                              "required": [
+                                                "op",
+                                                "text"
+                                              ]
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "ops"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "whole": {
+                                            "type": "boolean",
+                                            "const": true
+                                          }
+                                        },
+                                        "required": [
+                                          "whole"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its text compared word by word, `whole` past the bound a block is compared within"
+                              },
+                              "changed": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Each attribute that differs"
+                              },
+                              "split": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "joined": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "older",
+                              "newer",
+                              "type",
+                              "parent",
+                              "matched",
+                              "moved",
+                              "edited",
+                              "changed",
+                              "split",
+                              "joined"
+                            ]
+                          }
+                        ]
+                      },
+                      "description": "Sections and references moved, added or removed"
+                    },
+                    "titles": {
+                      "type": "object",
+                      "properties": {
+                        "older": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "title"
+                            ]
+                          }
+                        },
+                        "newer": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "title"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "older",
+                        "newer"
+                      ],
+                      "description": "Each reference the caller may read, on each side, by the title of the component version it places there"
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "The field's name now, or null where none is held",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "older": {},
+                          "newer": {}
+                        },
+                        "required": [
+                          "field",
+                          "name"
+                        ]
+                      },
+                      "description": "Each metadata value that differs"
+                    },
+                    "parameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "older": {},
+                          "newer": {}
+                        },
+                        "required": [
+                          "name"
+                        ]
+                      },
+                      "description": "Each parameter that differs"
+                    }
+                  },
+                  "required": [
+                    "document",
+                    "from",
+                    "to",
+                    "older",
+                    "newer",
+                    "structure",
+                    "titles",
+                    "values",
+                    "parameters"
+                  ]
+                },
+                "example": {
+                  "document": "00000000-0000-4000-8000-000000000001",
+                  "from": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "to": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "older": {},
+                  "newer": {},
+                  "structure": [],
+                  "titles": {
+                    "older": [],
+                    "newer": []
+                  },
+                  "values": [],
+                  "parameters": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a reader of the document compares its versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read, or a version that is not one of its versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/contributions": {
       "get": {
         "operationId": "getContributions",
@@ -191275,6 +192302,10 @@
                             ],
                             "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
+                          "superseded": {
+                            "type": "boolean",
+                            "description": "Whether a later publication of a later version, under the same profile, replaces it (PUB-059)"
+                          },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
                             "type": [
@@ -191297,6 +192328,7 @@
                           "publisher",
                           "publishedAt",
                           "approval",
+                          "superseded",
                           "baseline",
                           "formats"
                         ]
@@ -210776,6 +211808,16 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only versions whose number begins so, or whose note or author says so",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -210863,6 +211905,106 @@
                               }
                             ],
                             "description": "The earlier version it was restored from (VER-033); null for any other"
+                          },
+                          "current": {
+                            "type": "boolean",
+                            "description": "Whether it is the latest version of the line listed"
+                          },
+                          "revision": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "The revision it was designated (VER-015)"
+                                  },
+                                  "at": {
+                                    "type": "string",
+                                    "description": "When its gate passed"
+                                  },
+                                  "state": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "The state its gate moved it to, which never changes"
+                                  },
+                                  "standing": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "pending",
+                                          "effective",
+                                          "superseded",
+                                          "neverInForce"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "`pending`: approved and not yet in force anywhere; `effective`: in force, in `scopes` where it is scoped; `superseded`: was in force and now holds nowhere; `neverInForce`: replaced before it took effect; null for a translation's revision, which follows its source"
+                                  },
+                                  "scopes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "axis": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "axis",
+                                        "value"
+                                      ]
+                                    },
+                                    "description": "Where it is in force: empty where it is unscoped, or not in force"
+                                  },
+                                  "supersededBy": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The revision that displaced it, if one has"
+                                  }
+                                },
+                                "required": [
+                                  "number",
+                                  "at",
+                                  "state",
+                                  "standing",
+                                  "scopes",
+                                  "supersededBy"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Null for a version no gate designated"
                           }
                         },
                         "required": [
@@ -210871,7 +212013,9 @@
                           "createdAt",
                           "author",
                           "note",
-                          "restoredFrom"
+                          "restoredFrom",
+                          "current",
+                          "revision"
                         ]
                       }
                     },
@@ -211289,6 +212433,63 @@
                       "additionalProperties": {},
                       "description": "Its metadata values, by field"
                     },
+                    "delivery": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "description": "The system it came from",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "description": "The file delivered",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "sourceSha256": {
+                              "description": "That file, by its hash",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "askedBy": {
+                              "description": "Who asked for the delivery",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "key": {
+                              "type": "string",
+                              "description": "The delivery key"
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was written"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "source",
+                            "sourceSha256",
+                            "askedBy",
+                            "key",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Null for a version nobody delivered"
+                    },
                     "archived": {
                       "type": "boolean",
                       "description": "Whether the document is archived now"
@@ -211302,6 +212503,7 @@
                     "outline",
                     "titles",
                     "values",
+                    "delivery",
                     "archived"
                   ]
                 },
@@ -211325,6 +212527,14 @@
                   "outline": {},
                   "titles": [],
                   "values": {},
+                  "delivery": {
+                    "from": "example",
+                    "source": "example",
+                    "sourceSha256": "example",
+                    "askedBy": "example",
+                    "key": "example",
+                    "at": "example"
+                  },
                   "archived": false
                 }
               }
@@ -263252,6 +264462,10 @@
                             ],
                             "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
+                          "superseded": {
+                            "type": "boolean",
+                            "description": "Whether a later publication of a later version, under the same profile, replaces it (PUB-059)"
+                          },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
                             "type": [
@@ -263274,6 +264488,7 @@
                           "publisher",
                           "publishedAt",
                           "approval",
+                          "superseded",
                           "baseline",
                           "formats"
                         ]
@@ -263615,6 +264830,10 @@
                       ],
                       "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                     },
+                    "superseded": {
+                      "type": "boolean",
+                      "description": "Whether its document was published again later, under the same profile, from a later version (PUB-059)"
+                    },
                     "baseline": {
                       "description": "The baseline it was made from, or null",
                       "type": [
@@ -263627,10 +264846,6 @@
                       "items": {
                         "type": "string"
                       }
-                    },
-                    "superseded": {
-                      "type": "boolean",
-                      "description": "Whether its document was published again later, under the same profile, from a later version (PUB-059)"
                     },
                     "newer": {
                       "description": "The newest publication superseding it, where the caller may read it; null where none does or they may not",
@@ -265045,9 +266260,9 @@
                     "publisher",
                     "publishedAt",
                     "approval",
+                    "superseded",
                     "baseline",
                     "formats",
-                    "superseded",
                     "newer",
                     "engine",
                     "template",
@@ -265071,9 +266286,9 @@
                   },
                   "publishedAt": "example",
                   "approval": "none",
+                  "superseded": false,
                   "baseline": "example",
                   "formats": [],
-                  "superseded": false,
                   "newer": "example",
                   "engine": {
                     "name": "typst",

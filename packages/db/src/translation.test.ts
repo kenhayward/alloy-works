@@ -10,6 +10,7 @@ import { cutVersion } from './promotion.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
+import { effectiveAt } from './scopes.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -400,6 +401,26 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
       first.artifactId,
     );
     expect(approved?.versionId).toBe(first.id);
+  });
+
+  it('LOC-012 never answers a translation as the revision effective', async () => {
+    const first = await component('Effective source');
+    await approve(first);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: first.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    const french = await cut(
+      first.artifactId,
+      first.id,
+      contentOf(first, 'fr-FR', para('b1', 'Source.')),
+      { line: begun.line.id, translates: first.id },
+    );
+    if (french.answer !== 'recorded') throw new Error(french.answer);
+    await approve(french.version, begun.line.id);
+
+    const effective = await as((trx) => effectiveAt(trx, first.artifactId, null, new Date()));
+    expect(effective.revision?.versionId).toBe(first.id);
   });
 
   it('LOC-012 cuts each change to a variant as a new numbered version on its line, the earlier one kept, and designates the line its own approved revision', async () => {

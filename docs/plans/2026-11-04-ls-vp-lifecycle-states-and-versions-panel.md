@@ -206,6 +206,8 @@ navigation walks. Moved tests and two new rows shift `trace.json` and `trace.tes
 
 ### VP: three PRs, the last closing the slice
 
+**VP1 built.** Differs from below: standing reads every line but a language's, as `effectiveAt` does, so it can never disagree with what is effective; older rows come by a **Show older versions** button, which is what D9's measuring is to judge; a row is latest by being first, `current` serving other clients; Download follows the output in a hidden frame; the head's lozenge is the main line's, a line having its own header.
+
 **VP1, the timeline.** Contract: each item of both `versions` routes gains `revision` (`{ number, state
 { key, name }, standing, scopes, at }`, null for most) and `current`; `BaselineSummaryView` gains `version
 { id, number }` and `gate` (D11); `openapi.json` and the client regenerated. The baseline list is unpaged,
@@ -215,6 +217,8 @@ comparison) passed in. `GET /v1/documents/{id}/comparison` (D8), on `read`, neve
 not read, as restoration's titles do. Day groups in the reader's zone, sticky headers, collapse with `aria-expanded`,
 the node line, opened in place, icon actions, cursor paging. Keeps CNT-111 to CNT-113, VER-033, VER-035,
 SCH-058 and LOC-012's titles and accessible names.
+
+**VP2 built.** Differs from below: a version's delivery comes on `GET .../versions/{version}`, found by its receipt; the `Line` fact waits for the line's name, which the panel does not hold; a component's In baselines section is gone with VP1.
 
 **VP2, comparing and one version.** `versions` gains `q`, which the pickers need. One version's
 **In baselines** is the D11 list filtered by version; a component's section drops. Compare mode (A, B, third replaces the

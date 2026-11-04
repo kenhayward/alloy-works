@@ -9,7 +9,10 @@ import {
   type RestoreAnswer,
   type RestoreRefusal,
 } from '../editor/restoreWords.js';
-import { VersionList, type ListedVersion } from '../editor/VersionList.js';
+import type { ListedVersion } from '../editor/VersionList.js';
+import { changeCounts } from '../editor/versionDays.js';
+import { VersionTimeline, type TimelineVersion } from '../editor/VersionTimeline.js';
+import { VersionCompare, VersionView } from '../editor/VersionViews.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from '../editor/VersionList.module.css';
 import { words } from '../words/words.js';
@@ -38,6 +41,18 @@ interface Restoring {
   readonly answer: RestoreAnswer;
 }
 
+/** Two of its versions compared (the plan, D8): its outline, then its values and parameters. */
+interface Compared {
+  readonly title: string;
+  readonly structure: readonly UnitChange[];
+  readonly texts: {
+    readonly older: ReadonlyMap<string, UnitText>;
+    readonly newer: ReadonlyMap<string, UnitText>;
+    readonly names: ReadonlyMap<string, string>;
+  };
+  readonly values: readonly string[];
+}
+
 /**
  * A document's Versions panel (the RS plan, RS-H): each version, who made it and when, and what it
  * was restored from; for an author who may edit, **Restore** on each earlier version, with what it
@@ -59,7 +74,15 @@ export function DocumentVersions({
   onRestored?: () => void;
 }) {
   const [restoring, setRestoring] = useState<Restoring | null>(null);
+  const [compared, setCompared] = useState<Compared | 'failed' | null>(null);
   const [read, setRead] = useState(0);
+  // A comparison or one version taking the panel; the list stays, hidden, keeping its pages.
+  const [view, setView] = useState<
+    | { readonly kind: 'compare'; readonly a: TimelineVersion; readonly b: TimelineVersion }
+    | { readonly kind: 'version'; readonly version: TimelineVersion }
+    | null
+  >(null);
+  const [known, setKnown] = useState<readonly TimelineVersion[]>([]);
   // The preview last asked for: an answer to an earlier one, arriving later, is not shown.
   const asked = useRef(0);
   // A restore sent and not yet answered: a second press sends nothing.
@@ -73,6 +96,7 @@ export function DocumentVersions({
 
   const preview = async (version: ListedVersion) => {
     const ask = (asked.current += 1);
+    setCompared(null);
     setRestoring({ version, preview: 'reading', answer: null });
     const answer = await client
       .GET('/v1/documents/{id}/versions/{version}/restoration', {
@@ -107,6 +131,71 @@ export function DocumentVersions({
     });
   };
 
+  const compare = async (from: ListedVersion, to: ListedVersion) => {
+    const ask = (asked.current += 1);
+    setRestoring(null);
+    const answer = await client
+      .GET('/v1/documents/{id}/comparison', {
+        params: { path: { id }, query: { from: from.id, to: to.id } },
+      })
+      .catch(() => undefined);
+    if (ask !== asked.current) return;
+    const data = answer?.data;
+    if (!data) return setCompared('failed');
+    const texts = (outline: unknown, side: string) => {
+      const view = readOutlineView(outline, { artifact: id, version: side });
+      return view.ok ? outlineTexts(view.outline) : new Map<string, UnitText>();
+    };
+    const said = (value: unknown) =>
+      value === undefined
+        ? words('document.empty-value')
+        : Array.isArray(value)
+          ? value.map(String).join(', ')
+          : String(value);
+    setCompared({
+      title: words('editor.changes-from-to', { number: data.from.number, number2: data.to.number }),
+      structure: data.structure as readonly UnitChange[],
+      texts: {
+        older: texts(data.older, data.from.id),
+        newer: texts(data.newer, data.to.id),
+        names: new Map(
+          [...data.titles.older, ...data.titles.newer].map((each) => [each.node, each.title]),
+        ),
+      },
+      values: [
+        ...data.values.map((each) =>
+          words('document.value-changed', {
+            name: each.name ?? words('editor.a-field-no-longer-held'),
+            older: said(each.older),
+            newer: said(each.newer),
+          }),
+        ),
+        ...data.parameters.map((each) =>
+          words('document.value-changed', {
+            name: each.name,
+            older: said(each.older),
+            newer: said(each.newer),
+          }),
+        ),
+      ],
+    });
+  };
+
+  const changesFrom = async (older: ListedVersion, newer: ListedVersion) => {
+    const answer = await client
+      .GET('/v1/documents/{id}/comparison', {
+        params: { path: { id }, query: { from: older.id, to: newer.id } },
+      })
+      .catch(() => undefined);
+    if (!answer?.data) return null;
+    const counted = changeCounts(answer.data.structure as readonly UnitChange[]);
+    // A value or a parameter changed is a change, though the outline's are counted by unit.
+    return {
+      ...counted,
+      changed: counted.changed + answer.data.values.length + answer.data.parameters.length,
+    };
+  };
+
   const restore = async (now: Restoring) => {
     if (sending.current || typeof now.preview !== 'object') return;
     sending.current = true;
@@ -137,15 +226,86 @@ export function DocumentVersions({
   const label = restoring && words('document.restore', { number: restoring.version.number });
   return (
     <div className={styles['panel']}>
-      <VersionList
-        client={client}
-        id={id}
-        of="document"
-        read={read}
-        opens
-        {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
-      />
-      <ApprovalsList client={client} kind="document" id={id} key={latest} />
+      {view?.kind === 'compare' && (
+        <VersionCompare
+          client={client}
+          id={id}
+          of="document"
+          versions={known}
+          a={view.a}
+          b={view.b}
+          onCompare={(older, newer) => void compare(older, newer)}
+          onClose={() => {
+            setView(null);
+            setCompared(null);
+          }}
+        />
+      )}
+      {view?.kind === 'version' && (
+        <VersionView
+          client={client}
+          id={id}
+          of="document"
+          versions={known}
+          version={view.version}
+          changesFrom={changesFrom}
+          onCompare={(version, latest) => void compare(version, latest)}
+          {...(mayEdit
+            ? {
+                onRestore: (version: ListedVersion) => {
+                  setView(null);
+                  void preview(version);
+                },
+              }
+            : {})}
+          onGo={(version) => setView({ kind: 'version', version })}
+          onBack={() => setView(null)}
+        />
+      )}
+      <div hidden={view !== null} className={styles['listed']}>
+        <VersionTimeline
+          client={client}
+          id={id}
+          of="document"
+          read={read}
+          changesFrom={changesFrom}
+          onCompare={(version, latest) => void compare(version, latest)}
+          onCompareTwo={(a, b, versions) => {
+            setKnown(versions);
+            setRestoring(null);
+            setView({ kind: 'compare', a, b });
+          }}
+          onDetails={(version, versions) => {
+            setKnown(versions);
+            setCompared(null);
+            setRestoring(null);
+            setView({ kind: 'version', version });
+          }}
+          {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
+        />
+      </div>
+      {view === null && (
+        <details className={styles['decided']}>
+          <summary>{words('editor.who-decided-what')}</summary>
+          <ApprovalsList client={client} kind="document" id={id} key={latest} />
+        </details>
+      )}
+      {compared === 'failed' && (
+        <p className={styles['muted']}>{words('editor.the-comparison-could-not-be')}</p>
+      )}
+      {compared !== null && compared !== 'failed' && (
+        <section aria-label={compared.title} className={styles['compared']}>
+          <h3 className={styles['heading']}>{compared.title}</h3>
+          <Redline changes={compared.structure} texts={compared.texts} label={compared.title} />
+          {compared.values.length > 0 && (
+            <ul aria-label={words('document.values-changed')} className={styles['carried']}>
+              {compared.values.map((each) => (
+                <li key={each}>{each}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {restoring && label && (
         <section aria-label={label} className={styles['compared']}>
           <h3 className={styles['heading']}>{label}</h3>

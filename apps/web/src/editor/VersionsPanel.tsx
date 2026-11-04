@@ -15,7 +15,10 @@ import {
   type RestoreAnswer,
   type RestoreRefusal,
 } from './restoreWords.js';
-import { VersionList, type ListedVersion } from './VersionList.js';
+import type { ListedVersion } from './VersionList.js';
+import { changeCounts } from './versionDays.js';
+import { VersionTimeline, type TimelineVersion } from './VersionTimeline.js';
+import { VersionCompare, VersionView } from './VersionViews.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from './VersionList.module.css';
 import { words } from '../words/words.js';
@@ -91,6 +94,13 @@ export function VersionsPanel({
   const [shown, setShown] = useState<Shown | 'failed' | 'nothing' | null>(null);
   const [restoring, setRestoring] = useState<Restoring | null>(null);
   const [read, setRead] = useState(0);
+  // A comparison or one version taking the panel; the list stays, hidden, keeping its pages.
+  const [view, setView] = useState<
+    | { readonly kind: 'compare'; readonly a: TimelineVersion; readonly b: TimelineVersion }
+    | { readonly kind: 'version'; readonly version: TimelineVersion }
+    | null
+  >(null);
+  const [known, setKnown] = useState<readonly TimelineVersion[]>([]);
   const drawn = useRef<HTMLDivElement>(null);
   // The comparison last asked for: an answer to an earlier one, arriving later, is not shown.
   const asked = useRef(0);
@@ -175,6 +185,15 @@ export function VersionsPanel({
     if (restored !== undefined) onRestored?.();
   };
 
+  const changesFrom = async (older: ListedVersion, newer: ListedVersion) => {
+    const answer = await client
+      .GET('/v1/components/{id}/comparison', {
+        params: { path: { id }, query: { from: older.id, to: newer.id } },
+      })
+      .catch(() => undefined);
+    return answer?.data ? changeCounts(answer.data.changes as readonly UnitChange[]) : null;
+  };
+
   const myChanges = () => {
     asked.current += 1;
     setRestoring(null);
@@ -190,26 +209,83 @@ export function VersionsPanel({
 
   return (
     <div className={styles['panel']}>
-      {mine && (
+      {mine && view === null && (
         <button type="button" onClick={myChanges}>
           {words('editor.my-changes')}
         </button>
       )}
-      <VersionList
-        client={client}
-        id={id}
-        {...(line === undefined ? {} : { line })}
-        read={read}
-        opens
-        onCompare={(version, latest) => {
-          setRestoring(null);
-          void compare(version, latest);
-        }}
-        {...(mayEdit
-          ? { onRestore: (version: ListedVersion) => void previewRestore(version) }
-          : {})}
-      />
-      <ApprovalsList client={client} kind="component" id={id} />
+      {view?.kind === 'compare' && (
+        <VersionCompare
+          client={client}
+          id={id}
+          {...(line === undefined ? {} : { line })}
+          versions={known}
+          a={view.a}
+          b={view.b}
+          onCompare={(older, newer) => void compare(older, newer)}
+          {...(mine ? { onMine: myChanges } : {})}
+          onClose={() => {
+            setView(null);
+            setShown(null);
+          }}
+        />
+      )}
+      {view?.kind === 'version' && (
+        <VersionView
+          client={client}
+          id={id}
+          versions={known}
+          version={view.version}
+          changesFrom={changesFrom}
+          onCompare={(version, latest) => {
+            setRestoring(null);
+            void compare(version, latest);
+          }}
+          {...(mayEdit
+            ? {
+                onRestore: (version: ListedVersion) => {
+                  setView(null);
+                  void previewRestore(version);
+                },
+              }
+            : {})}
+          onGo={(version) => setView({ kind: 'version', version })}
+          onBack={() => setView(null)}
+        />
+      )}
+      <div hidden={view !== null} className={styles['listed']}>
+        <VersionTimeline
+          client={client}
+          id={id}
+          {...(line === undefined ? {} : { line })}
+          read={read}
+          changesFrom={changesFrom}
+          onCompareTwo={(a, b, versions) => {
+            setKnown(versions);
+            setRestoring(null);
+            setView({ kind: 'compare', a, b });
+          }}
+          onDetails={(version, versions) => {
+            setKnown(versions);
+            setShown(null);
+            setRestoring(null);
+            setView({ kind: 'version', version });
+          }}
+          onCompare={(version, latest) => {
+            setRestoring(null);
+            void compare(version, latest);
+          }}
+          {...(mayEdit
+            ? { onRestore: (version: ListedVersion) => void previewRestore(version) }
+            : {})}
+        />
+      </div>
+      {view === null && (
+        <details className={styles['decided']}>
+          <summary>{words('editor.who-decided-what')}</summary>
+          <ApprovalsList client={client} kind="component" id={id} />
+        </details>
+      )}
       {restoring && (
         <section
           aria-label={words('editor.restore', { number: restoring.version.number })}

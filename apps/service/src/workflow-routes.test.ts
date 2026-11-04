@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type {
+  BaselineList,
   ComponentList,
+  ComponentVersionList,
   ComponentView,
   DocumentList,
   DocumentView,
@@ -399,6 +401,58 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(taken.requests).toEqual([
       { baseline_id: taken.baselines[0]!.id, requested_by: ids.grace },
     ]);
+  });
+
+  it('VER-060 says which versions are revisions and where each stands, and which version and gate a baseline came from', async () => {
+    const created = await made('documents', 'Standing summary');
+    const listed = () =>
+      call('GET', `/v1/documents/${created.id}/versions`, 'ada').then((answer) =>
+        answer.json<ComponentVersionList>(),
+      );
+    expect((await listed()).items[0]).toMatchObject({ current: true, revision: null });
+
+    await move('documents', created.id, 'ada', { transition: 'submit', from: 'draft' });
+    const passed = await approve('documents', created.id, 'grace', {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'approved',
+    });
+    expect(passed.statusCode, passed.body).toBe(200);
+    expect((await listed()).items[0]).toMatchObject({
+      id: created.version.id,
+      current: true,
+      revision: {
+        number: 1,
+        state: { key: 'approved', name: 'Approved' },
+        standing: 'effective',
+        scopes: [],
+        supersededBy: null,
+      },
+    });
+    const { baselines } = (
+      await call('GET', `/v1/documents/${created.id}/baselines`, 'ada')
+    ).json<BaselineList>();
+    expect(baselines[0]).toMatchObject({
+      version: { id: created.version.id },
+      gate: 'approve',
+    });
+  });
+
+  it('finds versions over the route, and says a version nobody delivered has no delivery', async () => {
+    const created = await made('documents', 'Searched summary');
+    const answer = await call(
+      'GET',
+      `/v1/documents/${created.id}/versions?q=nothing-like-it`,
+      'ada',
+    );
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json<ComponentVersionList>().items).toEqual([]);
+    const read = await call(
+      'GET',
+      `/v1/documents/${created.id}/versions/${created.version.id}`,
+      'ada',
+    );
+    expect(read.json<{ delivery: unknown }>().delivery).toBeNull();
   });
 
   it('LIF-051 LIF-052 rejects at a gate with a reason, back to its declared state, and refuses a decision on a replaced version', async () => {

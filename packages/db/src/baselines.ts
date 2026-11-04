@@ -299,6 +299,10 @@ export interface BaselineSummary {
   readonly name: string;
   readonly madeBy: { readonly id: string; readonly name: string | null };
   readonly madeAt: Date;
+  /** The document's version it names (VER-060). */
+  readonly version: { readonly id: string; readonly number: string };
+  /** The transition whose gate took it (VER-059); null for one a person made. */
+  readonly gate: string | null;
   readonly digest: string;
   readonly superseded: {
     readonly by: string;
@@ -327,8 +331,13 @@ const summaries = (trx: TenantTransaction) =>
   trx
     .selectFrom('baseline as b')
     .innerJoin('principal as p', 'p.id', 'b.made_by')
+    .innerJoin('artifact_version as named', 'named.id', 'b.document_version_id')
     .leftJoin('baseline_supersession as s', 's.baseline_id', 'b.id')
     .select([
+      'b.document_version_id',
+      'b.gate',
+      'named.revision_no',
+      'named.version_no',
       'b.id',
       'b.document_id',
       'b.name',
@@ -349,6 +358,11 @@ const summaryOf = (row: SummaryRow): BaselineSummary => ({
   name: row.name,
   madeBy: { id: row.made_by, name: row.display_name },
   madeAt: row.made_at,
+  version: {
+    id: row.document_version_id,
+    number: `${row.revision_no}.${row.version_no}`,
+  },
+  gate: row.gate,
   digest: row.digest,
   superseded:
     row.superseded_by === null

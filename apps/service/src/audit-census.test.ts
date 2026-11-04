@@ -253,6 +253,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getBaselineView: read,
   listBaselineThreads: read,
   compareComponentVersions: read,
+  compareDocumentVersions: read,
   compareBaseline: read,
   compareBaselineResolved: read,
   listChangesSince: read,

@@ -16,7 +16,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { resolveOccurrences } from './publishing.js';
 import { findRole } from './roles.js';
-import { acceptRevision, effectiveAt, readScopes, setScope } from './scopes.js';
+import { acceptRevision, effectiveAt, readScopes, setScope, versionRevisions } from './scopes.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -26,7 +26,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import { listVersions, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 import { latestRevisionsOf, moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
@@ -365,5 +365,88 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
     // Its scope cleared, the revision still names it: still not deleted.
     await scope(made, []);
     expect(await as((trx) => deleteGroup(trx, group))).toEqual({ refused: 'group.in_scope' });
+  });
+
+  it('reads each revision with the state its gate moved it to and where it stands, leaving other versions out', async () => {
+    const first = await component('Standing');
+    await approve(first);
+    const second = await edit(first);
+    await approve(second);
+    const third = await edit(second);
+    const read = () => as((trx) => versionRevisions(trx, first.artifactId));
+
+    expect((await read()).get(first.id)).toMatchObject({
+      number: 1,
+      state: { key: 'approved', name: 'Approved' },
+      standing: { standing: 'superseded', by: 2 },
+    });
+    expect((await read()).get(second.id)).toMatchObject({
+      number: 2,
+      standing: { standing: 'effective', scopes: [] },
+    });
+    expect((await read()).has(third.id)).toBe(false);
+
+    // A revision waiting on its party is pending, and effective there once accepted.
+    await scope(third, [{ ...market('us'), party: { kind: 'principal', id: grace } }]);
+    await approve(third);
+    expect((await read()).get(third.id)?.standing).toEqual({ standing: 'pending' });
+    await service.withTenant(
+      tenant,
+      (trx) =>
+        acceptRevision(trx, {
+          artifactId: first.artifactId,
+          kind: 'component',
+          revision: 3,
+          axis: 'market',
+          value: 'us',
+          by: grace,
+        }),
+      { actorKind: 'person', actor: grace },
+    );
+    expect((await read()).get(third.id)?.standing).toEqual({
+      standing: 'effective',
+      scopes: [{ axis: 'market', value: 'us' }],
+    });
+    expect((await read()).get(second.id)?.standing).toEqual({ standing: 'effective', scopes: [] });
+  });
+
+  it('finds versions by number, note or who made them, in pages, taking no pattern from what is asked', async () => {
+    const first = await component('Findable');
+    const substance = substanceOf(first);
+    if (substance.kind !== 'component') throw new Error('not a component');
+    const next = await as((trx) =>
+      recordVersion(trx, {
+        artifactId: first.artifactId,
+        openedFrom: first.id,
+        author: grace,
+        note: 'Dosing wording at 100%',
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'b1',
+                style: 'body',
+                content: [{ type: 'text', value: randomUUID(), marks: [] }],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    if (next.answer !== 'recorded') throw new Error(next.answer);
+    const found = async (q: string) =>
+      (await as((trx) => listVersions(trx, first.artifactId, { limit: 10, q }))).items.map(
+        (each) => each.id,
+      );
+    expect(await found('dosing')).toEqual([next.version.id]);
+    expect(await found('GRACE')).toEqual([next.version.id]);
+    expect(await found('Ada')).toEqual([first.id]);
+    expect(await found(`${first.revision}.${first.version}`)).toContain(first.id);
+    expect(await found('100%')).toEqual([next.version.id]);
+    expect(await found('1_0')).toEqual([]);
+    expect(await found('nothing like it')).toEqual([]);
   });
 });

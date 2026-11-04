@@ -1,6 +1,6 @@
 import type {
   DocumentRestorationView,
-  PageQuery,
+  DocumentVersionsQuery,
   RestorationView,
   RestoreAnswer,
   RestoreBody,
@@ -191,7 +191,7 @@ const savedChecks =
  * reference the caller may read named, on each side, by the title of the component version it places
  * there: a node re-pointed places another version on each.
  */
-async function documentComparison(
+export async function documentComparison(
   trx: TenantTransaction,
   principalId: string,
   outlines: NonNullable<Restoration['outlines']>,
@@ -232,7 +232,7 @@ async function documentComparison(
 }
 
 /** A field's name now, or null where none is held. */
-async function fieldName(trx: TenantTransaction, field: string): Promise<string | null> {
+export async function fieldName(trx: TenantTransaction, field: string): Promise<string | null> {
   const definition = await latestVersion(trx, field);
   const name = (definition?.content as { name?: unknown } | undefined)?.name;
   return typeof name === 'string' ? name : null;
@@ -300,10 +300,10 @@ export function restoreHandlers() {
   return {
     listDocumentVersions: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as RestoreParams;
-      const query = request.query as PageQuery;
+      const query = request.query as DocumentVersionsQuery;
       const after = afterVersion(query.cursor);
       if (!(await readDocument(trx, id))) throw notFound();
-      return versionsPage(trx, id, query.limit, after);
+      return versionsPage(trx, id, query.limit, after, undefined, query.q);
     },
 
     previewDocumentRestore: async (

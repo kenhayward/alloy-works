@@ -1290,6 +1290,14 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       // Restore on an earlier version (the RS plan, RS-H): what it would make, or why it may not.
       const versionsPanel = page.getByRole('tabpanel', { name: 'Versions' });
+      // A version opens in place, its actions then showing.
+      await versionsPanel
+        .getByRole('button', { name: /^Version \d/ })
+        .nth(1)
+        .click();
+      await check('the Versions panel with a version opened in place', {
+        shows: versionsPanel.getByRole('button', { name: /^Restore \d/ }).first(),
+      });
       await versionsPanel
         .getByRole('button', { name: /^Restore \d/ })
         .first()
@@ -1625,6 +1633,32 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check("the document's Versions panel", {
         shows: documentVersions.getByRole('list', { name: 'Versions' }),
       });
+      await documentVersions
+        .getByRole('button', { name: /^Version \d/ })
+        .nth(1)
+        .click();
+      // One version taking the panel, then two chosen and compared, and back to the list.
+      await documentVersions
+        .getByRole('button', { name: /^Details of \d/ })
+        .first()
+        .click();
+      await check("one of the document's versions, taking the panel", {
+        shows: documentVersions.getByRole('heading', { name: /^Version \d/ }),
+      });
+      await page.keyboard.press('Escape');
+      await documentVersions.getByRole('button', { name: 'Compare two versions' }).click();
+      const choices = documentVersions.getByRole('checkbox', { name: /^Choose \d/ });
+      await choices.nth(1).check();
+      await choices.nth(0).check();
+      await check("the document's versions with two chosen to compare", {
+        shows: documentVersions.getByRole('button', { name: 'Swap' }),
+      });
+      await documentVersions.getByRole('button', { name: 'Compare', exact: true }).click();
+      await check("two of the document's versions compared", {
+        shows: documentVersions.getByRole('combobox', { name: 'Version A' }),
+      });
+      await documentVersions.getByRole('button', { name: 'Back to the versions' }).click();
+      await documentVersions.getByRole('button', { name: 'Compare two versions' }).click();
       await documentVersions
         .getByRole('button', { name: /^Restore \d/ })
         .first()

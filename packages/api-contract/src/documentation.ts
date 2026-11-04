@@ -457,6 +457,7 @@ const operationTags = {
   Previews: ['requestPreview'],
   Comparison: [
     'compareComponentVersions',
+    'compareDocumentVersions',
     'compareBaseline',
     'compareBaselineResolved',
     'listChangesSince',
@@ -831,6 +832,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.',
   getBaseline:
     'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
+  compareDocumentVersions:
+    "Compares any two versions of a document by what a version of it records: its outline, its metadata values and its parameters. A reference to a component the caller may not read is withheld on both sides. It names no text: a tracking reference's text has its own chain, and a baseline's comparison answers that.",
   compareComponentVersions:
     'Compares two versions of a component: each block, list item, table cell and footnote matched by identity or by similar wording, saying which, then placed, its text compared word by word. Both versions’ content comes with the changes, for a redline.',
   listChangesSince:

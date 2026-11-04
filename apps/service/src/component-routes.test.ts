@@ -403,6 +403,8 @@ describe('finding and opening components through the service', () => {
           author: { id: ids.ada, name: expect.any(String) },
           note: 'Step 3',
           restoredFrom: null,
+          current: true,
+          revision: null,
         },
         {
           id: made.versions[1],
@@ -411,6 +413,8 @@ describe('finding and opening components through the service', () => {
           author: { id: ids.ada, name: expect.any(String) },
           note: 'Step 2',
           restoredFrom: null,
+          current: false,
+          revision: null,
         },
         {
           id: made.versions[0],
@@ -419,6 +423,8 @@ describe('finding and opening components through the service', () => {
           author: { id: ids.ada, name: expect.any(String) },
           note: null,
           restoredFrom: null,
+          current: false,
+          revision: null,
         },
       ]);
       expect(body.next).toBeNull();

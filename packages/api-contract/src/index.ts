@@ -12,6 +12,7 @@ export {
   ComponentQuery,
   ComponentTypeList,
   ComponentVersionList,
+  DocumentVersionsQuery,
   ComponentView,
   FieldView,
   CreateComponentBody,
@@ -75,6 +76,7 @@ export {
   RestoreQuery,
   restoreRoutes,
 } from './restore.js';
+export { DocumentComparisonView } from './comparison.js';
 export { ComponentVersionView, DocumentVersionView, versionRoutes } from './versions.js';
 export { ArchivalParams, ArchivalView, archivalRoutes } from './archival.js';
 export {

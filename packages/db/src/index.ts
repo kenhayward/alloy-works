@@ -687,6 +687,7 @@ export {
   type RestoreAnswer,
   type RestoreAsked,
   type RestoredValue,
+  changedValues,
   type RestoreRefusal,
 } from './restore.js';
 export {
@@ -879,6 +880,7 @@ export {
   sharedReaderRole,
   sharePublication,
   supersession,
+  supersededAmong,
   type ShareAnswer,
   type SharedOutput,
   type StoredShare,
@@ -886,6 +888,8 @@ export {
 export {
   acceptRevision,
   effectiveAt,
+  versionRevisions,
+  type VersionRevision,
   fixScope,
   pendingAcceptances,
   readScopes,
@@ -1542,6 +1546,7 @@ export {
   recordUnlisted,
   refuseDelivery,
   startDelivery,
+  deliveryOfVersion,
   writeBridgeSettings,
   type BridgeElement,
   type BridgeSettings,

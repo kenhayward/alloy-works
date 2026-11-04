@@ -366,3 +366,37 @@ export async function supersession(
     .executeTakeFirst();
   return { superseded: newer !== undefined, newer: newer?.id ?? null };
 }
+
+/**
+ * Those of these publications a later one replaces, as `supersession` asks of one, in one statement:
+ * a listing asks of a page.
+ */
+export async function supersededAmong(
+  trx: TenantTransaction,
+  publications: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const ids = publications.filter((id) => UUID.test(id));
+  if (ids.length === 0) return new Set();
+  const rows = await trx
+    .selectFrom('publication as this')
+    .innerJoin('artifact as ta', 'ta.id', 'this.id')
+    .innerJoin('artifact_version as tv', 'tv.id', 'this.document_version_id')
+    .select('this.id')
+    .where('this.id', 'in', ids)
+    .where(({ exists, selectFrom }) =>
+      exists(
+        selectFrom('publication as later')
+          .innerJoin('artifact as la', 'la.id', 'later.id')
+          .innerJoin('artifact_version as lv', 'lv.id', 'later.document_version_id')
+          .select('later.id')
+          .whereRef('later.document_id', '=', 'this.document_id')
+          .where(
+            sql<boolean>`(later.published_at, la.created_at) > (this.published_at, ta.created_at)`,
+          )
+          .where(sql<boolean>`later.profile is not distinct from this.profile`)
+          .where(sql<boolean>`(lv.revision_no, lv.version_no) > (tv.revision_no, tv.version_no)`),
+      ),
+    )
+    .execute();
+  return new Set(rows.map((row) => row.id));
+}

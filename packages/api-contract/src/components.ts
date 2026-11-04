@@ -69,8 +69,19 @@ export const PageQuery = z.object(pageQuery);
 export type PageQuery = z.infer<typeof PageQuery>;
 
 /** A page of a component's versions, on one of its lines. */
+const VersionsFound = z
+  .string()
+  .max(200)
+  .optional()
+  .describe('Only versions whose number begins so, or whose note or author says so');
+
+/** A page of a document's versions. */
+export const DocumentVersionsQuery = z.object({ ...pageQuery, q: VersionsFound });
+export type DocumentVersionsQuery = z.infer<typeof DocumentVersionsQuery>;
+
 export const VersionsQuery = z.object({
   ...pageQuery,
+  q: VersionsFound,
   line: LowercaseUuid.optional().describe(
     "A component's line, divergent or a language's, whose versions to list (LOC-012); its main line's where absent",
   ),
@@ -199,6 +210,28 @@ export const VersionSummary = z.object({
 });
 
 /**
+ * A version a gate designated (VER-060). A version has no state of its own (LIF-048), so this is the
+ * state its gate moved it to, fixed, and where it stands now, computed when read.
+ */
+const VersionRevision = z.object({
+  number: z.number().int().describe('The revision it was designated (VER-015)'),
+  at: z.string().describe('When its gate passed'),
+  state: z
+    .object({ key: z.string(), name: z.string() })
+    .describe('The state its gate moved it to, which never changes'),
+  standing: z
+    .enum(['pending', 'effective', 'superseded', 'neverInForce'])
+    .nullable()
+    .describe(
+      "`pending`: approved and not yet in force anywhere; `effective`: in force, in `scopes` where it is scoped; `superseded`: was in force and now holds nowhere; `neverInForce`: replaced before it took effect; null for a translation's revision, which follows its source",
+    ),
+  scopes: z
+    .array(z.object({ axis: z.string(), value: z.string() }))
+    .describe('Where it is in force: empty where it is unscoped, or not in force'),
+  supersededBy: z.number().int().nullable().describe('The revision that displaced it, if one has'),
+});
+
+/**
  * A component's versions, newest first (document-view.md, "Versions"): what the document view offers
  * a reference to be pinned to.
  */
@@ -217,6 +250,8 @@ export const ComponentVersionList = z.object({
         .object({ id: z.string(), number: z.string() })
         .nullable()
         .describe('The earlier version it was restored from (VER-033); null for any other'),
+      current: z.boolean().describe('Whether it is the latest version of the line listed'),
+      revision: VersionRevision.nullable().describe('Null for a version no gate designated'),
     }),
   ),
   next: nextCursor,

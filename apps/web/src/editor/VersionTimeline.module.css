@@ -1,0 +1,352 @@
+/* The Versions panel as a timeline by day: docs/interface/handoffs/versions-panel/README.md, as the
+   LS and VP plan rules it. A version has no state, so its node is a plain mark; a revision's bears its
+   gate's state. Nothing here scrolls sideways. */
+.timeline {
+  --version-node: 12px;
+  --version-node-revision: 18px;
+  --version-day-head: 36px;
+  --version-action: 32px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-self: stretch;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.count {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 400;
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.days,
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Its header stays at the top of the list while its day scrolls. */
+.dayHead {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  margin: 0;
+  background: var(--surface);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.dayToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--version-day-head);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+}
+
+.dayName {
+  white-space: nowrap;
+}
+
+/* The line runs down the left, through each row's node. */
+.rows {
+  position: relative;
+}
+
+.rows::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 8px;
+  width: 2px;
+  background: var(--border);
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.node,
+.mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  margin-block-start: 3px;
+}
+
+.node {
+  width: var(--version-node);
+  height: var(--version-node);
+  border: 2px solid var(--strong-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+.node[data-revision] {
+  width: var(--version-node-revision);
+  height: var(--version-node-revision);
+  margin-block-start: 0;
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* A baseline or a publication is no version: a mark on the line, not a node. */
+.mark {
+  width: var(--version-node-revision);
+  height: var(--version-node-revision);
+  margin-block-start: 0;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--size-13);
+  text-align: start;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.number {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.note {
+  color: var(--muted);
+  font-size: var(--size-12);
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.revision {
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.changes {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Neutral, Compare in accent: a status colour means only its status (ADR-0046; the plan, D6). */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--version-action);
+  height: var(--version-action);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.action[data-accent] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+/* Compare mode: each version's box, and the bar at the foot. */
+.pick {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.compareBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border-top: 1px solid var(--accent);
+  background: var(--surface);
+  font-size: var(--size-13);
+}
+
+.compareBarText {
+  flex: 1 1 10rem;
+}
+
+/* A version or a comparison taking the panel. */
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-self: stretch;
+  min-width: 0;
+  font-size: var(--size-13);
+}
+
+.viewHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.viewTitle {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.viewGo {
+  display: inline-flex;
+  gap: var(--space-4);
+  margin-inline-start: auto;
+}
+
+.viewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  --version-action: 40px;
+}
+
+.viewPart {
+  margin: var(--space-8) 0 0;
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.viewList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.factList {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+.fact dt {
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.pickers {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.picker {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.picker select {
+  width: 100%;
+  min-width: 0;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}

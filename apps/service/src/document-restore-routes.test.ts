@@ -1,4 +1,8 @@
-import type { ComponentVersionList, DocumentRestorationView } from '@alloy-works/api-contract';
+import type {
+  ComponentVersionList,
+  DocumentComparisonView,
+  DocumentRestorationView,
+} from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   createComponent,
@@ -188,6 +192,53 @@ describe("a document's versions and its restore over HTTP (the RS plan, Task 2)"
     // And the page opens at it.
     const now = (await call('GET', `/v1/documents/${made.id}`, 'ivy')).json<Opened>();
     expect(now.outline.nodes.map((node) => node.id)).toEqual([first.outline.nodes[0]!.id]);
+  });
+
+  it("compares any two of a document's versions by its outline, values and parameters, withholding a component the caller may not read", async () => {
+    const shown = await component('Install the kiosk');
+    const hidden = await component('Calibrate the kiosk');
+    await tenantDb.withTenant(tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Reader'))!.id,
+        subject: { principal: ids.grace! },
+        level: { kind: 'artifact', id: hidden.artifactId },
+        effect: 'deny',
+        grantedBy: ids.ada!,
+      }),
+    );
+    const made = await document();
+    const first = await act(made, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'section', title: [{ type: 'text', value: 'Method', marks: [] }] },
+    });
+    const second = await act(first, reference(shown.artifactId, { kind: 'latest' }));
+    const third = await act(second, reference(hidden.artifactId, { kind: 'latest' }));
+    const compared = (who: string, from: string, to: string) =>
+      call('GET', `/v1/documents/${made.id}/comparison?from=${from}&to=${to}`, who);
+
+    const answer = await compared('grace', first.version.id, third.version.id);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const view = answer.json<DocumentComparisonView>();
+    expect([view.from.number, view.to.number]).toEqual([
+      first.version.number,
+      third.version.number,
+    ]);
+    expect(view.structure.filter((each) => each.change === 'inserted')).toHaveLength(2);
+    expect(view.titles.newer.map((each) => each.title)).toEqual(['Install the kiosk']);
+    expect(answer.body).not.toContain(hidden.artifactId);
+    expect(view.values).toEqual([]);
+    expect(view.parameters).toEqual([]);
+
+    // The older of any two may be either: nothing says the second is the latest.
+    const earlier = await compared('grace', first.version.id, second.version.id);
+    expect(
+      earlier.json<DocumentComparisonView>().structure.filter((each) => each.change === 'inserted'),
+    ).toHaveLength(1);
+
+    const other = await document();
+    expect((await compared('grace', other.version.id, third.version.id)).statusCode).toBe(404);
   });
 
   it('VER-035 previews the outline a restore would make against the latest, withholding a component the caller may not read', async () => {

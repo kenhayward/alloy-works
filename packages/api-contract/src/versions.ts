@@ -22,6 +22,19 @@ const Latest = z
   .object({ id: z.string(), number: z.string() })
   .describe('The latest version, which may be this one');
 
+/** The delivery that made a version, from its receipt: fields, never its note (VP2). */
+const VersionDelivery = z
+  .object({
+    from: z.string().nullable().describe('The system it came from'),
+    source: z.string().nullable().describe('The file delivered'),
+    sourceSha256: z.string().nullable().describe('That file, by its hash'),
+    askedBy: z.string().nullable().describe('Who asked for the delivery'),
+    key: z.string().describe('The delivery key'),
+    at: z.string().describe('When it was written'),
+  })
+  .nullable()
+  .describe('Null for a version nobody delivered');
+
 /** One version of a component, read only (the SV plan, SV-H). */
 export const ComponentVersionView = z.object({
   component: z.string(),
@@ -32,6 +45,7 @@ export const ComponentVersionView = z.object({
     .record(z.string(), z.unknown())
     .describe("The version's content document (content-model.md), exactly as stored"),
   values: z.record(z.string(), z.unknown()).describe('Its metadata values, by field'),
+  delivery: VersionDelivery,
   archived: z.boolean().describe('Whether the component is archived now'),
 });
 export type ComponentVersionView = z.infer<typeof ComponentVersionView>;
@@ -53,6 +67,7 @@ export const DocumentVersionView = z.object({
       'Each reference the caller may read, by the title of the component version it places',
     ),
   values: z.record(z.string(), z.unknown()).describe('Its metadata values, by field'),
+  delivery: VersionDelivery,
   archived: z.boolean().describe('Whether the document is archived now'),
 });
 export type DocumentVersionView = z.infer<typeof DocumentVersionView>;

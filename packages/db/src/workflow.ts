@@ -281,7 +281,10 @@ export async function workflowVersion(
   return row && definitionOf(row);
 }
 
-async function definitionById(trx: TenantTransaction, id: string): Promise<WorkflowDefinition> {
+export async function definitionById(
+  trx: TenantTransaction,
+  id: string,
+): Promise<WorkflowDefinition> {
   return definitionOf(await definitionsQuery(trx).where('d.id', '=', id).executeTakeFirstOrThrow());
 }
 
