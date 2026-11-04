@@ -36,6 +36,8 @@ describe("a component's restore in the contract (the RS plan, RS-D)", () => {
       author: null,
       note: null,
       restoredFrom: { id: 'v1', number: '0.1' },
+      current: true,
+      revision: null,
     };
     expect(ComponentVersionList.parse({ items: [listed], next: null }).items[0]).toEqual(listed);
   });

@@ -49,6 +49,8 @@ const summaryView = (baseline: BaselineSummary): BaselineSummaryView => ({
   name: baseline.name,
   madeBy: baseline.madeBy,
   madeAt: baseline.madeAt.toISOString(),
+  version: { ...baseline.version },
+  gate: baseline.gate,
   digest: baseline.digest,
   superseded:
     baseline.superseded === null

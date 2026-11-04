@@ -58,6 +58,48 @@ export const ComponentComparisonQuery = z.strictObject({
 });
 export type ComponentComparisonQuery = z.infer<typeof ComponentComparisonQuery>;
 
+/**
+ * Two versions of a document compared by what a version of it records: its outline, values and
+ * parameters. A tracking reference's text has its own chain, so this names no text (the LS and VP
+ * plan, D8).
+ */
+export const DocumentComparisonView = z.object({
+  document: LowercaseUuid,
+  from: VersionSide,
+  to: VersionSide,
+  older: z.record(z.string(), z.unknown()).describe("The older version's outline, withheld"),
+  newer: z.record(z.string(), z.unknown()).describe("The newer version's outline, withheld"),
+  structure: z.array(UnitChangeView).describe('Sections and references moved, added or removed'),
+  titles: z
+    .object({
+      older: z.array(z.object({ node: z.string(), title: z.string() })),
+      newer: z.array(z.object({ node: z.string(), title: z.string() })),
+    })
+    .describe(
+      'Each reference the caller may read, on each side, by the title of the component version it places there',
+    ),
+  values: z
+    .array(
+      z.object({
+        field: z.string(),
+        name: z.string().nullable().describe("The field's name now, or null where none is held"),
+        older: z.unknown().optional(),
+        newer: z.unknown().optional(),
+      }),
+    )
+    .describe('Each metadata value that differs'),
+  parameters: z
+    .array(
+      z.object({
+        name: z.string(),
+        older: z.unknown().optional(),
+        newer: z.unknown().optional(),
+      }),
+    )
+    .describe('Each parameter that differs'),
+});
+export type DocumentComparisonView = z.infer<typeof DocumentComparisonView>;
+
 /** Two versions of a component compared (VER-025, CNT-112). */
 export const ComponentComparisonView = z.object({
   component: LowercaseUuid,
@@ -172,6 +214,29 @@ export const comparisonRoutes = {
       404: {
         description:
           'No such component the caller may read, or a version that is not one of its versions',
+        schema: ErrorBody,
+      },
+    },
+  },
+  compareDocumentVersions: {
+    operationId: 'compareDocumentVersions',
+    method: 'GET',
+    path: '/v1/documents/{id}/comparison',
+    summary: 'Two versions of a document compared, by its outline, values and parameters',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: z.object({ id: LowercaseUuid }),
+    query: ComponentComparisonQuery,
+    responses: {
+      200: { description: 'The two versions and what differs', schema: DocumentComparisonView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a reader of the document compares its versions',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such document the caller may read, or a version that is not one of its versions',
         schema: ErrorBody,
       },
     },

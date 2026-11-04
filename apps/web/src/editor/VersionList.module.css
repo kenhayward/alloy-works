@@ -65,3 +65,8 @@
   font-size: var(--size-13);
   font-weight: 600;
 }
+
+.decided {
+  align-self: stretch;
+  font-size: var(--size-13);
+}

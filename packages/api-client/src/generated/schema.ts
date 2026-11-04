@@ -2659,6 +2659,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Two versions of a document compared, by its outline, values and parameters
+         * @description Compares any two versions of a document by what a version of it records: its outline, its metadata values and its parameters. A reference to a component the caller may not read is withheld on both sides. It names no text: a tracking reference's text has its own chain, and a baseline's comparison answers that.
+         */
+        get: operations["compareDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/contributions": {
         parameters: {
             query?: never;
@@ -15475,6 +15495,11 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "version": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "gate": "example",
                      *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                      *       "superseded": {
                      *         "by": "00000000-0000-4000-8000-000000000001",
@@ -15521,6 +15546,13 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description The document's version it names, which is not all it pins */
+                        version: {
+                            id: string & (unknown & unknown);
+                            number: string;
+                        };
+                        /** @description The transition whose gate took it (VER-059); null for one a person made */
+                        gate: string | null;
                         /** @description SHA-256 over everything it pins (VER-043) */
                         digest: string;
                         /** @description Null while it is current */
@@ -16498,6 +16530,11 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "version": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "gate": "example",
                      *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                      *       "superseded": {
                      *         "by": "00000000-0000-4000-8000-000000000001",
@@ -16516,6 +16553,13 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description The document's version it names, which is not all it pins */
+                        version: {
+                            id: string & (unknown & unknown);
+                            number: string;
+                        };
+                        /** @description The transition whose gate took it (VER-059); null for one a person made */
+                        gate: string | null;
                         /** @description SHA-256 over everything it pins (VER-043) */
                         digest: string;
                         /** @description Null while it is current */
@@ -16889,6 +16933,11 @@ export interface operations {
                      *           "name": "example"
                      *         },
                      *         "madeAt": "2026-01-01T00:00:00.000Z",
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "gate": "example",
                      *         "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                      *         "superseded": {
                      *           "by": "00000000-0000-4000-8000-000000000001",
@@ -16930,6 +16979,13 @@ export interface operations {
                             };
                             /** Format: date-time */
                             madeAt: string;
+                            /** @description The document's version it names, which is not all it pins */
+                            version: {
+                                id: string & (unknown & unknown);
+                                number: string;
+                            };
+                            /** @description The transition whose gate took it (VER-059); null for one a person made */
+                            gate: string | null;
                             /** @description SHA-256 over everything it pins (VER-043) */
                             digest: string;
                             /** @description Null while it is current */
@@ -30325,6 +30381,29 @@ export interface operations {
                                 id: string;
                                 number: string;
                             } | null;
+                            /** @description Whether it is the latest version of the line listed */
+                            current: boolean;
+                            /** @description Null for a version no gate designated */
+                            revision: {
+                                /** @description The revision it was designated (VER-015) */
+                                number: number;
+                                /** @description When its gate passed */
+                                at: string;
+                                /** @description The state its gate moved it to, which never changes */
+                                state: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description `pending`: approved and not yet in force anywhere; `effective`: in force, in `scopes` where it is scoped; `superseded`: was in force and now holds nowhere; `neverInForce`: replaced before it took effect; null for a translation's revision, which follows its source */
+                                standing: ("pending" | "effective" | "superseded" | "neverInForce") | null;
+                                /** @description Where it is in force: empty where it is unscoped, or not in force */
+                                scopes: {
+                                    axis: string;
+                                    value: string;
+                                }[];
+                                /** @description The revision that displaced it, if one has */
+                                supersededBy: number | null;
+                            } | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -40877,6 +40956,13 @@ export interface operations {
                             };
                             /** Format: date-time */
                             madeAt: string;
+                            /** @description The document's version it names, which is not all it pins */
+                            version: {
+                                id: string & (unknown & unknown);
+                                number: string;
+                            };
+                            /** @description The transition whose gate took it (VER-059); null for one a person made */
+                            gate: string | null;
                             /** @description SHA-256 over everything it pins (VER-043) */
                             digest: string;
                             /** @description Null while it is current */
@@ -41025,6 +41111,11 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "version": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "gate": "example",
                      *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
                      *       "superseded": {
                      *         "by": "00000000-0000-4000-8000-000000000001",
@@ -41043,6 +41134,13 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description The document's version it names, which is not all it pins */
+                        version: {
+                            id: string & (unknown & unknown);
+                            number: string;
+                        };
+                        /** @description The transition whose gate took it (VER-059); null for one a person made */
+                        gate: string | null;
                         /** @description SHA-256 over everything it pins (VER-043) */
                         digest: string;
                         /** @description Null while it is current */
@@ -54777,6 +54875,230 @@ export interface operations {
             };
         };
     };
+    compareDocumentVersions: {
+        parameters: {
+            query: {
+                from: string & (unknown & unknown);
+                to: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two versions and what differs */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "to": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "older": {},
+                     *       "newer": {},
+                     *       "structure": [],
+                     *       "titles": {
+                     *         "older": [],
+                     *         "newer": []
+                     *       },
+                     *       "values": [],
+                     *       "parameters": []
+                     *     }
+                     */
+                    "application/json": {
+                        document: string & (unknown & unknown);
+                        from: {
+                            id: string & (unknown & unknown);
+                            /** @description `revision.version` */
+                            number: string;
+                        };
+                        to: {
+                            id: string & (unknown & unknown);
+                            /** @description `revision.version` */
+                            number: string;
+                        };
+                        /** @description The older version's outline, withheld */
+                        older: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The newer version's outline, withheld */
+                        newer: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Sections and references moved, added or removed */
+                        structure: ({
+                            /** @constant */
+                            change: "inserted";
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /** @description The unit it stands after under its parent, or null first */
+                            after: string | null;
+                        } | {
+                            /** @constant */
+                            change: "deleted";
+                            older: string;
+                            type: string;
+                            parent: string;
+                        } | {
+                            /** @constant */
+                            change: "matched";
+                            older: string;
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /**
+                             * @description How the two were found to be one
+                             * @enum {string}
+                             */
+                            matched: "identity" | "similarity";
+                            moved: {
+                                after: string | null;
+                            } | null;
+                            /** @description Its text compared word by word, `whole` past the bound a block is compared within */
+                            edited: ({
+                                ops: {
+                                    /** @enum {string} */
+                                    op: "keep" | "insert" | "delete";
+                                    /** @description The text, an inline node that is not text standing as U+FFFC */
+                                    text: string;
+                                }[];
+                            } | {
+                                /** @constant */
+                                whole: true;
+                            }) | null;
+                            /** @description Each attribute that differs */
+                            changed: string[];
+                            split: string | null;
+                            joined: string | null;
+                        })[];
+                        /** @description Each reference the caller may read, on each side, by the title of the component version it places there */
+                        titles: {
+                            older: {
+                                node: string;
+                                title: string;
+                            }[];
+                            newer: {
+                                node: string;
+                                title: string;
+                            }[];
+                        };
+                        /** @description Each metadata value that differs */
+                        values: {
+                            field: string;
+                            /** @description The field's name now, or null where none is held */
+                            name: string | null;
+                            older?: unknown;
+                            newer?: unknown;
+                        }[];
+                        /** @description Each parameter that differs */
+                        parameters: {
+                            name: string;
+                            older?: unknown;
+                            newer?: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the document compares its versions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a version that is not one of its versions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getContributions: {
         parameters: {
             query?: never;
@@ -64543,6 +64865,8 @@ export interface operations {
                              * @enum {string}
                              */
                             approval: "none" | "baseline" | "approved";
+                            /** @description Whether a later publication of a later version, under the same profile, replaces it (PUB-059) */
+                            superseded: boolean;
                             /** @description The baseline it was made from, or null */
                             baseline: string | null;
                             formats: string[];
@@ -71605,6 +71929,29 @@ export interface operations {
                             restoredFrom: {
                                 id: string;
                                 number: string;
+                            } | null;
+                            /** @description Whether it is the latest version of the line listed */
+                            current: boolean;
+                            /** @description Null for a version no gate designated */
+                            revision: {
+                                /** @description The revision it was designated (VER-015) */
+                                number: number;
+                                /** @description When its gate passed */
+                                at: string;
+                                /** @description The state its gate moved it to, which never changes */
+                                state: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description `pending`: approved and not yet in force anywhere; `effective`: in force, in `scopes` where it is scoped; `superseded`: was in force and now holds nowhere; `neverInForce`: replaced before it took effect; null for a translation's revision, which follows its source */
+                                standing: ("pending" | "effective" | "superseded" | "neverInForce") | null;
+                                /** @description Where it is in force: empty where it is unscoped, or not in force */
+                                scopes: {
+                                    axis: string;
+                                    value: string;
+                                }[];
+                                /** @description The revision that displaced it, if one has */
+                                supersededBy: number | null;
                             } | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
@@ -91815,6 +92162,8 @@ export interface operations {
                              * @enum {string}
                              */
                             approval: "none" | "baseline" | "approved";
+                            /** @description Whether a later publication of a later version, under the same profile, replaces it (PUB-059) */
+                            superseded: boolean;
                             /** @description The baseline it was made from, or null */
                             baseline: string | null;
                             formats: string[];
@@ -91940,9 +92289,9 @@ export interface operations {
                      *       },
                      *       "publishedAt": "example",
                      *       "approval": "none",
+                     *       "superseded": false,
                      *       "baseline": "example",
                      *       "formats": [],
-                     *       "superseded": false,
                      *       "newer": "example",
                      *       "engine": {
                      *         "name": "typst",
@@ -91984,11 +92333,11 @@ export interface operations {
                          * @enum {string}
                          */
                         approval: "none" | "baseline" | "approved";
+                        /** @description Whether its document was published again later, under the same profile, from a later version (PUB-059) */
+                        superseded: boolean;
                         /** @description The baseline it was made from, or null */
                         baseline: string | null;
                         formats: string[];
-                        /** @description Whether its document was published again later, under the same profile, from a later version (PUB-059) */
-                        superseded: boolean;
                         /** @description The newest publication superseding it, where the caller may read it; null where none does or they may not */
                         newer: string | null;
                         /** @description The PDF's engine; none where the publication has no PDF */

@@ -75,7 +75,7 @@ export interface RestoredValue {
 }
 
 /** Each field whose value `restored` holds otherwise than `latest`, by field. */
-function changedValues(latest: MetadataValues, restored: MetadataValues): RestoredValue[] {
+export function changedValues(latest: MetadataValues, restored: MetadataValues): RestoredValue[] {
   const fields = [...new Set([...Object.keys(latest), ...Object.keys(restored)])].sort();
   return fields
     .filter((field) =>

@@ -206,6 +206,8 @@ navigation walks. Moved tests and two new rows shift `trace.json` and `trace.tes
 
 ### VP: three PRs, the last closing the slice
 
+**VP1 built.** Differs from below: standing reads every line but a language's, as `effectiveAt` does, so it can never disagree with what is effective; older rows come by a **Show older versions** button, which is what D9's measuring is to judge; a row is latest by being first, `current` serving other clients; Download follows the output in a hidden frame; the head's lozenge is the main line's, a line having its own header.
+
 **VP1, the timeline.** Contract: each item of both `versions` routes gains `revision` (`{ number, state
 { key, name }, standing, scopes, at }`, null for most) and `current`; `BaselineSummaryView` gains `version
 { id, number }` and `gate` (D11); `openapi.json` and the client regenerated. The baseline list is unpaged,

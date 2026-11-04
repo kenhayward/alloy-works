@@ -168,6 +168,14 @@ const ADMIN: Record<string, readonly string[]> = {
   ],
   'A bound table': [GRID, 'M3.5 9.5h17M9 4.5v15'],
   'Go to': ['M5 12h14', 'm13 6 6 6-6 6'],
+  View: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z', 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
+  Compare: ['m7 4-4 4 4 4', 'M3 8h14', 'm17 12 4 4-4 4', 'M21 16H7'],
+  Baseline: ['M5 21V4', 'M5 4h13l-3 4 3 4H5'],
+  Publication: ['M4 12 20 4l-4 16-5-6z', 'm11 14 9-10'],
+  Download: ['M12 4v11', 'm7 11 5 5 5-5', 'M5 20h14'],
+  'Day open': ['m6 9.5 6 6 6-6'],
+  'Collapse every day': ['m7 10 5-5 5 5', 'm7 19 5-5 5 5'],
+  'Expand every day': ['m7 5 5 5 5-5', 'm7 14 5 5 5-5'],
   // The Part tab's link field (ADR-0054): one sheet over another.
   'Copy link': [
     'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',

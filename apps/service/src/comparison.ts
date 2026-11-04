@@ -3,6 +3,7 @@ import type {
   BaselineComparisonView,
   BaselineParams,
   ComponentComparisonQuery,
+  DocumentComparisonView,
   BindingStateView,
   ComponentComparisonView,
   ComponentParams,
@@ -16,6 +17,7 @@ import {
   pinnedBindings,
   readBaseline,
   readableComponents,
+  changedValues,
   readVersion,
   resolveOccurrences,
   versionTitles,
@@ -42,6 +44,7 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised } from './access.js';
+import { documentComparison, fieldName } from './restore.js';
 import { liveBindingStates, pinnedBindingStates } from './data/bindings.js';
 import { shownVersionView } from './components.js';
 
@@ -65,6 +68,19 @@ async function componentVersion(
   const read = readContent(stored.content, { artifact: component, version });
   if (!read.ok) throw new Error(`The component ${component} at ${version} does not read`);
   return { stored, content: read.document };
+}
+
+/** One of a document's versions and its outline, or none where it is not one of its versions. */
+async function documentVersion(
+  trx: TenantTransaction,
+  document: string,
+  version: string,
+): Promise<{ stored: StoredVersion; outline: OutlineDocument } | undefined> {
+  const stored = await readVersion(trx, version);
+  if (!stored || stored.artifactId !== document || stored.kind !== 'document') return undefined;
+  const read = readOutline(stored.content, { artifact: document, version });
+  if (!read.ok) throw new Error(`The document ${document} at ${version} does not read`);
+  return { stored, outline: read.outline };
 }
 
 /** One side of a document's comparison: its version, outline, and each node's component version. */
@@ -103,6 +119,51 @@ export function comparisonHandlers(
         older: older.content as unknown as Record<string, unknown>,
         newer: newer.content as unknown as Record<string, unknown>,
         changes: changesView(compareContent(older.content, newer.content).changes),
+      };
+    },
+
+    /** Any two of a document's versions, by its outline, values and parameters (the plan, D8). */
+    compareDocumentVersions: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<DocumentComparisonView> => {
+      const { id } = request.params as { id: string };
+      const { from, to } = request.query as ComponentComparisonQuery;
+      const older = await documentVersion(trx, id, from);
+      const newer = await documentVersion(trx, id, to);
+      if (!older || !newer) throw notFound();
+      const compared = await documentComparison(trx, principalId, {
+        latest: older.outline,
+        restored: newer.outline,
+      });
+      const before = older.stored.parameters;
+      const after = newer.stored.parameters;
+      return {
+        document: id,
+        from: await shownSide(trx, older.stored),
+        to: await shownSide(trx, newer.stored),
+        older: compared.older,
+        newer: compared.newer,
+        structure: compared.structure,
+        titles: compared.titles,
+        values: await Promise.all(
+          changedValues(older.stored.values, newer.stored.values).map(
+            async ({ field, latest, restored }) => ({
+              field,
+              name: await fieldName(trx, field),
+              ...(latest === undefined ? {} : { older: latest }),
+              ...(restored === undefined ? {} : { newer: restored }),
+            }),
+          ),
+        ),
+        parameters: [...new Set([...Object.keys(before), ...Object.keys(after)])]
+          .sort()
+          .filter((name) => before[name] !== after[name])
+          .map((name) => ({
+            name,
+            ...(before[name] === undefined ? {} : { older: before[name] }),
+            ...(after[name] === undefined ? {} : { newer: after[name] }),
+          })),
       };
     },
 

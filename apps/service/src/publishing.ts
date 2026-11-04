@@ -20,6 +20,7 @@ import {
   readsOnlyShares,
   recordSharedAccess,
   supersession,
+  supersededAmong,
   publicationBindings,
   readDocument,
   readPublication,
@@ -110,7 +111,10 @@ const noStore = (): Promise<TenantStore> => {
 };
 
 /** A publication as a listing shows it, copied for the same reason. */
-const summaryView = (publication: PublicationSummary): PublicationSummaryView => ({
+const summaryView = (
+  publication: PublicationSummary,
+  superseded: boolean,
+): PublicationSummaryView => ({
   id: publication.id,
   document: publication.documentId,
   version: { ...publication.documentVersion },
@@ -118,9 +122,19 @@ const summaryView = (publication: PublicationSummary): PublicationSummaryView =>
   publisher: { ...publication.publisher },
   publishedAt: publication.publishedAt.toISOString(),
   approval: publication.approval,
+  superseded,
   baseline: publication.baseline,
   formats: [...publication.formats],
 });
+
+/** A page of publications, asking of the page whether each is replaced, not of each (PUB-059). */
+async function pageView(trx: TenantTransaction, items: readonly PublicationSummary[]) {
+  const superseded = await supersededAmong(
+    trx,
+    items.map((each) => each.id),
+  );
+  return items.map((each) => summaryView(each, superseded.has(each.id)));
+}
 
 /**
  * Publishing a document, following the request, and reading what was published
@@ -411,7 +425,7 @@ export function publishingHandlers(
       const listed = await listPublications(trx, id, principalId, asked, filter);
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
-        items: listed.items.map(summaryView),
+        items: await pageView(trx, listed.items),
         next: cursorFor(
           'publications',
           asked.sort,
@@ -440,12 +454,19 @@ export function publishingHandlers(
         ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
         ...(query.documents === undefined ? {} : { documents: query.documents.split(',') }),
       };
-      const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadablePublications(trx, principalOf(request).principalId, asked, filter),
-      );
-      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      const answer = await db.withTenant(tenantOf(request), async (trx) => {
+        const page = await listReadablePublications(
+          trx,
+          principalOf(request).principalId,
+          asked,
+          filter,
+        );
+        return page && { listed: page, items: await pageView(trx, page.items) };
+      });
+      if (!answer) throw new Error('A signed-in principal is not in its own tenant');
+      const { listed, items } = answer;
       return {
-        items: listed.items.map(summaryView),
+        items,
         next: cursorFor(
           'publications',
           asked.sort,
@@ -515,8 +536,7 @@ export function publishingHandlers(
         ));
       await recordSharedAccess(trx, { publication: id, output: null, principal: principalId });
       return {
-        ...summaryView(publication),
-        superseded,
+        ...summaryView(publication, superseded),
         newer: readsNewer ? newer : null,
         engine: publication.engine && { ...publication.engine },
         template: publication.template && { ...publication.template },
