@@ -104,6 +104,7 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
+import { HeadingTitle } from './HeadingTitle.js';
 import { InPlaceBand } from './InPlaceBand.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
@@ -321,6 +322,9 @@ export interface ComponentEditorProps {
   readonly leaving?: { readonly arrival: number; readonly onlyIfUnchanged: boolean } | null;
   /** It stays open after all: the reach question cancelled, or changes it cannot yet save (`blocked`). */
   readonly onStay?: (blocked: boolean) => void;
+  /** Where its title is typed in its heading, and whether the heading was what was clicked (EP6). */
+  readonly titleHost?: HTMLElement | null | undefined;
+  readonly titleFirst?: boolean | undefined;
   /** What stands in its place while it opens, so that nothing moves (the EP plan, EP2). */
   readonly whileOpening?: ReactNode;
   /**
@@ -588,6 +592,8 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  titleHost,
+  titleFirst,
   leaving,
   onStay,
   whileOpening,
@@ -3420,6 +3426,22 @@ export function ComponentEditor({
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
         {inFrame && reachQuestion && createPortal(reachQuestion, document.body)}
+        {inFrame &&
+          titleHost != null &&
+          header &&
+          headerEditable &&
+          createPortal(
+            <HeadingTitle
+              title={header.title}
+              label={say('editor.title')}
+              focusFirst={titleFirst === true}
+              onChange={(title) => {
+                changeHeader('title', title);
+              }}
+              onLeave={() => surface?.focus()}
+            />,
+            titleHost,
+          )}
         {ownPage !== undefined && header && stripTail}
         {ownPage !== undefined && header && chrome}
         {inBand &&

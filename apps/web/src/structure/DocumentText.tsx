@@ -26,6 +26,7 @@ import {
   TEXT_CLASS,
   type BindingContext,
   type ReferenceContext,
+  titleToEditor,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import {
@@ -85,6 +86,9 @@ export interface Place {
   readonly openAt?: number;
   /** Closes it, as Done does, with what it last held. */
   readonly onDone: (last?: ContentDocument, cut?: string) => void;
+  /** Where its title is typed in its heading, and whether the heading was what was clicked (EP6). */
+  readonly titleHost?: HTMLElement | null;
+  readonly titleFirst?: boolean;
   /** What stands in its place while it opens: the text as it was read (the EP plan, EP2). */
   readonly whileOpening?: React.ReactNode;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
@@ -585,6 +589,7 @@ export function DocumentText({
   texts,
   editing = null,
   onEdit,
+  titleField,
   onLeave,
   onEmptySheet,
   editor,
@@ -638,6 +643,14 @@ export function DocumentText({
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
   onEdit?: (node: string | null, last?: ContentDocument, cut?: string) => void;
+  /** A section's title typed in its heading, in Authoring (the EP plan, EP6). */
+  titleField?: {
+    readonly open: string | null;
+    readonly onOpen: (node: string) => void;
+    readonly field: (node: SectionViewNode, className: string) => React.ReactNode;
+    /** Why a title cannot be typed in, where it holds something that cannot. */
+    readonly heldBack: (node: SectionViewNode) => string;
+  };
   /** A click that moves on from the part open, anywhere but another part's text (the EP plan, EP5). */
   onLeave?: () => void;
   /** A click on empty sheet, while a part is open. */
@@ -731,7 +744,11 @@ export function DocumentText({
   const canvas = useCanvas(deskRoom, column as RefObject<HTMLDivElement | null>, true);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
+  // Where a heading's title is typed while its part is open, and whether the cursor starts there.
+  const [titleHost, setTitleHost] = useState<HTMLElement | null>(null);
+  const [titleFirst, setTitleFirst] = useState(false);
   const open = (node: string) => (at: number) => {
+    setTitleFirst(false);
     setOpenAt(at);
     onPointedAt?.(node);
     onEdit?.(node);
@@ -793,6 +810,55 @@ export function DocumentText({
     return editing === null ? null : find(outline.nodes);
   }, [editing, outline]);
 
+  // A title that may be typed in: seen as text until it is clicked, or Enter pressed on it.
+  const opensTitle = (go: () => void) => ({
+    className: styles['titleOpens'],
+    'data-opens-title': true,
+    tabIndex: 0,
+    title: say('document.click-to-edit'),
+    onClick: go,
+    onKeyDown: (event: React.KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.target !== event.currentTarget) return;
+      event.preventDefault();
+      go();
+    },
+  });
+  const sectionTitleOf = (node: SectionViewNode) => {
+    if (titleField === undefined) return <SectionTitle title={node.title} />;
+    if (titleField.open === node.id) return titleField.field(node, styles['headingField']!);
+    if (titleToEditor(node.title) === null) {
+      return (
+        <span title={titleField.heldBack(node)}>
+          <SectionTitle title={node.title} />
+        </span>
+      );
+    }
+    return (
+      <span {...opensTitle(() => titleField.onOpen(node.id))}>
+        <SectionTitle title={node.title} />
+      </span>
+    );
+  };
+  const componentTitleOf = (node: OutlineViewNode) => {
+    const name = nodeName(node, names);
+    if (node.type !== 'reference' || node.component === null) return name;
+    const mayOpen = onEdit && editor && editable?.get(node.id)?.mayEdit === true;
+    if (!mayOpen) return <span className={styles['shownName']}>{name}</span>;
+    return (
+      <span
+        {...opensTitle(() => {
+          if (editing === node.id) return;
+          setTitleFirst(true);
+          setOpenAt(undefined);
+          onPointedAt?.(node.id);
+          onEdit?.(node.id);
+        })}
+        className={`${styles['titleOpens']} ${styles['shownName']}`}
+      >
+        {name}
+      </span>
+    );
+  };
   const titled = (node: OutlineViewNode, depth: number) => {
     const at = numbers.get(node.id);
     // In a holder the measure wide on the canvas, so the heading's indents and alignment stand inside
@@ -811,7 +877,14 @@ export function DocumentText({
               <span className={styles['number']}>{at}</span>{' '}
             </>
           )}
-          {node.type === 'section' ? <SectionTitle title={node.title} /> : nodeName(node, names)}
+          {node.type === 'section' ? (
+            sectionTitleOf(node)
+          ) : (
+            <>
+              {editing === node.id && <span ref={setTitleHost} className={styles['titleHost']} />}
+              {componentTitleOf(node)}
+            </>
+          )}
         </Heading>
       </div>
     );
@@ -929,6 +1002,8 @@ export function DocumentText({
                       ? {}
                       : { number: numbers.get(node.id)! }),
                     ...(openAt === undefined ? {} : { openAt }),
+                    titleHost,
+                    titleFirst,
                     referenceContext: contexts.get(node.id) ?? null,
                     bindingContext: bindingContextsByNode?.get(node.id) ?? null,
                     ...(bindingStatesByNode?.has(node.id)

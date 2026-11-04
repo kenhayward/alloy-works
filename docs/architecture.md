@@ -4196,7 +4196,7 @@ the Value dialog places `As a table`, and `BoundTablePanel` and `FormatDialog` i
 each change one transaction. The panel is the Table tab beside the text
 ([ADR-0052](decisions/0052-table-formatting-is-a-tab-beside-the-text.md)): `ComponentEditor` portals
 a table's panels, plain or bound, into the `tableHost` the page gives it and tells it `onTable`
-whether it holds a table and when the cursor enters one; the component's page and the document's panels
+whether it holds a table and when the cursor enters one; `PartToolbar` floats on the page's layer above a part ([ADR-0086](decisions/0086-one-floating-toolbar-over-the-part.md)), the page holds a part open until it has closed on moving on ([ADR-0088](decisions/0088-moving-on-counts-as-done-editing.md)), and the Part panel says what is true of a part ([ADR-0087](decisions/0087-a-parts-standing-is-in-the-part-panel.md)); the component's page and the document's panels
 offer the tab and choose it, 400px wide while offered. Inside: the value on two lines, the table's
 settings, a pill per column and the column in hand, then one of Column, Sort and Notes open, the
 others folded to a summary; refusals mark the column's pill and are said in a live region. Viewing,

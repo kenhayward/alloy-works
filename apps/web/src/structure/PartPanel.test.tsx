@@ -68,7 +68,7 @@ function Panel({
   onRemove?: () => void;
   onNotice?: (message: string | null) => void;
 }) {
-  const openField = useRef<string | null>(null);
+  const openField = useRef(new Map<string, number>());
   return (
     <PartPanel
       facts={facts}

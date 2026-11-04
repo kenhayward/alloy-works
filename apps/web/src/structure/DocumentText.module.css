@@ -93,6 +93,28 @@
   border-inline-start: 3px solid var(--muted);
 }
 
+/* A title that may be typed in, where it stands (the EP plan, EP6): it stays set as its heading is. */
+.titleOpens {
+  cursor: text;
+}
+
+.titleOpens:focus-visible,
+.headingField > [contenteditable]:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.headingField,
+.headingField > [contenteditable],
+.headingField > [contenteditable] > * {
+  display: inline;
+}
+
+/* The heading's words give way to the field typed in, which holds them. */
+.titleHost:not(:empty) + .shownName {
+  display: none;
+}
+
 /* A part's standing for a screen reader: the Part panel shows it to everyone else (the EP plan, EP4). */
 .label {
   position: absolute;

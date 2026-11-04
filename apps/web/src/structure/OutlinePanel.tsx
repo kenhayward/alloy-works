@@ -30,6 +30,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
+  type MutableRefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { usePageLayer } from '../shell/Status.js';
@@ -69,6 +70,7 @@ import {
   placedBy,
   ReferencedBy,
   type PartFacts,
+  type OpenTitleFields,
 } from './PartPanel.js';
 import { numberedOn, whereItSits } from './partSummary.js';
 
@@ -268,6 +270,16 @@ export function marksWords(marks: NodeMarks | undefined): string[] {
   return words;
 }
 
+/** What a title field needs from the panel, whichever of the panel and the heading it stands in. */
+export interface Titling {
+  readonly onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
+  readonly openField: OpenTitleFields;
+  readonly onEquation: (request: EquationRequest) => void;
+  readonly onWithdrawEquation: () => void;
+  readonly language: string;
+  readonly direction: 'ltr' | 'rtl';
+}
+
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
   /**
@@ -379,6 +391,8 @@ export interface OutlinePanelProps {
   readonly marks?: ReadonlyMap<string, NodeMarks>;
   /** Who holds each part, in words, for the Part panel. */
   readonly heldSaid?: ReadonlyMap<string, string>;
+  /** Handed what a section's heading needs to retitle it through this panel's one queue (EP6). */
+  readonly titling?: MutableRefObject<Titling | null>;
   /** What is true of a part and what may be done from here, for the Part panel (the EP plan, EP4). */
   readonly standing?: (node: OutlineViewNode) => ReactNode;
   /**
@@ -490,6 +504,7 @@ export function OutlinePanel({
   marks,
   heldSaid,
   standing,
+  titling,
   referencesTo,
   sectionFields,
   schemas,
@@ -546,7 +561,7 @@ export function OutlinePanel({
   const [, setLooked] = useState(0);
   // The section whose title field is open, written by that field's own effect: a retitle that was not
   // saved after its field closed has nowhere left to keep its text, so the notice names it instead.
-  const openField = useRef<string | null>(null);
+  const openField = useRef(new Map<string, number>());
   // The Equation dialog, open for a section's title field, or closed (equations 3, ruling R3). Held
   // here rather than in the field because the panel is what it makes inert, and the focus can only go
   // back once the panel is no longer inert, which is this render's to say.
@@ -753,7 +768,7 @@ export function OutlinePanel({
       setLooked((count) => count + 1);
     } else if (
       (answer === 'unsent' || answer === 'signedOut') &&
-      openField.current !== operation.node
+      !openField.current.has(operation.node)
     ) {
       lost.current.push({ title, signedOut: answer === 'signedOut' });
     }
@@ -815,6 +830,16 @@ export function OutlinePanel({
             scheme,
           ),
         ).get(id);
+  if (titling !== undefined) {
+    titling.current = {
+      onRetitle: retitle,
+      openField,
+      onEquation: askEquation,
+      onWithdrawEquation: withdrawEquation,
+      language: outline.language,
+      direction: outline.direction,
+    };
+  }
   const factsOf = (node: OutlineViewNode): PartFacts => ({
     node,
     names,
