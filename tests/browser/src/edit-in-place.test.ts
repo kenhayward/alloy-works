@@ -298,6 +298,81 @@ describe('clicking into a document, in Chromium', () => {
     });
   });
 
+  it('CNT-074 shows who holds a part in the gutter, moving no text, and in Authoring only', async () => {
+    const { document: id } = await twoParts();
+    const back = new Date(Date.now() + 45 * 60_000).toISOString();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      // Someone else's, as the service would say it: one signed-in user has no one else to hold it.
+      await page.addInitScript(
+        ({ texts, expectedRelease }) => {
+          const real = window.fetch.bind(window);
+          window.fetch = async (input, init) => {
+            const response = await real(input, init);
+            const url = input instanceof Request ? input.url : String(input);
+            if (!url.endsWith(texts)) return response;
+            const body = (await response.json()) as { occurrences: { lock: unknown }[] };
+            body.occurrences[0]!.lock = {
+              holder: { id: 'grace', name: 'Grace' },
+              expectedRelease,
+              yours: false,
+              session: null,
+            };
+            return new Response(JSON.stringify(body), {
+              status: response.status,
+              headers: response.headers,
+            });
+          };
+        },
+        { texts: `/v1/documents/${id}/texts`, expectedRelease: back },
+      );
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const theirs = page.getByRole('button', { name: /^Grace is editing this component/ });
+      await theirs.waitFor();
+      const amber = await theirs.evaluate((own) => getComputedStyle(own).color);
+
+      // A short part's stack wraps sideways, and never runs into the next part's.
+      const stack = await theirs.evaluate((own) => {
+        const gutter = own.parentElement!;
+        gutter.style.insetBlockEnd = 'auto';
+        gutter.style.height = '20px';
+        const copy = own.cloneNode(true) as HTMLElement;
+        gutter.appendChild(copy);
+        const [a, b] = [own.getBoundingClientRect(), copy.getBoundingClientRect()];
+        copy.remove();
+        gutter.style.removeProperty('inset-block-end');
+        gutter.style.removeProperty('height');
+        return { sameRow: a.top === b.top, apart: b.left >= a.right };
+      });
+      expect(stack).toEqual({ sameRow: true, apart: true });
+
+      await theirs.click();
+      await expect
+        .poll(() => page.getByText(/^Grace is editing this component/).count())
+        .toBeGreaterThan(0);
+
+      // Yours appears at the first change, in the other colour, and moves nothing.
+      const words = page.getByText('Following words.').first();
+      await words.click();
+      await page.getByRole('toolbar', { name: 'Part toolbar' }).waitFor();
+      const before = (await words.boundingBox())!;
+      expect(
+        await page.getByRole('button', { name: 'You are editing this component.' }).count(),
+      ).toBe(0);
+      await page.keyboard.type('x');
+      const mine = page.getByRole('button', { name: 'You are editing this component.' });
+      await mine.waitFor();
+      expect(await mine.evaluate((own) => getComputedStyle(own).color)).not.toBe(amber);
+      expect((await words.boundingBox())!.y).toBeCloseTo(before.y, 0);
+
+      // Reading stays clean.
+      await page.getByRole('button', { name: 'Done editing' }).click();
+      await page.getByRole('radio', { name: 'Reading' }).check();
+      await expect.poll(() => theirs.count()).toBe(0);
+    });
+  });
+
   it('shows the rule alone on hover, in forced colours too', async () => {
     const { document: id } = await twoParts();
     await withPage(async (page) => {

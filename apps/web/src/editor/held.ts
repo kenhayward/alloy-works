@@ -23,3 +23,20 @@ export function heldSentence(held: Held, now: Date = new Date()): string {
   const day = formats().date(back, { day: 'numeric', month: 'long' });
   return words('editor.held.back-on', { who, time, day });
 }
+
+/**
+ * What a part's lock says, on its symbol and in the Part panel (the EP plan, EP7): whose it is, and for
+ * a lock of the reader's own, whether it is this window's.
+ */
+export function lockSentence(
+  lock: {
+    readonly holder: { readonly name: string | null };
+    readonly expectedRelease: string;
+    readonly yours: boolean;
+  },
+  openHere: boolean,
+  now: Date = new Date(),
+): string {
+  if (lock.yours) return words(openHere ? 'editor.held.you-here' : 'editor.held.you-elsewhere');
+  return heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease }, now);
+}

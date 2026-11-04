@@ -2,8 +2,7 @@
 
 > **Draft for Ken's agreement. Nothing is built.** Full tier: several PRs, and requirements change in EP4 and EP6. No
 > migration, stored shape or route is expected; any that appears stops the work for a ruling. Pre-flight ran, driving the
-> app, and found sixteen defects, answered in each PR below. Rulings 1 to 11 are Ken's, 2026-11-04. **Ruling 12's colour
-> awaits him; EP7 has not been through pre-flight.**
+> app, and found sixteen defects, answered in each PR below. Rulings 1 to 11 are Ken's, 2026-11-04. EP7 did not go through pre-flight.
 
 **Goal:** clicking into a document's text feels like Word or Google Docs: nothing moves, one marker says what is being
 edited, one toolbar holds what applies there, the panel follows, titles can be typed where they stand, and what was
@@ -48,8 +47,8 @@ The close and the baseline ride in EP6 unless the slice stops sooner.
     **Leaving the page does not cut:** the words come back on return (driven), and it is not a deliberate release.
 11. **CNT-074 stands:** the tooltip says who holds the part and when it is expected back, in place of "Click to edit", as well
     as the panel. **Show boundaries keeps a status mark in the outline's rows**, since it loses the labels.
-12. **A lock symbol in the left gutter, stacked with the comment symbol** (Ken's idea): green when you hold the lock, and for
-    someone else's, **amber recommended over the grey Ken suggested**, awaiting him. See EP7.
+12. **A lock symbol in the left gutter, stacked with the comment symbol** (Ken's idea): green when you hold the lock, **amber**
+    for someone else's (Ken chose it over grey). See EP7.
 
 ## Assumed unless Ken says otherwise
 

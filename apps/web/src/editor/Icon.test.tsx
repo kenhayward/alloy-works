@@ -51,6 +51,8 @@ describe('the document panels’ rail icons (the DP plan, Task 1)', () => {
       'Versions',
       'Publishing',
       'Threads',
+      'Lock yours',
+      'Lock held',
       'Suggestions',
       'Rounds',
       'Source',

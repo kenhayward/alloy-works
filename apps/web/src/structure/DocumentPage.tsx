@@ -56,6 +56,7 @@ import { AssistantPanel, type AcceptedInDocument } from './AssistantPanel.js';
 import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
+import { lockSentence } from '../editor/held.js';
 import { IconButton } from '../parts/IconButton.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import {
@@ -928,6 +929,19 @@ export function DocumentPage({
     }
     return merged;
   }, [editable, componentOfNode, live.locks, principalId]);
+  // Who holds each part, in the Part panel's words: in Reading too, where the gutter stays clean.
+  const heldSaid = useMemo(() => {
+    const open = editing === null ? undefined : componentOfNode.get(editing);
+    const said = new Map<string, string>();
+    for (const [node, state] of editableNow) {
+      if (state.lock === null) continue;
+      const here = open !== undefined && componentOfNode.get(node) === open;
+      if (!(state.lock.yours && here) && new Date(state.lock.expectedRelease) <= new Date())
+        continue;
+      said.set(node, lockSentence(state.lock, here));
+    }
+    return said;
+  }, [editableNow, editing, componentOfNode]);
   // How many broken references each occurrence's text drew (STR-038), as its card reports.
   const [brokenByNode, setBrokenByNode] = useState<ReadonlyMap<string, number>>(new Map());
   const onBroken = useCallback((node: string, count: number) => {
@@ -2761,6 +2775,7 @@ export function DocumentPage({
                   conditionAxes={axes}
                   {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
                   marks={outlineMarks}
+                  heldSaid={heldSaid}
                   {...(referencesTo === undefined ? {} : { referencesTo })}
                   head={
                     // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
@@ -3475,6 +3490,10 @@ export function DocumentPage({
                     boundTables={boundTables}
                     {...(threadsShown
                       ? {
+                          onLock: () => {
+                            setDock('part');
+                            setDockCollapsed(false);
+                          },
                           threadMarks,
                           threadCounts,
                           openComments: {
