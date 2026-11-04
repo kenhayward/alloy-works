@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { Icon } from '../editor/Icon.js';
+import { modalOpen } from '../shell/Status.js';
 import styles from './MenuBar.module.css';
 import { inlineKey } from './inline.js';
 
@@ -63,9 +64,6 @@ function Lettered({ label, letter }: { label: string; letter: string }): ReactNo
     </>
   );
 }
-
-/** A dialog over the page, behind which no key of the bar's acts. */
-const modalOpen = () => document.querySelector('[aria-modal="true"]') !== null;
 
 const focusables = (menu: HTMLElement): HTMLElement[] =>
   [...menu.children].flatMap((child) => {

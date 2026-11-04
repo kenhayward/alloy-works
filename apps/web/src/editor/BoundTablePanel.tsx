@@ -43,7 +43,7 @@ import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Segmented } from '../parts/Segmented.js';
 import { Tooltip } from '../parts/Tooltip.js';
-import { useStatus } from '../shell/Status.js';
+import { usePageLayer, useStatus } from '../shell/Status.js';
 import styles from './BoundTablePanel.module.css';
 import { Icon } from './Icon.js';
 import { FormatDialog } from './FormatDialog.js';
@@ -363,6 +363,7 @@ export function BoundTablePanel({
   value,
 }: BoundTablePanelProps) {
   const bandId = useId();
+  const layer = usePageLayer();
   const [open, setOpen] = useState<Open>('column');
   // The column in hand (ADR-0052): a pill sets it, and so does a press on its cells in the text,
   // which the surface holds. Marked in the text, and said in the status bar, while Columns shows.
@@ -1064,7 +1065,7 @@ export function BoundTablePanel({
             }}
             onCancel={() => setFormatting(null)}
           />,
-          document.body,
+          layer,
         )}
       <div className={styles['foot']}>
         <button

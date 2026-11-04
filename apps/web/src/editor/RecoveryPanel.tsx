@@ -3,13 +3,13 @@ import {
   useEffect,
   useId,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
   type Ref,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useInertBehind, usePageLayer } from '../shell/Status.js';
 
 import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
@@ -69,6 +69,7 @@ const failure = (code: Extract<IterationPage, { ok: false }>['code']): string =>
 export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: RecoveryPanelProps) {
   const heading = useId();
   const own = useRef<HTMLDivElement | null>(null);
+  const layer = usePageLayer();
   useImperativeHandle(ref, () => own.current!, []);
   const [listing, setListing] = useState<Listing>({ state: 'loading' });
   const [chosen, setChosen] = useState<SavedIteration | null>(null);
@@ -92,17 +93,7 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
     own.current?.focus();
   }, []);
 
-  // Modal in full, as the Format dialog is: the rest of the page inert while it stands.
-  useLayoutEffect(() => {
-    const mine = own.current?.closest('body > *');
-    const others = [...document.body.children].filter(
-      (each) => each !== mine && !each.hasAttribute('inert'),
-    );
-    for (const each of others) each.setAttribute('inert', '');
-    return () => {
-      for (const each of others) each.removeAttribute('inert');
-    };
-  }, []);
+  useInertBehind(own);
 
   useEffect(() => {
     let live = true;
@@ -343,6 +334,6 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
         </button>
       </div>
     </div>,
-    document.body,
+    layer,
   );
 }

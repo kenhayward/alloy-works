@@ -229,7 +229,7 @@ import {
 import { FieldsForm } from '../metadata/FieldsForm.js';
 import { resolveBridge, type PlatformBridge } from '../platform/bridge.js';
 import { spellingFor } from '../platform/spelling.js';
-import { StatusLead, usePageShown, useStatus } from '../shell/Status.js';
+import { StatusLead, usePageLayer, usePageShown, useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
@@ -728,6 +728,7 @@ export function ComponentEditor({
   const tableRegion = useRef<HTMLDivElement | null>(null);
   const tableToolbarRegion = useRef<HTMLDivElement | null>(null);
   const pageShown = usePageShown();
+  const layer = usePageLayer();
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
   const frameRegion = useRef<HTMLDivElement | null>(null);
@@ -3559,7 +3560,7 @@ export function ComponentEditor({
               surface.focus();
             }}
           />,
-          document.body,
+          layer,
         )}
       {referring !== null &&
         // Once the space's entries are read, which it offers after the rest (STR-069).
@@ -3597,7 +3598,7 @@ export function ComponentEditor({
             }}
             onCancel={() => setReferring(null)}
           />,
-          document.body,
+          layer,
         )}
       {valuing !== null &&
         createPortal(
@@ -3669,7 +3670,7 @@ export function ComponentEditor({
             }}
             onCancel={() => setValuing(null)}
           />,
-          document.body,
+          layer,
         )}
       {equating !== null &&
         surface !== null &&
@@ -3710,7 +3711,7 @@ export function ComponentEditor({
               onCancel={() => setEquating(null)}
             />
           </Suspense>,
-          document.body,
+          layer,
         )}
       {symbolizing !== null &&
         // Beside the article, as the prompt is, and for the same reason.
@@ -3740,7 +3741,7 @@ export function ComponentEditor({
             }}
             onCancel={closeSymbols}
           />,
-          document.body,
+          layer,
         )}
       {variabling !== null &&
         // Beside the article, as the palette is.
@@ -3762,7 +3763,7 @@ export function ComponentEditor({
             }}
             onCancel={closeVariables}
           />,
-          document.body,
+          layer,
         )}
       {citing !== null &&
         // Beside the article, as the palette is.
@@ -3797,7 +3798,7 @@ export function ComponentEditor({
             }}
             onCancel={closeCitation}
           />,
-          document.body,
+          layer,
         )}
       {indexing !== null &&
         // Beside the article, as the palette is.
@@ -3831,7 +3832,7 @@ export function ComponentEditor({
             }}
             onCancel={closeIndexEntry}
           />,
-          document.body,
+          layer,
         )}
       {conditioning !== null &&
         // Beside the article, as the palette is.
@@ -3850,7 +3851,7 @@ export function ComponentEditor({
             onRemove={(axis) => conditionWith(removeCondition(axis), 'removed')}
             onCancel={closeConditions}
           />,
-          document.body,
+          layer,
         )}
       {asking &&
         // Beside the article rather than inside it, because the article is what it makes inert:
@@ -3883,7 +3884,7 @@ export function ComponentEditor({
               onCancel={() => closeAsking(null)}
             />
           ),
-          document.body,
+          layer,
         )}
     </>
   );
