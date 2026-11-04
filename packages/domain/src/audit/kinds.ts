@@ -939,7 +939,14 @@ export const auditKindSpecs = {
     ['IAM-068'],
     z.strictObject({
       tenant: z.string().min(1).max(200),
-      change: z.enum(['suspended', 'resumed', 'closing', 'closure_cancelled', 'retained', 'closed']),
+      change: z.enum([
+        'suspended',
+        'resumed',
+        'closing',
+        'closure_cancelled',
+        'retained',
+        'closed',
+      ]),
       by: z.enum(['organisation', 'environment', 'operator', 'system']),
       reason: z.string().min(1).max(2000).optional(),
     }),

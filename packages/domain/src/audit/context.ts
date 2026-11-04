@@ -41,4 +41,11 @@ export const AuditContext = z.discriminatedUnion('actorKind', [
 
 export type AuditContext = z.infer<typeof AuditContext>;
 
-export const auditActorKinds = ['person', 'token', 'system', 'vendor', 'anonymous', 'organisation'] as const;
+export const auditActorKinds = [
+  'person',
+  'token',
+  'system',
+  'vendor',
+  'anonymous',
+  'organisation',
+] as const;
