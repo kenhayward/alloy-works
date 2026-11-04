@@ -665,6 +665,8 @@ describe('the domain package', () => {
         // B1: the one rule a value is taken by and its stored outcome, the one function it is
         // printed by and the formats it picks, the value catalogue beside the six kinds and its
         // default, and the default theme's 0.5 frozen as 0.6 replaces it (the B1 plan).
+        'DELETION_DAYS',
+        'GRACE_DAYS',
         'TENANT_EFFECT_CAPABILITIES',
         'TENANT_STATES',
         'TENANT_STATE_EFFECTS',

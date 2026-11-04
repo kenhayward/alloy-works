@@ -98,6 +98,7 @@ const forbiddenWithTheLog = {
 export const exportRoutes = {
   requestTenantExport: {
     operationId: 'requestTenantExport',
+    openWhileClosing: true,
     method: 'POST',
     path: '/v1/exports',
     summary: 'Export the whole environment, or one part of it, as it stands, as a job',
@@ -118,6 +119,7 @@ export const exportRoutes = {
   },
   listTenantExports: {
     operationId: 'listTenantExports',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports',
     summary: "The environment's exports, the newest first, a page at a time",
@@ -133,6 +135,7 @@ export const exportRoutes = {
   },
   getTenantExport: {
     operationId: 'getTenantExport',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports/{id}',
     summary: 'An export of the environment: whether it is ready, and what it holds',
@@ -148,6 +151,7 @@ export const exportRoutes = {
   },
   downloadTenantExport: {
     operationId: 'downloadTenantExport',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/exports/{id}/download',
     summary: 'A link to download an export of the environment; each one handed out is recorded',

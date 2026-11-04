@@ -59,6 +59,19 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
     expect((await service.resolveHostname(HOST))?.state).toBe('active');
   });
 
+  it('ADM-030 closes a tenant at a contract\'s end with a notice, and only the operator cancels it', async () => {
+    expect(await run('close', '--tenant', tenant.id)).toBe(2);
+    expect(await run('close', '--tenant', tenant.id, '--notice', 'Contract 7 ended')).toBe(0);
+    expect((await service.resolveHostname(HOST))?.state).toBe('closing');
+    const { rows } = await service.withTenant(tenant, (trx) =>
+      sql<{ actor_kind: string; detail: { notice: string } }>`
+        select actor_kind, detail from audit_event where kind = 'tenant.closing'`.execute(trx),
+    );
+    expect(rows[0]).toMatchObject({ actor_kind: 'vendor', detail: { notice: 'Contract 7 ended' } });
+    expect(await run('cancel', '--tenant', tenant.id)).toBe(0);
+    expect((await service.resolveHostname(HOST))?.state).toBe('active');
+  });
+
   it('refuses a suspension with no reason, an unknown tenant, a command it does not know and a change that does not apply', async () => {
     expect(await run('suspend', '--tenant', tenant.id)).toBe(2);
     expect(await run('suspend', '--tenant', tenant.id, '--reason', 'x'.repeat(2001))).toBe(2);

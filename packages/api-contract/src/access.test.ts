@@ -86,6 +86,8 @@ describe('what each route checks', () => {
       [
         'acceptProposal',
         'startReauthentication',
+        'startClosure',
+        'cancelClosure',
         'beatPresence',
         'createToken',
         'discardProposal',

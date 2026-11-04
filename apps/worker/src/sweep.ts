@@ -1,4 +1,5 @@
 import {
+  advanceClosure,
   archiveHeldElsewhere,
   expiredRestorationArchives,
   forgetRestorationArchive,
@@ -58,6 +59,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepExpiredSignIns',
     'sweepExpiredTenantExports',
     'sweepImportsEverywhere',
+    'sweepClosures',
     'sweepQueryEmbeddingsEverywhere',
     'sweepRestorations',
     'sweepStalePresence',
@@ -73,8 +75,10 @@ export const SWEEPS_BY_STATE: {
   readonly activeOnly: readonly string[];
   readonly anyState: readonly string[];
 } = {
-  activeOnly: [...SWEEPS_UNDER_REVIEW.held, ...SWEEPS_UNDER_REVIEW.running],
-  anyState: [],
+  activeOnly: [...SWEEPS_UNDER_REVIEW.held, ...SWEEPS_UNDER_REVIEW.running].filter(
+    (sweep) => sweep !== 'sweepClosures',
+  ),
+  anyState: ['sweepClosures'],
 };
 
 /**
@@ -438,6 +442,24 @@ export async function sweepOldNotifications(
  * What restoring leaves behind, in every tenant: each uploaded archive past its seven days (IMP-044),
  * and each restoration whose job gave up where nobody could say so (the EI plan, EIc).
  */
+export async function sweepClosures(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let moved = 0;
+  for (const tenant of await db.closingTenants()) {
+    try {
+      const state = await db.withTenant(tenant, (trx) => advanceClosure(trx, tenant), {
+        actorKind: 'system',
+      });
+      if (state === 'deleting') {
+        moved += 1;
+        log.info({ tenant: tenant.id }, 'a closed tenant has begun to be deleted');
+      }
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'a closure could not be moved on');
+    }
+  }
+  return moved;
+}
+
 export async function sweepRestorations(
   db: TenantDatabase,
   stores: ObjectStores,

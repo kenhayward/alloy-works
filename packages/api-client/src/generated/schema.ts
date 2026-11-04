@@ -927,6 +927,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where this environment is in its life, and what closing it would do
+         * @description Returns where this environment is in its life, what closing it would stop, how many legal holds would keep it, and whether the caller may give a closure up. While it is active this needs `close_environment`; while it is closing, anybody it still lets in may ask.
+         */
+        get: operations["getClosure"];
+        put?: never;
+        /**
+         * Close this environment, beginning its grace period
+         * @description Closes this environment: nothing is deleted for 30 days, and only those who hold `close_environment`, `hold`, or both export permissions may enter meanwhile, by session and never by token. Needs `close_environment`, `export_environment` and `export_audit`, a sign-in in the last ten minutes, its name typed, and an answer about the export: a whole export finished in the last 24 hours, or `declined`.
+         */
+        post: operations["startClosure"];
+        /**
+         * Give up closing this environment, while that can still be done
+         * @description Gives up closing this environment, which is possible until deletion begins, and loses nothing. The operator alone may cancel a closure the operator began. Needs `close_environment` and a sign-in in the last ten minutes.
+         */
+        delete: operations["cancelClosure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cohorts": {
         parameters: {
             query?: never;
@@ -11038,7 +11066,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment";
                             allowed: boolean;
                         }[];
                     };
@@ -11164,7 +11192,7 @@ export interface operations {
                         disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment";
                             allowed: boolean;
                             /**
                              * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -21924,6 +21952,466 @@ export interface operations {
             };
             /** @description The caller may not design here */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getClosure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its state */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "active",
+                     *       "name": "example",
+                     *       "since": "2026-01-01T00:00:00.000Z",
+                     *       "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                     *       "closedBy": "person",
+                     *       "holds": 0,
+                     *       "graceDays": 1,
+                     *       "deletionDays": 1,
+                     *       "effects": {},
+                     *       "mayCancel": false
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Where this environment is in its life
+                         * @enum {string}
+                         */
+                        state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                        /** @description Its name, which closing asks to have typed */
+                        name: string;
+                        /**
+                         * Format: date-time
+                         * @description When it came to be in this state
+                         */
+                        since: string;
+                        /** @description When closing can no longer be cancelled, unless a hold keeps it; null if not closing */
+                        graceEndsAt: string | null;
+                        /** @description Who began a closure: only the operator may cancel the operator's */
+                        closedBy: ("person" | "operator") | null;
+                        /** @description Legal holds in force, each of which keeps it all */
+                        holds: number;
+                        graceDays: number;
+                        deletionDays: number;
+                        /** @description What stops and what continues while it closes (ADM-045) */
+                        effects: {
+                            [key: string]: string;
+                        };
+                        /** @description Whether the one asking may give the closure up */
+                        mayCancel: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `close_environment` is not held here */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    startClosure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description This environment's name, typed */
+                    name: string;
+                    /**
+                     * Format: uuid
+                     * @description A whole export finished in the last 24 hours
+                     */
+                    export?: string;
+                    /**
+                     * @description Whoever closes it refuses the export offered
+                     * @constant
+                     */
+                    declined?: true;
+                };
+            };
+        };
+        responses: {
+            /** @description Closing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "active",
+                     *       "name": "example",
+                     *       "since": "2026-01-01T00:00:00.000Z",
+                     *       "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                     *       "closedBy": "person",
+                     *       "holds": 0,
+                     *       "graceDays": 1,
+                     *       "deletionDays": 1,
+                     *       "effects": {},
+                     *       "mayCancel": false
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Where this environment is in its life
+                         * @enum {string}
+                         */
+                        state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                        /** @description Its name, which closing asks to have typed */
+                        name: string;
+                        /**
+                         * Format: date-time
+                         * @description When it came to be in this state
+                         */
+                        since: string;
+                        /** @description When closing can no longer be cancelled, unless a hold keeps it; null if not closing */
+                        graceEndsAt: string | null;
+                        /** @description Who began a closure: only the operator may cancel the operator's */
+                        closedBy: ("person" | "operator") | null;
+                        /** @description Legal holds in force, each of which keeps it all */
+                        holds: number;
+                        graceDays: number;
+                        deletionDays: number;
+                        /** @description What stops and what continues while it closes (ADM-045) */
+                        effects: {
+                            [key: string]: string;
+                        };
+                        /** @description Whether the one asking may give the closure up */
+                        mayCancel: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `close_environment`, or to begin one also `export_environment` and `export_audit`, is not held at this environment, or the sign-in is older than ten minutes, or the operator began this closure */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It is not somewhere it can be closed from */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The name does not match, or the export was neither answered for nor recent */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    cancelClosure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Back as it was */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "active",
+                     *       "name": "example",
+                     *       "since": "2026-01-01T00:00:00.000Z",
+                     *       "graceEndsAt": "2026-01-01T00:00:00.000Z",
+                     *       "closedBy": "person",
+                     *       "holds": 0,
+                     *       "graceDays": 1,
+                     *       "deletionDays": 1,
+                     *       "effects": {},
+                     *       "mayCancel": false
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Where this environment is in its life
+                         * @enum {string}
+                         */
+                        state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                        /** @description Its name, which closing asks to have typed */
+                        name: string;
+                        /**
+                         * Format: date-time
+                         * @description When it came to be in this state
+                         */
+                        since: string;
+                        /** @description When closing can no longer be cancelled, unless a hold keeps it; null if not closing */
+                        graceEndsAt: string | null;
+                        /** @description Who began a closure: only the operator may cancel the operator's */
+                        closedBy: ("person" | "operator") | null;
+                        /** @description Legal holds in force, each of which keeps it all */
+                        holds: number;
+                        graceDays: number;
+                        deletionDays: number;
+                        /** @description What stops and what continues while it closes (ADM-045) */
+                        effects: {
+                            [key: string]: string;
+                        };
+                        /** @description Whether the one asking may give the closure up */
+                        mayCancel: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `close_environment`, or to begin one also `export_environment` and `export_audit`, is not held at this environment, or the sign-in is older than ten minutes, or the operator began this closure */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It is not closing, or deletion has begun */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -82857,6 +83345,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "environmentState": "active",
                      *       "id": "example",
                      *       "displayName": "example",
                      *       "email": "example",
@@ -82867,6 +83356,11 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /**
+                         * @description Where this environment is in its life, which decides what its page offers
+                         * @enum {string}
+                         */
+                        environmentState: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
                         /** @description The principal, stable for as long as the environment exists */
                         id: string;
                         displayName: string | null;
@@ -100671,7 +101165,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -100806,7 +101300,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
                 };
             };
         };
@@ -100834,7 +101328,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment")[];
                         };
                     };
                 };
@@ -122105,12 +122599,18 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "state": "active",
                      *       "name": "example",
                      *       "signIn": [],
                      *       "providers": []
                      *     }
                      */
                     "application/json": {
+                        /**
+                         * @description Where it is in its life: anywhere but `active`, most people cannot enter
+                         * @enum {string}
+                         */
+                        state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
                         /** @description What this environment is called, as its own people see it */
                         name: string;
                         /** @description The ways in it offers: the organisation's provider, Google, or both */

@@ -1885,6 +1885,12 @@ describe('routes that check a permission', () => {
     downloadAuditExport: () => ({ url: `/v1/audit/exports/${MISSING}/download`, status: 403 }),
     requestTenantExport: () => ({ url: '/v1/exports', status: 403, payload: {} }),
     createTenantRestoration: () => ({ url: '/v1/restorations', status: 403 }),
+    startClosure: () => ({
+      url: '/v1/closure',
+      status: 403,
+      payload: { name: 'Production', declined: true },
+    }),
+    cancelClosure: () => ({ url: '/v1/closure', status: 403 }),
     listTenantRestorations: () => ({ url: '/v1/restorations', status: 403 }),
     getTenantRestoration: () => ({ url: `/v1/restorations/${randomUUID()}`, status: 403 }),
     sendTenantRestorationArchive: () => ({

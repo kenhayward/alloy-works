@@ -168,7 +168,7 @@ export function registerMcp(
       errorHandler: (error, request, reply) => {
         const status = (error as { statusCode?: number }).statusCode;
         // Its environment is suspended (TL-B): as the protocol says it, and nothing has failed.
-        if ((error as { code?: string }).code === 'environment_suspended') {
+        if (/^environment_(suspended|closing)$/.test((error as { code?: string }).code ?? '')) {
           return send(reply, 503, failure(null, INVALID_REQUEST, error.message));
         }
         if (status === 400) {

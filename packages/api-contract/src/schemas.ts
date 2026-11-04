@@ -1,4 +1,4 @@
-import { INTERFACE_LANGUAGES } from '@alloy-works/domain';
+import { INTERFACE_LANGUAGES, TENANT_STATES } from '@alloy-works/domain';
 import { parseLevel, permissions } from '@alloy-works/domain';
 import { z } from 'zod';
 
@@ -46,6 +46,9 @@ export const Health = z.object({
 export type Health = z.infer<typeof Health>;
 
 export const TenantProfile = z.object({
+  state: z
+    .enum(TENANT_STATES)
+    .describe('Where it is in its life: anywhere but `active`, most people cannot enter'),
   name: z.string().describe('What this environment is called, as its own people see it'),
   signIn: z
     .array(z.enum(['organisation', 'google']))
@@ -123,6 +126,9 @@ export const About = z.object({
 export type About = z.infer<typeof About>;
 
 export const Me = z.object({
+  environmentState: z
+    .enum(TENANT_STATES)
+    .describe('Where this environment is in its life, which decides what its page offers'),
   id: z.string().describe('The principal, stable for as long as the environment exists'),
   displayName: z.string().nullable(),
   email: z.string().nullable(),

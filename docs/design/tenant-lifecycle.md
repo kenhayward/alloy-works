@@ -80,17 +80,17 @@ checks permissions before creating a session, and writes no principal for someon
 **TL-C. What stops is declared once (ADM-045).** `TENANT_STATE_EFFECTS` in `packages/domain`, read by the preview,
 the guide's table (checked by a test) and the gate:
 
-| Capability                 | Suspended                  | Closing or retained        |
-| -------------------------- | -------------------------- | -------------------------- |
-| Sign-in and API            | Stop                       | Those allowed only         |
-| Shared publication links   | Stop                       | Stop                       |
-| Webhook delivery           | Stop, kept and resumed     | Stop, dropped at deletion  |
-| Scheduled, background work | Stop, caught up on lifting | Stop, except the export    |
-| Realtime connections       | End                        | End, but for those allowed |
-| Model endpoints            | Stop                       | Stop                       |
-| Search indexes             | Stop, caught up            | Stop                       |
-| Notification delivery      | Stop, kept                 | Stop                       |
-| In-flight publications     | Finish within their lease  | Finish within their lease  |
+| Capability                 | Suspended                  | Closing or retained       |
+| -------------------------- | -------------------------- | ------------------------- |
+| Sign-in and API            | Stop                       | Those allowed only        |
+| Shared publication links   | Stop                       | Stop                      |
+| Webhook delivery           | Stop, kept and resumed     | Stop, dropped at deletion |
+| Scheduled, background work | Stop, caught up on lifting | Stop, except the export   |
+| Realtime connections       | End                        | End                       |
+| Model endpoints            | Stop                       | Stop                      |
+| Search indexes             | Stop, caught up            | Stop                      |
+| Notification delivery      | Stop, kept                 | Stop                      |
+| In-flight publications     | Finish within their lease  | Finish within their lease |
 
 Workers filter by state where they claim (`queue.ts`, with `for update of j`), so a job waits rather than fails. `export`
 is the one kind claimed while `closing` or `retained`, and `tenant_purge` the one while `deleting`. Each sweep names
@@ -114,8 +114,9 @@ while it has a tenant that is not `deleted`** (`organisation_has_tenants`), sinc
 
 **TL-F. The export is offered first (ADM-029).** The closing page asks for `{ export: id }`, a finished export of scope
 `tenant` from the last 24 hours, or `{ declined: true }`, and refuses neither (`closure_export_unanswered`). The answer
-is recorded in the event. `tenant_export.kept_for_closure` keeps it and its bytes past the usual seven days, and the
-page and the listing show when it goes. Cancelling clears it and starts seven days again.
+is recorded in the event. No sweep of exports runs while a tenant closes, so every export and its bytes stay until deletion, and the
+listing gives no expiry meanwhile. Cancelling moves `finished_at` on by the time closed, as lifting a suspension does,
+so each has the days it had left.
 
 **TL-G. The numbers (ADM-Q06, IAM-Q08).** **30 days' grace, then 1 day to unreadable**, as IAM-086 states; both are
 constants published in `docs/guides/closing-an-environment.md`. Cancelling at any point before `deleting` loses

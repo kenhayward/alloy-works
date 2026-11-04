@@ -33,6 +33,8 @@ export interface TenantDatabase {
   tenants(): Promise<Tenant[]>;
   /** Those that are active, which are the only ones a sweep or a delivery loop acts in (TL-C). */
   liveTenants(): Promise<Tenant[]>;
+  /** Those in or past their grace period, for the one sweep that moves them on (TL-G). */
+  closingTenants(): Promise<Tenant[]>;
   /** The tenant a job names; undefined when it has gone. */
   tenant(id: string): Promise<Tenant | undefined>;
   /** Who the connection is outside any tenant transaction. For tests and diagnostics. */
@@ -124,6 +126,16 @@ export function createTenantDatabase(
         .selectFrom('platform.tenant')
         .select(['id', 'schema_name', 'role_name'])
         .where('state', '=', 'active')
+        .orderBy('id')
+        .execute();
+      return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));
+    },
+
+    async closingTenants() {
+      const rows = await db
+        .selectFrom('platform.tenant')
+        .select(['id', 'schema_name', 'role_name'])
+        .where('state', 'in', ['closing', 'retained'])
         .orderBy('id')
         .execute();
       return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));

@@ -51,6 +51,9 @@ import {
   type TenantListener,
   interfaceLanguageOf,
   setInterfaceLanguage,
+  mayEnterWhileClosing,
+  ownTenantState,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import {
   CONTENT_LANGUAGES_CLDR,
@@ -85,6 +88,7 @@ import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { sendStreamed } from './streamed.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
+import { closureHandlers } from './closure.js';
 import { restorationHandlers } from './restorations.js';
 import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
@@ -163,7 +167,7 @@ import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.j
 import { signState, verifyState } from './sign-in-state.js';
 import { rendererFallback, rendererRoutes, serveRenderer } from './renderer.js';
 import { streamToViewer } from './stream.js';
-import { answersInAnyState, cachedResolver, environmentNotOpen } from './tenants.js';
+import { answersInAnyState, cachedResolver, environmentNotOpen, refusalFor } from './tenants.js';
 import {
   administeredTokenHandlers,
   bearerSecret,
@@ -402,7 +406,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
   app.addHook('onRequest', async (request) => {
     if (answersInAnyState(request.routeOptions.url, pageFiles)) return;
     const tenant = await tenants.resolve(request.hostname);
-    if (tenant && tenant.state !== 'active') throw environmentNotOpen();
+    if (!tenant) return;
+    const authorization = request.headers.authorization;
+    const refusal = refusalFor(tenant.state, {
+      method: request.method,
+      route: request.routeOptions.url,
+      bearer: authorization !== undefined && isBearer(authorization),
+    });
+    if (refusal) throw refusal;
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
   registerScim(app, { db, resolve: (hostname) => tenants.resolve(hostname) });
@@ -616,6 +627,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
   }
 
   /**
+   * Before anything of a sign-in is written while a tenant closes (TL-A): nobody new is made or claimed,
+   * and only somebody who may still enter gets as far as a session.
+   */
+  async function refuseUnlessKnownWhileClosing(
+    trx: TenantTransaction,
+    identity: Identity,
+  ): Promise<void> {
+    const { state } = await ownTenantState(trx);
+    if (state === 'active') return;
+    const known = await identifyKnown(trx, identity);
+    if (known === 'erased') return;
+    if (!known || !(await mayEnterWhileClosing(trx, known.id))) {
+      throw environmentNotOpen(state);
+    }
+  }
+
+  /**
    * Starts a session for the principal, and sends the browser on into the application. `groups` are
    * the values the organisation's provider asserted, which the principal's provider memberships are
    * brought into line with in the session's own transaction (IAM-009, GP-B): a session never begins
@@ -642,6 +670,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
       .withTenant(tenant, async (trx) => {
         // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
         await actAs(trx, principalId, request.id);
+        // A hand-off made before the closure began comes this way too (TL-A).
+        const { state } = await ownTenantState(trx);
+        if (state !== 'active' && !(await mayEnterWhileClosing(trx, principalId))) {
+          throw environmentNotOpen(state);
+        }
         // Their row held after any epoch and before anything changes, as an erasure takes them: a
         // session and its memberships are made before an erasure ends them, or not at all (ER-D).
         const hold = async () => {
@@ -827,6 +860,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
     ...restorationHandlers(db, tenantOf, options.objects),
+    ...closureHandlers(db, tenantOf),
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
@@ -903,15 +937,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getTenant: async (request) => {
       const tenant = tenantOf(request);
-      const profile = await db.withTenant(tenant, (trx) =>
-        trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
-      );
+      const { profile, state } = await db.withTenant(tenant, async (trx) => ({
+        profile: await trx
+          .selectFrom('profile')
+          .select('display_name')
+          .executeTakeFirstOrThrow(),
+        state: (await ownTenantState(trx)).state,
+      }));
       // The ways in, so a sign-in page offers Google to somebody from outside where it may.
       const signIn: ('organisation' | 'google')[] = [];
       const providers = await openProviders(tenant);
       if (providers.length > 0) signIn.push('organisation');
       if (options.google && (await permits(tenant, 'google'))) signIn.push('google');
-      return { name: profile.display_name, signIn, providers };
+      return { state, name: profile.display_name, signIn, providers };
     },
 
     // The locale data it sorts and formats with (TE-F; LOC-044), the database's collations beside:
@@ -994,6 +1032,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // An erased person is refused before anything of theirs is written (ER-D).
       // A provider that provisions admits only those it pushed (IN-K): nobody is made or claimed.
       const principal = await db.withTenant(tenant, async (trx) => {
+        await refuseUnlessKnownWhileClosing(trx, identity);
         if (provider.provisions) return admitProvisioned(trx, provider.id, identity);
         const keeping = async (id: string) => {
           await keepProviderKey(trx, id, provider.id, identity.providerKey);
@@ -1090,7 +1129,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const tenant = await tenants.resolve(new URL(`http://${claimed.host}`).hostname);
       if (!tenant || tenant.id !== claimed.tenant) throw signInFailed();
       // This address is no tenant's, so the gate saw none of it, and this writes into one (TL-B).
-      if (tenant.state !== 'active') throw environmentNotOpen();
+      if (tenant.state !== 'active' && tenant.state !== 'closing' && tenant.state !== 'retained') {
+        throw environmentNotOpen(tenant.state);
+      }
       request.log = request.log.child({ tenant: tenant.id });
       reply.log = request.log;
       const attempt = await takeAttempt(tenant, 'google', hashToken(claimed.attempt));
@@ -1112,6 +1153,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           ? undefined
           : await asking(request, tenant, 'google', attempt, identity);
       const admitted = await db.withTenant(tenant, async (trx) => {
+        await refuseUnlessKnownWhileClosing(trx, identity);
         const principalId =
           again?.principalId ?? (await admitGoogleAccount(trx, identity, request.id));
         if (principalId === undefined || principalId === 'erased') return principalId ?? false;
@@ -1257,9 +1299,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getMe: async (request) => {
       const principal = principalOf(request);
-      const { profile, kind, sharesOnly, interfaceLanguage } = await db.withTenant(
+      const { profile, kind, sharesOnly, interfaceLanguage, state } = await db.withTenant(
         tenantOf(request),
         async (trx) => ({
+          state: (await ownTenantState(trx)).state,
           profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
           kind: await trx
             .selectFrom('principal')
@@ -1272,6 +1315,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       );
       return {
         id: principal.principalId,
+        environmentState: state,
         displayName: principal.displayName,
         email: principal.email,
         environment: profile.display_name,

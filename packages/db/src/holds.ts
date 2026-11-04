@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { isLabelledKind, labelFor } from '@alloy-works/domain';
 import { labelled, labels, recordEvent } from './audit.js';
 import { shareDeletion } from './deletion.js';
+import { ownTenantState } from './tenant-lifecycle.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -31,7 +32,7 @@ function reasonOf(given: string): string | undefined {
 
 export type HoldPlaceAnswer =
   | { readonly answer: 'placed'; readonly id: string }
-  | { readonly answer: 'target.missing' | 'reason.invalid' };
+  | { readonly answer: 'target.missing' | 'reason.invalid' | 'environment_deleting' };
 
 /**
  * Places a hold (LIF-022): on an artifact of a kind a hold takes, or on a space, which holds every
@@ -45,6 +46,9 @@ export async function placeHold(
   if (reason === undefined) return { answer: 'reason.invalid' };
   // A deletion's dependant (DL-D): placed before a delete reads the holds, or after it.
   await shareDeletion(trx);
+  // The gate may be a moment behind (TL-H): here, under the lock the move to deletion takes, is what
+  // keeps a hold from being reported placed and then purged.
+  if ((await ownTenantState(trx)).state === 'deleting') return { answer: 'environment_deleting' };
   const on = await targetOf(trx, input.target);
   if (!on) return { answer: 'target.missing' };
   const { id } = await trx

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { TENANT_EFFECT_CAPABILITIES, TENANT_STATE_EFFECTS, TENANT_STATES } from './states.js';
+import {
+  DELETION_DAYS,
+  GRACE_DAYS,
+  TENANT_EFFECT_CAPABILITIES,
+  TENANT_STATE_EFFECTS,
+  TENANT_STATES,
+} from './states.js';
 
 describe('what each state of a tenant stops (the TL plan, TL-C)', () => {
   it('ADM-045 declares each capability the requirement names, for suspension and closure', () => {
@@ -26,6 +32,10 @@ describe('what each state of a tenant stops (the TL plan, TL-C)', () => {
     expect(TENANT_STATE_EFFECTS.suspended.signInAndApi).toBe('stops');
     expect(TENANT_STATE_EFFECTS.suspended.webhookDelivery).toBe('stops, kept and resumed');
     expect(TENANT_STATE_EFFECTS.suspended.inFlightPublications).toBe('finishes within its lease');
+  });
+
+  it('states 30 days and then 1, which the platform schema repeats', () => {
+    expect([GRACE_DAYS, DELETION_DAYS]).toEqual([30, 1]);
   });
 
   it('names every state the platform schema allows, in the order a tenant moves through them', () => {

@@ -34,6 +34,8 @@ export const permissions = [
   'configure_webhooks',
   // Restoring an archive (IMP-048; EI-J): held by a person alone, so never a token's scope.
   'import_environment',
+  // Closing the environment (ADM-030; tenant-lifecycle.md, TL-E): a person's act as well.
+  'close_environment',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -44,11 +46,17 @@ export type Permission = (typeof permissions)[number];
  * reads what its creator reads, so the readable sets that search, listings and the outline filter by
  * need know nothing of tokens. A token with no scopes reads and does nothing else.
  */
-export const tokenScopes: readonly Exclude<Permission, 'read' | 'import_environment'>[] =
-  permissions.filter(
-    (permission): permission is Exclude<Permission, 'read' | 'import_environment'> =>
-      permission !== 'read' && permission !== 'import_environment',
-  );
+export const tokenScopes: readonly Exclude<
+  Permission,
+  'read' | 'import_environment' | 'close_environment'
+>[] = permissions.filter(
+  (
+    permission,
+  ): permission is Exclude<Permission, 'read' | 'import_environment' | 'close_environment'> =>
+    permission !== 'read' &&
+    permission !== 'import_environment' &&
+    permission !== 'close_environment',
+);
 
 export function isPermission(value: string): value is Permission {
   return (permissions as readonly string[]).includes(value);
@@ -77,6 +85,7 @@ export const externalCap: readonly Permission[] = [
   'configure_services',
   'configure_webhooks',
   'import_environment',
+  'close_environment',
 ];
 
 /**
@@ -92,6 +101,7 @@ export const administrativePermissions: readonly Permission[] = [
   'configure_services',
   'configure_webhooks',
   'import_environment',
+  'close_environment',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

@@ -1,11 +1,13 @@
-import { createApiClient, onEnvironmentSuspended } from '@alloy-works/api-client';
+import { createApiClient, onEnvironmentRefused } from '@alloy-works/api-client';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ClosingEnvironment } from '../admin/Closure.js';
 import { useWords } from '../words/words.js';
 import styles from './Connect.module.css';
 import { WaysIn } from './WaysIn.js';
 
 interface Environment {
+  readonly state?: string;
   readonly name: string;
   readonly signIn: readonly string[];
   readonly providers: readonly { id: string; name: string }[];
@@ -54,6 +56,9 @@ function SignInScreen({ here }: { here: string }): React.JSX.Element {
         {environment !== undefined && environment !== 'failed' && (
           <>
             <p data-content>{environment.name}</p>
+            {(environment.state === 'closing' || environment.state === 'retained') && (
+              <p role="status">{words('environment.closing-signin')}</p>
+            )}
             {environment.signIn.length === 0 ? (
               <p>{words('signin.no-way-in')}</p>
             ) : (
@@ -99,14 +104,23 @@ export function SignInGate({
   children: React.ReactNode;
 }): React.ReactNode {
   const { words } = useWords();
-  const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | undefined>();
-  const [suspendedSince, setSuspendedSince] = useState(false);
+  const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | 'closing' | undefined>();
+  const [refusedSince, setRefusedSince] = useState<
+    'environment_suspended' | 'environment_closing' | undefined
+  >();
+  const client = useMemo(() => createApiClient({ baseUrl: window.location.origin }), []);
   useEffect(() => {
     let current = true;
-    createApiClient({ baseUrl: window.location.origin })
+    client
       .GET('/v1/me')
-      .then(({ response, error }) => {
+      .then(({ response, error, data }) => {
         if (!current) return;
+        // Those a closing environment still lets in meet what is left of it (TL-A).
+        const state = data?.environmentState;
+        if (state === 'closing' || state === 'retained') {
+          setAnswer('closing');
+          return;
+        }
         // Nobody may enter whoever they are, so nothing behind it could say anything (ADM-028).
         const code = (error as { code?: unknown } | undefined)?.code;
         if (code === 'environment_suspended') setAnswer('suspended');
@@ -118,18 +132,21 @@ export function SignInGate({
     return () => {
       current = false;
     };
-  }, []);
+  }, [client]);
 
   // Beside the page rather than in place of it, which may hold what somebody was writing.
-  useEffect(() => onEnvironmentSuspended(() => setSuspendedSince(true)), []);
+  useEffect(() => onEnvironmentRefused(setRefusedSince), []);
 
   if (answer === undefined) return null;
   if (answer === 'suspended') return <EnvironmentSuspended />;
-  if (answer === 'open' && suspendedSince) {
+  if (answer === 'closing') return <ClosingEnvironment client={client} />;
+  if (answer === 'open' && refusedSince !== undefined) {
     return (
       <>
         <p role="alert" className={styles['suspended']}>
-          {words('environment.suspended-notice')}
+          {refusedSince === 'environment_closing'
+            ? words('environment.closing-notice')
+            : words('environment.suspended-notice')}
         </p>
         {children}
       </>

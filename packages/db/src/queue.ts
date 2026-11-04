@@ -156,9 +156,12 @@ export function createJobQueue(url: string): JobQueue {
               and run_after <= now()
               and (locked_until is null or locked_until < now())
               and (${kinds === undefined} or kind = any(${[...(kinds ?? [])]}::text[]))
-              -- A job waits through its tenant's suspension rather than failing (TL-C).
+              -- A job waits through its tenant's suspension rather than failing, and a closing
+              -- tenant's one job is its export, which is what its grace period is for (TL-C).
               and exists (select 1 from platform.tenant t
-                           where t.id = tenant_id and t.state = 'active')
+                           where t.id = tenant_id
+                             and (t.state = 'active'
+                                  or (t.state in ('closing', 'retained') and kind = 'tenant_export')))
             order by run_after, id
             for update skip locked
             limit 1)

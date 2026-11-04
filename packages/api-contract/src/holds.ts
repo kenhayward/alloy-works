@@ -89,6 +89,7 @@ const forbidden = {
 export const holdRoutes = {
   placeHold: {
     operationId: 'placeHold',
+    openWhileClosing: true,
     method: 'POST',
     path: '/v1/holds',
     summary: 'Place a legal hold on an artifact or a space',
@@ -108,6 +109,7 @@ export const holdRoutes = {
   },
   releaseHold: {
     operationId: 'releaseHold',
+    openWhileClosing: true,
     method: 'POST',
     path: '/v1/holds/{id}/release',
     summary: 'Release a legal hold',
@@ -126,6 +128,7 @@ export const holdRoutes = {
   },
   listHolds: {
     operationId: 'listHolds',
+    openWhileClosing: true,
     method: 'GET',
     path: '/v1/holds',
     summary: 'Every legal hold, in force or released, newest first',

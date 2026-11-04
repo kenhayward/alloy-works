@@ -30,6 +30,7 @@ import {
   type AuditExport,
   type Tenant,
   type TenantTransaction,
+  ownTenantState,
 } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
 import { auditFilterProblem, type AuditFilter } from '@alloy-works/domain';
@@ -203,7 +204,11 @@ export function auditHandlers(
   };
 }
 
-function tenantExportView(made: TenantExport): TenantExportView {
+/** While its environment closes no export is swept, so it has no date until deletion (TL-F). */
+const keptThroughClosure = async (trx: TenantTransaction) =>
+  (await ownTenantState(trx)).state !== 'active';
+
+function tenantExportView(made: TenantExport, kept = false): TenantExportView {
   return {
     id: made.id,
     state: made.state,
@@ -213,7 +218,7 @@ function tenantExportView(made: TenantExport): TenantExportView {
     requestedAt: made.requestedAt.toISOString(),
     requestedBy: made.requestedBy,
     finishedAt: made.finishedAt?.toISOString() ?? null,
-    expiresAt: made.expiresAt?.toISOString() ?? null,
+    expiresAt: kept ? null : (made.expiresAt?.toISOString() ?? null),
     bytes: made.bytes,
     sha256: made.sha256,
     counts: made.counts && { ...made.counts },
@@ -293,8 +298,9 @@ export function tenantExportHandlers(
         languageOf(request),
       );
       const listed = await listTenantExports(trx, asked);
+      const kept = await keptThroughClosure(trx);
       return {
-        items: listed.items.map(tenantExportView),
+        items: listed.items.map((made) => tenantExportView(made, kept)),
         next: cursorFor(
           'tenantExports',
           asked.sort,
@@ -313,7 +319,7 @@ export function tenantExportHandlers(
       const { id } = request.params as TenantExportParams;
       const made = await readTenantExport(trx, id);
       if (!made) throw notFound();
-      return { export: tenantExportView(made) };
+      return { export: tenantExportView(made, await keptThroughClosure(trx)) };
     },
 
     downloadTenantExport: async (

@@ -904,7 +904,12 @@ export const auditKindSpecs = {
   // Declared for the requirements that say their act is audited (LIF-063), each emitted by the design
   // that builds its act.
   'secret.accessed': kind(['ADM-009'], empty, LATER),
-  'tenant.closed': kind(['ADM-030', 'LIF-066'], empty, LATER),
+  // Deletion has begun; whether an export was offered and taken is in `tenant.closing` (TL-O).
+  'tenant.closed': kind(
+    ['ADM-030', 'LIF-066'],
+    z.strictObject({ exportTaken: z.boolean() }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
   // A subscription made, changed, its secret rotated, removed or disabled (the WB plan, WB-H): never
   // its URL, which names a host (LIF-030).
   'webhook.changed': kind(
@@ -954,6 +959,24 @@ export const auditKindSpecs = {
     'packages/db/src/restoring.ts',
   ),
   'import.review_ended': kind(['IMP-048'], Restoring, 'apps/service/src/restorations.ts'),
+  // A closure begun, its answer about the export (ADM-029), or the operator's notice at a contract's
+  // end (TL-P); given up; and held past its grace period by a legal hold (TL-H).
+  'tenant.closing': kind(
+    ['ADM-029', 'ADM-030'],
+    z.strictObject({
+      graceEndsAt: z.iso.datetime(),
+      export: Id.optional(),
+      declined: z.literal(true).optional(),
+      notice: z.string().min(1).max(2000).optional(),
+    }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
+  'tenant.closure_cancelled': kind(['ADM-030'], empty, 'packages/db/src/tenant-lifecycle.ts'),
+  'tenant.retained': kind(
+    ['LIF-066'],
+    z.strictObject({ holds: z.number().int().positive() }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
   // A tenant stopped and started again (ADM-028; tenant-lifecycle.md, TL-O).
   'tenant.suspended': kind(
     ['ADM-028'],
