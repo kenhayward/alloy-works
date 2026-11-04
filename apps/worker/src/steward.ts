@@ -1,5 +1,5 @@
 import { setTimeout as wait } from 'node:timers/promises';
-import { createJobQueue, createStewardDatabase } from '@alloy-works/db';
+import { createDeliveredStore, createJobQueue, createStewardDatabase } from '@alloy-works/db';
 import { storeForPurging } from '@alloy-works/objects';
 import { pino } from 'pino';
 import { processNextPurge, sweepStuckPurges } from './jobs/tenant-purge.js';
@@ -15,6 +15,7 @@ const log = pino({ level: process.env['LOG_LEVEL'] ?? 'info' });
 const steward = createStewardDatabase(config.databaseUrl);
 const queue = createJobQueue(config.databaseUrl);
 const store = storeForPurging(config.objectStore, config.objectStoreAdmin);
+const delivered = config.deliveredUrl ? createDeliveredStore(config.deliveredUrl) : undefined;
 
 const LEASE_MS = 30 * 60_000;
 const POLL_MS = 30_000;
@@ -40,6 +41,7 @@ while (running) {
     queue,
     steward,
     store,
+    ...(delivered ? { delivered } : {}),
     workerId: `steward-${process.pid}`,
     leaseMs: LEASE_MS,
     log,
@@ -49,5 +51,6 @@ while (running) {
   });
   if ((outcome === 'idle' || outcome === 'waiting') && running) await wait(POLL_MS);
 }
+await delivered?.close();
 await queue.close();
 await steward.close();

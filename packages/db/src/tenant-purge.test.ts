@@ -21,6 +21,7 @@ const REPORT = {
   jobs: 0,
   objects: 0,
   credentialPresent: false,
+  deliveredPresent: null,
 };
 
 describe('removing a tenant from the database (the TL plan, TLc)', () => {

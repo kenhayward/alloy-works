@@ -4,6 +4,8 @@ export interface StewardConfig {
   readonly databaseUrl: string;
   readonly objectStore: StoreSettings;
   readonly objectStoreAdmin: StoreCredentials;
+  /** The delivery store's owner, where this deployment has one. */
+  readonly deliveredUrl?: string;
 }
 
 /** What the steward's process needs. A value missing says only its name, never another's value. */
@@ -26,5 +28,6 @@ export function loadStewardConfig(
       accessKeyId: needed('OBJECT_STORE_ADMIN_KEY'),
       secretAccessKey: needed('OBJECT_STORE_ADMIN_SECRET'),
     },
+    ...(env['SECRET_DELIVERED_URL'] ? { deliveredUrl: env['SECRET_DELIVERED_URL'] } : {}),
   };
 }

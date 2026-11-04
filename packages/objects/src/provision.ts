@@ -117,17 +117,27 @@ export async function removeTenantStore(
   tenant: Tenant,
 ): Promise<void> {
   const iam = iamClient(settings, admin);
-  try {
-    const existing = await iam.send(new ListAccessKeysCommand({ UserName: tenant.role }));
-    for (const key of existing.AccessKeyMetadata ?? []) {
-      await iam.send(
-        new DeleteAccessKeyCommand({ UserName: tenant.role, AccessKeyId: key.AccessKeyId }),
-      );
+  // Each step on its own, so run again after stopping part way it still reaches the rest.
+  const unlessGone = async (step: () => Promise<unknown>) => {
+    try {
+      await step();
+    } catch (error) {
+      if ((error as { name?: string }).name !== 'NoSuchEntityException') throw error;
     }
-    await iam.send(new DeleteUserPolicyCommand({ UserName: tenant.role, PolicyName: POLICY }));
-    await iam.send(new DeleteUserCommand({ UserName: tenant.role }));
-  } catch (error) {
-    if ((error as { name?: string }).name !== 'NoSuchEntityException') throw error;
+  };
+  try {
+    await unlessGone(async () => {
+      const existing = await iam.send(new ListAccessKeysCommand({ UserName: tenant.role }));
+      for (const key of existing.AccessKeyMetadata ?? []) {
+        await iam.send(
+          new DeleteAccessKeyCommand({ UserName: tenant.role, AccessKeyId: key.AccessKeyId }),
+        );
+      }
+    });
+    await unlessGone(() =>
+      iam.send(new DeleteUserPolicyCommand({ UserName: tenant.role, PolicyName: POLICY })),
+    );
+    await unlessGone(() => iam.send(new DeleteUserCommand({ UserName: tenant.role })));
   } finally {
     iam.destroy();
   }
@@ -174,9 +184,13 @@ export async function deleteTenantObjects(
       );
       const keys = (listed.Contents ?? []).map((object) => ({ Key: object.Key! }));
       if (keys.length === 0) return;
-      await s3.send(
+      const answer = await s3.send(
         new DeleteObjectsCommand({ Bucket: settings.bucket, Delete: { Objects: keys } }),
       );
+      // A 200 with refusals inside it: listing and asking again would go on for ever.
+      if ((answer.Errors ?? []).length > 0) {
+        throw new Error(`${answer.Errors!.length} objects of ${tenant.id} would not go`);
+      }
     }
   } finally {
     s3.destroy();

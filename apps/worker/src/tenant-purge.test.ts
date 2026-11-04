@@ -30,7 +30,12 @@ import {
   TENANT_STATE_EFFECTS,
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { processNextPurge, sweepStuckPurges, type PurgeStore } from './jobs/tenant-purge.js';
+import {
+  processNextPurge,
+  sweepStuckPurges,
+  type PurgeDelivered,
+  type PurgeStore,
+} from './jobs/tenant-purge.js';
 
 const quiet = { info: () => undefined, error: () => undefined };
 
@@ -118,8 +123,13 @@ describe('deleting a tenant (the TL plan, TLc)', () => {
         where kind = 'tenant_purge' and tenant_id <> $1 and finished_at is null`,
       [tenant.id],
     );
-  const run = (over: Partial<PurgeStore> = {}, steps: Partial<StewardDatabase> = {}) =>
+  const run = (
+    over: Partial<PurgeStore> = {},
+    steps: Partial<StewardDatabase> = {},
+    delivered?: PurgeDelivered,
+  ) =>
     processNextPurge({
+      ...(delivered ? { delivered } : {}),
       queue,
       steward: { ...steward, ...steps },
       store: { ...purging, ...over },
@@ -168,6 +178,42 @@ describe('deleting a tenant (the TL plan, TLc)', () => {
     });
     const took = record!.deletedAt!.getTime() - record!.deletionBeganAt!.getTime();
     expect(took).toBeLessThan(DELETION_DAYS * 86_400_000);
+  });
+
+  it('IAM-086 finishes though ordinary work was still queued when deletion began', async () => {
+    const tenant = await makeTenant();
+    await admin(`insert into platform.job (tenant_id, kind) values ($1, 'publish')`, [tenant.id]);
+    await toDeleting(tenant);
+    await deletionBegan(tenant, PURGE_WAIT_MS);
+    expect(await run()).toBe('done');
+    expect((await steward.record(tenant.id))?.state).toBe('deleted');
+    const { rows } = await admin(`select 1 from platform.job where tenant_id = $1`, [tenant.id]);
+    expect(rows).toEqual([]);
+  });
+
+  it('IAM-086 empties the delivery store too, and will not call it clean while it holds any', async () => {
+    const tenant = await makeTenant();
+    await toDeleting(tenant);
+    await deletionBegan(tenant, PURGE_WAIT_MS);
+    let held = true;
+    const delivered = {
+      removeTenant: () => Promise.resolve(),
+      holdsTenant: () => Promise.resolve(held),
+    };
+    expect(await run({}, {}, delivered)).toBe('retry');
+    expect((await steward.record(tenant.id))?.state).toBe('deleting');
+    held = false;
+    await due(tenant);
+    expect(await run({}, {}, delivered)).toBe('done');
+    expect((await steward.record(tenant.id))?.report).toMatchObject({ deliveredPresent: false });
+  });
+
+  it('IAM-086 says so when there was no delivery store to ask', async () => {
+    const tenant = await makeTenant();
+    await toDeleting(tenant);
+    await deletionBegan(tenant, PURGE_WAIT_MS);
+    expect(await run()).toBe('done');
+    expect((await steward.record(tenant.id))?.report).toMatchObject({ deliveredPresent: null });
   });
 
   it('IAM-086 removes this tenant alone: a neighbour with a similar id keeps everything', async () => {

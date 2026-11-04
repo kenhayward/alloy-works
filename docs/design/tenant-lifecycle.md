@@ -137,12 +137,12 @@ under that lock through a definer function, refusing with `environment_deleting`
 **TL-I. Deletion is the steward's.** A new process, `apps/worker`'s image with another command, as ADR-0080 made the
 restorer. It alone holds what can create and drop roles and the store's administrative credential, parses no archive and
 renders no content. It claims `tenant_purge` (and in TLe `tenant_create`), which no other process's `abandoned()` may fail. Its login holds
-`createrole` and the admin option on each tenant's two roles, and no more ([ADR-0083](../decisions/0083-deleting-a-tenant-is-the-stewards.md)). Each
+`createrole` and the admin option on each tenant's two roles ([ADR-0083](../decisions/0083-deleting-a-tenant-is-the-stewards.md)). Each
 stage repeats safely, in order:
 
 1. Hostnames gone, and a wait of the longest lease plus the cache (31 minutes), for whatever was in flight.
 2. The tenant's store credential removed, so nothing can put another byte.
-3. Objects under the prefix deleted, with the administrative credential.
+3. Objects under the prefix deleted, with the administrative credential, and the delivery store's schema and account.
 4. `drop schema cascade`, each `drop role`, jobs gone.
 5. Verify, and write the report.
 

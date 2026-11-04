@@ -18,6 +18,12 @@ export interface PurgeStore {
   remaining(tenant: Tenant): Promise<Pick<PurgeReport, 'objects' | 'credentialPresent'>>;
 }
 
+/** The delivery store, in a deployment that has one. */
+export interface PurgeDelivered {
+  removeTenant(tenantId: string): Promise<void>;
+  holdsTenant(tenantId: string): Promise<boolean>;
+}
+
 export interface PurgeLog {
   info(details: object, message: string): void;
   error(details: object, message: string): void;
@@ -27,6 +33,7 @@ export interface PurgeDeps {
   readonly queue: JobQueue;
   readonly steward: StewardDatabase;
   readonly store: PurgeStore;
+  readonly delivered?: PurgeDelivered;
   readonly workerId: string;
   readonly leaseMs: number;
   readonly log: PurgeLog;
@@ -40,7 +47,8 @@ const finished = (report: PurgeReport) =>
   report.hostnames === 0 &&
   report.jobs === 0 &&
   report.objects === 0 &&
-  !report.credentialPresent;
+  !report.credentialPresent &&
+  report.deliveredPresent !== true;
 
 class PurgeIncomplete extends Error {
   readonly code = 'purge_incomplete';
@@ -78,10 +86,12 @@ export async function processNextPurge(
     }
     await deps.store.removeCredential(tenant);
     await deps.store.deleteObjects(tenant);
+    await deps.delivered?.removeTenant(tenant.id);
     await deps.steward.dropTenantDatabase(tenant);
     const report: PurgeReport = {
       ...(await deps.steward.whatRemains(tenant)),
       ...(await deps.store.remaining(tenant)),
+      deliveredPresent: deps.delivered ? await deps.delivered.holdsTenant(tenant.id) : null,
     };
     if (!finished(report)) throw new PurgeIncomplete('A purge left something behind');
     await deps.steward.recordDeleted(tenant, report);

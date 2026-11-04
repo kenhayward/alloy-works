@@ -21,6 +21,8 @@ export interface PurgeReport {
   readonly jobs: number;
   readonly objects: number;
   readonly credentialPresent: boolean;
+  /** Whether the delivery store holds any of it; null where this deployment has no such store. */
+  readonly deliveredPresent: boolean | null;
 }
 
 export interface TenantRecord {
@@ -91,6 +93,8 @@ export function createStewardDatabase(url: string): StewardDatabase {
       const owner = `${role}_owner`;
       const schema = assertTenantRole(tenant.schema);
       await db.transaction().execute(async (trx) => {
+        // Waiting behind a stuck transaction holds up every deploy behind this; it tries again later.
+        await sql`set local lock_timeout = '2min'`.execute(trx);
         await sql`select pg_advisory_xact_lock(hashtext('alloy-works:migrate'))`.execute(trx);
         const { rows: being } = await sql`
           select 1 from platform.tenant where id = ${tenant.id} and state = 'deleting'`.execute(
@@ -111,6 +115,9 @@ export function createStewardDatabase(url: string): StewardDatabase {
           await sql`reset role`.execute(trx);
         }
         await sql`drop role if exists ${sql.id(owner)}, ${sql.id(role)}`.execute(trx);
+        // What was queued has nothing left to run in, and no process would ever take it now.
+        await sql`delete from platform.job
+                   where tenant_id = ${tenant.id} and ${sql.raw(OTHER_JOBS)}`.execute(trx);
       });
     },
 

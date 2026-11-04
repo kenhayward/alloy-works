@@ -249,6 +249,10 @@ services:
       OBJECT_STORE_BUCKET: alloy-dev
       OBJECT_STORE_ADMIN_KEY: alloy-store-admin
       OBJECT_STORE_ADMIN_SECRET: alloy-store-admin-dev-secret
+      SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
+    networks:
+      - default
+      - delivered
     depends_on:
       setup:
         condition: service_completed_successfully

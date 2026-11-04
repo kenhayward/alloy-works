@@ -40,14 +40,14 @@ Exports already taken are kept until deletion, whatever their usual seven days s
 
 ## The timetable
 
-| When                            | What happens                                                               |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| Day 0                           | Closed. Those not allowed in lose their sessions.                          |
-| Any time up to day 30           | Can be given up, and everything is as it was.                              |
-| Day 30, nothing under a hold    | Deletion begins, and can no longer be stopped.                             |
-| Day 30, something under a hold  | Held: everything is kept, and it can still be given up.                    |
-| When the last hold is released  | Deletion begins, and can no longer be stopped.                             |
-| Within 1 day of deletion begins | Its addresses, stored objects, credential, database schema and roles gone. |
+| When                            | What happens                                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| Day 0                           | Closed. Those not allowed in lose their sessions.                                            |
+| Any time up to day 30           | Can be given up, and everything is as it was.                                                |
+| Day 30, nothing under a hold    | Deletion begins, and can no longer be stopped.                                               |
+| Day 30, something under a hold  | Held: everything is kept, and it can still be given up.                                      |
+| When the last hold is released  | Deletion begins, and can no longer be stopped.                                               |
+| Within 1 day of deletion begins | Its addresses, stored objects, credential, delivered tables, database schema and roles gone. |
 
 **A legal hold keeps the whole environment**, not only what it names, because what is held depends on the rest. A
 forgotten hold therefore keeps everything, for as long as it is forgotten, and nothing releases it unasked.
@@ -56,7 +56,7 @@ forgotten hold therefore keeps everything, for as long as it is forgotten, and n
 
 A record in the operator's database: the environment's id and name, its organisation, the dates, and a report the
 deletion wrote by checking, not by assuming. It says no schema and no roles were found, and no addresses, objects, store
-credential or jobs. It names no person. The operator reads it with `steward report --tenant <id>`.
+credential, delivered tables or jobs. It names no person. The operator reads it with `steward report --tenant <id>`.
 
 The environment's own audit log goes with the rest, so **take the export if you will need to show who did what**.
 
