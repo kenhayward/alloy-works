@@ -66,6 +66,7 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                                                              |
 | `restorer`           | `worker`                   | no port               | Restores environments from their archives, the one process holding the login that may become a tenant's owner                                                      |
 | `steward`            | `worker`                   | runs when asked       | The operator's command line: suspends an environment and lifts that, with its own login. It is under the `operator` profile, so an ordinary `up` does not start it |
+| `steward-process`    | `worker`                   | no port               | Deletes a closed environment, once its 30 days are over (ADR-0083); holds the store's administrative credential                                                    |
 | `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                                                              |
 | `delivered-postgres` | `pgvector/pgvector:pg17`   | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered`                                |
 

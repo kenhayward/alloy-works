@@ -232,6 +232,27 @@ services:
     environment:
       STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
 
+  # The one process that deletes a tenant (ADR-0083): it alone holds what can drop a tenant's roles and
+  # the store's administrative credential. Claims `tenant_purge` and nothing else.
+  steward-process:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
+      target: worker
+    command: ['node', 'dist/steward.js']
+    environment:
+      STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
+      LOG_LEVEL: info
+      OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
+      OBJECT_STORE_BUCKET: alloy-dev
+      OBJECT_STORE_ADMIN_KEY: alloy-store-admin
+      OBJECT_STORE_ADMIN_SECRET: alloy-store-admin-dev-secret
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
   # networks and no others: `connector-private`, which it shares with the service and the worker, and
   # `connector-egress`, out to the sources. Neither carries the platform or the host (the D1 plan,
