@@ -1122,7 +1122,7 @@ describe('the address of every node', () => {
     it('keeps the outline pane between the header and the status bar, and lets it go in a window too short to hold it (issue #336)', () => {
       // jsdom lays nothing out, so where the pane stands is read from the stylesheets' own rules. By a
       // name in a variable: Vite rewrites a literal one into the stylesheet's served address.
-      const sheets = { page: './DocumentPage.module.css', base: '../theme/base.css' };
+      const sheets = { page: '../layouts/AuthoringShell.module.css', base: '../theme/base.css' };
       const read = (path: string) =>
         readFileSync(new URL(path, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
       const PANE = ".layout > [data-panel] > [data-part='outline']";
@@ -2606,7 +2606,7 @@ describe('a preview beside the text (W10.3)', () => {
     }) as typeof globalThis.fetch;
   }
   // By a name in a variable: Vite rewrites a literal one into the stylesheet's served address.
-  const STYLESHEET = './DocumentPage.module.css';
+  const STYLESHEET = '../layouts/AuthoringShell.module.css';
   /** The declarations of the page's rule for exactly this selector, outside any media query. */
   const ruleOf = (selector: string) => {
     const sheet = readFileSync(new URL(STYLESHEET, import.meta.url), 'utf8')

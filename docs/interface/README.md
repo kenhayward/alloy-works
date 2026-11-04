@@ -71,7 +71,7 @@ move, not paperwork around it.
 | `Home`              | Module cards over the backdrop                          |
 | `Components`        | The components list                                     |
 | `NewComponent`      | New component, over the list, and the row menu          |
-| `ComponentEditor`   | A component open in the triptych                        |
+| `ComponentEditor`   | A component open on its page, or in place               |
 | `Documents`         | The documents list                                      |
 | `DocumentOutline`   | A document: outline left, its text in the middle        |
 | `DocumentCollapsed` | The same, both side panes collapsed                     |
@@ -144,7 +144,7 @@ field, and one primary button. Below it: `Show more`, never a pager. Rows are 13
 1px `--border` rules, hovered with `--accent-weak`, selected with `--accent-weak` plus a 3px
 `--accent` left edge. Components, Documents, Publications and Search results are all this.
 
-**B. Editor triptych.** A 260px space pane (the components of the space you are in, the open one
+**B. Editor triptych,** since [ADR-0085](../decisions/0085-a-components-page-shares-the-documents-shell.md) on the document's shell, with the space pane where the outline stands. A 260px space pane (the components of the space you are in, the open one
 marked), the editor, and the facet dock: a 38px icon rail plus a 320px panel, one panel at a time.
 The editor is a 34px title strip (section number in place, title, version and space, language and
 direction chips, the save chip, `Done`, `Save version`), one row of Formatting icons, and the

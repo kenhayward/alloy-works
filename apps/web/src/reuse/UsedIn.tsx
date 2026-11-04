@@ -1,5 +1,5 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useImperativeHandle, useRef, useState, type RefObject } from 'react';
 import { Icon } from '../editor/Icon.js';
 import { usedElsewhere } from '../structure/partSummary.js';
 import { Modal } from '../layouts/Modal.js';
@@ -130,20 +130,26 @@ export function UsedInButton({
   title,
   className,
   label = words('reuse.used-in'),
+  act,
 }: {
   client: Client;
   id: string;
   title: string;
   className?: string | undefined;
+  /** Where given, a menu opens it: the dialog alone, no button (ADR-0085). */
+  act?: RefObject<(() => void) | null>;
   /** Its words, where `Used in` alone would not say which component (STR-075). */
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
+  useImperativeHandle(act, () => () => setOpen(true));
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
-        {label}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setOpen(true)}>
+          {label}
+        </button>
+      )}
       {open && (
         <UsedInDialog client={client} id={id} title={title} onClose={() => setOpen(false)} />
       )}

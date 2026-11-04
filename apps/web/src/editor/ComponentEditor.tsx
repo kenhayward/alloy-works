@@ -105,6 +105,7 @@ import {
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
 import { InPlaceBand } from './InPlaceBand.js';
+import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
 import type { MenuEntry } from '../parts/MenuBar.js';
 import { NameTip } from '../parts/NameTip.js';
@@ -126,6 +127,7 @@ import {
 import { createPortal } from 'react-dom';
 
 import { positionAtTextOffset } from './caret.js';
+import { ComponentChrome } from './ComponentChrome.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { commandUnavailable, EditorToolbar, type ToolbarAct } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
@@ -381,6 +383,18 @@ export interface ComponentEditorProps {
    * suggestion**, every command the editor offers an author. Absent, the editor edits the component.
    */
   readonly draft?: DraftMode;
+  /**
+   * On a component's own page, on the document's shell (ADR-0085): it draws the page's header and the
+   * Component menu's dialogs, its facts in the Attributes panel, and no card chrome. Reading refuses a
+   * change and claims no lock, on a reload too.
+   */
+  readonly ownPage?: {
+    readonly reading: boolean;
+    readonly tools: ReactNode;
+    readonly identityHost: HTMLElement | null;
+    readonly pageState: (id: string) => CommandState | undefined;
+    readonly onShowAttributes: () => void;
+  };
 }
 
 /** A draft's session id: never sent, since a draft's service sends nothing. */
@@ -565,6 +579,7 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  ownPage,
   hostDocument,
   termIndexes,
   openAt,
@@ -718,6 +733,7 @@ export function ComponentEditor({
   // list panel with the cursor outside a list - is simply absent from the ring rather than a query
   // that quietly finds nothing.
   const headerRegion = useRef<HTMLElement | null>(null);
+  const readingRef = useRef(ownPage?.reading === true);
   const toolbarRegion = useRef<HTMLDivElement | null>(null);
   // The list panel's, which is null for most of a session: it is the one region of this view that
   // comes and goes, because it exists only while the cursor stands in a counted list.
@@ -1834,7 +1850,7 @@ export function ComponentEditor({
       // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
       // surface's naming.
       label: say('editor.content-of', { value1: opened.doc.attrs.title as string }),
-      editable: () => component.mayEdit && isEditablePhase(phase),
+      editable: () => component.mayEdit && isEditablePhase(phase) && !readingRef.current,
       dispatch: (transaction, target) => {
         const before = target.state;
         const { state: after, transactions } = before.applyTransaction(transaction);
@@ -1881,7 +1897,9 @@ export function ComponentEditor({
     // A reload going on: claimed again under its own session, and what the service has not got sent -
     // unless the service holds a later save under it than this window sent, which nothing here may go
     // on over (D1).
-    if (resumed?.ahead === true) {
+    if (readingRef.current) {
+      // Reading claims nothing: what is kept stays kept, for Authoring to take up.
+    } else if (resumed?.ahead === true) {
       // Offered already, above: `lost` captures nothing more of it.
       keptIsCurrent.current = true;
       editing.behind();
@@ -2666,8 +2684,40 @@ export function ComponentEditor({
     onDone?.();
   };
 
-  // The band a document keeps for a component open in place (ADR-0056), and whether this is one.
-  const inBand = onDone !== undefined && bandHost !== null;
+  // The band a page keeps above the desk (ADR-0056), and whether this is in one. The frame's line and
+  // the way out are for what may close, in a document's sheet (the CE plan, CE1).
+  const inBand = bandHost !== null;
+  const inFrame = inBand && onDone !== undefined;
+  const headerEditable =
+    shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase) && !readingRef.current;
+  // What stands whatever else the page draws: the question before a save, what one does, the save state.
+  const stripTail = (
+    <>
+      {reach && (
+        <ReachDialog
+          uses={reach.uses}
+          related={reach.related}
+          title={header?.title ?? ''}
+          act={reach.act}
+          onConfirm={() => {
+            setReach(null);
+            reach.go();
+          }}
+          onCancel={() => setReach(null)}
+        />
+      )}
+      {/* Before the first save of an approved one, what a save does (WF-F). */}
+      {standing?.state.approved && shown.mayEdit && !drafting && (
+        <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
+      )}
+      {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
+      {session && loaded.state === 'open' && !drafting && !readingRef.current && (
+        <StatusLead>
+          <SaveIndicator save={session.save} savedAt={session.savedAt} />
+        </StatusLead>
+      )}
+    </>
+  );
   const stripPart = (
     <div className={styles['strip']}>
       {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
@@ -2691,10 +2741,10 @@ export function ComponentEditor({
         {header ? (
           <ComponentHeader
             header={header}
-            editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
+            editable={headerEditable}
             onChange={changeHeader}
             onRefused={setNotice}
-            titled={!inBand}
+            titled={!inFrame}
           >
             <span
               className={styles['version']}
@@ -2893,30 +2943,148 @@ export function ComponentEditor({
           </>
         )}
       </header>
-      {reach && (
-        <ReachDialog
-          uses={reach.uses}
-          related={reach.related}
-          title={header?.title ?? ''}
-          act={reach.act}
-          onConfirm={() => {
-            setReach(null);
-            reach.go();
-          }}
-          onCancel={() => setReach(null)}
-        />
-      )}
-      {/* Before the first save of an approved one, what a save does (WF-F). */}
-      {standing?.state.approved && shown.mayEdit && !drafting && (
-        <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
-      )}
-      {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
-      {session && loaded.state === 'open' && !drafting && (
-        <StatusLead>
-          <SaveIndicator save={session.save} savedAt={session.savedAt} />
-        </StatusLead>
-      )}
+      {stripTail}
     </div>
+  );
+  const headerFields = (only: 'title' | 'chips') =>
+    header && (
+      <ComponentHeader
+        header={header}
+        editable={headerEditable}
+        onChange={changeHeader}
+        onRefused={setNotice}
+        only={only}
+      />
+    );
+  const datesShown = datesNow ?? datesIn(shown);
+  const scopeShown = scopeNow ?? scopeIn(shown);
+  const open = linesIn(shown).find((each) => each.id === line && !each.closed && !each.language);
+  const chrome = ownPage !== undefined && header && (
+    <>
+      <ComponentChrome
+        client={client}
+        id={componentId}
+        space={shown.space}
+        title={header.title}
+        titleField={headerFields('title')}
+        version={session?.version.number ?? shown.version.number}
+        versionTitle={size}
+        beside={
+          <>
+            <RevisionChip revision={standing?.revision} />
+            {archived && <Lozenge kind="archived" />}
+            {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
+            {(heldNow || shown.onHold === true) && <Lozenge kind="onHold" />}
+          </>
+        }
+        transition={
+          standing
+            ? {
+                client,
+                kind: 'component',
+                id: componentId,
+                line,
+                title: header.title,
+                standing,
+                versionId: shown.version.id,
+                onMoved: (now, said) => {
+                  setStandingNow(now);
+                  setNotice(said);
+                },
+                onNotice: setNotice,
+                onStale: restand,
+                askFirst,
+              }
+            : undefined
+        }
+        tools={ownPage.tools}
+        dates={datesShown}
+        scope={scopeShown ?? NO_SCOPE}
+        archived={archived}
+        mayEdit={shown.mayEdit === true}
+        mayMove={shown.mayMove === true}
+        mayRetire={shown.mayRetire === true}
+        mayHold={shown.mayHold === true}
+        editorState={(command) => activeHandle.current.state(command)}
+        editorStyles={() => activeHandle.current.styles()}
+        pageState={ownPage.pageState}
+        onShowAttributes={ownPage.onShowAttributes}
+        onDates={setDatesNow}
+        onScope={setScopeNow}
+        onMoved={(said) => {
+          setNotice(said);
+          setAttempt((count) => count + 1);
+        }}
+        onArchived={(now, said) => {
+          setArchivedNow(now);
+          setNotice(said);
+        }}
+        onDeleted={() => setLoaded({ state: 'deleted' })}
+        onHeld={(said) => {
+          setHeldNow(true);
+          setNotice(said);
+        }}
+      />
+      {ownPage.identityHost !== null &&
+        createPortal(
+          <div inert={behindDialog} className={styles['identity']}>
+            {headerFields('chips')}
+            {standing && <StateLozenge state={standing.state} />}
+            <DatesChips dates={datesShown} />
+            <ScopeChips
+              client={client}
+              kind="component"
+              id={componentId}
+              scope={scopeShown}
+              onAccepted={setScopeNow}
+            />
+            {/* Which line is read, and a move to another (LIF-044, LIF-046; R16-E). */}
+            <LinesControl
+              client={client}
+              componentId={componentId}
+              line={line}
+              lines={linesIn(shown)}
+              revision={standing?.revision?.number ?? null}
+              mayEdit={shown.mayEdit === true && !archived}
+              onGo={(address) => {
+                window.location.hash = address;
+              }}
+              className={styles['archive']}
+            />
+            {/* Its translations, each a language line (LOC-007, LOC-016; the TR plan, TR-J). */}
+            {(linesIn(shown).some((each) => each.language) ||
+              (line === undefined &&
+                shown.mayEdit === true &&
+                !archived &&
+                standing?.revision?.number != null)) && (
+              <TranslationsButton
+                client={client}
+                componentId={componentId}
+                line={line}
+                mayEdit={shown.mayEdit === true && !archived}
+                translatable={standing?.revision?.number != null}
+                onGo={(address) => {
+                  window.location.hash = address;
+                }}
+                className={styles['archive']}
+              />
+            )}
+            {/* Bringing an open line back, to whoever may edit it (LIF-045; R16-F). */}
+            {open && shown.mayEdit === true && !archived && (
+              <BringBackButton
+                client={client}
+                componentId={componentId}
+                line={open}
+                onGo={(address) => {
+                  window.location.hash = address;
+                }}
+                className={styles['archive']}
+              />
+            )}
+          </div>,
+          ownPage.identityHost,
+        )}
+    </>
   );
   const leadingActs: readonly ToolbarAct[] = drafting
     ? [
@@ -3054,6 +3222,7 @@ export function ComponentEditor({
               ...(inPlaceSettings?.onComment === undefined
                 ? {}
                 : { onComment: inPlaceSettings.onComment }),
+              ...(inFrame ? {} : { leading: leadingActs }),
             }
           : { leading: leadingActs })}
         onPasteMarkdown={() => void pasteMarkdown()}
@@ -3153,12 +3322,16 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
+        data-own-page={ownPage !== undefined}
         inert={behindDialog}
         onKeyDown={moveRegion}
       >
         {/* Open in place on a document's sheet, the strip, the toolbar and its second line stand in
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
-        {inBand ? createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost) : stripPart}
+        {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
+        {!inFrame && (ownPage === undefined || !header) && stripPart}
+        {ownPage !== undefined && header && stripTail}
+        {ownPage !== undefined && header && chrome}
         {inBand &&
           inPlaceSettings?.host != null &&
           selectionHeldNow.current &&
@@ -3170,7 +3343,7 @@ export function ComponentEditor({
           )}
         {/* The component's own acts, on its frame's line and taking no height of the sheet's, so the
             sheet does not move as one opens (ADR-0075, CNT-075). */}
-        {inBand && (
+        {inFrame && (
           <div
             ref={frameRegion}
             className={styles['frameBar']}
@@ -3233,8 +3406,8 @@ export function ComponentEditor({
         )}
         {loaded.state === 'open' && (
           <>
-            {!inBand && toolbarPart}
-            {!inBand && linePart}
+            {!inBand && ownPage === undefined && toolbarPart}
+            {!inBand && ownPage === undefined && linePart}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>{say('editor.you-may-read-this-component')}</p>

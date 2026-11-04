@@ -1,0 +1,43 @@
+/* A panel's own room, within the body the shell scrolls. */
+.panel {
+  display: grid;
+  gap: var(--space-12);
+  padding: var(--space-12);
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* What it is, always in sight: its language, its dates and scope, the line read and its acts. */
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.identity:empty {
+  display: none;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-8) var(--space-12);
+  margin: 0;
+  font-size: var(--size-13);
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--mono);
+}

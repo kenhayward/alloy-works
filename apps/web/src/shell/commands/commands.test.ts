@@ -19,6 +19,75 @@ const flat = (entries: readonly MenuEntry[]): MenuCommandItem[] =>
 
 const allOn = (): CommandState => ({ enabled: true, run: () => undefined });
 
+describe("a component's menus (ADR-0085)", () => {
+  const menus = buildMenus(allOn, {}, 'component');
+  const keys = (menu: string) =>
+    flat(menus.find((each) => each.key === menu)!.entries).map((each) => each.key);
+
+  it('names the first menu Component, with what applies to one', () => {
+    expect(menus.map((each) => each.key)).toEqual([
+      'component',
+      'edit',
+      'view',
+      'insert',
+      'format',
+      'help',
+    ]);
+    expect(keys('component')).toEqual([
+      'save-version',
+      'history',
+      'dates',
+      'scope',
+      'language',
+      'lines',
+      'used-in',
+      'relationships',
+      'access',
+      'move',
+      'hold',
+      'archive',
+      'delete',
+    ]);
+  });
+
+  it('offers none of what a document alone has', () => {
+    const all = menus.flatMap((menu) => flat(menu.entries)).map((each) => each.key);
+    for (const absent of [
+      'preview',
+      'mode.review',
+      'panel.contents',
+      'panel.baselines',
+      'panel.data',
+      'assistant',
+      'boundaries',
+      'pages',
+      'comment',
+    ]) {
+      expect(all).not.toContain(absent);
+    }
+    expect(keys('view')).toEqual([
+      'mode.reading',
+      'mode.authoring',
+      'style-labels',
+      'zoom-in',
+      'zoom-out',
+      'fit',
+    ]);
+  });
+
+  it("leaves a document's menus as they were", () => {
+    expect(buildMenus(allOn).map((each) => each.key)).toEqual([
+      'document',
+      'edit',
+      'view',
+      'insert',
+      'format',
+      'review',
+      'help',
+    ]);
+  });
+});
+
 describe('the command registry', () => {
   it('holds every key the page and the editor answer to, moved keys failing here', () => {
     const chords = Object.fromEntries(

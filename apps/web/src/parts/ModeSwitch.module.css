@@ -1,0 +1,61 @@
+.mode {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.mode label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-4) var(--space-12);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mode label:has(input:checked) {
+  background: var(--surface);
+  box-shadow: var(--shadow-rest);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mode label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mode input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.modeShown {
+  margin: 0;
+  font-weight: 600;
+}
+
+.modeName {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+label[data-chosen='true'] .modeName {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}

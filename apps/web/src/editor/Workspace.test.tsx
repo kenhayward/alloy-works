@@ -13,6 +13,7 @@ import {
   section,
   service as documentService,
 } from '../structure/test/documentPage.js';
+import { COMPONENT_DOCK_KEY, COMPONENT_MODE_KEY } from './ComponentPage.js';
 import { Workspace } from './Workspace.js';
 
 /** The environment's layout, as every `DocumentView` carries it: what the page numbers with. */
@@ -78,6 +79,9 @@ function serviceThat(pages: Record<string, unknown>, signedIn = true) {
     // every test that reaches the list is not also, incidentally, exercising a failed spaces read.
     if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
     if (url.pathname === '/v1/access' && pages.access) return json(200, pages.access);
+    if (url.pathname === `/v1/components/${COMPONENT}` && pages.component) {
+      return json(200, pages.component);
+    }
     if (url.pathname === '/v1/search' && pages.search) {
       return json(200, { ...(pages.search as object), asked: url.searchParams.get('q') });
     }
@@ -188,6 +192,60 @@ afterEach(() => {
   vi.restoreAllMocks();
   window.location.hash = '';
   window.localStorage.removeItem(DOCK_KEY);
+});
+
+describe("a component's own page (ADR-0085)", () => {
+  const body = (mayEdit: boolean) => componentBody(COMPONENT, 'Install the printer', mayEdit);
+  const opened = (mayEdit = true) => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    render(<Workspace fetch={serviceThat({ component: body(mayEdit) })} />);
+  };
+  afterEach(() => {
+    window.localStorage.removeItem(COMPONENT_MODE_KEY);
+    window.localStorage.removeItem(COMPONENT_DOCK_KEY);
+    window.localStorage.removeItem(DOCK_KEY);
+  });
+
+  it('opens in Authoring whatever a document was last read in, with its toolbar', async () => {
+    window.localStorage.setItem('aw.document.mode', 'reading');
+    opened();
+    expect(await screen.findByRole('radio', { name: 'Authoring' })).toBeChecked();
+    expect(await screen.findByRole('toolbar', { name: 'Formatting' })).toBeInTheDocument();
+    window.localStorage.removeItem('aw.document.mode');
+  });
+
+  it('keeps its own mode, in Reading drawing no toolbar', async () => {
+    window.localStorage.setItem(COMPONENT_MODE_KEY, 'reading');
+    opened();
+    expect(await screen.findByRole('radio', { name: 'Reading' })).toBeChecked();
+    expect(screen.queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
+  });
+
+  it('offers a reader Reading alone, and no toolbar', async () => {
+    opened(false);
+    expect(await screen.findByText('Reading')).toBeInTheDocument();
+    await screen.findByRole('menuitem', { name: 'Component' });
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
+  });
+
+  it("falls to Attributes where a document's panel is remembered", async () => {
+    window.localStorage.setItem(COMPONENT_DOCK_KEY, 'publishing');
+    opened();
+    const tabs = await screen.findByRole('tablist', { name: 'Component panels' });
+    expect(within(tabs).getByRole('tab', { name: 'Attributes' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('remembers its panel apart from a document', async () => {
+    opened();
+    const tabs = await screen.findByRole('tablist', { name: 'Component panels' });
+    await userEvent.click(within(tabs).getByRole('tab', { name: 'Versions' }));
+    expect(window.localStorage.getItem(COMPONENT_DOCK_KEY)).toBe('versions');
+    expect(window.localStorage.getItem(DOCK_KEY)).toBeNull();
+  });
 });
 
 describe('the workspace', () => {
@@ -352,14 +410,9 @@ describe('the workspace', () => {
     await waitFor(() => expect(listed()).toBeGreaterThan(before));
   });
 
-  it('opens the component the address names, under a trail back to the components', async () => {
+  it('opens the component the address names', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     render(<Workspace fetch={serviceThat({})} />);
-    const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(trail).getByRole('link', { name: 'Components' })).toHaveAttribute(
-      'href',
-      '#/components',
-    );
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
@@ -430,14 +483,14 @@ describe('the workspace', () => {
     const panel = screen.getByRole('tabpanel', { name: 'Attributes' });
     expect(panel.parentElement?.contains(tabs)).toBe(false);
 
-    await user.click(screen.getByRole('button', { name: 'Hide the space pane' }));
+    await user.click(screen.getByRole('button', { name: 'Space' }));
     expect(screen.queryByRole('navigation', { name: 'General' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Hide the component panels' }));
     // Hidden, kept in the page, so the fields keep what is being typed into them.
     expect(screen.getByRole('tabpanel', { name: 'Attributes', hidden: true })).not.toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Show the component panels' }));
     expect(screen.getByRole('tabpanel', { name: 'Attributes' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Show the space pane' }));
+    await user.click(screen.getByRole('button', { name: 'Space' }));
     expect(await screen.findByRole('navigation', { name: 'General' })).toBeInTheDocument();
   });
 
@@ -491,8 +544,8 @@ describe('the workspace', () => {
     expect(
       within(tabs)
         .getAllByRole('tab')
-        .map((tab) => tab.textContent),
-    ).toEqual(['Attributes', 'Versions', 'Access']);
+        .map((tab) => tab.getAttribute('aria-label')),
+    ).toEqual(['Attributes', 'Versions']);
     const attributes = screen.getByRole('tabpanel', { name: 'Attributes' });
     const fields = await within(attributes).findByRole('region', { name: 'Fields of Protocol' });
     expect(within(fields).getByRole('textbox', { name: /^Code/ })).toHaveValue('A1');
@@ -501,13 +554,6 @@ describe('the workspace', () => {
     const versions = screen.getByRole('tabpanel', { name: 'Versions' });
     expect(await within(versions).findByText('17 Sept', { exact: false })).toBeInTheDocument();
     expect(within(versions).getByText('First cut')).toBeInTheDocument();
-
-    await userEvent.click(within(tabs).getByRole('tab', { name: 'Access' }));
-    const access = screen.getByRole('tabpanel', { name: 'Access' });
-    expect(await within(access).findByRole('link', { name: 'Manage access' })).toHaveAttribute(
-      'href',
-      `#/components/${COMPONENT}/access`,
-    );
   });
 
   it('offers Restore in the Versions panel once the editor opens a component its reader may edit (the RS final review)', async () => {
@@ -548,28 +594,32 @@ describe('the workspace', () => {
     expect(await within(list).findByRole('button', { name: 'Restore 0.1' })).toBeInTheDocument();
   });
 
-  it('offers Manage access beside an open component only to someone who may administer it', async () => {
+  it('offers Manage access from an open component only to someone who may administer it', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
-    const { unmount } = render(<Workspace fetch={serviceThat({ access: answers(true) })} />);
-    await userEvent.click(await screen.findByRole('tab', { name: 'Access' }));
-    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
-      'href',
-      `#/components/${COMPONENT}/access`,
+    const readable = componentBody(COMPONENT, 'Install the printer');
+    const manageAccess = async () => {
+      await userEvent.click(await screen.findByRole('menuitem', { name: 'Component' }));
+      return screen.findByRole('menuitem', { name: 'Manage access' });
+    };
+    const { unmount } = render(
+      <Workspace fetch={serviceThat({ access: answers(true), component: readable })} />,
+    );
+    await vi.waitFor(async () =>
+      expect(await manageAccess()).toHaveAttribute('aria-disabled', 'false'),
     );
     unmount();
 
     let asked = false;
-    const refusing = serviceThat({ access: answers(false) });
+    const refusing = serviceThat({ access: answers(false), component: readable });
     const watching = (async (input: string | URL | Request, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       if (new URL(request.url).pathname === '/v1/access') asked = true;
       return refusing(request);
     }) as typeof fetch;
     render(<Workspace fetch={watching} />);
-    await userEvent.click(await screen.findByRole('tab', { name: 'Access' }));
     await vi.waitFor(() => expect(asked).toBe(true));
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(screen.queryByRole('link', { name: 'Manage access' })).toBeNull();
+    expect(await manageAccess()).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('opens the access page the address names, with a way back to the component', async () => {

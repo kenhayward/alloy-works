@@ -27747,13 +27747,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/shell/commands/commands.test.ts",
-      "line": 100,
+      "line": 169,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/shell/commands/commands.test.ts",
-      "line": 107,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -36729,7 +36729,7 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1420,
+      "line": 1417,
       "kind": "title"
     },
     {
@@ -36759,7 +36759,7 @@
     {
       "id": "CNT-190",
       "file": "tests/browser/src/canvas.test.ts",
-      "line": 217,
+      "line": 221,
       "kind": "title"
     },
     {
@@ -36825,19 +36825,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1015,
+      "line": 1031,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1011,
+      "line": 1027,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1011,
+      "line": 1027,
       "kind": "title"
     },
     {
