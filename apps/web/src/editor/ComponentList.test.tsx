@@ -210,12 +210,13 @@ describe('the components list', () => {
       `#/components/${PRINTER}/access`,
     );
     expect(await within(panel).findByText('Unbox the printer. Keep the box.')).toBeInTheDocument();
-    const versions = within(panel).getByRole('list', { name: 'Versions' });
-    expect(
-      within(versions)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual(['0.2Ada, 3 DecFinal torque raised', '0.1Grace, 21 Nov']);
+    // The timeline itself, not a shorter list: found, compared and opened here, and restored from
+    // the editor, where the caller's right to is known.
+    const versions = await within(panel).findByRole('list', { name: 'Versions' });
+    expect(within(versions).getByText('Final torque raised')).toBeInTheDocument();
+    expect(within(panel).getByRole('searchbox', { name: 'Number, note or person' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Compare two versions' })).toBeVisible();
+    expect(within(panel).queryByRole('button', { name: /^Restore / })).toBeNull();
 
     await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('complementary', { name: 'Install the printer' })).toBeNull();
