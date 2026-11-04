@@ -10,10 +10,12 @@ import {
 } from '@alloy-works/editor';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rowsWindow } from './TableMap.js';
 import { placeToolbar } from './TableToolbar.js';
 import { RegionKeys } from '../shell/regions.js';
+import { PageShown } from '../shell/Status.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { CHOOSING_PRESENTATION } from '../theme/presentation.fixture.js';
 import {
@@ -867,6 +869,38 @@ describe('the table panel (tables 1)', () => {
     expect(within(toolbar).getByRole('button', { name: 'Split cell' })).toHaveFocus();
     await userEvent.keyboard('{Escape}');
     expect(view.dom).toHaveFocus();
+  });
+
+  it('takes the floating toolbar away while the page is kept hidden, and places it again on coming back (#960)', async () => {
+    let setShown: (shown: boolean) => void = () => undefined;
+    function Kept({ children }: { children: ReactNode }) {
+      const [shown, set] = useState(true);
+      setShown = set;
+      return <PageShown value={shown}>{children}</PageShown>;
+    }
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: aTable })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...saves,
+      },
+      quick,
+      true,
+      {},
+      undefined,
+      (page) => <Kept>{page}</Kept>,
+    );
+    const view = await surface();
+    caretIn(view, 'd1');
+    await screen.findByRole('toolbar', { name: 'Table toolbar' });
+
+    act(() => setShown(false));
+    expect(screen.queryByRole('toolbar', { name: 'Table toolbar' })).toBeNull();
+
+    act(() => setShown(true));
+    const back = screen.getByRole('toolbar', { name: 'Table toolbar' });
+    // Placed as it arrives, not at the corner it is drawn in until then.
+    expect(back.style.left).not.toBe('');
   });
 
   it('CNT-016 changes the grid from the toolbar, each button saying why where it would do nothing (ADR-0079)', async () => {

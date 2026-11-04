@@ -1,7 +1,7 @@
 import type { OutlineNode } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentPage } from './DocumentPage.js';
 import {
@@ -15,6 +15,10 @@ import {
   section,
   service,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -66,7 +70,7 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     const fake = open();
     await userEvent.click(await screen.findByRole('treeitem', { name: /^Method/ }));
     await userEvent.keyboard('{Delete}');
-    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    const question = screen.getByRole('dialog', { name: /^Remove / });
     const remove = within(question).getByRole('button', { name: 'Remove' });
     expect(remove).toHaveAttribute('aria-disabled', 'true');
     await userEvent.type(
@@ -94,7 +98,7 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
     await userEvent.click(await screen.findByRole('treeitem', { name: /Install the printer/ }));
     await userEvent.keyboard('{Delete}');
-    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    const question = screen.getByRole('dialog', { name: /^Remove / });
     await userEvent.type(
       within(question).getByRole('textbox', { name: 'Why it is removed' }),
       'Issued separately.',
@@ -111,7 +115,7 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     const fake = open();
     await userEvent.click(await screen.findByRole('treeitem', { name: /^Results/ }));
     await userEvent.keyboard('{Delete}');
-    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    const question = screen.getByRole('dialog', { name: /^Remove / });
     expect(within(question).queryByRole('textbox')).toBeNull();
     await userEvent.click(within(question).getByRole('button', { name: 'Remove' }));
     await waitFor(() =>

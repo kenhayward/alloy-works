@@ -2,7 +2,7 @@ import { defaultLayout, withholdComponents } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { OutlinePanel } from './OutlinePanel.js';
 import { WordsProvider } from '../words/words.js';
@@ -29,6 +29,10 @@ import {
   menuSays,
   openMenuItem,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -354,7 +358,7 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Results' });
 
     await userEvent.click(item('Results'));
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('Results now starts on a new page.'),
@@ -365,7 +369,7 @@ describe('the outline panel', () => {
         operation: { operation: 'set', node: RESULTS, pageBreak: 'page' },
       },
     ]);
-    expect(screen.getByLabelText('Starts on')).toHaveValue('page');
+    expect(screen.getByRole('radio', { name: 'A new page' })).toBeChecked();
   });
 
   it('removes a node and its subtree as one operation, once asked, and says it cannot be undone', async () => {
@@ -387,9 +391,7 @@ describe('the outline panel', () => {
     await userEvent.click(item('Method'));
     await userEvent.keyboard('{Delete}');
     expect(
-      screen.getByText(
-        'Remove Method and everything beneath it? This cannot be undone, and nothing before it can be undone afterwards.',
-      ),
+      screen.getByRole('dialog', { name: 'Remove Method and everything beneath it?' }),
     ).toBeInTheDocument();
     expect(fake.edits()).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
@@ -410,9 +412,14 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
 
     await userEvent.click(item('Method'));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove section' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Keep' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Remove section/ }));
+    expect(screen.getByRole('button', { name: 'Keep' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: /^Remove section/ })).toHaveFocus();
 
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Delete}');
+    await userEvent.click(screen.getByRole('button', { name: 'Keep' }));
     expect(item('Method')).toHaveFocus();
     expect(fake.edits()).toEqual([]);
   });
@@ -1108,14 +1115,20 @@ describe('an appendix in the outline panel', () => {
     await userEvent.click(item('Scope'));
     const box = screen.getByRole('switch', { name: 'Numbered' });
     expect(box).toBeChecked();
-    expect(box).toHaveAccessibleDescription('Not numbered while Method is not.');
+    expect(box).toHaveAccessibleDescription(
+      expect.stringContaining('Not numbered while Method is not.'),
+    );
     expect(screen.getByText('Not numbered while Method is not.')).toBeInTheDocument();
 
     // Nothing to say beside a node that is itself unticked, or one with a number.
     await userEvent.click(item('Method'));
-    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription(
+      expect.stringContaining('Not numbered while'),
+    );
     await userEvent.click(item('Results'));
-    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription(
+      expect.stringContaining('Not numbered while'),
+    );
     expect(screen.queryByText(/Not numbered while/)).toBeNull();
   });
 });
@@ -1199,10 +1212,10 @@ describe('undo from the node details', () => {
     await settled();
 
     // And the same from the select beside it.
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Starts on' }), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(3));
     await settled();
-    screen.getByRole('combobox', { name: 'Starts on' }).focus();
+    screen.getByRole('radio', { name: 'A new page' }).focus();
     await userEvent.keyboard('{Control>}z{/Control}');
     await waitFor(() => expect(fake.edits()).toHaveLength(4));
     expect(fake.edits().at(-1)?.body).toMatchObject({
@@ -1226,11 +1239,9 @@ describe("the Part tab's rows (ADR-0054)", () => {
     const equation = within(part()).getByRole('button', { name: 'Equation' });
     expect(equation).toHaveAttribute('title', 'Equation (Ctrl or Cmd, Shift and E)');
     expect(equation.closest('[data-field]')).toBe(title.closest('[data-field]'));
-    const link = within(part()).getByRole('textbox', { name: 'Link to Introduction' });
-    const copy = within(part()).getByRole('button', { name: 'Copy link' });
-    expect(copy.closest('[data-field]')).toBe(link.closest('[data-field]'));
-    const remove = within(part()).getByRole('button', { name: 'Remove section' });
-    expect(link.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const copy = within(part()).getByRole('button', { name: 'Copy a link to Introduction' });
+    const remove = within(part()).getByRole('button', { name: /^Remove section/ });
+    expect(copy.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     // A component has no title of its own: its name links to it.
     await userEvent.click(item('Install the printer, latest'));
@@ -1238,7 +1249,7 @@ describe("the Part tab's rows (ADR-0054)", () => {
       'href',
       `#/components/${PRINTER}`,
     );
-    expect(within(part()).getByRole('button', { name: 'Remove component' })).toBeInTheDocument();
+    expect(within(part()).getByRole('button', { name: /^Remove component/ })).toBeInTheDocument();
   });
 });
 

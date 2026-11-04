@@ -17,24 +17,16 @@ import {
   type OutlineOperation,
   type SectionViewNode,
 } from '@alloy-works/domain';
-import {
-  mountTitleEditor,
-  titleToEditor,
-  type EquationAt,
-  type EquationChoice,
-  type TitleEditor,
-} from '@alloy-works/editor';
+import { type EquationAt, type EquationChoice } from '@alloy-works/editor';
 import {
   lazy,
   Suspense,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type DragEvent,
-  type MutableRefObject,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
@@ -60,17 +52,24 @@ import {
   placeOf,
   sectionTitle,
   titleText,
-  trimTitle,
   visibleOrder,
   ancestorsOf,
   type DropTarget,
   type Names,
 } from './tree.js';
 import { StateLozenge } from '../states/Lozenge.js';
-import { HeldFields } from '../metadata/HeldFields.js';
-import { Segmented } from '../parts/Segmented.js';
 import { formats, words as say } from '../words/words.js';
 import { inlineKey } from '../parts/inline.js';
+import {
+  ConfirmRemoval,
+  holdsRequired,
+  PartPanel,
+  PartReadOnly,
+  placedBy,
+  ReferencedBy,
+  type PartFacts,
+} from './PartPanel.js';
+import { numberedOn, whereItSits } from './partSummary.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -85,7 +84,7 @@ const EquationDialog = lazy(() =>
  * selected whole in it, to change, or none, to place one at the caret; and how to place the answer,
  * which says why it could not or answers null once it has.
  */
-interface EquationRequest {
+export interface EquationRequest {
   readonly current: EquationAt | null;
   readonly place: (choice: EquationChoice) => string | null;
   /**
@@ -124,12 +123,12 @@ export type ComponentChoices =
  */
 export type Answered = OutlineView | 'refused' | 'unsent' | 'signedOut';
 
-type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
+export type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
 /** A title as a node holds it. */
-type Title = SectionViewNode['title'];
+export type Title = SectionViewNode['title'];
 
 /** A retitle's answer, or word that a newer commit to the same section took its place. */
-type RetitleAnswer = Answered | 'superseded';
+export type RetitleAnswer = Answered | 'superseded';
 
 /** A retitle waiting to be sent, with what it was committed behind. */
 interface Held {
@@ -388,58 +387,6 @@ export interface OutlinePanelProps {
  */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
 
-const PAGE_BREAKS = [
-  {
-    value: 'none',
-    get label() {
-      return say('document.wherever-it-falls');
-    },
-  },
-  {
-    value: 'page',
-    get label() {
-      return say('document.a-new-page');
-    },
-  },
-  {
-    value: 'recto',
-    get label() {
-      return say('document.a-new-right-hand-page');
-    },
-  },
-] as const;
-
-/** The three matters a top-level node may be in, in the order a publication prints them (STR-064). */
-const MATTERS = [
-  {
-    value: 'front',
-    get label() {
-      return say('document.front-matter');
-    },
-    get short() {
-      return say('document.front');
-    },
-  },
-  {
-    value: 'body',
-    get label() {
-      return say('document.body');
-    },
-    get short() {
-      return say('document.body');
-    },
-  },
-  {
-    value: 'appendix',
-    get label() {
-      return say('document.appendix');
-    },
-    get short() {
-      return say('document.appendix');
-    },
-  },
-] as const;
-
 /** Said where a key move is refused, in the words of the rule that refused it. */
 const TOP_LEVEL_ONLY = (): string => say('document.front-matter-and-appendices-stay');
 const FRONT_FIRST = (): string => say('document.front-matter-comes-before-the');
@@ -449,14 +396,6 @@ const FRONT_FIRST = (): string => say('document.front-matter-comes-before-the');
  * key is Backspace, which the tree leaves alone, so it says where removing is on one.
  */
 const KEYS = (): string => say('document.outline.keys');
-
-function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
-  return PAGE_BREAKS.some((each) => each.value === value);
-}
-
-function isMatter(value: string): value is OutlineViewNode['matter'] {
-  return MATTERS.some((each) => each.value === value);
-}
 
 /** The nearest ancestor of a node that is not numbered, which takes its number away (decision D). */
 function unnumberedAncestor(
@@ -558,6 +497,8 @@ export function OutlinePanel({
   const [attempted, setAttempted] = useState(false);
   const [chosen, setChosen] = useState('');
   const [confirming, setConfirming] = useState<string | null>(null);
+  // Asked for by the Delete key in the tree, whose row the focus goes back to; else, the red icon.
+  const askedFromTree = useRef(true);
   const [dragging, setDragging] = useState<string | null>(null);
   // Filled by each item's ref callback, never during render.
   const items = useRef(new Map<string, HTMLElement>());
@@ -830,15 +771,47 @@ export function OutlinePanel({
     node.type === 'reference' && node.component !== null && components.state === 'loaded'
       ? components.items.find((each) => each.id === node.component)?.state
       : undefined;
-  // Each component the node places, itself or beneath it, that the reader may read (STR-075; R14-B).
-  const usesOf = (node: OutlineViewNode) =>
-    usedIn !== undefined &&
-    components.state === 'loaded' && (
-      <UsedInRow
-        placed={placedBy(node).flatMap((id) => components.items.filter((each) => each.id === id))}
-        usedIn={usedIn}
-      />
-    );
+  /** The number a part would take, were it and all above it numbered: the same function as `numbers`. */
+  const numberIf = (id: string) =>
+    scheme === null
+      ? undefined
+      : sectionNumbers(
+          number(
+            conditions(
+              resolve(
+                { ...outline, nodes: numberedOn(outline.nodes, id) } as typeof outline,
+                NOTHING_KNOWN,
+              ),
+              outline.profile?.values ?? {},
+            ),
+            scheme,
+          ),
+        ).get(id);
+  const factsOf = (node: OutlineViewNode): PartFacts => ({
+    node,
+    names,
+    ...whereItSits(nodes, node.id),
+    number: numbers.get(node.id),
+    wouldBe:
+      node.numbered && unnumberedAncestor(nodes, node.id) === undefined
+        ? undefined
+        : numberIf(node.id),
+    state: placedState(node),
+    address: linkOf?.(node.id),
+    references:
+      referencesTo === undefined
+        ? undefined
+        : typeof referencesTo === 'function'
+          ? referencesTo(node.id)
+          : referencesTo,
+    referencedBy: referring(node.id),
+    placed:
+      components.state === 'loaded'
+        ? placedBy(node).flatMap((id) => components.items.filter((each) => each.id === id))
+        : [],
+    usedIn,
+    fieldCount: sectionFields?.length ?? 0,
+  });
   const referring = (id: string) =>
     referencesTo !== undefined && (
       <ReferencedBy
@@ -901,6 +874,7 @@ export function OutlinePanel({
   const remove = async (id: string, reason?: string) => {
     const place = placeOf(nodes, id);
     setConfirming(null);
+    askedFromTree.current = true;
     if (!place || !may) return;
     // Where selection goes once the node has: the sibling before it, its parent, or what follows.
     const neighbour =
@@ -1350,40 +1324,30 @@ export function OutlinePanel({
                   hidden: details.hidden,
                 })}
           >
-            {editable && selected && confirming === null && (
-              <NodeDetails
+            {editable && selected ? (
+              <PartPanel
                 key={selected.id}
-                node={selected}
+                facts={factsOf(selected)}
                 topLevel={placeOf(nodes, selected.id)?.parent === null}
                 frontOffered={mayBeFront(nodes, selected.id)}
                 frontAfter={frontAfter(nodes, selected.id)}
                 unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
-                names={names}
-                state={placedState(selected)}
                 busy={busy}
                 onOperation={(operation) => send(operation, null)}
                 onRetitle={retitle}
                 openField={openField}
                 onNotice={onNotice}
-                onRemove={() => setConfirming(selected.id)}
-                referencedBy={
-                  <>
-                    {referring(selected.id)}
-                    {usesOf(selected)}
-                  </>
-                }
-                conditions={
-                  <ConditionsRow
-                    node={selected}
-                    names={names}
-                    said={conditionsWords(
-                      selected.conditions,
-                      conditionAxes,
-                      standings.get(selected.id),
-                    )}
-                    {...(onConditions ? { onConditions } : {})}
-                  />
-                }
+                onRemove={() => {
+                  askedFromTree.current = false;
+                  setConfirming(selected.id);
+                }}
+                onGoTo={() => onSelected(selected.id)}
+                conditionsSaid={conditionsWords(
+                  selected.conditions,
+                  conditionAxes,
+                  standings.get(selected.id),
+                )}
+                onConditions={onConditions}
                 language={outline.language}
                 direction={outline.direction}
                 onEquation={askEquation}
@@ -1391,53 +1355,43 @@ export function OutlinePanel({
                 sectionFields={sectionFields ?? []}
                 schemas={schemas ?? []}
                 people={people ?? []}
-                link={
-                  linkOf && (
-                    <NodeLink
-                      address={linkOf(selected.id)}
-                      name={nodeName(selected, names)}
-                      onNotice={onNotice}
-                    />
-                  )
-                }
               />
-            )}
-            {editable && confirming !== null && (
-              <ConfirmRemoval
-                node={placeOf(nodes, confirming)?.node}
-                names={names}
-                referencedBy={
-                  referencesTo === undefined
-                    ? null
-                    : typeof referencesTo === 'function'
-                      ? referencesTo(confirming).length > 0
-                        ? { count: referencesTo(confirming).length, list: referring(confirming) }
-                        : null
-                      : referencesTo
-                }
-                needsReason={holdsRequired(placeOf(nodes, confirming)?.node, requiredSections)}
-                onRemove={(reason) => void remove(confirming, reason)}
-                onKeep={() => {
-                  setConfirming(null);
-                  setFocusTarget(confirming);
-                }}
+            ) : (
+              <PartReadOnly
+                key={selected?.id ?? 'none'}
+                facts={selected && factsOf(selected)}
+                onGoTo={() => selected && onSelected(selected.id)}
+                onNotice={onNotice}
               />
-            )}
-            {selected && linkOf && confirming === null && !editable && (
-              <div className={styles['rows']}>
-                <StateRow state={placedState(selected)} />
-                <NodeLink
-                  address={linkOf(selected.id)}
-                  name={nodeName(selected, names)}
-                  onNotice={onNotice}
-                />
-                {referring(selected.id)}
-                {usesOf(selected)}
-              </div>
             )}
           </div>,
         )}
       </div>
+      {editable &&
+        confirming !== null &&
+        createPortal(
+          <ConfirmRemoval
+            node={placeOf(nodes, confirming)?.node}
+            names={names}
+            referencedBy={
+              referencesTo === undefined
+                ? null
+                : typeof referencesTo === 'function'
+                  ? referencesTo(confirming).length > 0
+                    ? { count: referencesTo(confirming).length, list: referring(confirming) }
+                    : null
+                  : referencesTo
+            }
+            needsReason={holdsRequired(placeOf(nodes, confirming)?.node, requiredSections)}
+            onRemove={(reason) => void remove(confirming, reason)}
+            onKeep={() => {
+              setConfirming(null);
+              if (askedFromTree.current) setFocusTarget(confirming);
+              askedFromTree.current = true;
+            }}
+          />,
+          document.body,
+        )}
       {equating !== null &&
         // Beside the panel rather than inside it, because the panel is what it makes inert, and so that
         // a key pressed in it never reaches the panel's own undo.
@@ -1461,57 +1415,6 @@ export function OutlinePanel({
           document.body,
         )}
     </>
-  );
-}
-
-/**
- * The selected node's shareable address (STR-044), for everybody who may read the document: in a field
- * that can be selected and copied by hand, and a button that copies it - the one way to share it from
- * the desktop app, which has no address bar.
- */
-function NodeLink({
-  address,
-  name,
-  onNotice,
-}: {
-  address: string;
-  name: string;
-  onNotice: (message: string | null) => void;
-}) {
-  return (
-    <div className={styles['partRow']}>
-      <span className={styles['rowLabel']} aria-hidden="true">
-        {say('document.link')}
-      </span>
-      <span className={styles['field']} data-field="">
-        <input
-          readOnly
-          aria-label={say('document.link-to', { name })}
-          className={styles['mono']}
-          value={address}
-          onFocus={(event) => event.target.select()}
-        />
-        <button
-          type="button"
-          className={styles['inField']}
-          aria-label={say('document.copy-link')}
-          title={say('document.copy-link')}
-          onClick={() => {
-            const copying = navigator.clipboard?.writeText(address);
-            if (!copying) {
-              onNotice(say('document.the-link-could-not-be'));
-              return;
-            }
-            copying.then(
-              () => onNotice(say('document.copied-the-link-to', { name })),
-              () => onNotice(say('document.the-link-could-not-be')),
-            );
-          }}
-        >
-          <Icon name="Copy link" size={14} />
-        </button>
-      </span>
-    </div>
   );
 }
 
@@ -1574,764 +1477,5 @@ function ComponentChooser({
         {say('document.cancel')}
       </button>
     </form>
-  );
-}
-
-/**
- * A removal has no inverse (`tree.ts`, `inverseOf`), and it empties the undo stack, because every entry
- * beneath it was computed against an outline that still held what it took - so the question says both.
- */
-/**
- * The places in the document that refer to a node (STR-074), one link each, by the node it stands in
- * and how many references it holds: a Part panel row, and the list a removal names.
- */
-function ReferencedBy({
-  references,
-  withheld,
-  nameOf,
-  linkOf,
-  onGo,
-}: {
-  references: readonly IncomingReference[] | 'checking' | 'unknown';
-  /** The outline holds an occurrence the reader may not read, so "nothing" is only what they can read. */
-  withheld: boolean;
-  nameOf: (node: string) => string;
-  linkOf: ((node: string) => string) | undefined;
-  onGo: (node: string) => void;
-}) {
-  const label = useId();
-  const counts = new Map<string, number>();
-  if (typeof references !== 'string') {
-    for (const each of references) counts.set(each.from, (counts.get(each.from) ?? 0) + 1);
-  }
-  return (
-    <div className={styles['partRow']}>
-      <span id={label} className={styles['rowLabel']}>
-        {say('document.referenced-by')}
-      </span>
-      {references === 'checking' ? (
-        <span>{say('document.checking')}</span>
-      ) : references === 'unknown' ? (
-        <span>{say('document.could-not-be-checked')}</span>
-      ) : counts.size === 0 ? (
-        <span>
-          {withheld
-            ? say('document.nothing-you-can-read-in')
-            : say('document.nothing-else-in-this-document')}
-        </span>
-      ) : (
-        <ul aria-labelledby={label} className={styles['referring']}>
-          {[...counts].map(([from, count]) => (
-            <li key={from}>
-              <a
-                href={linkOf?.(from) ?? '#'}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onGo(from);
-                }}
-              >
-                {say('document.referenced-from', { name: nameOf(from), count })}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-const IRREVERSIBLE = (): string => say('document.this-cannot-be-undone-and');
-
-/**
- * Whether a node, or anything beneath it, is a section or a component the template requires (TPL-029,
- * TPL-044): each carries the key it was made for as its `origin`.
- */
-function holdsRequired(node: OutlineViewNode | undefined, required: readonly string[]): boolean {
-  if (!node || required.length === 0) return false;
-  if (node.origin !== undefined && required.includes(node.origin)) {
-    return true;
-  }
-  return node.children.some((child) => holdsRequired(child, required));
-}
-
-function ConfirmRemoval({
-  node,
-  names,
-  referencedBy,
-  needsReason,
-  onRemove,
-  onKeep,
-}: {
-  node: OutlineViewNode | undefined;
-  /** It takes a section or a component the template requires: removed only with a reason. */
-  needsReason: boolean;
-  names: Names;
-  /**
-   * What refers to the node from elsewhere (STR-074): warned of, never refused; or not known yet, or
-   * not known at all, which is said rather than taken for nothing.
-   */
-  referencedBy:
-    { readonly count: number; readonly list: ReactNode } | 'checking' | 'unknown' | null;
-  onRemove: (reason?: string) => void;
-  onKeep: () => void;
-}) {
-  const question = useId();
-  const warning = useId();
-  const [reason, setReason] = useState('');
-  if (!node) return null;
-  const waiting = needsReason && reason.trim() === '';
-  const name = nodeName(node, names);
-  return (
-    <div
-      role="group"
-      aria-label={say('document.confirm-removal')}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onKeep();
-      }}
-    >
-      <p id={question}>
-        {node.children.length > 0
-          ? say('document.remove-and-everything-beneath-it', { name, IRREVERSIBLE: IRREVERSIBLE() })
-          : say('document.remove-3', { name, IRREVERSIBLE: IRREVERSIBLE() })}
-      </p>
-      {referencedBy === 'checking' && (
-        <p id={warning}>{say('document.whether-anything-else-in-this')}</p>
-      )}
-      {referencedBy === 'unknown' && (
-        <p id={warning}>{say('document.whether-anything-else-in-this-2')}</p>
-      )}
-      {referencedBy !== null && typeof referencedBy !== 'string' && (
-        <>
-          <p id={warning}>
-            {say('document.referenced-elsewhere-in-this-document', {
-              count: referencedBy.count,
-            })}
-          </p>
-          {referencedBy.list}
-        </>
-      )}
-      {needsReason && (
-        <label>
-          {say('document.why-it-is-removed')}
-          <textarea
-            value={reason}
-            maxLength={2000}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </label>
-      )}
-      {/* Focus goes to the question the author has just asked to be put, which describes it. */}
-      <button
-        type="button"
-        autoFocus
-        aria-describedby={referencedBy === null ? question : `${question} ${warning}`}
-        aria-disabled={waiting}
-        onClick={() => {
-          if (waiting) return;
-          onRemove(needsReason ? reason.trim() : undefined);
-        }}
-      >
-        {say('document.remove-2')}
-      </button>
-      <button type="button" onClick={onKeep}>
-        {say('document.keep')}
-      </button>
-    </div>
-  );
-}
-
-/**
- * What a section title field shows and what the outline held when it last heard: the same
- * reconciliation `ComponentHeader` uses, by value and never by counting renders, so StrictMode's second
- * pass cannot eat a keystroke and an unrelated re-render cannot revert a field being typed.
- *
- * **Titles, compared by their canonical form** (equations 3, ruling R2): a title may hold an equation,
- * and its words are then only the equation's alternative, which two different equations can share -
- * so "the same title" is `canonicaliseTitle`'s answer, the form the outline's digest takes, and never
- * a comparison of words. `typed` is what the field's editor holds, mirrored as it changes; setting it
- * to anything else puts that into the editor.
- */
-interface Field {
-  readonly typed: Title;
-  readonly inModel: Title;
-  /**
-   * The canonical form of every title this field has sent and not yet heard back about, oldest first.
-   * A second commit can be made while the first is still in flight, and either coming back is this
-   * field's own.
-   */
-  readonly sent: readonly string[];
-}
-
-/** A placed component's workflow state, a row of the Part panel (WF-G); nothing where none is known. */
-function StateRow({
-  state,
-}: {
-  state: { readonly key: string; readonly name: string } | undefined;
-}) {
-  if (state === undefined) return null;
-  return (
-    <div className={styles['partRow']}>
-      <span className={styles['rowLabel']}>{say('document.state')}</span>
-      <StateLozenge size="small" state={state} />
-    </div>
-  );
-}
-
-/** The components a node places, once each in outline order: its own, or every one beneath it. */
-export function placedBy(node: OutlineViewNode): string[] {
-  const own = node.type === 'reference' && node.component !== null ? [node.component] : [];
-  return [...new Set([...own, ...node.children.flatMap(placedBy)])];
-}
-
-/** **Used in** for each component a node places (STR-075; R14-B), said nowhere it places none. */
-function UsedInRow({
-  placed,
-  usedIn,
-}: {
-  placed: readonly ComponentChoice[];
-  usedIn: (component: ComponentChoice) => ReactNode;
-}) {
-  const label = useId();
-  if (placed.length === 0) return null;
-  return (
-    <div className={styles['partRow']}>
-      <span id={label} className={styles['rowLabel']}>
-        {say('document.used-in')}
-      </span>
-      <ul aria-labelledby={label} className={styles['referring']}>
-        {placed.map((each) => (
-          <li key={each.id}>{usedIn(each)}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function NodeDetails({
-  node,
-  topLevel,
-  frontOffered,
-  frontAfter,
-  unnumberedAbove,
-  names,
-  state,
-  busy,
-  onOperation,
-  onRetitle,
-  openField,
-  onNotice,
-  onRemove,
-  language,
-  direction,
-  onEquation,
-  onWithdrawEquation,
-  sectionFields,
-  schemas,
-  people,
-  link,
-  referencedBy,
-  conditions,
-}: {
-  node: OutlineViewNode;
-  /** What it is kept for, and how to change that (REU-021, REU-026; the R12 plan). */
-  conditions?: ReactNode;
-  /** The node's link (`NodeLink`), a row of its own before Remove. */
-  link?: ReactNode;
-  /** What in the document refers to it (STR-074), a row after its link. */
-  referencedBy?: ReactNode;
-  /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
-  topLevel: boolean;
-  /** Whether **Front matter** is one of the node's choices: what `mayBeFront` says (STR-064). */
-  frontOffered: boolean;
-  /**
-   * The front node after this one, beneath which its matter cannot change at all: what `frontAfter`
-   * says (STR-064). Only a front node ever has one.
-   */
-  frontAfter: OutlineViewNode | undefined;
-  /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
-  unnumberedAbove: OutlineViewNode | undefined;
-  names: Names;
-  /** A placed component's state, where the reader may read it (WF-G). */
-  state: { readonly key: string; readonly name: string } | undefined;
-  busy: boolean;
-  onOperation: (operation: OutlineOperation) => Promise<Answered>;
-  onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
-  openField: MutableRefObject<string | null>;
-  onNotice: (message: string | null) => void;
-  onRemove: () => void;
-  /** The document's language and direction, which a section's title is written in. */
-  language: string;
-  direction: 'ltr' | 'rtl';
-  /** Opens the Equation dialog for the title field (equations 3, ruling R3). */
-  onEquation: (request: EquationRequest) => void;
-  /** Closes that dialog, placing nothing, because the title changed under it. */
-  onWithdrawEquation: () => void;
-  sectionFields: readonly FieldView[];
-  schemas: readonly { readonly id: string; readonly name: string }[];
-  people: readonly { readonly id: string; readonly name: string }[];
-}) {
-  const hintId = useId();
-  const matterHintId = useId();
-  const startsId = useId();
-  const numberedId = useId();
-  // Ticked, and still without a number: said beside the box, so the tick does not look ignored.
-  const hint =
-    node.numbered && unnumberedAbove !== undefined
-      ? say('document.not-numbered-while-is-not', { value1: nodeName(unnumberedAbove, names) })
-      : null;
-  // Front matter with front matter after it: every other matter would strand that one after this
-  // one, which the outline's parse refuses, so there is nothing this select can be given. Said
-  // beside it and the select disabled, the shape the Numbered box's hint follows, rather than a
-  // select of one option, which reads as a control that has broken.
-  const matterHint =
-    frontAfter === undefined
-      ? null
-      : say('document.front-matter-comes-first-so', { value1: nodeName(frontAfter, names) });
-  return (
-    <div className={styles['rows']}>
-      {/* A component has no title of its own, so its name is a link to it (ADR-0054, decision 8). */}
-      {node.type === 'reference' && node.component !== null && (
-        <div className={styles['partRow']}>
-          <span className={styles['rowLabel']}>{say('document.component')}</span>
-          <a className={styles['named']} href={`#/components/${node.component}`}>
-            {nodeName(node, names)}
-          </a>
-        </div>
-      )}
-      <StateRow state={state} />
-      {node.type === 'section' && (
-        <TitleField
-          node={node}
-          onRetitle={onRetitle}
-          openField={openField}
-          onNotice={onNotice}
-          language={language}
-          direction={direction}
-          onEquation={onEquation}
-          onWithdrawEquation={onWithdrawEquation}
-        />
-      )}
-      {/* A section's own fields, from its document's template, saved with the outline's set a pause
-          after the last change (definitions.md; STR-060). A component's are its own, in its editor. */}
-      {node.type === 'section' && sectionFields.length > 0 && (
-        <HeldFields
-          label={say('document.fields-of', { value1: nodeName(node, names) })}
-          fields={sectionFields}
-          schemas={schemas}
-          people={people}
-          stored={node.values}
-          readOnly={false}
-          onSave={async (values) => {
-            const answered = await onOperation({ operation: 'set', node: node.id, values });
-            return answered === 'unsent'
-              ? 'unsent'
-              : answered === 'refused' || answered === 'signedOut'
-                ? 'refused'
-                : 'saved';
-          }}
-        />
-      )}
-      <div className={styles['partRow']}>
-        <label className={styles['rowLabel']} htmlFor={startsId}>
-          {say('document.starts-on')}
-        </label>
-        <select
-          id={startsId}
-          value={node.pageBreak}
-          onChange={(event) => {
-            // Left enabled while an act is in flight, so it keeps the focus; a choice made then is
-            // not sent, and the select, being controlled, goes on showing what the node holds.
-            const pageBreak = event.target.value;
-            if (busy || !isPageBreak(pageBreak) || pageBreak === node.pageBreak) return;
-            void onOperation({ operation: 'set', node: node.id, pageBreak });
-          }}
-        >
-          {PAGE_BREAKS.map((each) => (
-            <option key={each.value} value={each.value}>
-              {each.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
-          made then is not sent, and the box goes on showing what the node holds. Each sends the one
-          switch it is; a section's values are sent by its fields, above. */}
-      <div className={styles['partRow']}>
-        <label className={styles['rowLabel']} htmlFor={numberedId}>
-          {say('document.numbered')}
-        </label>
-        <span className={styles['stack']}>
-          <input
-            id={numberedId}
-            type="checkbox"
-            role="switch"
-            className={styles['switch']}
-            checked={node.numbered}
-            aria-describedby={hint === null ? undefined : hintId}
-            onChange={(event) => {
-              if (busy) return;
-              void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
-            }}
-          />
-          {hint !== null && (
-            <span id={hintId} className={styles['hint']}>
-              {hint}
-            </span>
-          )}
-        </span>
-      </div>
-      {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
-          the outline's parse refuses one set anywhere else. **Front matter** is left out where the
-          parse would refuse it, so only what can be chosen is offered - a node already in front
-          matter keeps it whatever `mayBeFront` says, or the select would show a value it has no
-          option for. Where no matter at all can be chosen the select is disabled with its reason
-          beside it, since the parse would refuse every other one. Left enabled while an act is in
-          flight, as the select above is. */}
-      {topLevel && (
-        <div className={styles['partRow']}>
-          <span className={styles['rowLabel']} aria-hidden="true">
-            {say('document.matter')}
-          </span>
-          <span className={styles['stack']}>
-            <Segmented
-              label={say('document.matter')}
-              value={node.matter}
-              disabled={matterHint !== null}
-              describedBy={matterHint === null ? undefined : matterHintId}
-              options={MATTERS.filter(
-                (each) => each.value !== 'front' || frontOffered || node.matter === 'front',
-              ).map((each) => ({ value: each.value, name: each.label, label: each.short }))}
-              onChange={(matter) => {
-                if (busy || !isMatter(matter) || matter === node.matter) return;
-                void onOperation({ operation: 'set', node: node.id, matter });
-              }}
-            />
-            {matterHint !== null && (
-              <span id={matterHintId} className={styles['hint']}>
-                {matterHint}
-              </span>
-            )}
-          </span>
-        </div>
-      )}
-      {conditions}
-      {link}
-      {referencedBy}
-      <div className={styles['foot']}>
-        <button type="button" className={styles['remove']} onClick={() => !busy && onRemove()}>
-          <Icon name="Delete" size={14} />
-          {node.type === 'section'
-            ? say('document.remove-section')
-            : say('document.remove-component')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * **What a node is kept for** (REU-021, REU-026; the R12 plan): its conditions in words, or every
- * reader, and **Set condition**, which opens the Condition dialog the page holds.
- */
-function ConditionsRow({
-  node,
-  names,
-  said,
-  onConditions,
-}: {
-  node: OutlineViewNode;
-  names: Names;
-  said: string | null;
-  onConditions?: (node: string) => void;
-}) {
-  return (
-    <div className={styles['partRow']}>
-      <span className={styles['rowLabel']}>{say('document.conditions')}</span>
-      <span className={styles['stack']}>
-        <span>{said ?? say('document.kept-for-every-reader')}</span>
-        {onConditions && (
-          <button
-            type="button"
-            className={styles['named']}
-            aria-label={say('document.set-condition-on', { value1: nodeName(node, names) })}
-            onClick={() => onConditions(node.id)}
-          >
-            {say('document.set-condition')}
-          </button>
-        )}
-      </span>
-    </div>
-  );
-}
-
-/** `sent` with the first occurrence of `key` taken out: the one commit that will not come back. */
-function withoutFirst(sent: readonly string[], key: string): readonly string[] {
-  const at = sent.indexOf(key);
-  return at < 0 ? sent : [...sent.slice(0, at), ...sent.slice(at + 1)];
-}
-
-/**
- * Why a title is not changed here, in the words of what it holds that the field cannot keep: a
- * cross-reference, a footnote, formatting, or - an image, a variable - anything else.
- */
-function heldBack(title: Title): string {
-  if (title.some((run) => run.type === 'crossReference')) {
-    return say('document.this-title-holds-a-cross');
-  }
-  if (title.some((run) => run.type === 'footnote')) {
-    return say('document.this-title-holds-a-footnote');
-  }
-  if (title.some((run) => run.type === 'text' && run.marks.length > 0)) {
-    return say('document.this-title-has-formatting-this');
-  }
-  return say('document.this-title-holds-something-this');
-}
-
-/** The words a title's text runs hold, joined: what the store's `hasText` asks of a title. */
-const wordsOf = (title: Title) =>
-  title.map((run) => (run.type === 'text' ? run.value : '')).join('');
-
-/**
- * **A section's title field** (equations 3, rulings R1 to R3): the title editor from
- * `packages/editor`, one line of words and inline equations, for a title holding only those; a title
- * holding a mark or a cross-reference keeps a read-only field and a sentence saying what it holds,
- * because an edit here would quietly drop it.
- *
- * The retitle state machine is the one a plain text field had, by canonical title rather than by
- * text: what was typed, what the outline held when the field last heard, and what it has sent - so a
- * retitle in flight, a refusal, an undo and another author's title behave as they always did, an
- * equation included. **Equation** beside it, and `Mod-Shift-E` or `Enter` on an equation in it, open
- * the Equation dialog for the title; placing one commits the title as it then stands.
- */
-function TitleField({
-  node,
-  onRetitle,
-  openField,
-  onNotice,
-  language,
-  direction,
-  onEquation,
-  onWithdrawEquation,
-}: {
-  node: SectionViewNode;
-  onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
-  openField: MutableRefObject<string | null>;
-  onNotice: (message: string | null) => void;
-  language: string;
-  direction: 'ltr' | 'rtl';
-  onEquation: (request: EquationRequest) => void;
-  onWithdrawEquation: () => void;
-}) {
-  // Says which section's field is open, for as long as it is: written in an effect, never in render.
-  useEffect(() => {
-    openField.current = node.id;
-    return () => {
-      if (openField.current === node.id) openField.current = null;
-    };
-  }, [openField, node.id]);
-
-  const editable = titleToEditor(node.title) !== null;
-  const inModel = canonicaliseTitle(node.title);
-  const [field, setField] = useState<Field>({ typed: node.title, inModel: node.title, sent: [] });
-
-  // State derived from a prop, adjusted during render the way React documents it: a second render
-  // pass reads what the first set, and the comparison is by value, so it settles at once. Nothing
-  // happens unless the outline's title differs from what the field last heard, so a re-render for
-  // any other reason - another act answered while the author is typing here - leaves the field alone.
-  // When it does differ, any of the field's own retitles coming back keeps what has been typed since
-  // (and the ones sent after it are still to come); anything else - an undo, somebody else's title -
-  // gives way to the outline.
-  if (inModel !== canonicaliseTitle(field.inModel)) {
-    const at = field.sent.indexOf(inModel);
-    setField(
-      at >= 0
-        ? { typed: field.typed, inModel: node.title, sent: field.sent.slice(at + 1) }
-        : { typed: node.title, inModel: node.title, sent: [] },
-    );
-  }
-
-  const place = useRef<HTMLDivElement | null>(null);
-  const editor = useRef<TitleEditor | null>(null);
-  // The field is asking for its dialog: the focus leaving it for the dialog is not the author leaving
-  // the title, so it commits nothing until the dialog places an equation or is closed.
-  const asking = useRef(false);
-  // Read by the editor's keys, which are bound once as it mounts: always this render's.
-  const typed = useRef(field.typed);
-  typed.current = field.typed;
-  const commitNow = useRef(() => {});
-  const promptNow = useRef(() => {});
-  const withdrawNow = useRef(onWithdrawEquation);
-  withdrawNow.current = onWithdrawEquation;
-
-  // The editor, mounted into its place as the field appears and destroyed as it goes: a layout effect,
-  // so the field is there in the same commit as the details around it, as a text input was.
-  useLayoutEffect(() => {
-    const host = place.current;
-    if (!editable || host === null) return undefined;
-    const mounted = mountTitleEditor(host, {
-      title: typed.current,
-      label: say('document.title'),
-      language,
-      direction,
-      onChange: (title) => setField((previous) => ({ ...previous, typed: title })),
-      onCommit: () => commitNow.current(),
-      onPromptEquation: () => promptNow.current(),
-    });
-    editor.current = mounted;
-    return () => {
-      editor.current = null;
-      mounted.destroy();
-      // The field going, or turning read-only, under its dialog: nothing is left to place into.
-      if (asking.current) withdrawNow.current();
-    };
-  }, [editable, language, direction]);
-
-  // The field given way to the outline, or put back after a refusal: what it now says it holds is put
-  // into the editor. Typing reaches here too, and changes nothing, because the editor already holds it.
-  // A title put in under the field's own dialog takes the dialog away with it: what it was opened on is
-  // gone, and placing its answer would change an equation, or a title, the author never saw.
-  useLayoutEffect(() => {
-    const mounted = editor.current;
-    if (mounted === null) return;
-    if (canonicaliseTitle(mounted.read()) !== canonicaliseTitle(field.typed)) {
-      mounted.replace(field.typed);
-      if (asking.current) withdrawNow.current();
-    }
-  }, [field.typed]);
-
-  if (!editable) {
-    return (
-      <>
-        <div className={styles['partRow']}>
-          <label className={styles['rowLabel']}>
-            {say('document.title')}
-            <input className={styles['hiddenInput']} value={titleText(node.title)} disabled />
-          </label>
-          <span className={styles['stack']}>
-            <span className={styles['field']} data-field="">
-              <input value={titleText(node.title)} disabled aria-hidden="true" tabIndex={-1} />
-            </span>
-            <span className={styles['hint']}>{heldBack(node.title)}</span>
-          </span>
-        </div>
-      </>
-    );
-  }
-
-  // Committed whether or not another act is in flight: `onRetitle` holds it until that act is
-  // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon. Read
-  // from the editor rather than from `typed`, which an equation placed a moment ago has not reached.
-  const commit = () => {
-    const title = trimTitle(editor.current?.read() ?? field.typed);
-    // The store's own rule (`hasText`), asked here so the field refuses exactly what the store would.
-    if (!hasText(wordsOf(title))) {
-      if (title.some((run) => run.type === 'equation')) {
-        // An equation is not a title on its own - a title also names its section wherever a name
-        // must be words - but it is the author's, so it is kept for them to write words beside.
-        onNotice(say('document.a-section-s-title-needs'));
-        return;
-      }
-      // Nothing was sent, so the outline never changed and the comparison above never resyncs this
-      // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
-      onNotice(say('document.a-section-needs-a-title'));
-      setField({ typed: node.title, inModel: node.title, sent: [] });
-      return;
-    }
-    const key = canonicaliseTitle(title);
-    // Nothing new: the outline holds it, or it is the title this field sent last and is still waiting
-    // on - the blur that follows an Enter - so it is not committed a second time.
-    if (key === inModel || key === field.sent[field.sent.length - 1]) return;
-    setField((previous) => ({ ...previous, sent: [...previous.sent, key] }));
-    void onRetitle({ operation: 'retitle', node: node.id, title }).then((answer) => {
-      if (answer === 'refused') {
-        // The page now shows an outline other than the one this title was typed against, and has
-        // said so. The field gives way to it, rather than holding the refused title for the next
-        // blur to send again as an act nobody chose a second time.
-        setField((previous) => ({
-          typed: previous.inModel,
-          inModel: previous.inModel,
-          sent: [],
-        }));
-      } else if (answer === 'unsent' || answer === 'signedOut' || answer === 'superseded') {
-        // Nothing changed and nothing was recorded - or a later commit took its place - so it will
-        // not come back: the title stays, and after a failure the author's next Enter or blur is the
-        // retry the page asks for.
-        setField((previous) => ({ ...previous, sent: withoutFirst(previous.sent, key) }));
-      }
-    });
-  };
-  commitNow.current = commit;
-
-  // The dialog for the title: on the equation selected whole in it, or for a new one at the caret.
-  // Placing it commits the title as it then stands, which is the one act the author asked for.
-  const openEquation = () => {
-    const mounted = editor.current;
-    if (mounted === null) return;
-    asking.current = true;
-    const current = mounted.equationAt();
-    onEquation({
-      current,
-      place: (choice) => {
-        const into = editor.current;
-        if (into === null) {
-          return say('document.this-title-can-no-longer');
-        }
-        const placed =
-          current === null ? into.insertEquation(choice) : into.changeEquation(current.pos, choice);
-        if (!placed) {
-          return current === null
-            ? say('document.an-equation-cannot-be-placed')
-            : say('document.that-equation-is-not-there');
-        }
-        asking.current = false;
-        // This render's commit, not the one the dialog was opened from: an answer to an earlier
-        // retitle may have arrived while the dialog stood, and what was sent is read from the latest.
-        commitNow.current();
-        return null;
-      },
-      back: () => {
-        asking.current = false;
-        const into = editor.current;
-        if (into === null) return false;
-        into.focus();
-        return true;
-      },
-    });
-  };
-  promptNow.current = openEquation;
-
-  // The field and its button are one place to the author: the focus moving between them is not
-  // leaving the title, and leaving both is, as leaving a text input was. The focus leaving for the
-  // title's own dialog is not either: placing an equation commits, and cancelling comes back here.
-  return (
-    <div
-      className={styles['partRow']}
-      onFocus={() => {
-        asking.current = false;
-      }}
-      onBlur={(event) => {
-        if (asking.current || event.currentTarget.contains(event.relatedTarget)) return;
-        commit();
-      }}
-    >
-      <span className={styles['rowLabel']} aria-hidden="true">
-        {say('document.title')}
-      </span>
-      <span className={styles['field']} data-field="">
-        <div ref={place} className={styles['titleField']} />
-        <button
-          type="button"
-          className={styles['inField']}
-          aria-haspopup="dialog"
-          aria-label={say('document.equation')}
-          title={say('document.equation-ctrl-or-cmd-shift')}
-          // The caret stays in the title, where the equation goes, as a toolbar's button leaves it.
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={openEquation}
-        >
-          <Icon name="Equation" size={14} />
-        </button>
-      </span>
-    </div>
   );
 }

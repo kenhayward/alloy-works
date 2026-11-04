@@ -74,7 +74,7 @@ import { MoveDialog } from '../lifecycle/MoveDialog.js';
 import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
-import { UsedInButton } from '../reuse/UsedIn.js';
+import { UsedInRow } from '../reuse/UsedIn.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { TermIndexes } from '../editor/terming.js';
@@ -3035,10 +3035,11 @@ export function DocumentPage({
                   onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
                   linked={linked}
                   usedIn={(component) => (
-                    <UsedInButton
+                    <UsedInRow
                       client={client}
                       id={component.id}
                       title={component.title}
+                      document={document.id}
                       label={say('document.where-is-used', { title: component.title })}
                     />
                   )}
@@ -3085,11 +3086,13 @@ export function DocumentPage({
                     hidden={dockPane.collapsed}
                   >
                     {/* The Assistant names itself in its own toolbar line (issue #864); the Threads panel in its header. */}
-                    {shownDock !== 'assistant' && shownDock !== 'threads' && (
-                      <h2 className={styles['dockHeading']}>
-                        {dockTabs.find((each) => each.key === shownDock)?.label}
-                      </h2>
-                    )}
+                    {shownDock !== 'assistant' &&
+                      shownDock !== 'threads' &&
+                      shownDock !== 'part' && (
+                        <h2 className={styles['dockHeading']}>
+                          {dockTabs.find((each) => each.key === shownDock)?.label}
+                        </h2>
+                      )}
                     {/* A stop while it shows what a selection offers, which may hold no control to tab to. */}
                     <div
                       className={styles['dockBody']}

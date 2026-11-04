@@ -307,6 +307,18 @@ describe('the inverse of an act is one operation', () => {
     expect(applied(after, inverseOf(before, after, retitle))).toEqual(before);
   });
 
+  it('STR-076 takes back a section numbered with its title taken as one undo', () => {
+    const before = three();
+    const numbering: OutlineOperation = {
+      operation: 'set',
+      node: METHOD,
+      numbered: false,
+      title: sectionTitle('Methods'),
+    };
+    const after = applied(before, numbering);
+    expect(applied(after, inverseOf(before, after, numbering))).toEqual(before);
+  });
+
   it('undoes a change to a reference overrides by setting them back, none as none', () => {
     const before: OutlineDocument = {
       ...three(),

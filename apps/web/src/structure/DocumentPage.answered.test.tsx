@@ -1,7 +1,7 @@
 import { OUTLINE_SCHEMA_VERSION, type OutlineNode } from '@alloy-works/domain';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import {
   outline,
@@ -23,6 +23,10 @@ import {
   OUTLINE_URL,
   SOMEBODY_ELSE,
 } from './test/documentPage.js';
+
+beforeEach(() => {
+  window.localStorage.setItem('aw.part.groups', 'layout fields readers links');
+});
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -59,11 +63,11 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     expect(screen.getByRole('tree')).toHaveAttribute('aria-busy', 'true');
     // Nothing that may hold focus is disabled under the author while the answer is awaited.
-    expect(screen.getByLabelText('Starts on')).not.toBeDisabled();
+    expect(screen.getByRole('radiogroup', { name: 'Starts on' })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: 'Undo' })).not.toBeDisabled();
     await typeTitle('s');
     expect(shownTitle()).toBe('Methods');
@@ -124,7 +128,7 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s{Enter}');
     expect(fake.edits()).toHaveLength(1);
@@ -152,7 +156,7 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s');
     // Leaving for another node blurs the field, and the field goes with the selection.
@@ -175,7 +179,7 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s{Enter}');
     fake.theirs({
@@ -204,7 +208,7 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s{Enter}');
     fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
@@ -229,7 +233,7 @@ describe('the outline panel, answered', () => {
 
     fake.refuseNext(OUTLINE_URL, 500);
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s{Enter}');
     release();
@@ -253,7 +257,7 @@ describe('the outline panel, answered', () => {
 
     fake.refuseNext(OUTLINE_URL, 500);
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s');
     await userEvent.click(item('Introduction'));
@@ -295,7 +299,7 @@ describe('the outline panel, answered', () => {
 
     fake.refuse(OUTLINE_URL, 401);
     const release = fake.hold();
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await typeTitle('s');
     await userEvent.click(item('Introduction'));
@@ -331,7 +335,7 @@ describe('the outline panel, answered', () => {
       await screen.findByRole('treeitem', { name: 'Method' });
       await userEvent.click(item('Method'));
       const release = fake.hold();
-      await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+      await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
       await waitFor(() => expect(fake.edits()).toHaveLength(1));
       await typeTitle('s');
       await userEvent.click(item('Introduction'));
@@ -711,7 +715,7 @@ describe('the outline panel, answered', () => {
     await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
     await settled();
     expect(screen.getByRole('tree')).toHaveTextContent(/A component.*Introduction/);
-    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'A new page');
+    await userEvent.click(screen.getByRole('radio', { name: 'A new page' }));
     expect(
       await screen.findByRole('treeitem', { name: 'A component, pinned, starts on a new page' }),
     ).toBeInTheDocument();
