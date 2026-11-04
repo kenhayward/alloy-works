@@ -52,15 +52,9 @@ import { DocumentPage } from '../structure/DocumentPage.js';
 import { VocabulariesContext, vocabulariesFrom } from '../metadata/vocabularies.js';
 import { documentAddress, documentLink, templateAccessAddress } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
-import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
-import { OutlineRail } from '../structure/OutlineTabs.js';
-import { PageShown, StatusTools } from '../shell/Status.js';
-import { ZoomControl } from '../theme/Canvas.js';
-import { PresentationProvider } from '../theme/presentation.js';
-import { ComponentEditor, type Mine } from './ComponentEditor.js';
-import { COMPONENT_PANELS, ComponentDock } from './ComponentDock.js';
+import { PageShown } from '../shell/Status.js';
+import { ComponentPage } from './ComponentPage.js';
 import { ComponentList } from './ComponentList.js';
-import { SpacePane } from './SpacePane.js';
 import styles from './Workspace.module.css';
 import { Notice } from '../states/Notice.js';
 import { words } from '../words/words.js';
@@ -92,12 +86,6 @@ const LISTS = new Set([
   '#/translations',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
-
-/** The space pane beside an open component: dragged as the document's outline is, and hidden to a rail. */
-const SPACE_PANE = { storageKey: 'aw.component.space', min: 200, max: 480, initial: 260 };
-/** The panels beside an open component, and the same while they offer the Table tab (ADR-0052). */
-const COMPONENT_DOCK_PANE = { storageKey: 'aw.component.panels', min: 280, max: 640, initial: 320 };
-const COMPONENT_TABLE_PANE = { storageKey: 'aw.component.table', min: 360, max: 720, initial: 440 };
 
 /** Administration, given About's content from the shell. */
 function AdministrationPage({ client }: { client: ReturnType<typeof createApiClient> }) {
@@ -182,34 +170,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   // finding 5): a server error or no answer, which Try again asks about once more.
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  // The space the open component turned out to be in, for the pane beside the editor; kept with the
-  // component it belongs to, so the pane never shows one component's space beside another.
-  // Where an open component's fields are set: its Attributes panel, once that is there (LG6b).
-  const [fieldsHost, setFieldsHost] = useState<HTMLElement | null>(null);
-  // Where an open component's table is formatted, and whether it holds one (ADR-0052).
-  const [tableHost, setTableHost] = useState<HTMLElement | null>(null);
-  const [heldTable, setHeldTable] = useState({ holds: false, inHand: false });
-  // What the open editor opened and shows now, read by the Versions panel's My changes (CNT-113).
-  const mineOf = useRef<(() => Mine) | null>(null);
-  // Whether the open component may be edited, as the editor says once open: state, so the Versions
-  // panel offers Restore as soon as it is known (the RS final review).
-  const [mayEdit, setMayEdit] = useState(false);
-  const onMine = useCallback((mine: (() => Mine) | null) => {
-    mineOf.current = mine;
-    setMayEdit(mine?.().mayEdit === true);
-  }, []);
-  // How many versions have been restored from the Versions panel: the editor opens afresh at each.
-  const [restored, setRestored] = useState(0);
-  // The panes beside an open component, sized and hidden as the document page's are.
-  const spacePane = usePaneWidth(SPACE_PANE);
-  const dockPane = usePaneWidth(COMPONENT_DOCK_PANE);
-  const tablePane = usePaneWidth(COMPONENT_TABLE_PANE);
-  const dockSized = heldTable.holds ? tablePane : dockPane;
-  const [placed, setPlaced] = useState<{
-    readonly component: string;
-    readonly space: { readonly id: string; readonly name: string };
-  } | null>(null);
-
   useEffect(() => {
     let current = true;
     client
@@ -301,106 +261,14 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     }
     if (opened) {
       return (
-        <div
-          className={styles['triptych']}
-          data-space-collapsed={spacePane.collapsed}
-          data-dock-collapsed={dockPane.collapsed}
-          style={
-            {
-              '--space-width': `${spacePane.width}px`,
-              // While it offers a Table tab, the panel is wider, and stays so as the cursor moves (TF-A).
-              '--dock-panel': `${dockSized.width}px`,
-            } as React.CSSProperties
-          }
-        >
-          <div className={styles['space']}>
-            {spacePane.collapsed ? (
-              <OutlineRail
-                pane={spacePane}
-                chosen="space"
-                tabs={[
-                  placed === undefined || placed === null
-                    ? { key: 'space', label: words('editor.space') }
-                    : { key: 'space', label: placed.space.name, content: true },
-                ]}
-                label={words('editor.space-pane')}
-                className={styles['rail']}
-              />
-            ) : placed?.component === opened ? (
-              <SpacePane client={client} space={placed.space} current={opened} pane={spacePane} />
-            ) : null}
-          </div>
-          {!spacePane.collapsed && (
-            <div className={styles['edge']}>
-              <PaneSeparator label={words('editor.space-pane')} pane={spacePane} />
-            </div>
-          )}
-          <div className={styles['editor']}>
-            <nav aria-label={words('editor.breadcrumb')} className={styles['trail']}>
-              <a href="#/components">{words('editor.components')}</a>
-              {placed?.component === opened && (
-                <span>
-                  {' / '}
-                  <span data-content>{placed.space.name}</span>
-                </span>
-              )}
-            </nav>
-            {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
-            <PresentationProvider client={client}>
-              {/* In the status bar (ADR-0056), as a document's is. */}
-              <StatusTools>
-                <ZoomControl />
-              </StatusTools>
-              <ComponentEditor
-                key={`${opened}:${address?.line ?? ''}:${restored}`}
-                componentId={opened}
-                line={address?.line}
-                client={client}
-                principalId={me}
-                onSpace={(space) => setPlaced({ component: opened, space })}
-                linked={address?.block ? { block: address.block, arrival: arrivals } : null}
-                fieldsHost={fieldsHost}
-                tableHost={tableHost}
-                onTable={setHeldTable}
-                onMine={onMine}
-              />
-            </PresentationProvider>
-          </div>
-          {!dockPane.collapsed && (
-            <div className={styles['dockEdge']}>
-              <PaneSeparator
-                label={words('editor.component-panels-2')}
-                pane={dockSized}
-                edge="end"
-              />
-            </div>
-          )}
-          {dockPane.collapsed && (
-            <div className={styles['dockRail']}>
-              <OutlineRail
-                pane={dockPane}
-                chosen=""
-                tabs={COMPONENT_PANELS.filter((each) => each.key !== 'table' || heldTable.holds)}
-                label={words('editor.component-panels-2')}
-                edge="end"
-                className={styles['rail']}
-              />
-            </div>
-          )}
-          <ComponentDock
-            key={opened}
-            client={client}
-            id={opened}
-            line={address?.line}
-            onFieldsHost={setFieldsHost}
-            table={heldTable}
-            onTableHost={setTableHost}
-            pane={dockPane}
-            mine={() => mineOf.current?.() ?? null}
-            mayEdit={mayEdit}
-            onRestored={() => setRestored((count) => count + 1)}
-          />
-        </div>
+        <ComponentPage
+          key={opened}
+          client={client}
+          principalId={me}
+          id={opened}
+          line={address?.line}
+          linked={address?.block ? { block: address.block, arrival: arrivals } : null}
+        />
       );
     }
 

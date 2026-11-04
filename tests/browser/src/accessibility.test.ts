@@ -1004,6 +1004,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           exact: true,
           ...(pressed === undefined ? {} : { pressed }),
         });
+      // What the side dock holds in a flyout, from the menu bar (ADR-0085).
+      const fromMenu = async (menu: string, item: RegExp) => {
+        await page.getByRole('menubar').getByRole('menuitem', { name: menu, exact: true }).click();
+        await page.getByRole('menuitem', { name: item }).click();
+      };
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       const surface = await openComponent(page, made.id);
       await check('the component editor as opened', { shows: surface });
@@ -1043,7 +1048,6 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         'the cursor in a definition list, the List panel open',
         surface.getByText('A definition.'),
         ['List'],
-        button('Definition list', true),
       );
       // Nothing chooses the Table tab for the reader (ADR-0079).
       await surface.getByText('Measured', { exact: true }).click();
@@ -1126,7 +1130,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await closeDialog(page);
 
       await surface.getByText('in another language').dblclick();
-      await button('Language').click();
+      await fromMenu('Format', /^Language/);
       await check('the Language dialog', {
         shows: [page.getByRole('dialog', { name: 'Language' }).getByRole('textbox').first()],
       });
@@ -1191,7 +1195,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await closeDialog(page);
 
       await last.click();
-      await button('Symbols').click();
+      await fromMenu('Insert', /^Symbols/);
       await check('the symbol palette', {
         shows: page
           .getByRole('dialog', { name: /Symbol/ })
@@ -1201,7 +1205,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await closeDialog(page);
 
       await last.click();
-      await button('Figure').click();
+      await fromMenu('Insert', /^Figure/);
       await check('the Figure dialog', dialog('Figure'));
       await page
         .getByRole('dialog', { name: 'Figure' })
@@ -1215,7 +1219,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await closeDialog(page);
 
       await last.click();
-      await button('Image').click();
+      await fromMenu('Insert', /^Image/);
       await check('the Image dialog', dialog('Image'));
       await closeDialog(page);
 
@@ -1246,15 +1250,19 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         await navigator.clipboard.writeText('Some *Markdown*, pasted.');
       });
       await last.click();
-      await button('Paste as Markdown').click();
+      await fromMenu('Insert', /^Paste as Markdown/);
       await check('pasted as Markdown', {
         shows: surface.getByRole('emphasis').filter({ hasText: 'Markdown' }),
       });
 
-      // The title strip's fields.
+      // The title in the header, then its language and direction in Attributes (ADR-0085).
       const title = page.getByRole('textbox', { name: 'Title' });
       await title.click();
       await check('the title field', { shows: focused(title) });
+      await page
+        .getByRole('tablist', { name: 'Component panels' })
+        .getByRole('tab', { name: 'Attributes' })
+        .click();
       await page.getByRole('button', { name: /^Base language/ }).click();
       await check('the base language open', {
         shows: page.getByRole('group', { name: /^Base language/ }),
@@ -1267,12 +1275,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.keyboard.press('Escape');
 
-      // The fields beside the text, in Attributes: the Table tab was chosen as the cursor entered the
-      // component's table (ADR-0052).
-      await page
-        .getByRole('tablist', { name: 'Component panels' })
-        .getByRole('tab', { name: 'Attributes' })
-        .click();
+      // The fields beside the text, in Attributes.
       const owner = page.getByRole('combobox', { name: 'Owner' });
       await owner.focus();
       await check('the Fields panel', {
@@ -1280,7 +1283,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         hides: [page.getByRole('group', { name: /^Base direction/ })],
       });
 
-      // The panels beside it, named in words (LG6b): Versions and Access, then Attributes again.
+      // The panels beside it, named in words (LG6b): Versions, then Attributes again.
       const componentPanels = page.getByRole('tablist', { name: 'Component panels' });
       await componentPanels.getByRole('tab', { name: 'Versions' }).click();
       await check('the Versions panel', {
@@ -1308,12 +1311,6 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         .first()
         .waitFor({ timeout: 15_000 });
       await check('the Versions panel previewing a restore', { shows: restoring });
-      await componentPanels.getByRole('tab', { name: 'Access' }).click();
-      await check('the Access panel', {
-        shows: page
-          .getByRole('tabpanel', { name: 'Access' })
-          .getByText(/is set on its access page/),
-      });
       await componentPanels.getByRole('tab', { name: 'Attributes' }).click();
 
       // Recovery: the author's saved text listed in its dialog, and what recovering one changes.
@@ -1342,7 +1339,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
 
       // Delete, beside Archive (the DL plan, DL-H): what deleting it leaves and anything refusing it,
       // read as it opens. Cancelled: nothing is deleted.
-      await button('Delete').click();
+      await fromMenu('Component', /^Delete/);
       const deleting = page.getByRole('dialog', { name: /^Delete / });
       await deleting.getByText(/^Nothing is removed/).waitFor({ timeout: 15_000 });
       await check('the Delete dialog', {

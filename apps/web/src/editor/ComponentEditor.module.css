@@ -328,3 +328,19 @@
   border: 0;
   background: transparent;
 }
+
+/* A component's facts in its Attributes panel (ADR-0085). */
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* On its own page the desk and the sheet are the box: no card round them (ADR-0085). */
+.card[data-own-page='true'] {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

@@ -80,12 +80,14 @@ const menu = (
 ): MenuSpec => ({ key, label: words(word), letter, entries: grouped(groups) });
 
 /**
- * The document's seven menus (ADR-0075), as data: every item a view of a registered command. What cannot
- * apply stays, `aria-disabled`. The lifecycle's acts and the paragraph styles are the page's to give.
+ * The menus of a document or a component (ADR-0075, ADR-0085), as data: every item a view of a registered
+ * command. What cannot apply to this kind goes; within a kind, what cannot apply now stays,
+ * `aria-disabled`. The lifecycle's acts and the paragraph styles are the page's to give.
  */
 export function buildMenus(
   stateOf: (id: string) => CommandState,
   { lifecycle = [], styles = [] }: MenuExtras = {},
+  kind: 'document' | 'component' = 'document',
 ): readonly MenuSpec[] {
   const rows = (...each: readonly Row[]) => each.map((row) => item(row, stateOf));
   const lifecycleRows: readonly MenuEntry[] = lifecycle.map((act) => ({
@@ -116,24 +118,39 @@ export function buildMenus(
       rows('manage-styles'),
     ]),
   };
+  const aDocument = kind === 'document';
   return [
-    menu('document', 'menu.document', 'D', [
-      lifecycleRows,
-      rows('preview', 'save-version', 'history'),
-      rows('dates', 'scope', 'language', 'relationships', 'access'),
-      rows('move', 'hold', 'archive'),
-      [item('delete', stateOf, true)],
-    ]),
+    aDocument
+      ? menu('document', 'menu.document', 'D', [
+          lifecycleRows,
+          rows('preview', 'save-version', 'history'),
+          rows('dates', 'scope', 'language', 'relationships', 'access'),
+          rows('move', 'hold', 'archive'),
+          [item('delete', stateOf, true)],
+        ])
+      : menu('component', 'menu.component', 'C', [
+          lifecycleRows,
+          rows('save-version', 'history'),
+          rows('dates', 'scope', 'language', 'lines', 'used-in', 'relationships', 'access'),
+          rows('move', 'hold', 'archive'),
+          [item('delete', stateOf, true)],
+        ]),
     menu('edit', 'menu.edit', 'E', [rows('undo', 'redo'), rows('search')]),
     menu('view', 'menu.view', 'V', [
-      rows({ radio: 'mode.reading' }, { radio: 'mode.review' }, { radio: 'mode.authoring' }),
-      rows(
-        { toggle: 'panel.contents' },
-        { toggle: 'panel.baselines' },
-        { toggle: 'panel.data' },
-        { toggle: 'assistant' },
-      ),
-      rows({ toggle: 'boundaries' }, { toggle: 'style-labels' }, { toggle: 'pages' }),
+      aDocument
+        ? rows({ radio: 'mode.reading' }, { radio: 'mode.review' }, { radio: 'mode.authoring' })
+        : rows({ radio: 'mode.reading' }, { radio: 'mode.authoring' }),
+      aDocument
+        ? rows(
+            { toggle: 'panel.contents' },
+            { toggle: 'panel.baselines' },
+            { toggle: 'panel.data' },
+            { toggle: 'assistant' },
+          )
+        : [],
+      aDocument
+        ? rows({ toggle: 'boundaries' }, { toggle: 'style-labels' }, { toggle: 'pages' })
+        : rows({ toggle: 'style-labels' }),
       rows('zoom-in', 'zoom-out', 'fit'),
     ]),
     menu('insert', 'menu.insert', 'I', [
@@ -149,7 +166,9 @@ export function buildMenus(
         ed('Condition'),
         ed('Message form'),
       ),
-      rows(ed('Link'), 'comment', ed('Paste as Markdown')),
+      aDocument
+        ? rows(ed('Link'), 'comment', ed('Paste as Markdown'))
+        : rows(ed('Link'), ed('Paste as Markdown')),
     ]),
     menu('format', 'menu.format', 'F', [
       rows(
@@ -175,7 +194,9 @@ export function buildMenus(
       ],
       rows(ed('Term'), ed('Language')),
     ]),
-    menu('review', 'menu.review', 'R', [rows('comment'), rows('history'), rows('assistant')]),
+    ...(aDocument
+      ? [menu('review', 'menu.review', 'R', [rows('comment'), rows('history'), rows('assistant')])]
+      : []),
     menu('help', 'menu.help', 'H', [rows('shortcuts', 'whats-new')]),
   ];
 }

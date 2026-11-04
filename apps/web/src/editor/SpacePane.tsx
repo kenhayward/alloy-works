@@ -57,7 +57,9 @@ export function SpacePane({
               href={`#/components/${item.id}`}
               aria-current={item.id === current ? 'page' : undefined}
             >
-              <span className={styles['title']}>{item.title}</span>
+              <span className={styles['title']} data-content>
+                {item.title}
+              </span>
               {item.state && <StateLozenge size="small" state={item.state} />}
               <span className={styles['number']}>{item.version}</span>
             </a>

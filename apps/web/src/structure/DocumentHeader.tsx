@@ -109,6 +109,7 @@ export function DocumentHeader({
   title,
   space,
   version,
+  versionTitle,
   beside,
   transition,
   mode,
@@ -116,6 +117,9 @@ export function DocumentHeader({
   stateOf,
   styles: paragraphStyles,
   onKeys,
+  kind = 'document',
+  titleField,
+  listHref = '#/documents',
 }: {
   client: Parameters<typeof useAdministers>[0];
   accessTarget: string;
@@ -123,6 +127,8 @@ export function DocumentHeader({
   title: string;
   space: string;
   version: string;
+  /** Its size, as a tooltip of the version, where the page says it. */
+  versionTitle?: string | undefined;
   /** Who is here and the revision, at the end of the title's line. */
   beside: ReactNode;
   transition?: TransitionProps | undefined;
@@ -132,6 +138,12 @@ export function DocumentHeader({
   styles: () => readonly StyleItem[];
   /** The page's own keys, by the registry's chords. */
   onKeys: Readonly<Record<string, () => boolean>>;
+  /** A component's page shares this header with its own menu (ADR-0085). */
+  kind?: 'document' | 'component';
+  /** A title that is edited here, standing for the heading, which it then keeps. */
+  titleField?: ReactNode;
+  /** The list its breadcrumb goes back to. */
+  listHref?: string;
 }) {
   const [listing, setListing] = useState(false);
   const shown = usePageShown();
@@ -181,30 +193,40 @@ export function DocumentHeader({
   };
   const draw = (acts?: ReturnType<typeof useLifecycleActs>) => {
     const menus = () =>
-      buildMenus(headerState, {
-        lifecycle: (acts?.acts ?? []).map(({ key, label, enabled, run }) => ({
-          key,
-          label,
-          enabled,
-          run,
-        })),
-        styles: paragraphStyles(),
-      });
+      buildMenus(
+        headerState,
+        {
+          lifecycle: (acts?.acts ?? []).map(({ key, label, enabled, run }) => ({
+            key,
+            label,
+            enabled,
+            run,
+          })),
+          styles: paragraphStyles(),
+        },
+        kind,
+      );
     const standing = transition?.standing;
     return (
       <>
         <HeaderSlot name="lead">
           <div className={styles['titleLine']}>
             <nav aria-label={say('document.breadcrumb')} className={styles['trail']}>
-              <a href="#/documents" data-content>
+              <a href={listHref} data-content>
                 {space}
               </a>
               <span aria-hidden="true">/</span>
             </nav>
-            <h2 id="document-title" className={styles['title']} data-content>
-              {title}
-            </h2>
-            <span className={styles['version']} data-content>
+            {titleField ?? (
+              <h2 id="document-title" className={styles['title']} data-content>
+                {title}
+              </h2>
+            )}
+            <span
+              className={styles['version']}
+              data-content
+              {...(versionTitle === undefined ? {} : { title: versionTitle })}
+            >
               {version}
             </span>
             {beside}
