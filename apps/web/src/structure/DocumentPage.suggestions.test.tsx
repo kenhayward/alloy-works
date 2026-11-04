@@ -138,7 +138,9 @@ describe('suggestions in Review (collaboration.md, Suggestions)', () => {
   it('says to choose a part first, where none is chosen (the EP plan, EP4)', async () => {
     await openInReview();
     await fromMenu(userEvent, 'Review', 'Suggest changes');
-    expect(await screen.findByText(/^Click the part you want to suggest changes to/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/^Click the part you want to suggest changes to/),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Content of Install the printer' })).toBeNull();
   });
 
