@@ -2724,7 +2724,9 @@ export function DocumentPage({
                 previewing={preview.pane !== null}
                 startWidth={outlinePane.width}
                 // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
-                panelsWidth={(heldTable.holds && shownDock === 'table' ? tablePane : dockPane).width}
+                panelsWidth={
+                  (heldTable.holds && shownDock === 'table' ? tablePane : dockPane).width
+                }
               >
                 {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
                 <ShellSideDock>
