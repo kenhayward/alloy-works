@@ -118,7 +118,7 @@ describe('the rail right to left (ADR-0074)', () => {
 
 describe('the rail in the document page (ADR-0074)', () => {
   const css = readFileSync(
-    join(import.meta.dirname, '../structure/DocumentPage.module.css'),
+    join(import.meta.dirname, '../layouts/AuthoringShell.module.css'),
     'utf8',
   );
   /** A rule's body, by its selector exactly as the stylesheet writes it. */

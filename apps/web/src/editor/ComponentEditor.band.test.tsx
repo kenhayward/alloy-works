@@ -1,0 +1,116 @@
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState, type ReactNode } from 'react';
+import { describe, expect, it } from 'vitest';
+
+import { InPlaceBand } from './InPlaceBand.js';
+import { ADA, json, lock, open, opened, quick, saves } from './test/componentEditor.js';
+
+/** A page keeping a band above the desk, as a document does and a component's own page will. */
+function Banded({ children }: { children: ReactNode }) {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  return (
+    <>
+      <div ref={setHost} data-testid="band" />
+      <InPlaceBand.Provider value={host}>{children}</InPlaceBand.Provider>
+    </>
+  );
+}
+
+const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
+
+describe('a component on its own page, reading (the CE plan, CE3)', () => {
+  const page = (reading: boolean) => ({
+    ownPage: {
+      reading,
+      tools: null,
+      identityHost: null,
+      pageState: () => undefined,
+      onShowAttributes: () => undefined,
+    },
+  });
+
+  it('takes no change, claims no lock and draws no toolbar', async () => {
+    const { asked, surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      page(true),
+    );
+    const view = await surface();
+    expect(view.editable).toBe(false);
+    expect(screen.queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
+    expect(asked.map((each) => each.route)).not.toContain('POST /v1/components/{id}/lock');
+  });
+
+  it('draws its header and Component menu in the page, and no strip', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      page(false),
+      undefined,
+      banded,
+    );
+    await surface();
+    expect(screen.getByRole('menuitem', { name: 'Component' })).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Title')).toHaveLength(1);
+    expect(screen.queryByRole('group', { name: 'Component header' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Install the printer' })).toHaveAttribute(
+      'id',
+      'component-title',
+    );
+  });
+});
+
+describe('a component in a band with nothing to close (the CE plan, CE1)', () => {
+  it('stands its toolbar in the band with its acts, and has no frame', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      {},
+      undefined,
+      banded,
+    );
+    await surface();
+    const band = within(screen.getByTestId('band'));
+    const tools = band.getByRole('toolbar', { name: 'Formatting' });
+    expect(within(tools).getByRole('button', { name: 'Done editing' })).toBeInTheDocument();
+    expect(within(tools).getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expect(within(tools).getByRole('button', { name: 'Strong' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Component' })).toBeNull();
+    // The sheet is its own, as a component's own page sets it.
+    expect(screen.getByRole('article')).toHaveAttribute('data-in-place', 'false');
+  });
+
+  it('keeps Done editing as cutting and releasing, and closes nothing', async () => {
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'DELETE /v1/components/{id}/lock': () =>
+          json(200, {
+            outcome: 'cut',
+            version: { id: 'v2', number: '0.2', author: ADA, createdAt: 't', note: null },
+          }),
+        ...saves,
+      },
+      quick,
+      false,
+      {},
+      undefined,
+      banded,
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    const done = within(screen.getByTestId('band')).getByRole('button', { name: 'Done editing' });
+    await waitFor(() => expect(done).toHaveAttribute('aria-disabled', 'false'));
+    await userEvent.click(done);
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain('DELETE /v1/components/{id}/lock'),
+    );
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toBeVisible();
+    expect(within(screen.getByTestId('band')).getByRole('toolbar')).toBeInTheDocument();
+  });
+});

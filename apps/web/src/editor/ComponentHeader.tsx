@@ -38,6 +38,11 @@ export interface ComponentHeaderProps {
    * names no component (ADR-0056), where the chips alone are shown. The heading stays either way.
    */
   readonly titled?: boolean;
+  /**
+   * On a component's own page the title stands in the page's header and the chips in its Attributes
+   * panel (ADR-0085): each drawn alone, the heading with the title.
+   */
+  readonly only?: 'title' | 'chips';
 }
 
 /** A direction as a chip's name says it. */
@@ -167,6 +172,7 @@ export function ComponentHeader({
   onRefused,
   children,
   titled = true,
+  only,
 }: ComponentHeaderProps) {
   const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
   const [tag, setTag] = useState<Field>({ typed: header.language, inModel: header.language });
@@ -188,10 +194,12 @@ export function ComponentHeader({
     <>
       {/* The heading names the article and keeps the component in the page's outline; the field
           beside it is the one title a sighted author sees, so the heading is visually hidden. */}
-      <h2 id="component-title" className={styles['hidden']} data-content>
-        {header.title}
-      </h2>
-      {titled && (
+      {only !== 'chips' && (
+        <h2 id="component-title" className={styles['hidden']} data-content>
+          {header.title}
+        </h2>
+      )}
+      {titled && only !== 'chips' && (
         <input
           className={styles['title']}
           aria-label={words('editor.title')}
@@ -227,66 +235,70 @@ export function ComponentHeader({
         />
       )}
       {titled && children}
-      <Chip
-        name={
-          declared
-            ? words('editor.base-language', { tag: header.language })
-            : words('editor.base-language-not-declared', { tag: header.language })
-        }
-        text={header.language}
-        content
-      >
-        <label>
-          {words('editor.language')}
-          <input
-            list={offered}
-            value={tag.typed}
-            disabled={!editable}
-            onChange={(event) => {
-              const value = event.target.value;
-              // Only a complete tag is offered to the model; what is on the way there is shown as typed
-              // and leaves the document alone, so `inModel` stays what the document still holds.
-              const answered = language.safeParse(value).success
-                ? onChange('language', value)
-                : null;
-              // A declared language's script sets the direction with it (TE-E); another leaves it.
-              const script = answered ? declaredLanguageOf(answered.language) : undefined;
-              if (script && answered && script.direction !== answered.direction) {
-                onChange('direction', script.direction);
-              }
-              setTag((previous) => ({
-                typed: value,
-                inModel: answered?.language ?? previous.inModel,
-              }));
-            }}
-            onBlur={() => {
-              // Disabling a focused field blurs it in a real browser, and the header goes read-only
-              // exactly when the surface does - the session lost, a version being cut. That blur is the
-              // page changing under the author, not the author leaving an unfinished tag behind, and
-              // reporting a refusal there writes over the notice that just said what happened.
-              if (!editable) return;
-              if (!language.safeParse(tag.typed).success) {
-                onRefused(words('editor.a-language-tag-looks-like'));
-              }
-            }}
-          />
-        </label>
-        <DeclaredLanguages id={offered} />
-        {!declared && <p>{words('editor.language-not-declared', { tag: header.language })}</p>}
-      </Chip>
-      <Chip
-        name={words('editor.base-direction', { direction: SAID[header.direction] })}
-        text={words('editor.direction-short', { direction: header.direction })}
-      >
-        <label>
-          {words('editor.direction')}
-          <DirectionSelect
-            value={header.direction}
-            disabled={!editable}
-            onChange={(direction) => onChange('direction', direction)}
-          />
-        </label>
-      </Chip>
+      {only !== 'title' && (
+        <>
+          <Chip
+            name={
+              declared
+                ? words('editor.base-language', { tag: header.language })
+                : words('editor.base-language-not-declared', { tag: header.language })
+            }
+            text={header.language}
+            content
+          >
+            <label>
+              {words('editor.language')}
+              <input
+                list={offered}
+                value={tag.typed}
+                disabled={!editable}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  // Only a complete tag is offered to the model; what is on the way there is shown as typed
+                  // and leaves the document alone, so `inModel` stays what the document still holds.
+                  const answered = language.safeParse(value).success
+                    ? onChange('language', value)
+                    : null;
+                  // A declared language's script sets the direction with it (TE-E); another leaves it.
+                  const script = answered ? declaredLanguageOf(answered.language) : undefined;
+                  if (script && answered && script.direction !== answered.direction) {
+                    onChange('direction', script.direction);
+                  }
+                  setTag((previous) => ({
+                    typed: value,
+                    inModel: answered?.language ?? previous.inModel,
+                  }));
+                }}
+                onBlur={() => {
+                  // Disabling a focused field blurs it in a real browser, and the header goes read-only
+                  // exactly when the surface does - the session lost, a version being cut. That blur is the
+                  // page changing under the author, not the author leaving an unfinished tag behind, and
+                  // reporting a refusal there writes over the notice that just said what happened.
+                  if (!editable) return;
+                  if (!language.safeParse(tag.typed).success) {
+                    onRefused(words('editor.a-language-tag-looks-like'));
+                  }
+                }}
+              />
+            </label>
+            <DeclaredLanguages id={offered} />
+            {!declared && <p>{words('editor.language-not-declared', { tag: header.language })}</p>}
+          </Chip>
+          <Chip
+            name={words('editor.base-direction', { direction: SAID[header.direction] })}
+            text={words('editor.direction-short', { direction: header.direction })}
+          >
+            <label>
+              {words('editor.direction')}
+              <DirectionSelect
+                value={header.direction}
+                disabled={!editable}
+                onChange={(direction) => onChange('direction', direction)}
+              />
+            </label>
+          </Chip>
+        </>
+      )}
     </>
   );
 }

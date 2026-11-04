@@ -1,0 +1,360 @@
+/*
+ * The page on a desk both a document and a component's own page stand on (ADR-0085). Moved whole from
+ * the document's, where layout C is drawn in docs/interface/screens/DocumentOutline.html.
+ */
+/*
+ * Layout C, drawn in docs/interface/screens/DocumentOutline.html: the outline pane, the edge that
+ * sizes it, the document's text, and what is said of the chosen part with the lists and the
+ * publications beneath. The outline panel's two parts are placed here without its markup moving.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.layout {
+  --left: var(--outline-width);
+  --edge: 6px;
+  --right: calc(var(--dock-panel) + var(--dock-rail));
+  --dock-edge: 6px;
+  display: grid;
+  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--dock-edge) var(--right);
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: var(--space-8);
+  row-gap: var(--space-12);
+  align-items: start;
+}
+
+.layout[data-collapsed='true'] {
+  --left: var(--pane-collapsed-rail);
+  --edge: 0;
+}
+
+.layout[data-dock-collapsed='true'] {
+  /* The rail and the box's two borders. */
+  --right: calc(var(--dock-rail) + 2px);
+  --dock-edge: 0;
+}
+
+/* The outline panel's root holds no box of its own here: its two parts are the grid's. */
+.layout > [data-panel] {
+  display: contents;
+}
+
+/*
+ * The outline pane: a tabbed panel at the top of its column (interface slice 15), standing beside the
+ * text as the window scrolls it - under the header band, above the status bar - and scrolling its own
+ * tree (issue #336). Scrolled with the page, keeping the reader's node in view in it moved the window,
+ * and so the text, and so the node in view, and the page sprang back to its top. It ends a gap above
+ * the status bar, whose height the bar tells the page as `--status-height`, one line or wrapped.
+ */
+.layout > [data-panel] > [data-part='outline'] {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: calc(
+    100vh - var(--header-height) - var(--space-12) - var(--status-height, 0px) - var(--space-12)
+  );
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  font-size: var(--size-13);
+}
+
+.layout[data-collapsed='true'] > [data-panel] > [data-part='outline'] {
+  display: none;
+}
+
+.separator {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  display: flex;
+}
+
+.separator > *,
+.dockSeparator > * {
+  flex: 1;
+}
+
+/* The edge that sizes the panels beside the text, just before them, whatever stands between. */
+.dockSeparator {
+  grid-column: -3;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  display: flex;
+}
+
+.text {
+  grid-column: 3;
+  grid-row: 1 / span 4;
+  min-width: 0;
+}
+
+/*
+ * The panels beside the text: one pane and its rail (ADR-0074), standing beside the text as the page
+ * scrolls - under the header band at the outline's height, above the status bar - the pane scrolling
+ * its own panels, as the outline pane does. Hidden, the rail stays; the pane is kept in the page, so a
+ * panel keeps what it holds.
+ */
+.dockArea {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  grid-column: -2;
+  grid-row: 1 / span 4;
+  display: flex;
+  min-width: 0;
+  --dock-most: calc(
+    100vh - var(--header-height) - var(--space-12) - var(--status-height, 0px) - var(--space-12)
+  );
+  /* Its room where the page has measured it, so no tab runs under the status bar (issues #868,
+     #878). */
+  height: min(var(--dock-most), var(--dock-room, var(--dock-most)));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+/* Unclipped, so a tab's name shows beside the rail, over the text, while the panel is hidden. */
+.dockArea > nav {
+  flex-shrink: 0;
+  border-start-end-radius: var(--radius-8);
+  border-end-end-radius: var(--radius-8);
+}
+
+/* Hidden, the panel's border is the box's own: the rail draws none of its own at its start. */
+.dockArea > .dock[hidden] + nav {
+  border-inline-start: 0;
+  border-radius: var(--radius-8);
+}
+
+.dock {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-start-start-radius: var(--radius-8);
+  border-end-start-radius: var(--radius-8);
+  font-size: var(--size-13);
+}
+
+.dock[hidden] {
+  display: none;
+}
+
+/*
+ * A preview beside the text (publishing.md, "Shown beside the text"; PV-G): a column of its own
+ * between the text and the dock, so the text narrows and stays where it was, and the dock moves over.
+ */
+.layout[data-previewing='true'] {
+  grid-template-columns:
+    var(--left) var(--edge) minmax(0, 1fr) minmax(0, 1fr) var(--dock-edge)
+    var(--right);
+}
+
+.preview {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  grid-column: 4;
+  grid-row: 1 / span 4;
+}
+
+@media (max-width: 1100px) {
+  .layout,
+  .layout[data-previewing='true'] {
+    grid-template-columns: var(--left) var(--edge) minmax(0, 1fr);
+  }
+
+  .dockSeparator {
+    display: none;
+  }
+
+  /* Where the pane goes below the text, so does the preview, the whole width, after it. */
+  /* Hidden, the rail alone at the end of the window, not an empty box across it. */
+  .layout[data-dock-collapsed='true'] .dockArea {
+    justify-self: end;
+  }
+
+  .dockArea,
+  .preview {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: auto;
+    max-height: none;
+  }
+}
+
+/*
+ * A window too short to hold the pane beside the text - a phone on its side, or 400% zoom, where a
+ * stuck pane would show a line or two of its tree: it scrolls with the page instead, whole, and the
+ * current node is kept in view in it by nothing, since it has no scroll of its own (issue #336).
+ */
+@media (max-height: 480px) {
+  .layout > [data-panel] > [data-part='outline'],
+  .dockArea {
+    position: static;
+    max-height: none;
+  }
+}
+
+/*
+ * The page on a desk (ADR-0056): the page's own gutter stands down, the desk fills what is under the
+ * document bar, and the panels and the sheet stand on it.
+ */
+.page[data-desk-page] {
+  gap: 0;
+  min-height: calc(100vh - var(--header-height) - var(--status-height, 0px));
+  background: var(--desk);
+}
+
+/* Empty, a live region waiting to speak holds no place: its margin alone would stand the panes lower
+   than where they stick, and they would shift as the page began to scroll. */
+.page[data-desk-page] > :not(.layout, :empty, :has(> [aria-modal='true'])) {
+  margin: var(--space-12) var(--space-24) 0;
+}
+
+/* The sheet level with the panels beside it, first and last: the desk adds no gap of its own to it. */
+.layout > .text {
+  padding-block: 0;
+}
+
+/* As far below the panes as above them, the gap they keep from the status bar: any more, and the
+   document's end would push them up under the header as it came into view. */
+.page[data-desk-page] > .layout {
+  padding: var(--space-12) var(--space-16);
+}
+
+/* That gap held in the desk's colour at the header and at the status bar, so the sheet scrolls away at
+   the panes' top and bottom edges rather than past them. */
+.page[data-desk-page] > .layout::before,
+.page[data-desk-page] > .layout::after {
+  content: '';
+  position: sticky;
+  z-index: 2;
+  grid-column: 1 / -1;
+  grid-row: 1 / span 4;
+  height: var(--space-12);
+  background: var(--desk);
+}
+
+.page[data-desk-page] > .layout::before {
+  top: var(--header-height);
+  margin-block-start: calc(-1 * var(--space-12));
+}
+
+.page[data-desk-page] > .layout::after {
+  bottom: var(--status-height, 0px);
+  align-self: end;
+  margin-block-end: calc(-1 * var(--space-12));
+}
+
+/* The side dock (ADR-0075): floating on the desk 12px in, full height, the panel extending it. */
+.layout {
+  --left: calc(var(--side-dock) + var(--outline-width));
+}
+
+.layout[data-collapsed='true'] {
+  --left: var(--side-dock);
+}
+
+.sideDock {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  z-index: 2;
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  width: var(--side-dock);
+  height: calc(100vh - var(--header-height) - var(--status-height, 0px) - 2 * var(--space-12));
+  padding-block: var(--space-4);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+  /* In a short window its tools scroll rather than run under the status bar. */
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.dockToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+}
+
+.dockToggle:hover {
+  background: var(--hover);
+}
+
+.dockToggle[aria-pressed='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.dockRule {
+  flex: none;
+  width: 24px;
+  height: 1px;
+  margin-block: 4px;
+  background: var(--divider-strong);
+}
+
+/* The panel, 1px of rule from the dock: the same surface. */
+.layout > [data-panel] > [data-part='outline'] {
+  height: calc(100vh - var(--header-height) - var(--status-height, 0px) - 2 * var(--space-12));
+  margin-inline-start: var(--side-dock);
+  border-color: var(--strong-border);
+  border-inline-start-color: var(--divider-strong);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+}
+
+/* A link on its own line: its words wide, not the column's, and 24px tall (axe's target-size, LG4). */
+.page > a {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 24px;
+}
+
+/* The open panel, named in words above it (ADR-0074). */
+.dockHeading {
+  margin: 0;
+  padding: var(--space-12) var(--space-12) 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.dockBody {
+  display: grid;
+  gap: var(--space-12);
+  min-height: 0;
+  padding: var(--space-12);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.dockBody [hidden] {
+  display: none;
+}

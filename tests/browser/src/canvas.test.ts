@@ -188,6 +188,10 @@ describe('the canvas as a person uses it', () => {
         await surface.getByRole('img', { name: 'Footnote' }).click();
         const note = page.getByRole('textbox', { name: 'Footnote text' });
         await note.waitFor();
+        // At this window the desk is narrower than its sheet, as a document's is: the note in view.
+        await note.evaluate((element) =>
+          element.querySelector('p')!.scrollIntoView({ inline: 'center', block: 'nearest' }),
+        );
         // The middle of the note's first line of words, which stands over the paragraph below the one
         // it is in.
         const target = await note.evaluate((element) => {

@@ -3,6 +3,23 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.235.0 - 2026-11-04 (PR #966)
+
+A component's own page now shares the document's header, menus, modes, side dock and panels, so a control added for one reaches the other.
+
+### Changed
+
+- **A component's page looks and works as a document's does.** The one header holds its title, a Component menu, its lifecycle and its mode; the toolbar stands in the side dock; the sheet stands on the desk; and the panels are chosen from the icon rail.
+- **Only the panels that apply are shown:** Selection and Table while they have something to say, Attributes and Versions.
+- **A component has Reading and Authoring.** Reading takes no change and asks for no lock. Each page remembers its own mode and panel.
+- **Its acts moved to the Component menu**, and its language, direction, dates, scope and lines to Attributes. Access is reached from the menu.
+
+### Fixed
+
+- A table's floating toolbar no longer stays on screen in front of the next page after you leave a document or component with the cursor in the table. It comes back, in place, when you return.
+- A dialog open when you go back in the browser now goes with its page instead of staying over the next one, and that page responds. It comes back as you left it, with what you typed, when you return.
+- A dialog left open on another page no longer switches off keyboard shortcuts and menu keys on the page you are on.
+
 ## 0.234.0 - 2026-11-04 (PR #958)
 
 The Part panel is grouped and folds: what a part is at a glance, its acts in the head, and a typed number turned into a real one in one step.

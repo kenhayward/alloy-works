@@ -1859,7 +1859,7 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   draft holds. A definition's Save version is in the header, `aria-disabled` until every column is
   confirmed; Used by is `PagedUses`, paging the whole listing in the page.
 - **Layouts.** A: a filter pane, the list and the chosen row beside it from 1366px, over it below.
-  B: the space pane, the editor and its panels (Attributes, where the editor portals its fields;
+  B, on the shell a document stands on since [ADR-0085](decisions/0085-a-components-page-shares-the-documents-shell.md) (`layouts/AuthoringShell.tsx`, `parts/panels.ts`, `editor/ComponentPage.tsx`): the space pane, the editor and its panels (Attributes, where the editor portals its fields;
   Versions; Access). C: the outline, the text, and Part, Document, Lists and Publishing beside it,
   under a head with the mode beside Preview. D: a publication's head, the PDF on the desk, and what
   it was made from.
@@ -4196,7 +4196,7 @@ the Value dialog places `As a table`, and `BoundTablePanel` and `FormatDialog` i
 each change one transaction. The panel is the Table tab beside the text
 ([ADR-0052](decisions/0052-table-formatting-is-a-tab-beside-the-text.md)): `ComponentEditor` portals
 a table's panels, plain or bound, into the `tableHost` the page gives it and tells it `onTable`
-whether it holds a table and when the cursor enters one; `ComponentDock` and the document's panels
+whether it holds a table and when the cursor enters one; the component's page and the document's panels
 offer the tab and choose it, 400px wide while offered. Inside: the value on two lines, the table's
 settings, a pill per column and the column in hand, then one of Column, Sort and Notes open, the
 others folded to a summary; refusals mark the column's pill and are said in a live region. Viewing,
