@@ -1,12 +1,14 @@
-/* A plain table's floating toolbar (ADR-0079): over the desk, in the reader's theme, 34px buttons. */
+/* The one floating toolbar (ADR-0079; the EP plan, EP3): over the desk, in the reader's theme, 34px buttons. */
 
 .toolbar {
   position: fixed;
   z-index: var(--z-popover);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   box-sizing: border-box;
-  height: 44px;
+  max-width: calc(100vw - 16px);
+  min-height: 44px;
   padding: 4px;
   border: 1px solid var(--strong-border);
   border-radius: 12px;
@@ -25,7 +27,8 @@
 }
 
 .name,
-.button {
+.button,
+.menu {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,8 +58,18 @@
   background: var(--accent-weak);
 }
 
+.menu {
+  padding-inline: var(--space-8);
+  white-space: nowrap;
+}
+
+.menu[aria-expanded='true'] {
+  background: var(--accent-weak);
+}
+
 .name:hover,
-.button:hover {
+.button:hover,
+.menu:hover {
   background: var(--sunken);
 }
 
@@ -71,7 +84,24 @@
 
 .group {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+}
+
+/* The Component menu's own fields, under the toolbar at its end. */
+.strip {
+  position: absolute;
+  top: calc(100% + var(--space-4));
+  inset-inline-end: 0;
+  width: min(640px, 80vw);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.strip[hidden] {
+  display: none;
 }
 
 .rule {

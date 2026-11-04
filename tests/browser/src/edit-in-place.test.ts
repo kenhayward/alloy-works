@@ -230,6 +230,74 @@ describe('clicking into a document, in Chromium', () => {
     });
   });
 
+  it("stands one toolbar over the part, in the reader's theme, its acts still as a table is entered", async () => {
+    const client = api();
+    const image = await uploadImage(client, 'A small mark');
+    const figure = await uploadImage(client, 'A blue rectangle');
+    const every = await makeComponent(client, `Every block ${Date.now()}`, [
+      para('e0', 'First words.'),
+      ...everyBlock(figure, image),
+    ] as never);
+    const made = await edit(client, await makeDocument(client, `One toolbar ${Date.now()}`, []), {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'reference', component: every.id, mode: { kind: 'latest' } },
+    });
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 700 });
+      await page.goto(`${SERVICE}/#/documents/${made.id}`);
+      await page.evaluate(() => {
+        document.documentElement.dataset['theme'] = 'dark';
+      });
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const target = page.getByText('First words.').first();
+      await target.waitFor();
+      await target.click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+
+      // Not the paper's light, whatever the sheet takes.
+      const ground = await bar.evaluate((own) => getComputedStyle(own).backgroundColor);
+      const paper = await page
+        .locator('.aw-sheet')
+        .first()
+        .evaluate((own) => getComputedStyle(own).backgroundColor);
+      expect(ground).not.toBe(paper);
+
+      // Above the part, heading and all, at its end.
+      const part = (await page.locator('[data-component]').first().boundingBox())!;
+      const box = (await bar.boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(part.y);
+      expect(box.x + box.width).toBeCloseTo(part.x + part.width, 0);
+
+      const done = bar.getByRole('button', { name: 'Done editing' });
+      const before = (await done.boundingBox())!;
+      await page.locator('[data-component] figure.aw-table td').first().click();
+      const table = bar.getByRole('button', { name: /settings/ });
+      await table.waitFor();
+      const after = (await done.boundingBox())!;
+      expect(after.x).toBeCloseTo(before.x, 0);
+      expect(after.y).toBeCloseTo(before.y, 0);
+
+      // Scrolled down the part it stays in view.
+      await page.evaluate(() => {
+        const scrolled = [document.scrollingElement, ...document.querySelectorAll('*')].find(
+          (each) =>
+            each !== null &&
+            each.scrollHeight > each.clientHeight + 200 &&
+            ['auto', 'scroll'].includes(getComputedStyle(each).overflowY) &&
+            each.querySelector('[data-component]') !== null,
+        );
+        scrolled?.scrollBy(0, 400);
+      });
+      await page.waitForTimeout(200);
+      const stuck = (await bar.boundingBox())!;
+      expect(stuck.y).toBeGreaterThanOrEqual(0);
+      expect(stuck.y).toBeLessThan(120);
+    });
+  });
+
   it('shows the rule alone on hover, in forced colours too', async () => {
     const { document: id } = await twoParts();
     await withPage(async (page) => {

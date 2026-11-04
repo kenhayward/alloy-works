@@ -60,13 +60,28 @@ async function openComponent(page: Page, id: string): Promise<Locator> {
 }
 
 /** Leaving by the rail and by the browser's history, the toolbar gone each time and placed on return. */
-async function leaveAndReturn(page: Page, surface: Locator): Promise<void> {
-  const toolbar = page.getByRole('toolbar', { name: 'Table toolbar' });
+async function leaveAndReturn(page: Page, surface: Locator, inDocument = false): Promise<void> {
+  const toolbar = page.getByRole('toolbar', {
+    name: inDocument ? 'Part toolbar' : 'Table toolbar',
+  });
   const figure = surface.locator('figure').first();
   const inPlace = async () => {
     await toolbar.waitFor();
-    const at = await figure.boundingBox();
     const bar = await toolbar.boundingBox();
+    if (inDocument) {
+      // In a document it stands over the part, at its end, and never leaves the desk (ADR-0086).
+      const part = await page.locator('[data-component]').first().boundingBox();
+      expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(
+        (part?.x ?? 0) + (part?.width ?? 0) + 1,
+      );
+      const desk = await page.locator('.aw-desk').first().boundingBox();
+      expect(bar?.x ?? 0).toBeGreaterThanOrEqual(desk?.x ?? 0);
+      expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(
+        (desk?.x ?? 0) + (desk?.width ?? 0),
+      );
+      return;
+    }
+    const at = await figure.boundingBox();
     expect((bar?.y ?? 0) + (bar?.height ?? 0)).toBeCloseTo((at?.y ?? 0) - 8, 0);
     expect(bar?.x).toBeCloseTo(at?.x ?? 0, 0);
   };
@@ -112,7 +127,7 @@ describe('a plain table in the browser (ADR-0079)', () => {
       await page.locator('section.aw-canvas').getByText('Row 1', { exact: true }).click();
       const surface = page.getByRole('textbox', { name: /^Content of / });
       await surface.waitFor();
-      await leaveAndReturn(page, surface);
+      await leaveAndReturn(page, surface, true);
     });
   });
 

@@ -165,6 +165,7 @@
   "editor.move-right": "Move right",
   "editor.table": "Table",
   "editor.table-in-hand": "Table, the cursor is in a table",
+  "editor.part-toolbar": "Part toolbar",
   "editor.table-toolbar": "Table toolbar",
   "editor.table-settings": "Table settings",
   "editor.table-settings-of": "{named}, its settings",

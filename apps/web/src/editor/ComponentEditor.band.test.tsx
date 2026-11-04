@@ -19,6 +19,50 @@ function Banded({ children }: { children: ReactNode }) {
 
 const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
 
+describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
+  it('stands outside the sheet, holding the acts and the Component menu', async () => {
+    open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    // On the page's layer, in the reader's theme, not in the paper's.
+    expect(bar.closest('.aw-canvas')).toBeNull();
+    expect(bar.closest('article')).toBeNull();
+    expect(within(bar).getByRole('button', { name: 'Done editing' })).toBeInTheDocument();
+    const menu = within(bar).getByRole('button', { name: 'Component' });
+    expect(within(bar).queryByRole('button', { name: /settings/ })).toBeNull();
+    // One tab stop, and arrows between them.
+    expect(
+      within(bar)
+        .getAllByRole('button')
+        .filter((each) => each.tabIndex === 0),
+    ).toHaveLength(1);
+    await userEvent.click(menu);
+    expect(menu).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    expect(menu).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('is no toolbar on a component with nothing to close, until the cursor is in a table', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      {},
+      undefined,
+      banded,
+    );
+    await surface();
+    expect(screen.queryByRole('toolbar', { name: 'Part toolbar' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: 'Table toolbar' })).toBeNull();
+  });
+});
+
 describe('a component opening in place (the EP plan, EP2)', () => {
   it('stands what it is given while it opens, and the keys typed meanwhile arrive', async () => {
     let answer: (response: Response) => void = () => undefined;
