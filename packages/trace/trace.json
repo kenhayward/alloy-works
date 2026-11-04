@@ -29552,13 +29552,19 @@
     {
       "id": "ADM-028",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 51,
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "ADM-030",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 64,
+      "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-087",
+      "file": "apps/worker/src/steward-commands.test.ts",
+      "line": 108,
       "kind": "title"
     },
     {
@@ -29697,6 +29703,18 @@
       "id": "IMP-043",
       "file": "apps/worker/src/tenant-export.test.ts",
       "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-045",
+      "file": "apps/worker/src/tenant-purge.test.ts",
+      "line": 325,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-086",
+      "file": "apps/worker/src/tenant-purge.test.ts",
+      "line": 147,
       "kind": "title"
     },
     {
@@ -30675,6 +30693,12 @@
       "id": "API-072",
       "file": "packages/db/src/delivered.test.ts",
       "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-086",
+      "file": "packages/db/src/delivered.test.ts",
+      "line": 542,
       "kind": "title"
     },
     {
@@ -32277,6 +32301,18 @@
       "id": "ADM-028",
       "file": "packages/db/src/tenant-lifecycle.test.ts",
       "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-086",
+      "file": "packages/db/src/tenant-purge.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-066",
+      "file": "packages/db/src/tenant-purge.test.ts",
+      "line": 115,
       "kind": "title"
     },
     {
@@ -36441,6 +36477,12 @@
       "id": "REU-018",
       "file": "packages/editor/src/variables.test.ts",
       "line": 34,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-086",
+      "file": "packages/objects/src/purge.test.ts",
+      "line": 35,
       "kind": "title"
     },
     {
