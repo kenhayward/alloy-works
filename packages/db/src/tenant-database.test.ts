@@ -60,7 +60,10 @@ describe('the tenant database', () => {
   });
 
   it('finds the tenant a hostname belongs to, whatever its case', async () => {
-    expect(await service.resolveHostname('DEV.acme.alloy.test')).toEqual(development);
+    expect(await service.resolveHostname('DEV.acme.alloy.test')).toEqual({
+      ...development,
+      state: 'active',
+    });
     expect(await service.resolveHostname('nobody.alloy.test')).toBeUndefined();
   });
 
