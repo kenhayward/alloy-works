@@ -1,5 +1,7 @@
 {
   "menu.document": "Document",
+  "menu.component": "Component",
+  "menu.lines-and-translations": "Lines and translations",
   "document.lifecycle": "Where it stands",
   "editor.more-text-formatting-mark": "Aa",
   "editor.more-text-formatting": "More text formatting",

@@ -56,7 +56,11 @@ describe('a dialog on a kept page (#962)', () => {
     await withPage(async (page) => {
       const surface = await openFromHome(page, made.id);
       await surface.getByText('The words of a kept page.').click();
-      await page.getByRole('button', { name: 'Symbols', exact: true }).click();
+      await page
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: 'Insert', exact: true })
+        .click();
+      await page.getByRole('menuitem', { name: /^Symbols/ }).click();
       await leaveAndReturn(page, page.getByRole('dialog', { name: /Symbol/ }));
     });
   });

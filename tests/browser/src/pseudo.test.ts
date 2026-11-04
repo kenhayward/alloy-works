@@ -110,6 +110,42 @@ function overEditor(
   };
 }
 
+/** A row of the menu bar, by the words of the menu and of the row. */
+async function fromMenu(page: Page, l: Language, menu: WordKey, row: WordKey): Promise<void> {
+  await page
+    .getByRole('menubar')
+    .getByRole('menuitem', { name: say(l, menu), exact: true })
+    .click();
+  await page
+    .getByRole('menuitem', { name: say(l, row) })
+    .first()
+    .click();
+}
+
+/** A dialog a component's Component menu opens (ADR-0085). */
+function fromComponentMenu(
+  name: string,
+  dialog: string,
+  component: string,
+  row: WordKey,
+  named: (language: Language) => string | RegExp,
+): Surface {
+  return {
+    name,
+    dialog,
+    address: `#/components/${component}`,
+    regions: ['[role="dialog"]'],
+    ready: (page, language) =>
+      page
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: say(language, 'menu.component'), exact: true }),
+    open: async (page, language) => {
+      await fromMenu(page, language, 'menu.component', row);
+      return page.getByRole('dialog', { name: named(language) });
+    },
+  };
+}
+
 /** A dialog a page's button opens, the page drawn once `ready` shows. */
 function byButton(
   name: string,
@@ -238,19 +274,16 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     grace.component.id,
     'ControlOrMeta+Shift+e',
   ),
-  // From its button: Chromium keeps Ctrl+Shift+M for itself.
+  // From the Insert menu; a symbol needs a caret in plain text and the paragraph's end is its index
+  // marker, so go to the line's start - always text - before opening (Chromium keeps Ctrl+Shift+M).
   overEditor(
     'The symbol palette',
     'editor/SymbolPalette.tsx',
     grace.component.id,
     async (page, l) => {
-      // A symbol needs a caret in plain text; the paragraph's end is its index marker, so go to the
-      // line's start - always text - before opening from the button (Chromium keeps Ctrl+Shift+M).
       await page.locator('.ProseMirror p').first().click();
       await page.keyboard.press('Home');
-      const button = page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true });
-      // The click can land on the index marker's node; Playwright waits for a text caret to enable it.
-      await button.click();
+      await fromMenu(page, l, 'menu.insert', 'pm.command.symbol');
       return page.getByRole('dialog');
     },
   ),
@@ -279,7 +312,7 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     grace.component.id,
     async (page, l) => {
       await caret(page);
-      await page.getByRole('button', { name: say(l, 'editor.figure'), exact: true }).click();
+      await fromMenu(page, l, 'menu.insert', 'editor.figure');
       return page.getByRole('dialog', { name: say(l, 'editor.figure') });
     },
   ),
@@ -326,25 +359,14 @@ const surfaces = (grace: Graces): readonly Surface[] => [
   // The component's own header: what it may be, where it is used, and its relationships.
   ...(
     [
-      ['Dates', 'lifecycle/Dates.tsx', 'lifecycle.dates', 'lifecycle.dates-of'],
-      [
-        'Effective for',
-        'lifecycle/Scope.tsx',
-        'lifecycle.effective-for-2',
-        'lifecycle.effective-for-3',
-      ],
+      ['Dates', 'lifecycle/Dates.tsx', 'menu.dates', 'lifecycle.dates-of'],
+      ['Effective for', 'lifecycle/Scope.tsx', 'menu.effective-for', 'lifecycle.effective-for-3'],
       ['Used in', 'reuse/UsedIn.tsx', 'reuse.used-in', 'reuse.where-is-used'],
       ['Relationships', 'reuse/Relationships.tsx', 'reuse.relationships', 'reuse.relationships-of'],
     ] as const
-  ).map(([name, dialog, button, named]) =>
-    byButton(
-      `The ${name} dialog`,
-      dialog,
-      `#/components/${grace.component.id}`,
-      (page, language) =>
-        page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
-      button,
-      (language) => say(language, named, { title: grace.component.title }),
+  ).map(([name, dialog, row, named]) =>
+    fromComponentMenu(`The ${name} dialog`, dialog, grace.component.id, row, (language) =>
+      say(language, named, { title: grace.component.title }),
     ),
   ),
   // A component approved and begun in French: its translations, and a line begun beside the main.
@@ -682,34 +704,25 @@ const administration = (ada: Adas): readonly Surface[] => [
     'data.new-connection',
     (language) => say(language, 'data.new-connection'),
   ),
-  byButton(
+  fromComponentMenu(
     'The Delete dialog',
     'lifecycle/Delete.tsx',
-    `#/components/${ada.component.id}`,
-    (page, language) =>
-      page.getByRole('button', { name: say(language, 'lifecycle.delete-2'), exact: true }),
-    'lifecycle.delete-2',
+    ada.component.id,
+    'menu.delete',
     (language) => say(language, 'lifecycle.delete', { title: ada.component.title }),
   ),
-  byButton(
+  fromComponentMenu(
     'The Move dialog',
     'lifecycle/MoveDialog.tsx',
-    `#/components/${ada.component.id}`,
-    (page, language) =>
-      page.getByRole('button', {
-        name: say(language, 'moving.move-to-another-space-menu'),
-        exact: true,
-      }),
+    ada.component.id,
     'moving.move-to-another-space-menu',
     (language) => say(language, 'moving.move-to-another-space'),
   ),
-  byButton(
+  fromComponentMenu(
     'The Place a hold dialog',
     'lifecycle/Hold.tsx',
-    `#/components/${ada.component.id}`,
-    (page, language) =>
-      page.getByRole('button', { name: say(language, 'lifecycle.place-a-hold'), exact: true }),
-    'lifecycle.place-a-hold',
+    ada.component.id,
+    'menu.place-a-hold',
     (language) => say(language, 'lifecycle.place-a-hold-on', { title: ada.component.title }),
   ),
   {

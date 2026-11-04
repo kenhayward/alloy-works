@@ -293,6 +293,27 @@ export function EditorToolbar({
         className={styles['dockTools']}
         orientation="vertical"
       >
+        {leading && leading.length > 0 && (
+          <>
+            {leading.map((act) => (
+              <NameTip key={act.label} name={act.label}>
+                <button
+                  type="button"
+                  className={styles['dockButton']}
+                  aria-label={act.label}
+                  aria-disabled={act.disabled}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (!act.disabled) act.onPress();
+                  }}
+                >
+                  <Icon name={act.icon} />
+                </button>
+              </NameTip>
+            ))}
+            <Toolbar.Divider className={styles['dockDivider']} />
+          </>
+        )}
         <NameTip name={words('menu.paragraph-style')}>
           <Flyout
             label={words('menu.paragraph-style')}
