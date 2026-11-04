@@ -18235,7 +18235,7 @@
         },
         {
           "id": "CNT-073",
-          "howItIsMet": "A component's edges and its label appear when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries)). The one component open in an editor keeps its edges while it is open: that is the editor an author opened and closes with Done, not chrome the page puts round a component whatever the reader does"
+          "howItIsMet": "A component's left line appears when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries)). The one component open in an editor keeps its edges while it is open: that is the editor an author opened and closes with Done, not chrome the page puts round a component whatever the reader does"
         },
         {
           "id": "CNT-154",
@@ -18259,7 +18259,7 @@
         },
         {
           "id": "CNT-162",
-          "howItIsMet": "A component's label names the version its reference resolves to and whether it is the latest or pinned ([Versions](#versions))"
+          "howItIsMet": "The Part panel names the version its reference resolves to and whether it is the latest or pinned ([Versions](#versions))"
         },
         {
           "id": "CNT-181",
@@ -18267,7 +18267,7 @@
         },
         {
           "id": "CNT-158",
-          "howItIsMet": "In Authoring, where the reader may restructure the document, the label's version opens a list of the component's versions and **Always the latest**; choosing one is the outline's `set` of the reference's mode"
+          "howItIsMet": "In Authoring, where the reader may restructure the document, the Part panel's version opens a list of the component's versions and **Always the latest**; choosing one is the outline's `set` of the reference's mode"
         },
         {
           "id": "CNT-159",
@@ -27933,121 +27933,91 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1568,
+      "line": 1561,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1725,
+      "line": 1718,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 675,
+      "line": 664,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2665,
+      "line": 2658,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 675,
+      "line": 664,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 706,
+      "line": 695,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 887,
+      "line": 880,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 939,
-      "kind": "title"
-    },
-    {
-      "id": "CNT-162",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 860,
-      "kind": "title"
-    },
-    {
-      "id": "CNT-163",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 860,
+      "line": 932,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2431,
+      "line": 2424,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2128,
+      "line": 2121,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 691,
-      "kind": "title"
-    },
-    {
-      "id": "LIF-018",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 860,
+      "line": 680,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 966,
-      "kind": "title"
-    },
-    {
-      "id": "LOC-016",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 878,
-      "kind": "title"
-    },
-    {
-      "id": "REU-050",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 860,
+      "line": 959,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1098,
+      "line": 1091,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2333,
+      "line": 2326,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2168,
+      "line": 2161,
       "kind": "title"
     },
     {
@@ -28059,7 +28029,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1147,
+      "line": 1140,
       "kind": "title"
     },
     {
@@ -28071,7 +28041,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1859,
+      "line": 1852,
       "kind": "title"
     },
     {
@@ -28245,19 +28215,19 @@
     {
       "id": "CNT-137",
       "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
-      "line": 166,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "COL-020",
       "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
-      "line": 137,
+      "line": 147,
       "kind": "title"
     },
     {
       "id": "COL-025",
       "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
-      "line": 137,
+      "line": 147,
       "kind": "title"
     },
     {
@@ -28305,25 +28275,7 @@
     {
       "id": "LIF-046",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 123,
-      "kind": "title"
-    },
-    {
-      "id": "LOC-004",
-      "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 548,
-      "kind": "title"
-    },
-    {
-      "id": "REU-011",
-      "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 555,
-      "kind": "title"
-    },
-    {
-      "id": "REU-015",
-      "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 555,
+      "line": 118,
       "kind": "title"
     },
     {
@@ -28420,6 +28372,60 @@
       "id": "TPL-029",
       "file": "apps/web/src/structure/PartPanel.test.tsx",
       "line": 324,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-162",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-163",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 40,
+      "kind": "title"
+    },
+    {
+      "id": "COL-069",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-018",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-046",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-016",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 50,
+      "kind": "title"
+    },
+    {
+      "id": "REU-011",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 64,
+      "kind": "title"
+    },
+    {
+      "id": "REU-015",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 64,
+      "kind": "title"
+    },
+    {
+      "id": "REU-050",
+      "file": "apps/web/src/structure/PartStanding.test.tsx",
+      "line": 33,
       "kind": "title"
     },
     {
@@ -36675,7 +36681,7 @@
     {
       "id": "CNT-190",
       "file": "tests/browser/src/canvas.test.ts",
-      "line": 221,
+      "line": 216,
       "kind": "title"
     },
     {
@@ -36747,19 +36753,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1031,
+      "line": 1019,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1027,
+      "line": 1015,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1027,
+      "line": 1015,
       "kind": "title"
     },
     {

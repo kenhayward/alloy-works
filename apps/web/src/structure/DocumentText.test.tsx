@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { DocumentText, labelFits, textExtent } from './DocumentText.js';
+import { DocumentText } from './DocumentText.js';
 
 const PRINTER = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 
@@ -82,13 +82,8 @@ describe("the document's text", () => {
       '2.1 Install the printer',
       '2.2 A component',
     ]);
-    expect(within(text).getByRole('link', { name: 'Open Install the printer' })).toHaveAttribute(
-      'href',
-      `#/components/${PRINTER}`,
-    );
     // Withheld from this reader: named neutrally, marked, and nothing to open.
     expect(within(text).getByText('Not yours to read')).toBeInTheDocument();
-    expect(within(text).getAllByRole('link')).toHaveLength(1);
   });
 
   it('marks a part the assistant just changed, and says so on its label (issue #876)', () => {
@@ -532,62 +527,5 @@ describe("the document's text", () => {
       'A component',
       'A component',
     ]);
-  });
-});
-
-describe("a component's label", () => {
-  it('stands beside the text only where the column leaves it room, and above it otherwise (zoomed in)', () => {
-    // A 900px column, the text 600px of it: a 250px label fits beside, with its gap.
-    expect(labelFits({ column: 900, text: 600, label: 250 })).toBe(true);
-    // Zoomed in, the text 800px: the label would stand on it.
-    expect(labelFits({ column: 900, text: 800, label: 250 })).toBe(false);
-    // Room for the label but not its gap.
-    expect(labelFits({ column: 900, text: 645, label: 250 })).toBe(false);
-  });
-
-  it('LOC-004 measures the text from the inline start, the right edge right to left (the UI plan, UI-G)', () => {
-    const component = { left: 100, right: 1000 };
-    // Left to right the words run from 100 to 700; right to left, from 1000 to 400: 600 each way.
-    expect(textExtent(component, { left: 100, right: 700 }, 'ltr')).toBe(600);
-    expect(textExtent(component, { left: 400, right: 1000 }, 'rtl')).toBe(600);
-  });
-
-  it('REU-011 REU-015 marks a reference overridden here, says where an override no longer applies, and offers Overrides', async () => {
-    const asked: string[] = [];
-    render(
-      <DocumentText
-        outline={outline}
-        scheme={defaultLayout.scheme}
-        names={new Map([[PRINTER, 'Install the printer']])}
-        texts={new Map([[PRINTER_NODE, printerText]])}
-        overridesOf={
-          new Map([
-            [
-              PRINTER_NODE,
-              [
-                {
-                  block: 'b1',
-                  text: [{ type: 'text', value: 'Unbox it.', marks: [] }],
-                  stale: false,
-                },
-                {
-                  block: 'b2',
-                  text: [{ type: 'text', value: 'Plug it in.', marks: [] }],
-                  stale: true,
-                },
-              ],
-            ],
-          ])
-        }
-        onOverride={(node) => asked.push(node)}
-      />,
-    );
-    const text = screen.getByRole('region', { name: "The document's text" });
-    expect(within(text).getByText('Overridden here')).toBeInTheDocument();
-    expect(within(text).getByText('Override no longer applies')).toBeInTheDocument();
-    await userEvent.click(
-      within(text).getByRole('button', { name: 'Overrides of Install the printer' }),
-    );
-    expect(asked).toEqual([PRINTER_NODE]);
   });
 });

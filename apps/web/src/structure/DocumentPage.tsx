@@ -89,7 +89,8 @@ import { boundTablesByKey, type TableRows } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
-import { DocumentText, type Editable, type Place } from './DocumentText.js';
+import textStyles from './DocumentText.module.css';
+import { DocumentText, PartStanding, type Editable, type Place } from './DocumentText.js';
 import { dataState } from './dataStates.js';
 import type { NodeMarks } from './OutlinePanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
@@ -2244,6 +2245,11 @@ export function DocumentPage({
   // An author updating a document reads what was said of it: the threads stand beside the text in
   // Authoring too, marked where they stand. A thread is started from Review, on what is selected there.
   const threadsShown = reviewing || authoring;
+  // Suggest changes: from the Part panel on its part, and from the Review menu on the part chosen.
+  const suggestIn = (node: string) => {
+    setDrafting(node);
+    setDock('suggestions');
+  };
   const modeNow: Mode = authoring ? 'authoring' : reviewing ? 'review' : 'reading';
   const offered = MODES.filter(
     ({ mode }) =>
@@ -2469,6 +2475,15 @@ export function DocumentPage({
         return panelState('data');
       case 'assistant':
         return { enabled: assistantOffered, checked: assistantOpen, run: toggleAssistant };
+      case 'suggest':
+        return {
+          enabled: reviewing,
+          run: () => {
+            const chosen = pointed?.node ?? marked;
+            if (chosen !== null && editableNow.get(chosen)?.maySuggest === true) suggestIn(chosen);
+            else setNotice(say('document.choose-a-part-to-suggest'));
+          },
+        };
       case 'boundaries':
         return { enabled: true, checked: boundaries, run: () => showBoundaries(!boundaries) };
       case 'pages':
@@ -2776,6 +2791,42 @@ export function DocumentPage({
                   {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
                   marks={outlineMarks}
                   heldSaid={heldSaid}
+                  standing={(node) =>
+                    node.type === 'reference' ? (
+                      <div className={textStyles['standing']}>
+                        <PartStanding
+                          node={node}
+                          standing={{
+                            names,
+                            changed: changedNodes,
+                            movedParts: document.movedParts,
+                            resolved,
+                            revisions: revisionByNode,
+                            lines: lineByNode,
+                            diverged: divergedByNode,
+                            translated: translatedByNode,
+                            pastReview: pastReviewNodes,
+                            overridesOf: overridesByNode,
+                            editable: editableNow,
+                            openComponent:
+                              editing === null ? null : (componentOfNode.get(editing) ?? null),
+                            present: presentIn,
+                            ...(threadsShown ? { threadCounts } : {}),
+                            acts: {
+                              hasText: texts.has(node.id),
+                              drafting,
+                              ...(document.mayEdit && authoring
+                                ? { choosing, onOverride: setOverriding }
+                                : {}),
+                              ...(reviewing && principalId !== undefined
+                                ? { onSuggest: suggestIn }
+                                : {}),
+                            },
+                          }}
+                        />
+                      </div>
+                    ) : null
+                  }
                   {...(referencesTo === undefined ? {} : { referencesTo })}
                   head={
                     // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
@@ -3481,11 +3532,7 @@ export function DocumentPage({
                     pastReview={pastReviewNodes}
                     changed={changedNodes}
                     overridesOf={overridesByNode}
-                    {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}
                     newer={{ client, byNode: newerByNode }}
-                    // The version is chosen from the label in Authoring, by whoever may restructure the
-                    // document (DV-F); anywhere else the label says it and offers nothing.
-                    {...(document.mayEdit && authoring ? { choosing } : {})}
                     bindingStates={bindingStates}
                     boundTables={boundTables}
                     {...(threadsShown
@@ -3511,10 +3558,6 @@ export function DocumentPage({
                       : {})}
                     {...(reviewing && principalId !== undefined
                       ? {
-                          onSuggest: (node: string) => {
-                            setDrafting(node);
-                            setDock('suggestions');
-                          },
                           editor: (component: string, place: Place) => (
                             <ComponentEditor
                               key={`draft:${component}`}

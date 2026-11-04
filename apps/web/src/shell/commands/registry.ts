@@ -52,6 +52,7 @@ export const COMMANDS: readonly AppCommand[] = [
     undefined,
     'editor',
   ),
+  page('suggest', 'document.suggest-changes'),
   page('thread-previous', 'review.previous-thread', undefined, 'k'),
   page('thread-next', 'review.next-thread', undefined, 'j'),
   page('undo', 'menu.undo', undefined, 'Mod-z', 'editor'),

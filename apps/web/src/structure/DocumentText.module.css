@@ -93,44 +93,25 @@
   border-inline-start: 3px solid var(--muted);
 }
 
+/* A part's standing for a screen reader: the Part panel shows it to everyone else (the EP plan, EP4). */
 .label {
   position: absolute;
-  top: 0;
-  inset-inline-end: 0;
-  z-index: 1;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The same in the Part panel, with its acts. */
+.standing {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4) var(--space-12);
-  padding: var(--space-4) var(--space-8);
-  border-radius: var(--radius-8);
-  background: var(--surface);
-  opacity: 0;
-  pointer-events: none;
   color: var(--muted);
   font-family: var(--sans);
   font-size: var(--size-13);
-}
-
-/* On a sheet with no room beside its heading (ADR-0056): over the space above the component. */
-.component[data-label-raised] > .label {
-  top: auto;
-  bottom: calc(100% + var(--space-8));
-}
-
-/* Where the column leaves it no room beside the text - zoomed in - a line of its own above the text,
-   at the end, there whether shown or not, so showing it moves nothing (`labelFits`). */
-.component[data-label-above] > .label {
-  position: static;
-  width: fit-content;
-  margin-inline-start: auto;
-}
-
-.component:hover > .label,
-.component:focus-within > .label,
-.text[data-boundaries='shown'] .label {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .labelName {
@@ -138,7 +119,8 @@
   font-weight: 600;
 }
 
-.label .state {
+.label .state,
+.standing .state {
   margin: 0;
 }
 
@@ -153,11 +135,6 @@
 
 .versionHolder {
   position: relative;
-}
-
-/* A label whose list is open stands over the labels of the components below it. */
-.label:focus-within {
-  z-index: 2;
 }
 
 .version {

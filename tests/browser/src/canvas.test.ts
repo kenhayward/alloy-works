@@ -3,7 +3,7 @@ import { describe, expect, inject, it } from 'vitest';
 import { api, edit, makeDocument, nodesOf, type Client, type DocumentView } from './testing/api.js';
 import { SERVICE } from './testing/addresses.js';
 import { makeComponent, png, uploadImage } from './testing/fixtures.js';
-import { fromMenu, withPage } from './testing/page.js';
+import { withPage } from './testing/page.js';
 
 /**
  * **The canvas as a person uses it**, beside what `styles.test.ts` measures (the final review and the
@@ -136,11 +136,6 @@ async function openDocument(
   });
 }
 
-/** Whether two boxes share any area. */
-function overlap(a: DOMRect, b: DOMRect): boolean {
-  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-}
-
 describe('the canvas as a person uses it', () => {
   it('puts the caret in the line clicked, where the line below it is held open by an image (the final review of issue #331)', async () => {
     const client = api();
@@ -269,65 +264,6 @@ describe('the canvas as a person uses it', () => {
       });
     });
   }
-
-  it("leaves a component's Open to the pointer where its boundaries are shown in a narrow window, over a paragraph holding an image (the re-review of issue #331)", async () => {
-    const client = api();
-    const image = await uploadImage(client, inject('session'), png(60, 40, [30, 90, 200]));
-    const component = await makeComponent(client, `Opened narrow ${new Date().toISOString()}`, [
-      paragraph('canvas-first', [text('Zc0 '), inline(image), text(` ${WORDS}`)]),
-      paragraph('canvas-image', [text('Zc1 before '), inline(image), text(` after ${WORDS}`)]),
-    ]);
-    const placed = await placing(client, 'Opened narrow', component);
-    await withPage(async (page) => {
-      await page.setViewportSize({ width: 700, height: 900 });
-      await openDocument(page, placed, 'Reading', '1');
-      await fromMenu(page, 'View', 'Show boundaries');
-      const open = page.locator('section.aw-canvas [data-label] a', { hasText: 'Open' });
-      await open.waitFor();
-      // The sheet keeps its width and the desk scrolls sideways to it (ADR-0056).
-      await open.scrollIntoViewIfNeeded();
-      const hit = await open.evaluate((link) => {
-        const box = link.getBoundingClientRect();
-        return link.contains(
-          document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2),
-        );
-      });
-      expect(hit, 'Open is what stands at its own middle').toBe(true);
-    });
-  });
-
-  it("stands a component's label beside its heading, not over it (the final review of issue #333)", async () => {
-    const client = api();
-    const component = await withAnImage(client, 'Labelled');
-    const placed = await placing(client, 'Labelled', component);
-    await withPage(async (page) => {
-      // Wide enough that the column is wider than the measure, where the label stands beside it.
-      await page.setViewportSize({ width: 1700, height: 1000 });
-      await openDocument(page, placed, 'Reading', '1');
-      const boxes = await page.evaluate(() => {
-        const card = document.querySelector('section.aw-canvas [data-component]')!;
-        const heading = card.querySelector('h1, h2, h3, h4, h5, h6')!;
-        const words = document.createRange();
-        words.selectNodeContents(heading);
-        return {
-          label: card.querySelector('[data-label]')!.getBoundingClientRect().toJSON() as DOMRect,
-          words: words.getBoundingClientRect().toJSON() as DOMRect,
-          component: card.getBoundingClientRect().toJSON() as DOMRect,
-          measure: card.querySelector('.aw-text')!.getBoundingClientRect().width,
-        };
-      });
-      // On the sheet the component is the measure wide (ADR-0056), and its label at its edge.
-      expect(Math.abs(boxes.component.width - boxes.measure), JSON.stringify(boxes)).toBeLessThan(
-        1,
-      );
-      expect(
-        Math.abs(boxes.label.right - boxes.component.right),
-        JSON.stringify(boxes),
-      ).toBeLessThan(1);
-      // And clear of the heading's words.
-      expect(overlap(boxes.label, boxes.words), JSON.stringify(boxes)).toBe(false);
-    });
-  });
 
   for (const zoom of ['1', '0.5'] as const) {
     it(`opens a component in place across the sheet, the sheet unmoved and its text where the sheet set it, its toolbar in the dock, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {

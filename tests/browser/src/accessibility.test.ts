@@ -1547,7 +1547,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.goto(`${SERVICE}/#/documents/${document.id}/nodes/${methods.children[0]!.id}`);
       await check('a section arrived at by a link', { shows: [...drawn, node(/Measures/)] });
 
-      // The version chooser, on the placed component's label.
+      // The version chooser, in the Part panel of the part clicked (the EP plan, EP4).
+      await page
+        .locator('section.aw-canvas [data-component]')
+        .first()
+        .click({ position: { x: 1, y: 1 } });
       await page
         .getByRole('button', { name: /choose the version of/ })
         .first()

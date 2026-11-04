@@ -574,23 +574,12 @@ describe('the address of every node', () => {
       ).toHaveTextContent(/Setting up/);
     });
 
-    it("CNT-073 shows a component's edges and label on hover, on focus and under Show boundaries, and never otherwise", async () => {
+    it("CNT-073 shows a component's edges on hover, on focus and under Show boundaries, and never otherwise", async () => {
       const text = await openOneScroll();
-      // The label is there for a screen reader and the keyboard, and seen only when asked for.
+      // What the label said stays for a screen reader, and is never seen (the EP plan, EP4).
       const label = within(text).getByText('You may read this component but not edit it.');
       expect(label.closest('[data-label]')).not.toBeNull();
-      expect(ruleOf('.label')).toMatch(/opacity: 0/);
-      // Inside its own component's box, at the top: never over the component above it, and never
-      // outside the canvas, whose sideways scrolling clips what stands above its top.
-      expect(ruleOf('.label')).toMatch(/top: 0/);
-      expect(ruleOf('.label')).not.toMatch(/bottom:/);
-      for (const shown of [
-        '.component:hover > .label',
-        '.component:focus-within > .label',
-        ".text[data-boundaries='shown'] .label",
-      ]) {
-        expect(ruleOf(shown), shown).toMatch(/opacity: 1/);
-      }
+      expect(ruleOf('.label')).toMatch(/clip-path/);
       for (const edged of [
         '.component:hover::before',
         '.component:focus-within::before',
@@ -854,10 +843,14 @@ describe('the address of every node', () => {
       await within(text).findByText('The printer at 0.3.');
       return { fake, text, shown, listed };
     }
+    const partOf = (text: HTMLElement, node: string) => {
+      fireEvent.click(text.querySelector(`[data-node="${node}"] [data-component]`)!);
+      return screen.getByRole('tabpanel', { name: 'Part' });
+    };
     const labelOf = (text: HTMLElement, node: string) =>
       text.querySelector<HTMLElement>(`[data-node="${node}"] [data-label]`)!;
 
-    it('CNT-162 CNT-163 REU-050 LIF-018 shows in each label the version a reference resolves to, and whether it is pinned, at the latest or at the latest approved revision, and which', async () => {
+    it('says for a screen reader, in each part, the version a reference resolves to, and whether it is pinned, at the latest or at the latest approved revision, and which', async () => {
       const { text } = await openVersions({ document: false });
       await waitFor(() =>
         expect(labelOf(text, FOLLOWING)).toHaveTextContent('Version 0.3, latest'),
@@ -875,7 +868,7 @@ describe('the address of every node', () => {
       expect(within(text).queryByRole('button', { name: /^Version/ })).toBeNull();
     });
 
-    it('LOC-016 shows on the label of each reference in the text the translation status of the component it places', async () => {
+    it('says for a screen reader, in each part, the translation status of the component it places', async () => {
       const { text } = await openVersions({ document: false });
       await waitFor(() =>
         expect(labelOf(text, PINNED)).toHaveTextContent('fr-FR: Out of date, needs retranslating'),
@@ -886,7 +879,7 @@ describe('the address of every node', () => {
 
     it('CNT-158 lets an author choose, in Authoring, the version a component reference shows, from its label, and shows it chosen', async () => {
       const { fake, text, listed } = await openVersions({ document: true });
-      const label = () => labelOf(text, FOLLOWING);
+      const label = () => partOf(text, FOLLOWING);
       const chooser = await within(label()).findByRole('button', {
         name: /^Version 0\.3, latest/,
       });
@@ -938,7 +931,7 @@ describe('the address of every node', () => {
 
     it('CNT-159 lets an author choose, from the document view, that a reference track the latest approved revision', async () => {
       const { fake, text } = await openVersions({ document: true });
-      const label = () => labelOf(text, FOLLOWING);
+      const label = () => partOf(text, FOLLOWING);
       await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
       const menu = await within(label()).findByRole('menu');
       await userEvent.click(
@@ -978,7 +971,7 @@ describe('the address of every node', () => {
 
     it('CNT-158 offers the choice only in Authoring, and only to whoever may restructure the document', async () => {
       const { text, shown } = await openVersions({ document: true });
-      await within(labelOf(text, FOLLOWING)).findByRole('button', { name: /^Version 0\.3/ });
+      await within(partOf(text, FOLLOWING)).findByRole('button', { name: /^Version 0\.3/ });
       await userEvent.click(
         within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
           name: 'Reading',
@@ -1007,7 +1000,7 @@ describe('the address of every node', () => {
           ? json(200, { items: [V3, V2].map(listedVersion), next: 'b2xkZXI' })
           : json(200, { items: [V1].map(listedVersion), next: null });
       });
-      const label = () => labelOf(text, FOLLOWING);
+      const label = () => partOf(text, FOLLOWING);
       await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
       const menu = await within(label()).findByRole('menu');
       await within(menu).findByText('The versions could not be read.');
