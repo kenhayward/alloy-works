@@ -70,6 +70,7 @@ flowchart TB
         service["Web service<br/>TypeScript on Node LTS<br/>API, realtime streams, MCP"]
         workers["Publishing workers<br/>TypeScript on Node + Typst binary"]
         restorer["Restorer<br/>the one process that may become a tenant's owner"]
+        steward["Steward<br/>the one process that deletes a tenant"]
         preview["Preview workers, T3<br/>typst watch per open document"]
         db[("PostgreSQL + pgvector<br/>a schema per tenant<br/>+ a platform schema")]
         objects[("Object storage<br/>S3-compatible")]
@@ -85,6 +86,8 @@ flowchart TB
     service -- "preview edits" --> preview
     workers -- "claim jobs; SQL as the tenant's role" --> db
     restorer -- "claims restorations; a restore as the tenant's owner" --> db
+    steward -- "claims purges; drops a schema and roles" --> db
+    steward -- "removes a tenant's objects and credential" --> store
     workers -- "fonts in, outputs out" --> objects
     preview -- "fonts" --> objects
     service -- "one request, one answer;<br/>a private network" --> connector

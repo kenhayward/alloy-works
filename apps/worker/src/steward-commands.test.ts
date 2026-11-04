@@ -1,8 +1,10 @@
 import {
   bootstrapCluster,
   createTenant,
+  createStewardDatabase,
   createTenantDatabase,
   migrate,
+  type StewardDatabase,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -25,9 +27,10 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
   let tenant: Tenant;
   let steward: TenantDatabase;
   let service: TenantDatabase;
+  let reach: StewardDatabase;
   const lines: string[] = [];
   const run = (...argv: string[]) =>
-    runSteward(argv, { db: steward, out: (line) => lines.push(line) });
+    runSteward(argv, { db: steward, steward: reach, out: (line) => lines.push(line) });
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -40,9 +43,11 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
     });
     steward = createTenantDatabase(db.stewardUrl);
     service = testTenantDatabase(db.serviceUrl);
+    reach = createStewardDatabase(db.stewardUrl);
   }, 120_000);
 
   afterAll(async () => {
+    await reach?.close();
     await steward?.close();
     await service?.close();
     await db?.drop();
@@ -98,6 +103,13 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
       );
       await worker.close();
     }
+  });
+
+  it('IAM-087 reports where a tenant stands, with no reason in it, from the row alone', async () => {
+    lines.length = 0;
+    expect(await run('report', '--tenant', tenant.id)).toBe(0);
+    expect(JSON.parse(lines[0]!)).toMatchObject({ id: tenant.id, state: 'active', report: null });
+    expect(await run('report', '--tenant', 'nobody')).toBe(1);
   });
 
   it('refuses a suspension with no reason, an unknown tenant, a command it does not know and a change that does not apply', async () => {

@@ -59,13 +59,19 @@ const environments = [
     hostnames: ['dev.acme.localhost', ...extra],
   },
 ];
+const gone = new Set<string>();
 const check = new pg.Client({ connectionString: adminUrl });
 await check.connect();
 for (const environment of environments) {
-  const found = await check.query('select 1 from platform.tenant where id = $1', [
-    environment.tenant.id,
-  ]);
-  if (found.rowCount === 0) {
+  const found = await check.query<{ state: string }>(
+    'select state from platform.tenant where id = $1',
+    [environment.tenant.id],
+  );
+  // An id is never used again: one deleted here stays deleted, and this goes on without it.
+  if (found.rows[0]?.state === 'deleting' || found.rows[0]?.state === 'deleted') {
+    console.log(`${environment.tenant.id} has been deleted, so it is left as it is`);
+    gone.add(environment.tenant.id);
+  } else if (found.rowCount === 0) {
     await createTenant(adminUrl, migratorUrl, { organisation, ...environment });
     console.log(`Created ${environment.hostnames[0]}`);
   } else {
@@ -75,7 +81,7 @@ for (const environment of environments) {
   }
 }
 await check.end();
-for (const environment of environments) {
+for (const environment of environments.filter((each) => !gone.has(each.tenant.id))) {
   const tenant = tenantNames(environment.tenant.id);
   const named = { id: environment.tenant.id, schema: tenant.schema, role: tenant.role };
   // Ada is invited to administer each environment before any route lets anybody sign in, as a real

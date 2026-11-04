@@ -116,6 +116,8 @@ export function createTenantDatabase(
       const rows = await db
         .selectFrom('platform.tenant')
         .select(['id', 'schema_name', 'role_name'])
+        // A row outlives its schema once deleted, and is no tenant to act in (TL-I).
+        .where(sql<boolean>`exists (select from pg_namespace n where n.nspname = schema_name)`)
         .orderBy('id')
         .execute();
       return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));
@@ -146,6 +148,7 @@ export function createTenantDatabase(
         .selectFrom('platform.tenant')
         .select(['id', 'schema_name', 'role_name'])
         .where('id', '=', id)
+        .where(sql<boolean>`exists (select from pg_namespace n where n.nspname = schema_name)`)
         .executeTakeFirst();
       return row && { id: row.id, schema: row.schema_name, role: row.role_name };
     },

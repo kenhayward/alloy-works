@@ -1582,3 +1582,10 @@ export {
   type DeliveredWritten,
 } from './delivered.js';
 export { vocabularyUses, type VocabularyUses } from './vocabulary-uses.js';
+export {
+  createStewardDatabase,
+  PURGE_WAIT_MS,
+  type PurgeReport,
+  type StewardDatabase,
+  type TenantRecord,
+} from './tenant-purge.js';
