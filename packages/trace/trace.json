@@ -5792,9 +5792,18 @@
       "area": "IAM",
       "statement": "An organisation must share billing, administration and identity-provider configuration across its tenants (**IAM-068**)",
       "tranche": "T7",
-      "status": "Specified",
+      "status": "Superseded by IAM-085",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 59
+    },
+    {
+      "id": "IAM-085",
+      "area": "IAM",
+      "statement": "An organisation must share administration and identity-provider configuration across its tenants (**IAM-068**). Billing is not shared here, since this product is not a billing system (**ADM-N03**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 60
     },
     {
       "id": "IAM-053",
@@ -5803,16 +5812,25 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 60
+      "line": 61
     },
     {
       "id": "IAM-058",
       "area": "IAM",
       "statement": "The timetable in IAM-006 must be a stated number of days from the deletion becoming irreversible to everything the tenant owns being unreadable, published to tenants in advance, and proven by a test rather than asserted. It is the same clock as the grace period in **ADM-030** (**IAM-Q08**)",
       "tranche": "T7",
+      "status": "Superseded by IAM-086",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 62
+    },
+    {
+      "id": "IAM-086",
+      "area": "IAM",
+      "statement": "A closed tenant's grace period (**ADM-030**) must be 30 days. Deletion becomes irreversible when that period has ended and nothing in the tenant is under a legal hold (**LIF-066**), and everything the tenant owns in the service's database and object store must be unreadable within 1 day of that moment. These numbers, and that a deployment's own backups are beyond them until **ADM-043** holds them to it, must be published to tenants in advance and proven by a test rather than asserted",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 61
+      "line": 63
     },
     {
       "id": "IAM-007",
@@ -5821,7 +5839,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 91
+      "line": 93
     },
     {
       "id": "IAM-008",
@@ -5830,7 +5848,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 92
+      "line": 94
     },
     {
       "id": "IAM-009",
@@ -5839,7 +5857,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 93
+      "line": 95
     },
     {
       "id": "IAM-010",
@@ -5848,7 +5866,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 94
+      "line": 96
     },
     {
       "id": "IAM-011",
@@ -5857,7 +5875,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 95
+      "line": 97
     },
     {
       "id": "IAM-012",
@@ -5866,7 +5884,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 96
+      "line": 98
     },
     {
       "id": "IAM-013",
@@ -5875,7 +5893,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 97
+      "line": 99
     },
     {
       "id": "IAM-041",
@@ -5884,7 +5902,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 98
+      "line": 100
     },
     {
       "id": "IAM-042",
@@ -5893,7 +5911,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 99
+      "line": 101
     },
     {
       "id": "IAM-043",
@@ -5902,7 +5920,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 100
+      "line": 102
     },
     {
       "id": "IAM-054",
@@ -5911,7 +5929,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 101
+      "line": 103
     },
     {
       "id": "IAM-044",
@@ -5920,7 +5938,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 102
+      "line": 104
     },
     {
       "id": "IAM-055",
@@ -5929,7 +5947,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 103
+      "line": 105
     },
     {
       "id": "IAM-056",
@@ -5938,7 +5956,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 104
+      "line": 106
     },
     {
       "id": "IAM-064",
@@ -5947,7 +5965,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 105
+      "line": 107
     },
     {
       "id": "IAM-065",
@@ -5956,7 +5974,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 106
+      "line": 108
     },
     {
       "id": "IAM-067",
@@ -5965,7 +5983,7 @@
       "tranche": "Constraint",
       "status": "Superseded by IAM-082",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 107
+      "line": 109
     },
     {
       "id": "IAM-082",
@@ -5974,7 +5992,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 108
+      "line": 110
     },
     {
       "id": "IAM-068",
@@ -5983,7 +6001,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 109
+      "line": 111
     },
     {
       "id": "IAM-069",
@@ -5992,7 +6010,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 110
+      "line": 112
     },
     {
       "id": "IAM-070",
@@ -6001,7 +6019,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 111
+      "line": 113
     },
     {
       "id": "IAM-059",
@@ -6010,7 +6028,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 112
+      "line": 114
     },
     {
       "id": "IAM-060",
@@ -6019,16 +6037,25 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 113
+      "line": 115
     },
     {
       "id": "IAM-061",
       "area": "IAM",
       "statement": "No standing vendor access may remain after bootstrap. Any later vendor action inside a tenant must go through the support-access path that the tenant grants, bounds and can revoke (**ADM-022** to **ADM-025**)",
       "tranche": "Constraint",
+      "status": "Superseded by IAM-087",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 116
+    },
+    {
+      "id": "IAM-087",
+      "area": "IAM",
+      "statement": "No standing vendor access may remain after bootstrap. Any later vendor action reading a tenant's content must go through the support-access path that the tenant grants, bounds and can revoke (**ADM-022** to **ADM-025**). An operator changing a tenant's state - suspending it, lifting that, or closing it at a contract's end - reads no content, is not that path, and must be recorded in that tenant's log",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 114
+      "line": 117
     },
     {
       "id": "IAM-072",
@@ -6037,7 +6064,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 115
+      "line": 118
     },
     {
       "id": "IAM-014",
@@ -6046,7 +6073,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 159
+      "line": 162
     },
     {
       "id": "IAM-015",
@@ -6055,7 +6082,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 160
+      "line": 163
     },
     {
       "id": "IAM-016",
@@ -6064,7 +6091,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 161
+      "line": 164
     },
     {
       "id": "IAM-017",
@@ -6073,7 +6100,7 @@
       "tranche": "T4",
       "status": "Superseded by IAM-074",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 162
+      "line": 165
     },
     {
       "id": "IAM-074",
@@ -6082,7 +6109,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 163
+      "line": 166
     },
     {
       "id": "IAM-018",
@@ -6091,7 +6118,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 179
+      "line": 182
     },
     {
       "id": "IAM-019",
@@ -6100,7 +6127,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 180
+      "line": 183
     },
     {
       "id": "IAM-020",
@@ -6109,7 +6136,7 @@
       "tranche": "T2",
       "status": "Superseded by IAM-083",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 181
+      "line": 184
     },
     {
       "id": "IAM-083",
@@ -6118,7 +6145,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 182
+      "line": 185
     },
     {
       "id": "IAM-084",
@@ -6127,7 +6154,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 183
+      "line": 186
     },
     {
       "id": "IAM-021",
@@ -6136,7 +6163,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 184
+      "line": 187
     },
     {
       "id": "IAM-022",
@@ -6145,7 +6172,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 185
+      "line": 188
     },
     {
       "id": "IAM-023",
@@ -6154,7 +6181,7 @@
       "tranche": "T1",
       "status": "Superseded by IAM-080",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 186
+      "line": 189
     },
     {
       "id": "IAM-080",
@@ -6163,7 +6190,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 187
+      "line": 190
     },
     {
       "id": "IAM-081",
@@ -6172,7 +6199,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 188
+      "line": 191
     },
     {
       "id": "IAM-062",
@@ -6181,7 +6208,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 189
+      "line": 192
     },
     {
       "id": "IAM-073",
@@ -6190,7 +6217,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 190
+      "line": 193
     },
     {
       "id": "IAM-024",
@@ -6199,7 +6226,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 226
+      "line": 229
     },
     {
       "id": "IAM-025",
@@ -6208,7 +6235,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 227
+      "line": 230
     },
     {
       "id": "IAM-026",
@@ -6217,7 +6244,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 228
+      "line": 231
     },
     {
       "id": "IAM-027",
@@ -6226,7 +6253,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 229
+      "line": 232
     },
     {
       "id": "IAM-028",
@@ -6235,7 +6262,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 230
+      "line": 233
     },
     {
       "id": "IAM-063",
@@ -6244,7 +6271,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 231
+      "line": 234
     },
     {
       "id": "IAM-029",
@@ -6253,7 +6280,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 248
+      "line": 251
     },
     {
       "id": "IAM-030",
@@ -6262,7 +6289,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 249
+      "line": 252
     },
     {
       "id": "IAM-031",
@@ -6271,7 +6298,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 250
+      "line": 253
     },
     {
       "id": "IAM-032",
@@ -6280,7 +6307,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 251
+      "line": 254
     },
     {
       "id": "IAM-033",
@@ -6289,7 +6316,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 262
+      "line": 265
     },
     {
       "id": "IAM-034",
@@ -6298,7 +6325,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 263
+      "line": 266
     },
     {
       "id": "IAM-035",
@@ -6307,7 +6334,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 264
+      "line": 267
     },
     {
       "id": "IAM-036",
@@ -6316,7 +6343,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 265
+      "line": 268
     },
     {
       "id": "IAM-037",
@@ -6325,7 +6352,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 266
+      "line": 269
     },
     {
       "id": "IAM-038",
@@ -6334,7 +6361,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 277
+      "line": 280
     },
     {
       "id": "IAM-039",
@@ -6343,7 +6370,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 278
+      "line": 281
     },
     {
       "id": "IAM-040",
@@ -6352,7 +6379,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 279
+      "line": 282
     },
     {
       "id": "IAM-045",
@@ -6361,7 +6388,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 285
+      "line": 288
     },
     {
       "id": "IAM-046",
@@ -6370,7 +6397,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 286
+      "line": 289
     },
     {
       "id": "IAM-047",
@@ -6379,7 +6406,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 287
+      "line": 290
     },
     {
       "id": "IAM-048",
@@ -6388,7 +6415,7 @@
       "tranche": "Constraint",
       "status": "Superseded by IAM-071",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 288
+      "line": 291
     },
     {
       "id": "IAM-049",
@@ -6397,7 +6424,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 289
+      "line": 292
     },
     {
       "id": "IAM-050",
@@ -6406,7 +6433,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 290
+      "line": 293
     },
     {
       "id": "IAM-051",
@@ -6415,7 +6442,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 291
+      "line": 294
     },
     {
       "id": "IAM-071",
@@ -6424,7 +6451,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 292
+      "line": 295
     },
     {
       "id": "IAM-057",
@@ -6433,7 +6460,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 293
+      "line": 296
     },
     {
       "id": "IMP-001",
@@ -15021,37 +15048,37 @@
       "id": "IAM-N01",
       "statement": "**Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 316
+      "line": 319
     },
     {
       "id": "IAM-N02",
       "statement": "**No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 317
+      "line": 320
     },
     {
       "id": "IAM-N03",
       "statement": "**No sharing between tenants.** An outsider participates as a guest principal inside the host tenant (section 11), never as a bridge between two. Cross-tenant sharing is deferred rather than refused - see [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 318
+      "line": 321
     },
     {
       "id": "IAM-N04",
       "statement": "**No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 319
+      "line": 322
     },
     {
       "id": "IAM-N05",
       "statement": "**No permission outside a role** (IAM-062). A grant binds a role to a principal or a group at a level; there is no per-user permission set beside it, because section 8 could not explain one",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 320
+      "line": 323
     },
     {
       "id": "IAM-N06",
       "statement": "**No vendor account inside a tenant** once it is bootstrapped (IAM-061). Support reaches a tenant through access that tenant granted, bounded and can revoke (**ADM-023**), and by no other route",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 321
+      "line": 324
     },
     {
       "id": "IMP-N01",
@@ -15494,14 +15521,14 @@
     {
       "id": "ADM-Q05",
       "question": "**Who may close a tenant (ADM-030)?** ADM-N04 says nothing is vendor-only, but ending a contract is a commercial act and a customer cannot be the sole author of an irreversible deletion",
-      "settledBy": "The commercial model, taken with ADM-Q04 - the two are the same decision at opposite ends of a tenant's life",
+      "settledBy": "The commercial model, taken with ADM-Q04 - the two are the same decision at opposite ends of a tenant's life Settled by Ken, 2026-11-04: a holder of `close_environment`, the grace period standing between them and anything irreversible; the operator at a contract's end ([TL-E, TL-P](../../design/tenant-lifecycle.md))",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 226
     },
     {
       "id": "ADM-Q06",
       "question": "**How long is the grace period in ADM-030, and what survives it?** A legal hold (**LIF-021**) prevents deletion regardless of retention policy, which a closing tenant has to reckon with",
-      "settledBy": "Legal input, taken with **LIF**. The hold question is the one that decides whether closure can ever be final",
+      "settledBy": "Legal input, taken with **LIF**. The hold question is the one that decides whether closure can ever be final Settled by Ken, 2026-11-04: 30 days (**IAM-086**). A hold keeps the whole tenant until it is released ([TL-H](../../design/tenant-lifecycle.md))",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 227
     },
@@ -15839,63 +15866,63 @@
       "question": "**Pure federation, or a first-party identity provider with federation as an option?**",
       "settledBy": "**Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 327
+      "line": 330
     },
     {
       "id": "IAM-Q02",
       "question": "**Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report",
       "settledBy": "A customer requirement that cannot be met by putting the annex in its own space",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 328
+      "line": 331
     },
     {
       "id": "IAM-Q03",
       "question": "**Is there anonymous or link-based read for a published artifact?**",
       "settledBy": "**Settled.** Link-based, never anonymous: a publication is shared to a named recipient who proves who they are once (PUB-057 to PUB-060). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 329
+      "line": 332
     },
     {
       "id": "IAM-Q04",
       "question": "**How does cross-tenant collaboration work, if at all?**",
       "settledBy": "**Settled for now.** Guest principals inside the host tenant, and true cross-tenant sharing deferred until customers' clients become customers themselves. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 330
+      "line": 333
     },
     {
       "id": "IAM-Q05",
       "question": "**What happens to a guest's attribution when their access is revoked?** Their comments and accepted suggestions are part of the audited record of how the document reached its wording, and a name that vanishes from a five-year-old baseline is the failure this specification keeps finding. An erasure request points the other way",
       "settledBy": "Legal advice on where attribution in an audited record sits against a right to erasure, which is a question about the regime rather than about the product",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 331
+      "line": 334
     },
     {
       "id": "IAM-Q06",
       "question": "**Is the same human guesting for three tenants three unrelated principals?** ADR-0008 implies yes, and a shared directory across tenants would be a convenience that quietly crosses the isolation boundary",
       "settledBy": "Whether a guest ever needs to see their work across tenants in one place, which nobody has yet asked for",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 332
+      "line": 335
     },
     {
       "id": "IAM-Q07",
       "question": "**What makes IAM-010 and IAM-035 immediate, and what does the check cost?** Short-lived tokens with refresh, an introspection call per request, or a revocation list each buy immediacy at a different price, and the answer constrains every service the product ever has",
       "settledBy": "An architecture decision, which this one owes and does not yet have. IAM-055 states the property the answer must have",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 333
+      "line": 336
     },
     {
       "id": "IAM-Q08",
       "question": "**How many days is the timetable in IAM-006 and IAM-058?**",
-      "settledBy": "**ADM-Q06**, which asks the same question from the administrative end. One clock, one number, one answer",
+      "settledBy": "**ADM-Q06**, which asks the same question from the administrative end. One clock, one number, one answer Settled by Ken, 2026-11-04: **IAM-086**, 30 days and then 1",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 334
+      "line": 337
     },
     {
       "id": "IAM-Q09",
       "question": "**May a tenant buy a grace window for an identity provider outage (IAM-064)?** Failing closed is correct and means an outage at the provider is an outage of the product",
       "settledBy": "A customer with an availability expectation that collides with failing closed, and a view on whether that risk is theirs to accept",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 335
+      "line": 338
     },
     {
       "id": "IMP-Q01",
@@ -20743,6 +20770,55 @@
         {
           "id": "SCH-065",
           "howItIsMet": "The cohort listing sorts by when asked, newest first, or by title, and filters by template and by state: complete, a row failed, or a row waiting and none failed; paged by the listing cursor (API-007)"
+        }
+      ]
+    },
+    {
+      "document": "tenant-lifecycle.md",
+      "owns": [
+        {
+          "id": "ADM-028",
+          "howItIsMet": "`suspended`: every route refused, content untouched, the reason recorded, lifted without loss (TL-A, TL-B, TL-D)"
+        },
+        {
+          "id": "ADM-029",
+          "howItIsMet": "Closing asks for a finished whole export or a recorded refusal; the export stays until deletion (TL-F)"
+        },
+        {
+          "id": "ADM-030",
+          "howItIsMet": "`close_environment`, a recent sign-in and the name typed; `closing` lasts 30 days and is cancellable throughout (TL-E, TL-G)"
+        },
+        {
+          "id": "ADM-045",
+          "howItIsMet": "One declaration in code, with a census of what it covers, shown before each act and in the guide (TL-C)"
+        },
+        {
+          "id": "IAM-086",
+          "howItIsMet": "30 days, then 1 day across the database and the object store, published, a test running both clocks (TL-G, TL-I, TL-J)"
+        },
+        {
+          "id": "IAM-087",
+          "howItIsMet": "The operator changes a tenant's state, reads no content, and is named in its log (TL-P)"
+        },
+        {
+          "id": "IAM-068",
+          "howItIsMet": "Roles in the organisation's tenant; each act audited in its log and the affected tenant's (TL-K, TL-L)"
+        },
+        {
+          "id": "IAM-069",
+          "howItIsMet": "The organisation's tenant reaches other tenants only through a function returning metadata (TL-K)"
+        },
+        {
+          "id": "IAM-085",
+          "howItIsMet": "Administration through TL-L; an organisation's provider copied into each tenant and kept current (TL-M)"
+        },
+        {
+          "id": "LIF-066",
+          "howItIsMet": "`retained`: past its grace period a tenant with a hold keeps everything, reachable by those who hold `hold`, audited (TL-H)"
+        },
+        {
+          "id": "PUB-081",
+          "howItIsMet": "Publications are in the offered export and go with the rest; a share stops resolving when its tenant does (TL-B, TL-F)"
         }
       ]
     },
