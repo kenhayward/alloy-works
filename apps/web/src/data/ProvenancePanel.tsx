@@ -1,16 +1,9 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { formatsFor, type AnyBinding, type ValueFormats } from '@alloy-works/domain';
 import { bindingFailureWords, CHANGED_SINCE_RESOLVED } from '@alloy-works/editor';
-import {
-  Fragment,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { useInertBehind, usePageLayer } from '../shell/Status.js';
 
 import { Icon } from '../editor/Icon.js';
 import shell from '../layouts/Modal.module.css';
@@ -149,6 +142,7 @@ export function ProvenancePanel({
   const heading = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
+  const layer = usePageLayer();
   const presentation = usePresentation();
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
@@ -170,20 +164,8 @@ export function ProvenancePanel({
     setWhole(false);
     setTab('provenance');
   }, [state.node, binding.id, held?.version]);
-  // Modal in full, as the Format dialog is: the rest of the page inert while it stands, and taken
-  // back as it is laid out of the page, so the page can give the focus back at once.
-  const shown = held !== null;
-  useLayoutEffect(() => {
-    if (!shown) return;
-    const own = dialog.current?.closest('body > *');
-    const others = [...document.body.children].filter(
-      (each) => each !== own && !each.hasAttribute('inert'),
-    );
-    for (const each of others) each.setAttribute('inert', '');
-    return () => {
-      for (const each of others) each.removeAttribute('inert');
-    };
-  }, [shown]);
+  // Laid out of the page at once as it goes, so the page can give the focus back.
+  useInertBehind(dialog, held !== null);
 
   if (held === null) return null;
   const { provenance } = held;
@@ -446,6 +428,6 @@ export function ProvenancePanel({
         </button>
       </div>
     </div>,
-    document.body,
+    layer,
   );
 }

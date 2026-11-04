@@ -7,7 +7,7 @@ import { useLifecycleActs } from '../lifecycle/Workflow.js';
 import { MenuBar } from '../parts/MenuBar.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import { HeaderSlot } from '../shell/HeaderSlot.js';
-import { usePageShown } from '../shell/Status.js';
+import { modalOpen, usePageShown } from '../shell/Status.js';
 import { buildMenus, type CommandState, type StyleItem } from '../shell/commands/menus.js';
 import { chordSaid, COMMANDS } from '../shell/commands/registry.js';
 import { words as say } from '../words/words.js';
@@ -151,7 +151,7 @@ export function DocumentHeader({
       'Mod-Alt--': zoomBy(-1),
     });
     const onKey = (event: KeyboardEvent) => {
-      if (document.querySelector('[aria-modal="true"]') !== null) return;
+      if (modalOpen()) return;
       if (!event.defaultPrevented && listen(event)) event.preventDefault();
     };
     window.addEventListener('keydown', onKey);
