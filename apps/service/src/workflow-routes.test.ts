@@ -438,6 +438,23 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     });
   });
 
+  it('finds versions over the route, and says a version nobody delivered has no delivery', async () => {
+    const created = await made('documents', 'Searched summary');
+    const answer = await call(
+      'GET',
+      `/v1/documents/${created.id}/versions?q=nothing-like-it`,
+      'ada',
+    );
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json<ComponentVersionList>().items).toEqual([]);
+    const read = await call(
+      'GET',
+      `/v1/documents/${created.id}/versions/${created.version.id}`,
+      'ada',
+    );
+    expect(read.json<{ delivery: unknown }>().delivery).toBeNull();
+  });
+
   it('LIF-051 LIF-052 rejects at a gate with a reason, back to its declared state, and refuses a decision on a replaced version', async () => {
     const created = await made('components', 'Dose by weight');
     await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' });

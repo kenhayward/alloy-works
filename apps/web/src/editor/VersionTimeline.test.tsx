@@ -327,4 +327,39 @@ describe('the versions timeline', () => {
     expect(asked.filter((each) => each.includes('versions?cursor=1'))).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Show older versions' })).toBeNull();
   });
+
+  it('VER-025 chooses two versions in compare mode, a third replacing the oldest, naming them in the bar', async () => {
+    const { client } = service({
+      versions: [[version('1.4', day(9)), version('1.3', day(5)), version('1.2', day(4))]],
+    });
+    const compareTwo = vi.fn();
+    render(
+      <VersionTimeline
+        client={client}
+        id={DOCUMENT}
+        changesFrom={async () => null}
+        onCompareTwo={compareTwo}
+      />,
+    );
+    const rows = await list();
+    const toggle = screen.getByRole('button', { name: 'Compare two versions' });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent('Choose two versions to compare');
+    await userEvent.click(within(rows).getByRole('checkbox', { name: 'Choose 1.2' }));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Choose one more version to compare with 1.2',
+    );
+    await userEvent.click(within(rows).getByRole('checkbox', { name: 'Choose 1.3' }));
+    await userEvent.click(within(rows).getByRole('checkbox', { name: 'Choose 1.4' }));
+    expect(within(rows).getByRole('checkbox', { name: 'Choose 1.2' })).not.toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('Compare 1.3 → 1.4');
+    await userEvent.click(screen.getByRole('button', { name: 'Swap' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Compare 1.4 → 1.3');
+    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
+    expect(compareTwo.mock.calls[0]?.[0]).toMatchObject({ number: '1.4' });
+    expect(compareTwo.mock.calls[0]?.[1]).toMatchObject({ number: '1.3' });
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Choose two versions to compare');
+  });
 });

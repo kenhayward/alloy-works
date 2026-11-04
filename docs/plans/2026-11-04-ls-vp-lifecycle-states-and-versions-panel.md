@@ -218,6 +218,8 @@ not read, as restoration's titles do. Day groups in the reader's zone, sticky he
 the node line, opened in place, icon actions, cursor paging. Keeps CNT-111 to CNT-113, VER-033, VER-035,
 SCH-058 and LOC-012's titles and accessible names.
 
+**VP2 built.** Differs from below: a version's delivery comes on `GET .../versions/{version}`, found by its receipt; the `Line` fact waits for the line's name, which the panel does not hold; a component's In baselines section is gone with VP1.
+
 **VP2, comparing and one version.** `versions` gains `q`, which the pickers need. One version's
 **In baselines** is the D11 list filtered by version; a component's section drops. Compare mode (A, B, third replaces the
 oldest, checkboxes in name and role), the bar, the Compare view, quick choices. The one-version view:

@@ -6,6 +6,7 @@ import { releaseObject } from './imports.js';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   elementsOf,
+  deliveryOfVersion,
   finishDelivery,
   readBridgeSettings,
   readDelivery,
@@ -363,5 +364,19 @@ describe('the bridge store', () => {
     await as((trx) => dropUnlisted(trx, space, ['A']));
     expect((await as((trx) => readUnlisted(trx, space))).map((each) => each.name)).toEqual(['B']);
     await as((trx) => dropUnlisted(trx, space, ['B']));
+  });
+
+  it('reads the delivery that wrote a version, by the receipt, never its note', async () => {
+    const version = randomUUID();
+    const started = await as((trx) => startDelivery(trx, delivery(`receipted-${version}`)));
+    if (started.answer !== 'started') throw new Error(started.answer);
+    const written = {
+      document: { components: [{ kind: 'map', id: randomUUID(), version, element: null }] },
+    };
+    await as((trx) => finishDelivery(trx, started.id, written, []));
+    const read = await as((trx) => deliveryOfVersion(trx, version));
+    expect(read?.key).toBe(`receipted-${version}`);
+    expect(read?.provenance).toEqual(expect.any(Object));
+    expect(await as((trx) => deliveryOfVersion(trx, randomUUID()))).toBeUndefined();
   });
 });

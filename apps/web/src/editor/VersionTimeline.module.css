@@ -148,6 +148,7 @@
 .line {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 2px;
   min-width: 0;
   padding: 0;
@@ -226,4 +227,126 @@
 .action[data-accent] {
   background: var(--accent-weak);
   color: var(--accent-text);
+}
+
+/* Compare mode: each version's box, and the bar at the foot. */
+.pick {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.compareBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border-top: 1px solid var(--accent);
+  background: var(--surface);
+  font-size: var(--size-13);
+}
+
+.compareBarText {
+  flex: 1 1 10rem;
+}
+
+/* A version or a comparison taking the panel. */
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-self: stretch;
+  min-width: 0;
+  font-size: var(--size-13);
+}
+
+.viewHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.viewTitle {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.viewGo {
+  display: inline-flex;
+  gap: var(--space-4);
+  margin-inline-start: auto;
+}
+
+.viewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  --version-action: 40px;
+}
+
+.viewPart {
+  margin: var(--space-8) 0 0;
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.viewList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.factList {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+.fact dt {
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.pickers {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.picker {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.picker select {
+  width: 100%;
+  min-width: 0;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }

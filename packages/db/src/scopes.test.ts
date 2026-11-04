@@ -26,7 +26,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import { listVersions, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 import { latestRevisionsOf, moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
@@ -408,5 +408,45 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
       scopes: [{ axis: 'market', value: 'us' }],
     });
     expect((await read()).get(second.id)?.standing).toEqual({ standing: 'effective', scopes: [] });
+  });
+
+  it('finds versions by number, note or who made them, in pages, taking no pattern from what is asked', async () => {
+    const first = await component('Findable');
+    const substance = substanceOf(first);
+    if (substance.kind !== 'component') throw new Error('not a component');
+    const next = await as((trx) =>
+      recordVersion(trx, {
+        artifactId: first.artifactId,
+        openedFrom: first.id,
+        author: grace,
+        note: 'Dosing wording at 100%',
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'b1',
+                style: 'body',
+                content: [{ type: 'text', value: randomUUID(), marks: [] }],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    if (next.answer !== 'recorded') throw new Error(next.answer);
+    const found = async (q: string) =>
+      (await as((trx) => listVersions(trx, first.artifactId, { limit: 10, q }))).items.map(
+        (each) => each.id,
+      );
+    expect(await found('dosing')).toEqual([next.version.id]);
+    expect(await found('GRACE')).toEqual([next.version.id]);
+    expect(await found('Ada')).toEqual([first.id]);
+    expect(await found(`${first.revision}.${first.version}`)).toContain(first.id);
+    expect(await found('100%')).toEqual([next.version.id]);
+    expect(await found('1_0')).toEqual([]);
+    expect(await found('nothing like it')).toEqual([]);
   });
 });

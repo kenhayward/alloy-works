@@ -6,6 +6,7 @@ import type {
 import {
   headVersion,
   isArchived,
+  deliveryOfVersion,
   latestVersionsOf,
   readableComponents,
   readVersion,
@@ -29,6 +30,32 @@ async function versionAt(
   const found = await readVersion(trx, version);
   if (found?.artifactId !== id || found.kind !== kind) throw notFound();
   return found;
+}
+
+/** The delivery that made it, its provenance read as stored (`deliveries.ts`) and each part optional. */
+async function deliveryView(trx: TenantTransaction, version: string) {
+  const delivery = await deliveryOfVersion(trx, version);
+  if (!delivery) return null;
+  const said = (from: unknown, key: string): string | null => {
+    const value =
+      typeof from === 'object' && from !== null
+        ? (from as Record<string, unknown>)[key]
+        : undefined;
+    return typeof value === 'string' ? value : null;
+  };
+  const named = (from: unknown, key: string): unknown =>
+    typeof from === 'object' && from !== null ? (from as Record<string, unknown>)[key] : undefined;
+  const source = named(delivery.provenance, 'source');
+  return {
+    from: said(named(delivery.provenance, 'producer'), 'name'),
+    source: said(source, 'sourceFilename'),
+    sourceSha256: said(source, 'sourceSha256'),
+    askedBy:
+      said(named(delivery.provenance, 'actingUser'), 'name') ??
+      said(named(source, 'startedBy'), 'name'),
+    key: delivery.key,
+    at: delivery.at.toISOString(),
+  };
 }
 
 /** Its heading: number, note, when, and who by their name now, an erased person's the erased label. */
@@ -58,6 +85,7 @@ async function headingOf(trx: TenantTransaction, version: StoredVersion) {
         version.author === null ? null : { id: version.author, name: author?.display_name ?? null },
     },
     latest: { id: latest.id, number: latest.number },
+    delivery: await deliveryView(trx, version.id),
     archived: await isArchived(trx, version.artifactId),
   };
 }

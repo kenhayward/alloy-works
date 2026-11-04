@@ -12,6 +12,7 @@ import { Lozenge, StateLozenge, seededKind, type LozengeKind } from '../states/L
 import { Avatar } from '../review/ThreadFaces.js';
 import { words } from '../words/words.js';
 import type { ListedVersion } from './VersionList.js';
+import { nextChoice } from './VersionViews.js';
 import {
   dayKey,
   dayLabel,
@@ -143,6 +144,8 @@ export function VersionTimeline({
   read = 0,
   onCompare,
   onRestore,
+  onCompareTwo,
+  onDetails,
   changesFrom,
 }: {
   client: Client;
@@ -153,6 +156,14 @@ export function VersionTimeline({
   read?: number;
   onCompare?: (version: ListedVersion, latest: ListedVersion) => void;
   onRestore?: (version: ListedVersion, latest: ListedVersion) => void;
+  /** Two chosen to compare, and those the list has read, to choose among. */
+  onCompareTwo?: (
+    older: TimelineVersion,
+    newer: TimelineVersion,
+    versions: readonly TimelineVersion[],
+  ) => void;
+  /** One version asked for whole, and those the list has read, to go on through. */
+  onDetails?: (version: TimelineVersion, versions: readonly TimelineVersion[]) => void;
   /** What changed between two versions, for one opened in place: one comparison, on opening. */
   changesFrom: (older: ListedVersion, newer: ListedVersion) => Promise<ChangeCounts | null>;
 }) {
@@ -168,6 +179,8 @@ export function VersionTimeline({
     null,
   );
   const [copied, setCopied] = useState<string | null>(null);
+  const [choosing, setChoosing] = useState(false);
+  const [chosen, setChosen] = useState<readonly string[]>([]);
   const [everyDayCollapsed, setEveryDayCollapsed] = useState(() => kept(everyDayKey(id)) === 'yes');
   // Days differing from that, one by one: today stays open when earlier days were left folded.
   const [turned, setTurned] = useState<ReadonlySet<string>>(
@@ -373,6 +386,15 @@ export function VersionTimeline({
           )}
         </span>
         <div className={styles['body']}>
+          {choosing && (
+            <input
+              type="checkbox"
+              className={styles['pick']}
+              aria-label={words('editor.choose-version', { number: version.number })}
+              checked={chosen.includes(version.id)}
+              onChange={() => setChosen((held) => nextChoice(held, version.id))}
+            />
+          )}
           <button
             type="button"
             className={styles['line']}
@@ -449,6 +471,15 @@ export function VersionTimeline({
                   onClick={() => onRestore(version, latest)}
                 >
                   <Icon name="Restore" size={16} />
+                </IconButton>
+              )}
+              {onDetails && (
+                <IconButton
+                  className={styles['action']}
+                  label={words('editor.version-details', { number: version.number })}
+                  onClick={() => onDetails(version, versions)}
+                >
+                  <Icon name="Note" size={16} />
                 </IconButton>
               )}
               <IconButton
@@ -560,6 +591,18 @@ export function VersionTimeline({
               : words('editor.version-count-so-far', { count: versions.length })}
           </span>
         </span>
+        {onCompareTwo && (
+          <IconButton
+            label={words('editor.compare-two-versions')}
+            pressed={choosing}
+            onClick={() => {
+              setChoosing((now) => !now);
+              setChosen([]);
+            }}
+          >
+            <Icon name="Compare" size={16} />
+          </IconButton>
+        )}
         <IconButton
           label={words(anyOpen ? 'editor.collapse-every-day' : 'editor.expand-every-day')}
           onClick={every}
@@ -638,9 +681,61 @@ export function VersionTimeline({
           );
         })}
       </ul>
+      {choosing && (
+        <CompareBar
+          versions={versions}
+          chosen={chosen}
+          onSwap={() => setChosen((held) => [...held].reverse())}
+          onClear={() => setChosen([])}
+          onCompare={(older, newer) => onCompareTwo?.(older, newer, versions)}
+        />
+      )}
       {(next !== null || nextPublications !== null) && (
         <button type="button" onClick={() => void older()}>
           {words('editor.show-older-versions')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Compare mode's bar: what is chosen, in words, and Swap, Clear and Compare once there are two. */
+function CompareBar({
+  versions,
+  chosen,
+  onSwap,
+  onClear,
+  onCompare,
+}: {
+  versions: readonly TimelineVersion[];
+  chosen: readonly string[];
+  onSwap: () => void;
+  onClear: () => void;
+  onCompare: (older: TimelineVersion, newer: TimelineVersion) => void;
+}) {
+  const [a, b] = chosen.map((id) => versions.find((each) => each.id === id));
+  return (
+    <div className={styles['compareBar']}>
+      <span className={styles['compareBarText']} role="status">
+        {a && b
+          ? words('editor.compare-from-to', { from: a.number, to: b.number })
+          : a
+            ? words('editor.choose-one-more', { number: a.number })
+            : words('editor.choose-two-versions')}
+      </span>
+      {a && b && (
+        <button type="button" onClick={onSwap}>
+          {words('editor.swap')}
+        </button>
+      )}
+      {a && (
+        <button type="button" onClick={onClear}>
+          {words('editor.clear')}
+        </button>
+      )}
+      {a && b && (
+        <button type="button" className="primary" onClick={() => onCompare(a, b)}>
+          {words('editor.compare')}
         </button>
       )}
     </div>

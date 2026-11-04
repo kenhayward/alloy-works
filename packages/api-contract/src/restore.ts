@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { UnitChangeView } from './comparison.js';
-import { ComponentVersionList, PageQuery, VersionSummary } from './components.js';
+import { ComponentVersionList, DocumentVersionsQuery, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { EditingRefusal } from './editing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -261,7 +261,7 @@ export const restoreRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: z.object({ id: z.uuid() }),
-    query: PageQuery,
+    query: DocumentVersionsQuery,
     responses: {
       200: { description: 'A page of its versions, newest first', schema: ComponentVersionList },
       400: {
