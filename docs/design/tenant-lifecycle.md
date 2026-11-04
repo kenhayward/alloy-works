@@ -101,7 +101,7 @@ removing old deliveries counts the same way, so a day's suspension costs no deli
 **TL-D. Suspension is lifted from outside (ADM-028).** A holder of `suspend_environment` may stop everything during an
 incident. Sign-in then stops for them too, so only their organisation or the operator lifts it. To keep that from being
 vendor-only, **it is refused unless the organisation has a tenant of its own** (`no_organisation_to_lift`), and the
-page says so. Overdue dates and retention act on lifting, and the lifting preview says how many. Not EI-M's review: a
+page says so. Overdue dates and retention act on lifting, and the lifting preview says how many, while a clock that would take away somebody's work (a webhook being tried, a subscription's failing days, a proposal, an export) is moved on by the suspension's length. Not EI-M's review: a
 suspension leaves content as it was, where a restore brings back an old world.
 
 **TL-E. Who closes (ADM-Q05).** A holder of `close_environment`, granted apart from `administer`, a person and never

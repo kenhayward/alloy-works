@@ -46,16 +46,27 @@ export async function suspendTenant(
 }
 
 /**
- * Lifts a suspension (ADM-028). A webhook still being tried loses no time to it (ADM-045): it is as
- * old, and as near giving up, as when the suspension began.
+ * Lifts a suspension (ADM-028). What would be taken away by the clock is as old as when the suspension
+ * began, so it costs nobody their work (TL-D): a webhook still being tried, a subscription's failing
+ * days, a proposal, an export. What falls due on a date, a review or a retention, acts on lifting.
  */
 export async function resumeTenant(trx: TenantTransaction, tenant: Tenant): Promise<void> {
   const since = await change(trx, tenant, 'active', null);
-  const seconds = Math.max(0, Math.round((Date.now() - since.getTime()) / 1000));
-  await sql`
-    update webhook_delivery
-       set created_at = created_at + make_interval(secs => ${seconds}),
-           first_attempt_at = first_attempt_at + make_interval(secs => ${seconds})
+  const { rows } = await sql<{ seconds: number }>`
+    select greatest(0, ceil(extract(epoch from now() - ${since}::timestamptz)))::int as seconds`.execute(
+    trx,
+  );
+  const seconds = rows[0]!.seconds;
+  const later = sql`make_interval(secs => ${seconds})`;
+  await sql`update webhook_delivery
+       set created_at = created_at + ${later},
+           first_attempt_at = first_attempt_at + ${later}
      where state = 'pending'`.execute(trx);
+  await sql`update webhook_subscription set failing_since = failing_since + ${later}
+     where failing_since is not null`.execute(trx);
+  await sql`update import set touched_at = touched_at + ${later}
+     where state in ('awaiting', 'reading', 'proposed')`.execute(trx);
+  await sql`update tenant_export set finished_at = finished_at + ${later}
+     where state = 'done'`.execute(trx);
   await recordEvent(trx, { kind: 'tenant.resumed', detail: { suspendedSeconds: seconds } });
 }

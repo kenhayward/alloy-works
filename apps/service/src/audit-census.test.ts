@@ -675,6 +675,10 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   restorer: {
     restoration: writes('import.previewed', 'import.refused', 'import.restored'),
   },
+  // The operator's command line, which no job or route reaches (TL-P).
+  steward: {
+    state: writes('tenant.suspended', 'tenant.resumed'),
+  },
   jobs: {
     sample_pdf: { none: 'derived' },
     publish: writes('publication.produced', 'publication.failed'),

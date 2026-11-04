@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { posix, relative, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -15,6 +15,7 @@ export function serveRenderer(app: FastifyInstance, root: string): void {
 
 /** The routes `serveRenderer` adds, one per file, as Fastify names them. */
 export function rendererRoutes(root: string): ReadonlySet<string> {
+  if (!existsSync(root)) return new Set();
   const files = readdirSync(root, { recursive: true, withFileTypes: true }).filter((entry) =>
     entry.isFile(),
   );

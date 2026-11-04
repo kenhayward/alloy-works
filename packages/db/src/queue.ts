@@ -196,6 +196,9 @@ export function createJobQueue(url: string): JobQueue {
          where finished_at is null and failed_at is null
            and attempts >= max_attempts
            and locked_until < now()
+           -- Its failing writes into the tenant, which waits with everything else (TL-C).
+           and exists (select 1 from platform.tenant t
+                        where t.id = tenant_id and t.state = 'active')
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
     },

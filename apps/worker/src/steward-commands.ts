@@ -29,7 +29,7 @@ export async function runSteward(
   if (
     id === undefined ||
     (command !== 'suspend' && command !== 'resume') ||
-    (command === 'suspend' && !reason)
+    (command === 'suspend' && (!reason || reason.length > 2000))
   ) {
     deps.out(USAGE);
     return 2;

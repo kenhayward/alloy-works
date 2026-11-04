@@ -116,7 +116,7 @@ describe('the gate on a tenant that is not active (the TL plan, TL-B)', () => {
     });
   });
 
-  it('ADM-045 ends a stream that was open when the tenant was suspended', async () => {
+  it('ends a stream that was open when the tenant was suspended', async () => {
     const opened = h.call('ada', 'GET', '/v1/stream');
     let ended = false;
     void opened.then(() => {

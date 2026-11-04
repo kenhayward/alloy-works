@@ -4,6 +4,7 @@ import {
   createServiceIdentity,
   createSpace,
   createTenant,
+  createTenantDatabase,
   createWebhookSubscription,
   findRole,
   grant,
@@ -11,6 +12,8 @@ import {
   prepareDatabase,
   recordEvent,
   removeGrant,
+  resumeTenant,
+  suspendTenant,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -141,6 +144,24 @@ describe('the webhook delivery loop (the WB plan, WB-B and WB-I)', () => {
     });
     expect(await stateOf(artifact)).toEqual({ state: 'delivered', attempts: 1 });
     expect(await deliverWebhooks(worker, deliverer, quiet)).toBe(0);
+  });
+
+  it('ADM-028 sends nothing from a suspended tenant, and sends it once the suspension lifts', async () => {
+    const steward = createTenantDatabase(db.stewardUrl);
+    const operator = { actorKind: 'vendor' } as const;
+    const artifact = await archived();
+    const before = sent.length;
+    await steward.withTenant(tenant, (trx) => suspendTenant(trx, tenant, 'A test'), operator);
+    try {
+      expect(await deliverWebhooks(worker, deliverer, quiet)).toBe(0);
+      expect(sent.length).toBe(before);
+      expect(await stateOf(artifact)).toEqual({ state: 'pending', attempts: 0 });
+    } finally {
+      await steward.withTenant(tenant, (trx) => resumeTenant(trx, tenant), operator);
+      await steward.close();
+    }
+    expect(await deliverWebhooks(worker, deliverer, quiet)).toBe(1);
+    expect(await stateOf(artifact)).toEqual({ state: 'delivered', attempts: 1 });
   });
 
   it('makes no attempt where the connector is busy, and tries again', async () => {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as sweeps from './sweep.js';
 
@@ -8,5 +9,13 @@ describe("which sweeps run in which of a tenant's states (the TL plan, TL-C)", (
       .filter((name) => /^(sweep|fold)[A-Z]/.test(name))
       .sort();
     expect(named).toEqual(exported);
+  });
+
+  it('ADM-028 has no loop ask for every tenant, which would act in a suspended one', () => {
+    for (const file of ['sweep.ts', 'webhooks.ts', 'rechecks.ts']) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+      expect(source, file).not.toMatch(/\.tenants\(\)/);
+      expect(source, file).toMatch(/\.liveTenants\(\)/);
+    }
   });
 });

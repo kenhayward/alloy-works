@@ -33,6 +33,27 @@ export type AttentionView =
 export type PresentationView =
   paths['/v1/presentation']['get']['responses']['200']['content']['application/json'];
 
+const suspendedListeners = new Set<() => void>();
+
+/**
+ * Told when any call finds its environment suspended (ADM-028), so a page already open can say so
+ * however many places asked. Answers how to stop listening.
+ */
+export function onEnvironmentSuspended(listener: () => void): () => void {
+  suspendedListeners.add(listener);
+  return () => suspendedListeners.delete(listener);
+}
+
+const noticeSuspended = async (response: Response): Promise<void> => {
+  if (response.status !== 503) return;
+  const body = (await response
+    .clone()
+    .json()
+    .catch(() => undefined)) as { code?: unknown } | undefined;
+  if (body?.code !== 'environment_suspended') return;
+  for (const listener of suspendedListeners) listener();
+};
+
 /**
  * The one way a client calls the service (API-001): generated from the committed document, so a
  * route that changed without the document changing is a compile error rather than a surprise.
@@ -43,11 +64,13 @@ export function createApiClient(
 ): Client<paths> {
   // The interface's language said on the request itself, in the same tick, as middleware would not be.
   const given = options.fetch;
-  const saying: typeof fetch = (input, init) => {
+  const saying: typeof fetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     const said = saidLanguage();
     if (said !== undefined) request.headers.set('accept-language', said);
-    return (given ?? globalThis.fetch)(request);
+    const response = await (given ?? globalThis.fetch)(request);
+    void noticeSuspended(response);
+    return response;
   };
   return createOpenApiClient<paths>({
     baseUrl: options.baseUrl ?? '',

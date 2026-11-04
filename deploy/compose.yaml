@@ -231,9 +231,6 @@ services:
     entrypoint: ['node', 'dist/steward-cli.js']
     environment:
       STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
-    depends_on:
-      setup:
-        condition: service_completed_successfully
 
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
   # networks and no others: `connector-private`, which it shares with the service and the worker, and

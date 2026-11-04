@@ -22440,13 +22440,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 798,
+      "line": 802,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 811,
+      "line": 815,
       "kind": "title"
     },
     {
@@ -23368,45 +23368,51 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 362,
+      "kind": "title"
+    },
+    {
       "id": "IAM-012",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 471,
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 283,
+      "line": 286,
       "kind": "title"
     },
     {
       "id": "IAM-041",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 204,
+      "line": 207,
       "kind": "title"
+    },
+    {
+      "id": "IAM-043",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 156,
+      "kind": "rule"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
       "line": 153,
-      "kind": "rule"
-    },
-    {
-      "id": "IAM-043",
-      "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 150,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 229,
+      "line": 232,
       "kind": "rule"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 225,
+      "line": 228,
       "kind": "title"
     },
     {
@@ -24841,12 +24847,6 @@
       "id": "ADM-028",
       "file": "apps/service/src/tenant-gate.test.ts",
       "line": 49,
-      "kind": "title"
-    },
-    {
-      "id": "ADM-045",
-      "file": "apps/service/src/tenant-gate.test.ts",
-      "line": 119,
       "kind": "title"
     },
     {
@@ -27552,19 +27552,19 @@
     {
       "id": "ADM-028",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 69,
+      "line": 70,
       "kind": "title"
     },
     {
       "id": "ADM-051",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 185,
+      "line": 207,
       "kind": "title"
     },
     {
       "id": "IAM-011",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
-      "line": 114,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -29452,9 +29452,15 @@
       "kind": "title"
     },
     {
+      "id": "ADM-028",
+      "file": "apps/worker/src/sweeps-by-state.test.ts",
+      "line": 14,
+      "kind": "title"
+    },
+    {
       "id": "ADM-045",
       "file": "apps/worker/src/sweeps-by-state.test.ts",
-      "line": 5,
+      "line": 6,
       "kind": "title"
     },
     {
@@ -29659,6 +29665,12 @@
       "id": "PUB-076",
       "file": "apps/worker/src/warm.test.ts",
       "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-028",
+      "file": "apps/worker/src/webhooks.test.ts",
+      "line": 149,
       "kind": "title"
     },
     {
@@ -32112,13 +32124,7 @@
     {
       "id": "ADM-028",
       "file": "packages/db/src/tenant-lifecycle.test.ts",
-      "line": 79,
-      "kind": "title"
-    },
-    {
-      "id": "ADM-045",
-      "file": "packages/db/src/tenant-lifecycle.test.ts",
-      "line": 158,
+      "line": 81,
       "kind": "title"
     },
     {

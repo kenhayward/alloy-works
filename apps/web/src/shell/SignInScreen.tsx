@@ -1,4 +1,4 @@
-import { createApiClient } from '@alloy-works/api-client';
+import { createApiClient, onEnvironmentSuspended } from '@alloy-works/api-client';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useWords } from '../words/words.js';
@@ -98,7 +98,9 @@ export function SignInGate({
   here: string;
   children: React.ReactNode;
 }): React.ReactNode {
+  const { words } = useWords();
   const [answer, setAnswer] = useState<'nobody' | 'open' | 'suspended' | undefined>();
+  const [suspendedSince, setSuspendedSince] = useState(false);
   useEffect(() => {
     let current = true;
     createApiClient({ baseUrl: window.location.origin })
@@ -118,7 +120,20 @@ export function SignInGate({
     };
   }, []);
 
+  // Beside the page rather than in place of it, which may hold what somebody was writing.
+  useEffect(() => onEnvironmentSuspended(() => setSuspendedSince(true)), []);
+
   if (answer === undefined) return null;
   if (answer === 'suspended') return <EnvironmentSuspended />;
+  if (answer === 'open' && suspendedSince) {
+    return (
+      <>
+        <p role="alert" className={styles['suspended']}>
+          {words('environment.suspended-notice')}
+        </p>
+        {children}
+      </>
+    );
+  }
   return answer === 'nobody' ? <SignInScreen here={here} /> : children;
 }

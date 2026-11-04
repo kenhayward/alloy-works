@@ -5744,6 +5744,7 @@
   "editor.direction-short": "{direction, select, rtl {RTL} other {LTR}}",
   "signin.title": "Sign in to Alloy Works",
   "environment.suspended-title": "This environment is suspended",
+  "environment.suspended-notice": "This environment has just been suspended, so nothing more can be saved. What was already saved is safe.",
   "environment.suspended-body": "Nothing in it has been lost. Nobody can sign in or use it until the suspension is lifted. Ask whoever administers your organisation.",
   "signin.no-way-in": "This environment offers no way to sign in yet. Ask whoever runs it to set one up.",
   "signin.could-not-read": "The ways to sign in could not be read.",

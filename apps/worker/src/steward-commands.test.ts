@@ -61,6 +61,7 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
 
   it('refuses a suspension with no reason, an unknown tenant, a command it does not know and a change that does not apply', async () => {
     expect(await run('suspend', '--tenant', tenant.id)).toBe(2);
+    expect(await run('suspend', '--tenant', tenant.id, '--reason', 'x'.repeat(2001))).toBe(2);
     expect(await run('suspend', '--tenant', 'nobody', '--reason', 'x')).toBe(1);
     expect(await run('drop', '--tenant', tenant.id)).toBe(2);
     expect(await run('resume', '--tenant', tenant.id)).toBe(1);
