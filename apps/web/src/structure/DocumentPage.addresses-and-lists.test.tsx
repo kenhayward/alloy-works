@@ -1533,8 +1533,8 @@ describe('the address of every node', () => {
     expect(within(band).queryByRole('textbox', { name: 'Title' })).toBeNull();
     expect(within(text).queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
     expect(formatting).toBeInTheDocument();
-    // ...and Done, Save version and Saved text first on its frame's line, its language in the Component
-    // menu there, none of which takes the sheet's height (CNT-075).
+    // ...and Done, Save version and Saved text first on its frame's line, its language on a button
+    // there, none of which takes the sheet's height (CNT-075).
     const frame = screen.getByRole('group', { name: 'Component' });
     expect(
       within(frame)
@@ -1546,7 +1546,6 @@ describe('the address of every node', () => {
       'aria-disabled',
       'false',
     );
-    await user.click(within(frame).getByRole('button', { name: 'Component', expanded: false }));
     expect(within(frame).getByRole('button', { name: 'Base language: en-GB' })).toBeInTheDocument();
     expect(textsAsked).toBe(reads);
 

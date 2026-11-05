@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
+import { usePageLayer } from '../shell/Status.js';
 import styles from './Modal.module.css';
 import { words } from '../words/words.js';
 
@@ -15,6 +17,10 @@ const FOCUSABLE = `a[href], button:not([disabled]), ${FIELD}, [tabindex]:not([ta
  * first field - or what the dialog marks `data-autofocus`, or on the dialog, until content that loads
  * late brings one - stays inside while it is open, and goes back to whatever opened it. `dialog` is a
  * confirmation's 480px, 120px from the top, with no close button but its own (ADR-0049).
+ *
+ * **Drawn on the page's layer, never where it was asked for**: a panel, a sticky dock or the header
+ * can each hold a stacking context, and a dialog inside one stands under whatever stacks above it,
+ * the open text and the toolbar included, whatever its own z-index says.
  */
 export function Modal({
   labelledBy,
@@ -32,6 +38,7 @@ export function Modal({
   children: React.ReactNode;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
+  const layer = usePageLayer();
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -74,7 +81,7 @@ export function Modal({
     }
   };
 
-  return (
+  return createPortal(
     <div className={styles['scrim']} data-size={size}>
       <div
         ref={dialog}
@@ -96,6 +103,7 @@ export function Modal({
           </IconButton>
         )}
       </div>
-    </div>
+    </div>,
+    layer,
   );
 }

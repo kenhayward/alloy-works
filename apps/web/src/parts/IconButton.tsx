@@ -11,7 +11,8 @@ import { words } from '../words/words.js';
  * than a pointer needs, such as a row's "Access to General" titled "Access".
  *
  * `tip` is for an icon in a panel's header: it stands in place of the browser's title, at once and
- * under the icon (ADR-0075), saying `label` or its own shorter `name`, and any `hint` beneath.
+ * under the icon (ADR-0075), saying `label` or its own shorter `name`, and any `hint` beneath; at the
+ * icon's end, or centred under one in a row (`align`).
  */
 export function IconButton({
   label,
@@ -27,7 +28,10 @@ export function IconButton({
   label: string;
   shortcut?: string | undefined;
   tooltip?: string | undefined;
-  tip?: true | { readonly name?: string; readonly hint?: string } | undefined;
+  tip?:
+    | true
+    | { readonly name?: string; readonly hint?: string; readonly align?: 'center' | 'end' }
+    | undefined;
   pressed?: boolean | undefined;
   className?: string | undefined;
   children: ReactNode;
@@ -56,7 +60,13 @@ export function IconButton({
   );
   if (shown === undefined) return button;
   return (
-    <NameTip below align="end" name={shown.name ?? label} keys={shortcut} hint={shown.hint}>
+    <NameTip
+      below
+      align={shown.align ?? 'end'}
+      name={shown.name ?? label}
+      keys={shortcut}
+      hint={shown.hint}
+    >
       {button}
     </NameTip>
   );

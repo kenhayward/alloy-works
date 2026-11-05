@@ -3,7 +3,7 @@ import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import { BringBackButton, LinesControl, linesIn } from '../lifecycle/Lines.js';
 import { sourceOf, TranslationsButton } from '../translation/Translations.js';
-import type { ContentDocument, ReaderResult } from '@alloy-works/domain';
+import { declaredLanguageOf, type ContentDocument, type ReaderResult } from '@alloy-works/domain';
 import {
   bindingDigestInput,
   bindingsIn,
@@ -129,6 +129,7 @@ import { createPortal } from 'react-dom';
 import { positionAtTextOffset } from './caret.js';
 import { ComponentChrome } from './ComponentChrome.js';
 import { ComponentHeader } from './ComponentHeader.js';
+import { LanguageDialog } from './LanguageDialog.js';
 import { commandUnavailable, EditorToolbar, type ToolbarAct } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
 import { BoundTablePanel } from './BoundTablePanel.js';
@@ -743,8 +744,7 @@ export function ComponentEditor({
   const bandHost = useContext(InPlaceBand);
   const inPlaceSettings = useContext(InPlaceSettings);
   const presentationNow = usePresentation();
-  const [componentMenuOpen, setComponentMenuOpen] = useState(false);
-  const toggleComponentMenu = useCallback(() => setComponentMenuOpen((was) => !was), []);
+  const [choosingLanguage, setChoosingLanguage] = useState(false);
   /** The part of the document this is open in, which the one toolbar stands over. */
   const partOfSurface = useCallback(() => place.current?.closest('[data-component]') ?? null, []);
   useEffect(() => {
@@ -2282,6 +2282,16 @@ export function ComponentEditor({
     return headerOf(view.state.doc);
   };
 
+  /** A declared language's script sets the direction with it (TE-E), as the language field's does. */
+  const chooseLanguage = (tag: string) => {
+    setChoosingLanguage(false);
+    const answered = changeHeader('language', tag);
+    const script = answered ? declaredLanguageOf(answered.language) : undefined;
+    if (script && answered && script.direction !== answered.direction) {
+      changeHeader('direction', script.direction);
+    }
+  };
+
   // Whether the component holds a table, and whether the cursor is in one (ADR-0052, ADR-0079): the
   // page offers the Table tab and marks it. Above the returns below, as every hook is.
   const holdsTable = surface !== null && holdsATable(surface.state.doc);
@@ -2494,6 +2504,7 @@ export function ComponentEditor({
     citing !== null ||
     conditioning !== null ||
     valuing !== null ||
+    choosingLanguage ||
     formatting;
   const placeTables = (panels: ReactNode) => {
     if (tableHost === undefined) return panels;
@@ -3424,8 +3435,51 @@ export function ComponentEditor({
       figure !== null ||
       image !== null ||
       (valued !== null && valued.place !== 'table'));
+  const unset = header?.language === 'und';
+  const partValues = header
+    ? [
+        {
+          id: 'language',
+          icon: 'Language',
+          text: unset
+            ? say('editor.language-not-set')
+            : header.language.split('-')[0]!.toUpperCase(),
+          name: unset
+            ? say('editor.base-language-not-set')
+            : declaredLanguageOf(header.language) === undefined
+              ? say('editor.base-language-not-declared', { tag: header.language })
+              : say('editor.base-language', { tag: header.language }),
+          asks: true,
+          disabled: !headerEditable,
+          onPress: () => setChoosingLanguage(true),
+        },
+        {
+          id: 'direction',
+          icon: header.direction === 'rtl' ? 'Right to left' : 'Left to right',
+          text: say('editor.direction-short', { direction: header.direction }),
+          name: say('editor.base-direction', {
+            direction:
+              header.direction === 'rtl'
+                ? say('editor.right-to-left')
+                : say('editor.left-to-right'),
+          }),
+          hint: say('editor.direction-change', {
+            direction: header.direction === 'rtl' ? 'ltr' : 'rtl',
+          }),
+          disabled: !headerEditable,
+          onPress: () => changeHeader('direction', header.direction === 'rtl' ? 'ltr' : 'rtl'),
+        },
+      ]
+    : [];
   return (
     <>
+      {choosingLanguage && header && (
+        <LanguageDialog
+          current={header.language}
+          onChoose={chooseLanguage}
+          onClose={() => setChoosingLanguage(false)}
+        />
+      )}
       {/* Inert while a dialog stands over it, which is the other half of what that dialog's
           `aria-modal` promises: a keyboard is held inside the dialog by its own trap, and a mouse
           by this. Without it the surface behind still takes clicks, so the selection the command
@@ -3442,6 +3496,31 @@ export function ComponentEditor({
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
+        {/* What the strip held besides its chips, out of sight as it was: the heading naming the article,
+            and its tail, whose save status stands in the status bar. */}
+        {inFrame && (
+          <div hidden>
+            {header ? (
+              <ComponentHeader
+                header={header}
+                editable={false}
+                onChange={changeHeader}
+                onRefused={setNotice}
+                titled={false}
+                only="title"
+              />
+            ) : (
+              <h2 id="component-title">
+                {typeof title === 'string' ? (
+                  <span data-content>{title}</span>
+                ) : (
+                  say('editor.untitled')
+                )}
+              </h2>
+            )}
+            {stripTail}
+          </div>
+        )}
         {inFrame && reachQuestion && createPortal(reachQuestion, document.body)}
         {inFrame &&
           titleHost != null &&
@@ -3658,12 +3737,7 @@ export function ComponentEditor({
                           element: partOfSurface,
                           name: say('document.component-menu'),
                           acts: leadingActs,
-                          menu: {
-                            label: say('document.component-menu'),
-                            open: componentMenuOpen,
-                            onToggle: toggleComponentMenu,
-                            strip: stripPart,
-                          },
+                          values: partValues,
                         },
                       }
                     : {})}
