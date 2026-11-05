@@ -1,5 +1,13 @@
 import { tableCursor, type EditorView, type TableAt } from '@alloy-works/editor';
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { IconButton } from '../parts/IconButton.js';
@@ -206,6 +214,8 @@ export interface PartActs {
     readonly disabled: boolean;
     readonly onPress: () => void;
   }[];
+  /** What the reader should know before acting here, on a line of its own under the buttons. */
+  readonly note?: string | undefined;
   /** The values it says and changes, each an icon and its value: its language and its direction. */
   readonly values: readonly {
     /** Which it is, kept as its icon and words change, so a press leaves the focus on it. */
@@ -261,6 +271,7 @@ export function PartToolbar({
   const popover = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stop, setStop] = useState(0);
+  const noted = useId();
   const cursor = view === null ? null : tableCursor(view.state);
 
   useEffect(() => {
@@ -325,6 +336,7 @@ export function PartToolbar({
         aria-label={
           part === undefined ? words('editor.table-toolbar') : words('editor.part-toolbar')
         }
+        {...(part?.note === undefined ? {} : { 'aria-describedby': noted })}
         tabIndex={-1}
         className={styles['toolbar']}
         onKeyDown={onKeyDown}
@@ -442,6 +454,11 @@ export function PartToolbar({
               );
             })}
           </span>
+        )}
+        {part?.note !== undefined && (
+          <p id={noted} className={styles['note']}>
+            {part.note}
+          </p>
         )}
       </div>
     </div>,

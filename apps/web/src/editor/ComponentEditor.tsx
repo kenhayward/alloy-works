@@ -2826,11 +2826,13 @@ export function ComponentEditor({
     />
   );
   // What stands whatever else the page draws: the question before a save, what one does, the save state.
+  const approvedOnSave = standing?.state.approved === true && shown.mayEdit === true && !drafting;
   const stripTail = (
     <>
       {!inFrame && reachQuestion}
       {/* Before the first save of an approved one, what a save does (WF-F). */}
-      {standing?.state.approved && shown.mayEdit && !drafting && (
+      {/* In place it stands on the one toolbar, which moves no text. */}
+      {!inFrame && approvedOnSave && (
         <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
       )}
       {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
@@ -3738,6 +3740,9 @@ export function ComponentEditor({
                           name: say('document.component-menu'),
                           acts: leadingActs,
                           values: partValues,
+                          note: approvedOnSave
+                            ? say('editor.this-is-approved-saving-starts')
+                            : undefined,
                         },
                       }
                     : {})}

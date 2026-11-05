@@ -26230,19 +26230,19 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 99,
+      "line": 136,
       "kind": "title"
     },
     {
       "id": "CNT-191",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 201,
+      "line": 238,
       "kind": "title"
     },
     {
       "id": "LOC-044",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 48,
+      "line": 50,
       "kind": "title"
     },
     {

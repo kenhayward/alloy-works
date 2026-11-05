@@ -1,6 +1,7 @@
 ### Changed
 
 - **Language and direction on the part's toolbar.** The Component button and its strip are gone. Two buttons show the part's language and direction: the language opens a list of the declared languages to search and choose from, and the direction switches between LTR and RTL.
+- **Saving an approved part, said in place.** The toolbar says that saving starts a new draft and leaves the approved version as it is, to whoever may edit the part.
 - **Versions panel tips show at once.** Every icon in the Versions panel says what it does as soon as the pointer reaches it.
 
 ### Fixed

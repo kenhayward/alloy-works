@@ -92,6 +92,17 @@
 }
 
 /* The Component menu's own fields, under the toolbar at its end. */
+/* As wide as the buttons above it, whatever it says, so it never widens the toolbar over the text. */
+.note {
+  flex-basis: 100%;
+  width: 0;
+  min-width: 100%;
+  margin: 0;
+  padding: var(--space-4) var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
 .rule {
   width: 1px;
   height: 22px;

@@ -20,6 +20,8 @@ function Banded({ children }: { children: ReactNode }) {
 
 const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
 
+const APPROVED = { key: 'approved', name: 'Approved', approved: true };
+
 describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
   it('stands outside the sheet, holding the acts, and no Component menu', async () => {
     open(
@@ -94,6 +96,41 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
     await waitFor(() => expect(language).toHaveAccessibleName('Base language: ar'));
     expect(language).toHaveTextContent(/^AR$/);
     await waitFor(() => expect(direction).toHaveTextContent(/^RTL$/));
+  });
+
+  it('says on the toolbar, in place, that saving an approved part starts a new draft, and only to whoever may edit it', async () => {
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ state: APPROVED, transitions: [] })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    const said = await within(bar).findByText(/^This is approved\. Saving starts a new draft/);
+    expect(said).toBeVisible();
+    expect(bar).toHaveAccessibleDescription(said.textContent);
+    expect(screen.getAllByText(/Saving starts a new draft/)).toHaveLength(1);
+  });
+
+  it('says nothing of a new draft on the toolbar to a reader who may not edit it', async () => {
+    open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(200, opened({ state: APPROVED, transitions: [], mayEdit: false })),
+      },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    await screen.findByRole('article');
+    expect(screen.queryByText(/Saving starts a new draft/)).toBeNull();
   });
 
   it('CNT-077 is reached by F6 after the formatting toolbar, and goes back by Shift-F6', async () => {
