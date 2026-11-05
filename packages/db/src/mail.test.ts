@@ -272,11 +272,7 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
           one!.lease,
         ),
       );
-      expect(await delivery(id)).toMatchObject({
-        state: 'pending',
-        attempts: 0,
-        first_attempt_at: null,
-      });
+      expect(await delivery(id)).toMatchObject({ state: 'pending', attempts: 0 });
     }
     expect((await channel()) ?? { failing_since: null }).toMatchObject({ failing_since: null });
   });
@@ -284,7 +280,8 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
   it('gives up a test an hour after its first attempt, decided at claiming', async () => {
     const id = await as((trx) => queueTestMail(trx, ada));
     await as((trx) =>
-      sql`update email_delivery set attempts = 3, first_attempt_at = now() - interval '61 minutes'
+      sql`update email_delivery set attempts = 3, next_at = now(),
+                 first_attempt_at = now() - interval '61 minutes'
           where id = ${id}`.execute(trx),
     );
     expect((await claim()).claimed).toEqual([]);
@@ -311,5 +308,73 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
     expect(await as((trx) => sweepMail(trx))).toBe(1);
     const left = await as((trx) => trx.selectFrom('email_delivery').select('id').execute());
     expect(left).toEqual([{ id: kept }]);
+  });
+
+  it('gives up no mail another worker holds while it is sent, whatever its age', async () => {
+    const id = await as((trx) => queueTestMail(trx, ada));
+    await claim();
+    await as((trx) =>
+      sql`update email_delivery set attempts = 2, first_attempt_at = now() - interval '2 hours'
+          where id = ${id}`.execute(trx),
+    );
+    await claim();
+    expect(await delivery(id)).toMatchObject({ state: 'pending' });
+  });
+
+  it('starts a mail’s age when it is first claimed, so one never recorded still ages', async () => {
+    const id = await as((trx) => queueTestMail(trx, ada));
+    await claim();
+    expect((await delivery(id)).first_attempt_at).not.toBeNull();
+  });
+
+  it('holds back the rest of the environment’s mail with a relay that fails, new mail too', async () => {
+    const [first, second] = [
+      await as((trx) => queueTestMail(trx, ada)),
+      await as((trx) => queueTestMail(trx, ada)),
+    ];
+    const claimed = (await claim()).claimed;
+    const one = claimed.find((each) => each.id === first)!;
+    await as((trx) =>
+      recordMailAttempt(
+        trx,
+        first!,
+        { kind: 'failed', failure: 'timeout', latencyMs: 30_000 },
+        one.lease,
+      ),
+    );
+    await as((trx) => sql`update email_delivery set locked_until = null`.execute(trx));
+    const later = await as((trx) => queueTestMail(trx, ada));
+    // Nothing more is claimed until the failed one is due again: the channel waits as a whole.
+    expect((await claim()).claimed).toEqual([]);
+    expect((await delivery(second!)).next_at.getTime() - Date.now()).toBeGreaterThan(25_000);
+    expect(await delivery(later)).toMatchObject({ state: 'pending', attempts: 0 });
+  });
+
+  it('marks no channel failing for an operator who offers no relay', async () => {
+    await as((trx) =>
+      setMailChannel(trx, {
+        enabled: true,
+        relay: 'platform',
+        host: null,
+        port: null,
+        username: null,
+        fromAddress: null,
+        fromName: null,
+        by: ada,
+      }),
+    );
+    const id = await as((trx) => queueTestMail(trx, ada));
+    const [one] = (await claim()).claimed;
+    expect(
+      await as((trx) =>
+        recordMailAttempt(
+          trx,
+          id,
+          { kind: 'failed', failure: 'relay_not_configured', latencyMs: 0 },
+          one!.lease,
+        ),
+      ),
+    ).toEqual({ relayFailed: false });
+    expect(await channel()).toMatchObject({ failing_since: null });
   });
 });

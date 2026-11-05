@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process';
+import { lookup as dnsLookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -366,6 +368,17 @@ export interface PlatformRelay {
 
 const HOUR_MS = 60 * 60 * 1000;
 
+/** A host's addresses: itself where it is one, else whatever it resolves to now, or none. */
+async function addressesOf(host: string): Promise<string[]> {
+  const bare = host.replace(/^\[|\]$/g, '');
+  if (isIP(bare)) return [bare];
+  try {
+    return (await dnsLookup(bare, { all: true })).map((each) => each.address);
+  } catch {
+    return [];
+  }
+}
+
 /** How long a manifest's child may take: its ten seconds, and a start. */
 const MANIFEST_SPAWN_MS = 12_000;
 /** How long a reference call's child may take: its fifteen seconds, and a start. */
@@ -485,6 +498,8 @@ export function createSupervisor(options: {
   let mails = 0;
   /** When each tenant sent through the operator's relay, this past hour (EM-S). */
   const sentByTenant = new Map<string, number[]>();
+  /** The operator's relay's addresses, as seen, which no tenant's own relay may reach. */
+  const operatorDeny = new Set<string>();
   const sweep = options.sweep ?? sweepUser;
   const connectTimeoutMs = options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS;
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
@@ -951,6 +966,17 @@ export function createSupervisor(options: {
       };
     } else {
       const own = request.relay;
+      // Never the operator's relay by another name: it would send past the operator's address and
+      // each tenant's hour (the final review).
+      const platform = options.platformRelay;
+      if (platform !== undefined) {
+        if (own.host.toLowerCase() === platform.host.toLowerCase()) {
+          return { type: 'failed', code: 'host_refused', latencyMs: 0 };
+        }
+        for (const address of await addressesOf(platform.host)) {
+          operatorDeny.add(address.includes(':') ? `${address}/128` : `${address}/32`);
+        }
+      }
       let password: string | null = null;
       if (own.username !== null) {
         if (own.sealed === null) return refused('secret_refused');
@@ -986,8 +1012,8 @@ export function createSupervisor(options: {
         text: request.text,
       },
       // A tenant's own relay may be on a private address, past the guard's permanent refusals: only a
-      // code is ever shown of what it answers (the EM plan's defaults).
-      deny: [...options.deny],
+      // code is ever shown of what it answers (the EM plan's defaults). Never the operator's relay.
+      deny: [...options.deny, ...(request.relay.kind === 'own' ? operatorDeny : [])],
       connectTimeoutMs,
       ...(options.ca === undefined ? {} : { ca: options.ca }),
     };

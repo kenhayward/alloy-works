@@ -240,10 +240,20 @@ export async function claimMail(
   leaseMs: number,
 ): Promise<{ readonly claimed: readonly ClaimedMail[]; readonly dropped: number }> {
   for (const [purpose, age] of Object.entries(AGE)) {
+    // Never one another worker holds while it is sent: its send would go unrecorded.
     await sql`update email_delivery set state = 'given_up', locked_until = null
        where state = 'pending' and purpose = ${purpose}
+         and (locked_until is null or locked_until < now())
          and first_attempt_at <= now() - ${age}::interval`.execute(trx);
   }
+  // A relay that failed holds the environment's mail back as a whole until it is due again, so a
+  // black-holed relay takes no lane meanwhile, whatever is queued after it (the final review).
+  const { rows: waiting } = await sql<{ held: boolean }>`
+    select exists (select from email_delivery
+                    where state = 'pending' and attempts > 0 and next_at > now()) as held`.execute(
+    trx,
+  );
+  if (waiting[0]?.held) return { claimed: [], dropped: 0 };
   const { rows } = await sql<DueRow>`
     with due as (
       select d.id from email_delivery d
@@ -254,7 +264,8 @@ export async function claimMail(
        for update of d skip locked
     )
     update email_delivery d
-       set locked_until = now() + make_interval(secs => ${leaseMs / 1000})
+       set locked_until = now() + make_interval(secs => ${leaseMs / 1000}),
+           first_attempt_at = coalesce(d.first_attempt_at, now())
       from due, principal p
      where d.id = due.id and p.id = d.principal_id
     returning d.id, d.purpose, d.locked_until::text as lease, p.kind, p.email, p.email_verified,
@@ -388,11 +399,16 @@ export async function recordMailAttempt(
       .execute();
     return { relayFailed: false };
   }
-  if (state === 'given_up') return { relayFailed: false };
+  // A recipient refused for good is that mail's; no relay offered is the operator's, not the channel's.
+  if (state !== 'pending') return { relayFailed: false };
   await trx
     .updateTable('mail_channel')
     .set({ failing_since: sql<Date>`coalesce(failing_since, now())` })
     .execute();
+  // The rest wait as long as this one does: the relay is failing, not this mail.
+  await sql`update email_delivery set next_at = (select next_at from email_delivery where id = ${deliveryId})
+     where state = 'pending' and id <> ${deliveryId}
+       and next_at < (select next_at from email_delivery where id = ${deliveryId})`.execute(trx);
   return { relayFailed: true };
 }
 

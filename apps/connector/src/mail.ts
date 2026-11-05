@@ -94,11 +94,15 @@ export async function answerMail(
 
 /** A library error as a code and its SMTP code, its message - which quotes the relay - dropped. */
 function failureOf(error: unknown): { code: MailFailureCode; smtpCode?: number } {
-  const { code, responseCode, command } = (error ?? {}) as {
+  const { code, responseCode, command, response } = (error ?? {}) as {
     code?: unknown;
     responseCode?: unknown;
     command?: unknown;
+    response?: unknown;
   };
+  // A 5.7.x is the relay's policy - relay access denied, a sender not allowed - and never the
+  // recipient's: its code read, its words dropped (the final review).
+  const policy = typeof response === 'string' && /\b5\.7\.\d{1,3}\b/.test(response);
   const smtpCode =
     typeof responseCode === 'number' &&
     Number.isInteger(responseCode) &&
@@ -120,7 +124,7 @@ function failureOf(error: unknown): { code: MailFailureCode; smtpCode?: number }
       return coded('timeout');
     case 'EENVELOPE':
       return coded(
-        smtpCode !== undefined && smtpCode >= 500 && command === 'RCPT TO'
+        smtpCode !== undefined && smtpCode >= 500 && command === 'RCPT TO' && !policy
           ? 'recipient_refused'
           : 'relay_refused',
       );

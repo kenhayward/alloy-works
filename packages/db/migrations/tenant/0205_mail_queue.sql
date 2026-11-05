@@ -20,7 +20,8 @@ create table email_delivery (
   attempts integer not null default 0 check (attempts >= 0),
   next_at timestamptz not null default now(),
   locked_until timestamptz,
-  -- Its age is counted from here, at claiming: a wait costs no attempt and no age (EM-M).
+  -- Its age is counted from here, its first claim, so one never recorded still ages; a wait costs
+  -- no attempt (EM-M).
   first_attempt_at timestamptz,
   created_at timestamptz not null default now()
 );

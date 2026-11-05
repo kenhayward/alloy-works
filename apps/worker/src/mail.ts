@@ -105,7 +105,8 @@ async function sendInTenant(
     if (outcome.kind === 'failed' && outcome.failure === 'relay_not_configured') {
       log.warn({ tenant: tenant.id }, 'the operator offers no mail relay: mail is dropped');
     }
-    if (relayFailed || outcome.kind === 'wait') {
+    const quota = outcome.kind === 'failed' && outcome.failure === 'quota_reached';
+    if (relayFailed || quota || outcome.kind === 'wait') {
       // The rest wait for the next pass: their lease is given back now, not when it runs out.
       await db.withTenant(
         tenant,

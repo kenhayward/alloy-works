@@ -443,4 +443,33 @@ describe("the connector's mail key and the operator's relay (EM-I, EM-B)", () =>
       expect(message, variable).not.toContain('operator-dev-password');
     }
   });
+
+describe('a relay of its own that is the operator’s (the final review)', () => {
+  it('refuses an own relay at the operator’s host or its address, so nobody sends past the operator’s address or quota', async () => {
+    const fake = await relayOf();
+    const supervisor = supervisorFor(fake, { host: '127.0.0.1' });
+    for (const host of ['127.0.0.1', 'localhost']) {
+      expect(
+        await supervisor.mail(
+          request({
+            kind: 'own',
+            host,
+            port: 587,
+            username: null,
+            sealed: null,
+            fromAddress: 'ceo@example.test',
+          }),
+        ),
+        host,
+      ).toMatchObject({ type: 'failed', code: 'host_refused' });
+    }
+    expect(fake.connections()).toBe(0);
+  });
+
+  it('blames the relay, not the recipient, for a policy refusal at RCPT', async () => {
+    const fake = await relayOf({ rcpt: '554 5.7.1 grace@example.test: Relay access denied' });
+    const answer = await answerMail(mailTo(fake.port), { lookup: loopback });
+    expect(answer).toMatchObject({ type: 'failed', code: 'relay_refused', smtpCode: 554 });
+  });
+});
 });

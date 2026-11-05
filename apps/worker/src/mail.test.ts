@@ -178,6 +178,11 @@ describe('the mail loop (the EM plan, EM-G, EM-L and EM-M)', () => {
     const tried = await Promise.all(stuck.map((id) => stateOf(acme, id)));
     expect(tried.map((each) => each.attempts).sort()).toEqual([0, 1]);
     expect(sent.filter((each) => each.tenant === acme.id)).toHaveLength(1);
+    // And the next pass leaves it alone until its relay is due again: it takes no lane.
+    const other2 = await as(globex, (trx) => queueTestMail(trx, grace));
+    await sendMail(worker, mailer, quiet);
+    expect(sent.filter((each) => each.tenant === acme.id)).toHaveLength(1);
+    expect(await stateOf(globex, other2)).toEqual({ state: 'sent', attempts: 1 });
   });
 
   it('a suspended tenant’s mail waits without an attempt', async () => {
