@@ -139,6 +139,11 @@ export function createTenantDatabase(
         .selectFrom('platform.tenant')
         .select(['id', 'schema_name', 'role_name'])
         .where('state', '=', 'active')
+        // A tenant still being made has no tables yet (TL-N), and one sweep's failure stops the rest.
+        .where(
+          sql<boolean>`not exists (select from platform.tenant_request r
+                                    where r.tenant_id = platform.tenant.id and r.state <> 'done')`,
+        )
         .orderBy('id')
         .execute();
       return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));

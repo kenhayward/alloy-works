@@ -10,6 +10,7 @@ export { migrate, migrateTenant, type MigrateOptions, type MigrationReport } fro
 export {
   createTenantMaker,
   hostnameSuffix,
+  OrganisationRefused,
   REQUEST_ATTEMPTS,
   requestTenant,
   tenantRequests,

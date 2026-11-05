@@ -9,7 +9,11 @@ import {
 } from '@alloy-works/db';
 import { setUpTenantStore, storeForPurging } from '@alloy-works/objects';
 import { pino } from 'pino';
-import { processNextProviderCopy, processNextRequest } from './jobs/tenant-create.js';
+import {
+  processNextProviderCopy,
+  processNextRequest,
+  sweepStuckCopies,
+} from './jobs/tenant-create.js';
 import { processNextPurge, sweepStuckPurges } from './jobs/tenant-purge.js';
 import { loadStewardConfig } from './steward-config.js';
 
@@ -46,6 +50,9 @@ while (running) {
     swept = Date.now();
     await sweepStuckPurges({ steward, log }).catch((error: unknown) =>
       log.error({ err: error }, 'the sweep of stuck purges failed'),
+    );
+    await sweepStuckCopies({ steward, log }).catch((error: unknown) =>
+      log.error({ err: error }, 'the sweep of stuck copies failed'),
     );
   }
   const outcome = await processNextPurge({

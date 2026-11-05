@@ -609,24 +609,26 @@ export function SignIn({ client }: { client: Client }) {
                                     onSelect: () => setReplacing(provider),
                                   },
                                 ]),
-                            ...(provider.scim.on
-                              ? [
-                                  {
-                                    label: words('admin.signin-scim-new-token'),
-                                    onSelect: () => setRenewing(provider),
-                                  },
-                                  {
-                                    label: words('admin.signin-scim-turn-off'),
-                                    danger: true,
-                                    onSelect: () => setTurningOff(provider),
-                                  },
-                                ]
-                              : [
-                                  {
-                                    label: words('admin.signin-scim-turn-on'),
-                                    onSelect: () => setTurningOn(provider),
-                                  },
-                                ]),
+                            ...(provider.managed
+                              ? []
+                              : provider.scim.on
+                                ? [
+                                    {
+                                      label: words('admin.signin-scim-new-token'),
+                                      onSelect: () => setRenewing(provider),
+                                    },
+                                    {
+                                      label: words('admin.signin-scim-turn-off'),
+                                      danger: true,
+                                      onSelect: () => setTurningOff(provider),
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      label: words('admin.signin-scim-turn-on'),
+                                      onSelect: () => setTurningOn(provider),
+                                    },
+                                  ]),
                             ...(own?.provider === provider.id
                               ? []
                               : [

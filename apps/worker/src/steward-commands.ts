@@ -1,5 +1,6 @@
 import {
   cancelClosing,
+  OrganisationRefused,
   resumeTenant,
   startClosing,
   suspendTenant,
@@ -15,7 +16,7 @@ import {
  * act is an event in that tenant's log, naming the vendor (IAM-087).
  */
 const USAGE =
-  'steward organisation --id <id> --name <name> --tenant <new id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> [--google] | steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id> | steward report --tenant <id>';
+  'steward organisation --id <id> --name <name> --tenant <new id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> [--google] | steward retry --tenant <id> [--first-administrator <address>] | steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id> | steward report --tenant <id>';
 const DONE: Readonly<Record<string, string>> = {
   suspend: 'suspended',
   resume: 'resumed',
@@ -55,7 +56,11 @@ const askForOrganisation = async (
       google: argv.includes('--google'),
     });
   } catch (error) {
-    // Refused by the table: an address, a tenant id or a suffix somebody already has.
+    if (error instanceof OrganisationRefused) {
+      deps.out(`Refused: ${error.refused}.`);
+      return 1;
+    }
+    // Refused by the table: a suffix another organisation has, or a race for what was just checked.
     const code = (error as { code?: string }).code ?? '';
     if (!code.startsWith('23')) throw error;
     deps.out(`Refused: ${(error as { constraint?: string }).constraint ?? 'already taken'}.`);
@@ -83,6 +88,15 @@ export async function runSteward(
   const notice = option(argv, 'notice');
   // An organisation's own tenant, before it has anybody to ask (TL-P): the steward's process makes it.
   if (command === 'organisation') return askForOrganisation(argv, deps);
+  // One that could not be made, after what stopped it is put right; its address went when it failed.
+  if (command === 'retry' && id !== undefined) {
+    if (await deps.maker.retry(id, option(argv, 'first-administrator'))) {
+      deps.out(`${id}: asked for again.`);
+      return 0;
+    }
+    deps.out(`No request for ${id} has failed.`);
+    return 1;
+  }
   // What remains of a tenant, which may be no more than its record (TL-J).
   if (command === 'report' && id !== undefined) {
     const record = await deps.steward.record(id);

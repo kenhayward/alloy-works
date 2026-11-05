@@ -48,7 +48,15 @@ export async function turnScimOn(
   providerId: string,
   claim: ScimClaim,
   by: string,
-): Promise<{ readonly identity: string } | 'provider.missing'> {
+): Promise<{ readonly identity: string } | 'provider.missing' | 'provider.managed'> {
+  // The organisation's copy is the organisation's to change: this would change who it admits (TL-M).
+  const copy = await trx
+    .selectFrom('identity_provider')
+    .select('id')
+    .where('id', '=', providerId)
+    .where('managed_by_organisation', '=', true)
+    .executeTakeFirst();
+  if (copy) return 'provider.managed';
   const provider = await trx
     .selectFrom('identity_provider')
     .select(['name', 'scim_identity', 'scim_claim'])

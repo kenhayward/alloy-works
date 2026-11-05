@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.237.0 - 2026-11-05 (PR #PRNUMBER)
+
+The whole life of a tenant: an organisation makes one, can suspend it, closes it with 30 days to give that up and its export offered first, and it provably no longer exists a day after that.
+
+### Added
+
+- An environment can be suspended and the suspension lifted, by the operator for now. Nobody can sign in or use it meanwhile, a person is told it is suspended, and nothing in it is lost.
+- An administrator can close an environment from Administration's Export, with a recent sign-in and its name typed, after taking a whole export or declining one. Nothing is deleted for 30 days, only those looking after the closure can sign in, and it can be given up with nothing lost. A legal hold keeps everything past that until the last is released. The operator can do the same from the command line, and only the operator can give that up.
+- A closed environment is now deleted: once its 30 days are over and nothing is under a legal hold, within a day its addresses, stored objects, credential, delivered tables, database schema and roles are gone, and a record names what was checked and nobody who used it. [Closing an environment](docs/guides/closing-an-environment.md) sets out the timetable and what it does not promise.
+- An organisation can administer from a tenant of its own, holding no content: it sees its tenants' names, addresses and states, can suspend one and lift that, and can give up a closure someone began. Each act is in both logs, and the tenant's own says only that the organisation did it. An administrator can also suspend their own environment in an incident, where an organisation can lift it.
+- An organisation can make a tenant from its console, naming its address and who is invited to administer it, and can share an identity provider with its tenants: each gets a copy kept current, which it can close and not edit.
+
 ## 0.236.0 - 2026-11-04 (PR #981)
 
 Editing a part of a document now feels like a word processor: clicking moves nothing, one line marks the part, one toolbar holds what applies, the panel follows, titles can be typed where they stand, and what you typed stays on the page when you move on.

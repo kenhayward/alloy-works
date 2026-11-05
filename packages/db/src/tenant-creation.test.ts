@@ -3,8 +3,9 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
-import { createTenant, type Tenant } from './provision.js';
+import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { copySharedProviders, hasSharedProvider, markProviderShared } from './provider-sharing.js';
+import { turnScimOn } from './scim.js';
 import { addProvider, changeProvider, closeProviderAsked } from './sign-in-settings.js';
 import { openSecret, sealSecret } from '@alloy-works/sealing';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
@@ -222,6 +223,129 @@ describe('creating a tenant and sharing a provider (the TL plan, TLe)', () => {
     });
   }, 120_000);
 
+  describe("what the operator's request refuses, and what comes of a failure (the final review)", () => {
+    const asking = (over: object = {}) => ({
+      organisation: { id: 'wayne', name: 'Wayne' },
+      tenantId: db.newTenantId(),
+      hostname: 'org.wayne.alloy.test',
+      suffix: '.wayne.alloy.test',
+      firstAdministrator: 'grace@wayne.test',
+      google: false,
+      ...over,
+    });
+
+    it('refuses an existing tenant by id, and takes nothing over', async () => {
+      await expect(
+        maker.requestOrganisation(
+          asking({ tenantId: organisation.id, hostname: 'a.wayne.alloy.test' }),
+        ),
+      ).rejects.toMatchObject({ refused: 'tenant_exists' });
+      expect(await maker.claim(LEASE)).toBeUndefined();
+    });
+
+    it('refuses an address already taken, leaving the suffix as it was', async () => {
+      await expect(
+        maker.requestOrganisation(
+          asking({
+            hostname: 'org.acme.alloy.test',
+            organisation: { id: org, name: 'Acme' },
+            suffix: '.other.alloy.test',
+          }),
+        ),
+      ).rejects.toMatchObject({ refused: 'address_taken' });
+      const { rows } = await admin.query(
+        'select hostname_suffix from platform.organisation where id = $1',
+        [org],
+      );
+      expect(rows).toEqual([{ hostname_suffix: '.acme.alloy.test' }]);
+    });
+
+    it('refuses a second organisation tenant, and another suffix for an organisation with one', async () => {
+      await expect(
+        maker.requestOrganisation(
+          asking({
+            organisation: { id: org, name: 'Acme' },
+            hostname: 'two.acme.alloy.test',
+            suffix: '.acme.alloy.test',
+          }),
+        ),
+      ).rejects.toMatchObject({ refused: 'organisation_has_one' });
+    });
+
+    it('a build refuses a request naming a tenant of another organisation or kind', async () => {
+      const id = db.newTenantId();
+      await admin
+        .query(
+          `insert into platform.tenant_request
+           (organisation_id, tenant_id, name, hostname, kind, requested_by)
+         values ($1, $2, 'Forged', 'forged.acme.alloy.test', 'organisation', 'operator')`,
+          [org, organisation.id],
+        )
+        .catch(() => undefined);
+      void id;
+      const request = (await maker.claim(LEASE))!;
+      await expect(maker.build({ ...request, organisationId: 'wayne' })).rejects.toThrow(/another/);
+      await admin.query('delete from platform.tenant_request where id = $1', [request.id]);
+    });
+
+    it("a tenant still being made is no sweep's, and a failed one is told apart from a finished one", async () => {
+      await ask('Unready', 'unready');
+      const request = (await maker.claim(LEASE))!;
+      await provisionTenant(db.adminUrl, {
+        organisation: { id: org, name: 'Acme' },
+        tenant: { id: request.tenantId, name: 'Unready' },
+        hostnames: [],
+      });
+      const live = await service.liveTenants();
+      expect(live.map((each) => each.id)).not.toContain(request.tenantId);
+
+      // Answered with a shorter lease, so a failure is tried again in minutes, not half an hour.
+      expect(await maker.giveUpIfSpent(request)).toBe(false);
+      const { rows } = await admin.query(
+        `select locked_until < now() + interval '10 minutes' as soon from platform.tenant_request where id = $1`,
+        [request.id],
+      );
+      expect(rows).toEqual([{ soon: true }]);
+
+      await admin.query(`update platform.tenant_request set locked_until = null where id = $1`, [
+        request.id,
+      ]);
+      const again = (await maker.claim(LEASE))!;
+      const tenant = await maker.build(again);
+      await maker.invite(again, tenant);
+      await maker.finish(again, tenant);
+      expect((await service.liveTenants()).map((each) => each.id)).toContain(request.tenantId);
+
+      // Finished, it cannot be failed by a run that had lost its lease.
+      expect(await maker.giveUpIfSpent({ ...again, attempts: REQUEST_ATTEMPTS })).toBe(false);
+      const { rows: state } = await admin.query(
+        'select state from platform.tenant_request where id = $1',
+        [request.id],
+      );
+      expect(state).toEqual([{ state: 'done' }]);
+      await expect(maker.finish(again, tenant)).rejects.toThrow(/no longer/);
+    }, 120_000);
+
+    it('the operator can try a failed request again, naming who to invite', async () => {
+      const { rows } = await admin.query<{ tenant_id: string }>(
+        `select tenant_id from platform.tenant_request where state = 'failed' limit 1`,
+      );
+      const id = rows[0]!.tenant_id;
+      expect(await maker.retry(id, 'ada@example.test')).toBe(true);
+      expect(await maker.retry('nothing', undefined)).toBe(false);
+      const taken = (await maker.claim(LEASE))!;
+      expect(taken).toMatchObject({
+        tenantId: id,
+        firstAdministrator: 'ada@example.test',
+        attempts: 1,
+      });
+      await admin.query(
+        `update platform.tenant_request set state = 'failed', first_administrator = null where tenant_id = $1`,
+        [id],
+      );
+    });
+  });
+
   describe('a shared provider (TL-M)', () => {
     let target: Tenant;
     let provider = '';
@@ -327,6 +451,41 @@ describe('creating a tenant and sharing a provider (the TL plan, TLe)', () => {
       );
       expect(held).toMatchObject({ client_id: 'theirs', managed_by_organisation: false });
     }, 120_000);
+
+    it('IAM-085 SCIM may not be turned on for a copy, and no secret means nothing to share', async () => {
+      const row = (await copied())!;
+      const by = (
+        await service.withTenant(target, (trx) =>
+          trx.selectFrom('principal').select('id').executeTakeFirstOrThrow(),
+        )
+      ).id;
+      expect(await service.withTenant(target, (trx) => turnScimOn(trx, row.id, 'sub', by))).toBe(
+        'provider.managed',
+      );
+    });
+
+    it('IAM-085 a copy whose name another provider has takes rotations under the name it has', async () => {
+      await admin.query(
+        `update ${target.schema}.identity_provider set name = 'Kept here' where issuer = 'https://id.acme.test'`,
+      );
+      await service.withTenant(target, (trx) =>
+        addProvider(trx, {
+          name: 'Acme people',
+          issuer: 'https://taken-the-name.test',
+          clientId: 'x',
+          sealedSecret: sealSecret(KEY, 'sign-in', target.id, 'x'),
+        }),
+      );
+      await service.withTenant(organisation, async (trx) => {
+        await sql`update identity_provider
+                     set sealed_secret = ${sealSecret(KEY, 'sign-in', organisation.id, 'rotated')}
+                   where id = ${provider}`.execute(trx);
+      });
+      await copy();
+      const row = (await copied())!;
+      expect(row.name).toBe('Kept here');
+      expect(openSecret(KEY, 'sign-in', target.id, row.sealed_secret!)).toBe('rotated');
+    });
 
     it('IAM-085 no longer shared, each tenant keeps it as its own to close', async () => {
       await service.withTenant(organisation, (trx) => markProviderShared(trx, provider, false));

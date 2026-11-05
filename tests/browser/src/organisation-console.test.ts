@@ -39,7 +39,7 @@ describe("an organisation's console, in Chromium (the TL plan, TLe)", () => {
 
         const label = `t${randomUUID().slice(0, 8)}`;
         await page.getByLabel('Name', { exact: true }).fill(`Walk ${label}`);
-        await page.getByLabel('Address').fill(label);
+        await page.getByLabel('Address', { exact: true }).fill(label);
         await page.getByLabel(/First administrator/).fill('ada@example.com');
         await page.getByRole('button', { name: 'Create the tenant' }).click();
 
@@ -56,10 +56,9 @@ describe("an organisation's console, in Chromium (the TL plan, TLe)", () => {
         await checkAxe(page, "an organisation's console, with a new tenant", task.meta, {
           shows: row,
         });
-        const answer = await page.request.get(
-          `${ORGANISATION.replace('//org.', `//${label}.`)}/v1/me`,
-        );
-        expect(answer.status()).toBe(401);
+        // Through the browser, which resolves any `*.localhost`, as Node here need not.
+        const answer = await page.goto(`${ORGANISATION.replace('//org.', `//${label}.`)}/v1/me`);
+        expect(answer?.status()).toBe(401);
       },
       { signedIn: false },
     );

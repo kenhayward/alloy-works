@@ -22492,13 +22492,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 819,
+      "line": 822,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 832,
+      "line": 835,
       "kind": "title"
     },
     {
@@ -24026,6 +24026,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-059",
+      "file": "apps/service/src/organisation-routes.test.ts",
+      "line": 238,
+      "kind": "title"
+    },
+    {
       "id": "IAM-068",
       "file": "apps/service/src/organisation-routes.test.ts",
       "line": 81,
@@ -24035,6 +24041,12 @@
       "id": "IAM-069",
       "file": "apps/service/src/organisation-routes.test.ts",
       "line": 40,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-085",
+      "file": "apps/service/src/organisation-routes.test.ts",
+      "line": 278,
       "kind": "title"
     },
     {
@@ -24628,31 +24640,37 @@
     {
       "id": "PUB-057",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 219,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "PUB-058",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 356,
+      "line": 381,
       "kind": "title"
     },
     {
       "id": "PUB-059",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 391,
+      "line": 416,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 338,
+      "line": 363,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-081",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 260,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 285,
+      "line": 310,
       "kind": "title"
     },
     {
@@ -27244,19 +27262,25 @@
     {
       "id": "ADM-028",
       "file": "apps/web/src/organisation/Console.test.tsx",
-      "line": 49,
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-059",
+      "file": "apps/web/src/organisation/Console.test.tsx",
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "IAM-068",
       "file": "apps/web/src/organisation/Console.test.tsx",
-      "line": 35,
+      "line": 46,
       "kind": "title"
     },
     {
       "id": "IAM-069",
       "file": "apps/web/src/organisation/Console.test.tsx",
-      "line": 28,
+      "line": 89,
       "kind": "title"
     },
     {
@@ -29692,19 +29716,19 @@
     {
       "id": "ADM-028",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 56,
+      "line": 62,
       "kind": "title"
     },
     {
       "id": "ADM-030",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 69,
+      "line": 75,
       "kind": "title"
     },
     {
       "id": "IAM-087",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 108,
+      "line": 114,
       "kind": "title"
     },
     {
@@ -29801,6 +29825,18 @@
       "id": "TAB-050",
       "file": "apps/worker/src/tables.test.ts",
       "line": 152,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-085",
+      "file": "apps/worker/src/tenant-create.test.ts",
+      "line": 113,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-086",
+      "file": "apps/worker/src/tenant-create.test.ts",
+      "line": 208,
       "kind": "title"
     },
     {
@@ -32450,6 +32486,30 @@
       "kind": "title"
     },
     {
+      "id": "IAM-059",
+      "file": "packages/db/src/tenant-creation.test.ts",
+      "line": 82,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-068",
+      "file": "packages/db/src/tenant-creation.test.ts",
+      "line": 120,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-069",
+      "file": "packages/db/src/tenant-creation.test.ts",
+      "line": 145,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-085",
+      "file": "packages/db/src/tenant-creation.test.ts",
+      "line": 256,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "packages/db/src/tenant-database.test.ts",
       "line": 140,
@@ -33076,13 +33136,13 @@
     {
       "id": "IAM-034",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 90,
+      "line": 92,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 107,
+      "line": 109,
       "kind": "title"
     },
     {
@@ -33190,13 +33250,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 294,
+      "line": 295,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 271,
+      "line": 272,
       "kind": "title"
     },
     {
@@ -36881,6 +36941,12 @@
       "id": "STR-045",
       "file": "tests/browser/src/navigation.test.ts",
       "line": 374,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-068",
+      "file": "tests/browser/src/organisation-console.test.ts",
+      "line": 15,
       "kind": "title"
     },
     {

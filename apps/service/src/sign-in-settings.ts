@@ -249,7 +249,7 @@ export function signInSettingsHandlers(options: {
       const { id } = request.params as ProviderParams;
       const { claim } = request.body as ScimOnBody;
       const answer = await turnScimOn(trx, id, claim, principalId);
-      if (answer === 'provider.missing') throw refused(answer);
+      if (answer === 'provider.missing' || answer === 'provider.managed') throw refused(answer);
       return read(request, trx);
     },
 

@@ -101,6 +101,15 @@ export interface OrganisationRequest {
   readonly google: boolean;
 }
 
+/** Why the operator may not have what was asked, said before anything is changed. */
+export class OrganisationRefused extends Error {
+  constructor(
+    readonly refused: 'tenant_exists' | 'address_taken' | 'organisation_has_one' | 'suffix_differs',
+  ) {
+    super(`Refused: ${refused}`);
+  }
+}
+
 export interface TenantRequest {
   readonly id: string;
   readonly organisationId: string;
@@ -128,7 +137,7 @@ interface RequestRow {
 }
 
 export interface TenantMaker {
-  /** Asked by the operator: refused by the database if the address or the organisation's kind is taken. */
+  /** Asked by the operator, refused with `OrganisationRefused` before anything has changed. */
   requestOrganisation(request: OrganisationRequest): Promise<void>;
   /** The oldest request with no steward working on it, leased. */
   claim(leaseMs: number): Promise<TenantRequest | undefined>;
@@ -138,8 +147,10 @@ export interface TenantMaker {
   invite(request: TenantRequest, tenant: Tenant): Promise<void>;
   /** Its first event and its address, and the request done, the person's address gone with it. */
   finish(request: TenantRequest, tenant: Tenant): Promise<void>;
-  /** Again after the lease, until it has had its attempts; then it stops and forgets the address. */
+  /** Tried again in minutes, until it has had its attempts; then it stops and forgets the address. */
   giveUpIfSpent(request: TenantRequest): Promise<boolean>;
+  /** The operator's second try at one that failed, whose address has gone unless given again. */
+  retry(tenantId: string, firstAdministrator: string | undefined): Promise<boolean>;
   organisationOf(tenantId: string): Promise<string>;
   /** Tenants of the organisation a provider's copy goes to, and its own, if it has one. */
   family(organisationId: string): Promise<{
@@ -158,15 +169,45 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
   return {
     async requestOrganisation(request) {
       const client = await pool.connect();
+      const hostname = request.hostname.toLowerCase();
+      const suffix = request.suffix.toLowerCase();
       try {
         await client.query('begin');
+        const { rows } = await client.query<{
+          tenant: boolean;
+          address: boolean;
+          has_one: boolean;
+          other_suffix: boolean;
+        }>(
+          `select
+             exists (select from platform.tenant where id = $1)
+               or exists (select from platform.tenant_request where tenant_id = $1) as tenant,
+             exists (select from platform.tenant_hostname where hostname = $2)
+               or exists (select from platform.tenant_request
+                           where hostname = $2 and state = 'waiting') as address,
+             exists (select from platform.tenant
+                      where organisation_id = $3 and kind = 'organisation'
+                        and state not in ('deleting', 'deleted'))
+               or exists (select from platform.tenant_request
+                           where organisation_id = $3 and kind = 'organisation'
+                             and state = 'waiting') as has_one,
+             exists (select from platform.organisation
+                      where id = $3 and hostname_suffix is not null
+                        and hostname_suffix <> $4) as other_suffix`,
+          [request.tenantId, hostname, request.organisation.id, suffix],
+        );
+        const facts = rows[0]!;
+        if (facts.tenant) throw new OrganisationRefused('tenant_exists');
+        if (facts.address) throw new OrganisationRefused('address_taken');
+        if (facts.has_one) throw new OrganisationRefused('organisation_has_one');
+        if (facts.other_suffix) throw new OrganisationRefused('suffix_differs');
         await client.query(
           `insert into platform.organisation (id, name) values ($1, $2) on conflict (id) do nothing`,
           [request.organisation.id, request.organisation.name],
         );
         await client.query(`update platform.organisation set hostname_suffix = $2 where id = $1`, [
           request.organisation.id,
-          request.suffix.toLowerCase(),
+          suffix,
         ]);
         await client.query(
           `insert into platform.tenant_request
@@ -176,7 +217,7 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
             request.organisation.id,
             request.tenantId,
             request.organisation.name,
-            request.hostname.toLowerCase(),
+            hostname,
             invitedAddress(request.firstAdministrator),
             request.google,
           ],
@@ -223,10 +264,18 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
     async build(request) {
       const tenant = named(request.tenantId);
       const input = { tenant: { id: request.tenantId, name: request.name }, kind: request.kind };
-      const { rowCount } = await pool.query('select 1 from platform.tenant where id = $1', [
-        request.tenantId,
-      ]);
-      if (!rowCount) {
+      const { rows: held } = await pool.query<{ organisation_id: string; kind: string }>(
+        'select organisation_id, kind from platform.tenant where id = $1',
+        [request.tenantId],
+      );
+      // What a request names is only ever its own tenant: never one somebody else made.
+      if (
+        held[0] &&
+        (held[0].organisation_id !== request.organisationId || held[0].kind !== request.kind)
+      ) {
+        throw new Error(`The tenant ${request.tenantId} is another organisation's or kind`);
+      }
+      if (!held[0]) {
         const { rows } = await pool.query<{ name: string }>(
           'select name from platform.organisation where id = $1',
           [request.organisationId],
@@ -282,11 +331,20 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
         if (held.rows[0]?.tenant_id !== request.tenantId) {
           throw new Error(`The address of ${request.tenantId} is another tenant's`);
         }
-        await client.query(
+        const { rowCount } = await client.query(
           `update platform.tenant_request
               set state = 'done', first_administrator = null, locked_until = null, finished_at = now()
-            where id = $1`,
+            where id = $1 and state = 'waiting'`,
           [request.id],
+        );
+        if (!rowCount) throw new Error(`The request for ${request.tenantId} is no longer waiting`);
+        // What the organisation changed while this was being made reaches it too.
+        await client.query(
+          `insert into platform.job (tenant_id, kind)
+           select id, 'provider_share' from platform.tenant
+            where organisation_id = $1 and kind = 'organisation' and state = 'active'
+              and $2 = 'content'`,
+          [request.organisationId, request.kind],
         );
         await client.query('commit');
       } catch (error) {
@@ -298,14 +356,33 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
     },
 
     async giveUpIfSpent(request) {
-      if (request.attempts < REQUEST_ATTEMPTS) return false;
-      await pool.query(
+      if (request.attempts < REQUEST_ATTEMPTS) {
+        await pool.query(
+          `update platform.tenant_request set locked_until = now() + interval '5 minutes'
+            where id = $1 and state = 'waiting'`,
+          [request.id],
+        );
+        return false;
+      }
+      // Waiting still, so a run that lost its lease cannot fail what another finished.
+      const { rowCount } = await pool.query(
         `update platform.tenant_request
             set state = 'failed', first_administrator = null, locked_until = null, finished_at = now()
-          where id = $1`,
+          where id = $1 and state = 'waiting'`,
         [request.id],
       );
-      return true;
+      return (rowCount ?? 0) > 0;
+    },
+
+    async retry(tenantId, firstAdministrator) {
+      const { rowCount } = await pool.query(
+        `update platform.tenant_request
+            set state = 'waiting', attempts = 0, locked_until = null, finished_at = null,
+                first_administrator = $2
+          where tenant_id = $1 and state = 'failed'`,
+        [tenantId, firstAdministrator === undefined ? null : invitedAddress(firstAdministrator)],
+      );
+      return (rowCount ?? 0) > 0;
     },
 
     async organisationOf(tenantId) {

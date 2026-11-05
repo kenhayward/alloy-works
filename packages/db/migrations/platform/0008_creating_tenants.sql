@@ -34,6 +34,9 @@ grant update (hostname_suffix) on organisation to aw_steward;
 grant insert (id, organisation_id, name, schema_name, role_name, kind) on tenant to aw_steward;
 grant insert on tenant_hostname to aw_steward;
 grant select, insert, update, delete on tenant_request to aw_steward;
+-- Whether a tenant is finished, for those who sweep tenants: nothing else of a request, least of all the
+-- address. A tenant still being made has no tables yet to sweep.
+grant select (tenant_id, state) on tenant_request to aw_service, aw_worker, aw_restorer;
 
 -- Asked by an organisation's tenant, for a tenant beside it (IAM-068): the address always under the
 -- organisation's own suffix, so one organisation can never take another's.

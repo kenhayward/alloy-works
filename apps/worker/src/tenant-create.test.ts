@@ -38,6 +38,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   processNextProviderCopy,
   processNextRequest,
+  sweepStuckCopies,
   type MakingDeps,
 } from './jobs/tenant-create.js';
 import { processNextPurge } from './jobs/tenant-purge.js';
@@ -152,8 +153,27 @@ describe("the steward's making of tenants (the TL plan, TLe)", () => {
   }, 120_000);
 
   it('IAM-085 a job brings the copies current when the organisation changes one', async () => {
-    const queued = await processNextProviderCopy(deps);
-    expect(queued).toBe('done');
+    // What sharing it queued, and what making the tenant queued for what changed meanwhile.
+    expect(await processNextProviderCopy(deps)).toBe('done');
+    expect(await processNextProviderCopy(deps)).toBe('done');
+    expect(await processNextProviderCopy(deps)).toBe('idle');
+  });
+
+  it('queues a copy for a job that gave up, and says so, rather than leave copies stale', async () => {
+    errors.length = 0;
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `insert into platform.job (tenant_id, kind, attempts, max_attempts, locked_until)
+       values ($1, 'provider_share', 3, 3, now() - interval '1 minute') returning id`,
+      [organisation.id],
+    );
+    expect(await sweepStuckCopies({ steward, log })).toBe(1);
+    expect(errors.map((each) => each.message)).toContain('copying shared providers was stuck');
+    const left = await queryAs(db.adminUrl, 'select failed_at from platform.job where id = $1', [
+      rows[0].id,
+    ]);
+    expect(left.rows[0].failed_at).not.toBeNull();
+    expect(await processNextProviderCopy(deps)).toBe('done');
     expect(await processNextProviderCopy(deps)).toBe('idle');
   });
 

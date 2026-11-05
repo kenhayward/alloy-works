@@ -213,8 +213,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   console lists its tenants' names, addresses and states, and nothing in them. A holder of `suspend_tenant` suspends one
   and lifts that, and gives up a closure a person began. Each act is in both logs, the tenant's naming no person, and a
   tenant's closure is in the organisation's log, which is what remains after it has gone. A holder of
-  `suspend_environment` can also stop their own environment in an incident, where an organisation can lift it. Creating
-  a tenant and sharing a provider are still to come.
+  `suspend_environment` can also stop their own environment in an incident, where an organisation can lift it.
+  A holder of `create_tenant` makes a tenant from the console, naming its address under the organisation's and who is
+  invited to administer it; the address is forgotten once the invitation exists, and it arrives a little later with its
+  own store. A holder of `share_provider` shares a sign-in provider from **Sign-in**: each tenant has a copy, kept
+  current, which it can close and not edit, and once it is no longer shared each tenant keeps it as its own. The operator
+  makes an organisation's own tenant with `steward organisation`.
 - **Closing an environment.** Someone holding `close_environment` and both export permissions closes one
   from Administration's **Export**: a recent sign-in, its name typed, and a whole export from the last 24
   hours or that one is declined, recorded. For 30 days only those holding `close_environment` or `hold`, or

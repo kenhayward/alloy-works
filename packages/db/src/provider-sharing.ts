@@ -29,6 +29,7 @@ export async function markProviderShared(
     .set({ shared })
     .where('id', '=', id)
     .where('closed_at', 'is', null)
+    .$if(shared, (query) => query.where('sealed_secret', 'is not', null))
     .returning('id')
     .executeTakeFirst();
   if (!row) return false;
@@ -48,6 +49,8 @@ export async function hasSharedProvider(trx: TenantTransaction): Promise<boolean
     .select('id')
     .where('shared', '=', true)
     .where('closed_at', 'is', null)
+    // One with no sealed secret is never copied, so it would let nobody in.
+    .where('sealed_secret', 'is not', null)
     .executeTakeFirst();
   return row !== undefined;
 }
@@ -115,14 +118,16 @@ export async function copySharedProviders(
             .where('name', '=', provider.name)
             .where('issuer', '<>', provider.issuer)
             .executeTakeFirst();
-          if ((held && !held.managed_by_organisation) || nameIsAnother) {
+          if ((held && !held.managed_by_organisation) || (!held && nameIsAnother)) {
             passedOver += 1;
             continue;
           }
           const secret = openSecret(key, 'sign-in', organisation.id, provider.sealed_secret!);
+          // A name another provider took stays the copy's own, and rotations still arrive.
+          const name = nameIsAnother && held ? held.name : provider.name;
           const same =
             held !== undefined &&
-            held.name === provider.name &&
+            held.name === name &&
             held.client_id === provider.client_id &&
             held.groups_claim === provider.groups_claim &&
             held.sealed_secret !== null &&
@@ -130,7 +135,7 @@ export async function copySharedProviders(
           copied += 1;
           if (same) continue;
           const values = {
-            name: provider.name,
+            name,
             client_id: provider.client_id,
             sealed_secret: sealSecret(key, 'sign-in', tenant.id, secret),
             groups_claim: provider.groups_claim,

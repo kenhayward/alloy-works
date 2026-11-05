@@ -1,6 +1,7 @@
 import {
   copySharedProviders,
   type JobQueue,
+  type StewardDatabase,
   type Tenant,
   type TenantDatabase,
   type TenantMaker,
@@ -64,6 +65,16 @@ export async function processNextRequest(
     );
     return (await deps.maker.giveUpIfSpent(request)) ? 'failed' : 'retry';
   }
+}
+
+/** Queues again a copy whose steward died on its last attempt: stale copies, silently, are worse. */
+export async function sweepStuckCopies(deps: {
+  readonly steward: Pick<StewardDatabase, 'requeueStuckCopies'>;
+  readonly log: MakingLog;
+}): Promise<number> {
+  const stuck = await deps.steward.requeueStuckCopies();
+  for (const tenant of stuck) deps.log.error({ tenant }, 'copying shared providers was stuck');
+  return stuck.length;
 }
 
 /** A job to bring every copy into line with what the organisation shares (TL-M). */

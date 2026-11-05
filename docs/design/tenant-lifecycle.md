@@ -173,7 +173,8 @@ reverse. Creating a tenant cannot be one transaction, since it has no log yet: t
 and the steward writes IAM-060's on creation. A provider's copy is by job, and likewise.
 
 As built: the starter role is seeded only in an organisation's tenant, whose Administrator also gains
-`suspend_tenant`, so the first administrator can act. It holds `read` and `suspend_tenant` until TLe brings the rest.
+`suspend_tenant`, `create_tenant` and `share_provider`, so the first administrator can act. It holds `read` and those
+three, and not `configure_services`, so sharing from the Sign-in page is for an Administrator unless it is granted too.
 The organisation's event is `organisation.changed`, naming the tenant, the change and who did it.
 
 **The target's log names no outside person.** Its event says `organisation` or `operator` with the organisation's event
@@ -186,9 +187,19 @@ kept current by a job. In a tenant it cannot be edited, but may be closed (IAM-0
 enters. Sign-in reads only the copy, so losing the organisation's tenant locks nobody out. Restored elsewhere, it arrives
 an ordinary closed provider.
 
+As built: no longer shared, or closed at the organisation, a copy stays open as the tenant's own, so one click at the
+organisation can never lock a tenant out; closing it is each tenant's. A tenant's own provider of that issuer or name is
+passed over and counted in the log, never overwritten.
+
 **TL-N. Creating a tenant (IAM-068, IAM-059).** A request naming the tenant, a hostname under the organisation's suffix
 and the first administrator's address goes on a `platform.tenant_request`, since no tenant exists for a job to name. The
 steward provisions, migrates, sets up the store and sends the invitation, then clears the address from the request.
+
+As built: each stage repeats. It runs under the steward's own login (`createrole`, `create` on the database, admin on
+`aw_tenant`; spike S1), migrating that tenant alone as its owner. A request is refused while no provider is shared, since
+its first administrator could not sign in (IAM-059). The address is attached last, and until the request is done the tenant
+appears only as a request. After ten attempts the request fails and forgets the address; the half-made tenant stays, with
+no address, for the operator. There is no email until EM: the invitation is claimed by signing in.
 
 **TL-O. Kinds.** `tenant.suspended`, `tenant.resumed`, `tenant.closing`, `tenant.closure_cancelled`, `tenant.retained`,
 `tenant.closed` (declared in audit.md, emitted as deletion begins), `organisation.changed` (declared), `tenant.created`.
