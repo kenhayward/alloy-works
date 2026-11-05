@@ -133,7 +133,7 @@ there, hidden again on **Hide the comparison**.
 [ADR-0075](../decisions/0075-one-header-a-side-dock-and-margin-labels.md) replaced the document bar and the band with one
 header and a side dock; [the handoff](../interface/handoffs/authoring-page/README.md) is the drawing and
 [the plan](../plans/2026-11-02-ap-authoring-page.md) says where the build departs from it.
-[ADR-0092](../decisions/0092-the-toolbar-stands-under-the-menus.md) has since moved the toolbar from the dock to a row under the
+[ADR-0093](../decisions/0093-the-toolbar-stands-under-the-menus.md) has since moved the toolbar from the dock to a row under the
 menus.
 
 ## Navigation

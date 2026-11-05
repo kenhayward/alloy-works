@@ -1,4 +1,4 @@
-# 0092 - The formatting toolbar stands under the menus
+# 0093 - The formatting toolbar stands under the menus
 
 - **Status:** Accepted
 - **Date:** 2026-11-05

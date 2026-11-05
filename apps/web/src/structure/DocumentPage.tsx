@@ -901,7 +901,7 @@ export function DocumentPage({
       { readonly pinned: VersionNamed; readonly newer: VersionNamed; readonly said?: string }
     >
   >(new Map());
-  // Where a component open in place keeps its toolbar: the row under the menus (ADR-0092).
+  // Where a component open in place keeps its toolbar: the row under the menus (ADR-0093).
   const band = useToolbarHost();
   // What the menus open and read (ADR-0075).
   const datesAct = useRef<() => void>(null);
