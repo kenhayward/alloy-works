@@ -25,6 +25,7 @@ import {
   sweepQueryEmbeddings,
   sweepEmbeddingLag,
   sweepWebhookDeliveries,
+  sweepMail,
   sweepImports,
   expireTenantExport,
   tenantExportsDue,
@@ -64,6 +65,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepRestorations',
     'sweepStalePresence',
     'sweepWebhookDeliveriesEverywhere',
+    'sweepMailEverywhere',
   ],
 } as const;
 
@@ -549,6 +551,19 @@ export async function sweepWebhookDeliveriesEverywhere(
       removed += await db.withTenant(tenant, (trx) => sweepWebhookDeliveries(trx));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the webhook delivery sweep failed in a tenant');
+    }
+  }
+  return removed;
+}
+
+/** Mail done with, and its attempts, past 30 days, in every tenant (the EM plan, EM-M). */
+export async function sweepMailEverywhere(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.liveTenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepMail(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the mail sweep failed in a tenant');
     }
   }
   return removed;

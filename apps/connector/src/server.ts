@@ -11,7 +11,9 @@ import {
   modelRequestSchema,
   modelSealRequestSchema,
   mailCredentialContext,
+  mailRequestSchema,
   mailSealRequestSchema,
+  MAIL_TEXT_MOST,
   webhookSealRequestSchema,
   deliverRequestSchema,
   manifestRequestSchema,
@@ -60,6 +62,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/webhook/seal': MAX_BODY_BYTES,
   // A mail relay's password, sealed to it (the EM plan, EM-I).
   '/v1/mail/seal': MAX_BODY_BYTES,
+  // A mail: its words, at most 8 KiB, and a sealed password (EM-I).
+  '/v1/mail': 4 * MAIL_TEXT_MOST,
   // A webhook delivery: its thin body and two sealed secrets (WB-F).
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   // An extension's manifest, by its URL (the EX plan, EX-B).
@@ -132,6 +136,8 @@ export function createConnectorServer(options: {
       sealingKey: config.sealingKey,
       deny: options.deny ?? productionDeny(config, readNetworkDeny()),
       maxChildren: config.maxChildren,
+      // The operator's relay, whose password the connector alone holds (EM-B).
+      ...(config.platformRelay === undefined ? {} : { platformRelay: config.platformRelay }),
       // A webhook's receiver is public unless this deployment allows a private one (WB-F).
       ...(config.webhookPrivate ? {} : { webhookDeny: PRIVATE_RANGES }),
       // A reference extension's endpoint is public unless this deployment allows a private one (XR-J).
@@ -185,7 +191,10 @@ export function createConnectorServer(options: {
         authenticated(request, config.deliverKeyDigest)) ||
       (path === '/v1/reference' &&
         config.referenceKeyDigest !== undefined &&
-        authenticated(request, config.referenceKeyDigest));
+        authenticated(request, config.referenceKeyDigest)) ||
+      (path === '/v1/mail' &&
+        config.mailKeyDigest !== undefined &&
+        authenticated(request, config.mailKeyDigest));
     if (!opened) {
       // Drain and drop the body unread, so the answer is not written under an unread upload.
       request.resume();
@@ -311,6 +320,14 @@ export function createConnectorServer(options: {
       const parsed = deliverRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       const call = supervisor.deliver(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      send(200, await call);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
+    if (path === '/v1/mail') {
+      const parsed = mailRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.mail(parsed.data, gone.signal);
       if (call === 'busy') return send(503, { code: 'connector_busy' });
       send(200, await call);
       return { status: 200, stderrBytes: stderrBytes - before };

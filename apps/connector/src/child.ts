@@ -2,6 +2,7 @@ import {
   childDeliverRequestSchema,
   childManifestRequestSchema,
   childEmbedRequestSchema,
+  childMailRequestSchema,
   childModelRequestSchema,
   childReferenceRequestSchema,
   childRequestSchema,
@@ -9,6 +10,7 @@ import {
 } from '@alloy-works/domain';
 
 import { answerDeliver } from './deliver.js';
+import { answerMail } from './mail.js';
 import { answerManifest } from './manifest.js';
 import { answerEmbed, answerModel } from './model.js';
 import { answerReference } from './reference.js';
@@ -62,6 +64,12 @@ async function main(): Promise<number> {
   const delivery = childDeliverRequestSchema.safeParse(input);
   if (delivery.success) {
     await line(await answerDeliver(delivery.data));
+    return 0;
+  }
+  // A mail (the EM plan, EM-I): one answer.
+  const mail = childMailRequestSchema.safeParse(input);
+  if (mail.success) {
+    await line(await answerMail(mail.data));
     return 0;
   }
   // An embedding call (the G7 plan, G7-A): one answer.

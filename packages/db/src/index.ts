@@ -1540,11 +1540,22 @@ export {
   type WebhookSubscription,
 } from './webhooks.js';
 export {
+  claimMail,
+  listMail,
   mailChannel,
+  mailCounts,
   NO_MAIL_CHANNEL,
+  queueTestMail,
+  recordMailAttempt,
   setMailChannel,
   setMailPassword,
+  sweepMail,
+  type ClaimedMail,
+  type ClaimedRelay,
   type MailChannel,
+  type MailOutcome,
+  type MailPurpose,
+  type MailRecord,
 } from './mail.js';
 export {
   extensionAtDigest,

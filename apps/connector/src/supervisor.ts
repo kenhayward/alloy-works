@@ -25,6 +25,12 @@ import {
   type VocabularySourceAnswer,
   type VocabularySourceRequest,
   webhookSecretContext,
+  MAIL_DEADLINE_MS,
+  mailAnswerSchema,
+  mailCredentialContext,
+  type ChildMailRequest,
+  type MailAnswer,
+  type MailRequest,
   DELIVERY_DEADLINE_MS,
   type ChildDeliverRequest,
   type DeliverAnswer,
@@ -341,6 +347,25 @@ export const CONNECT_TIMEOUT_MS = 5000;
  */
 export const MAX_DELIVERIES = 4;
 
+/**
+ * The most mails at once (the EM plan, EM-I): beside the deliveries' four, of eight children, so a
+ * slow relay never takes the queries' slots.
+ */
+export const MAX_MAILS = 2;
+
+/** The operator's relay (EM-B): its host and password the connector's alone, never a request's. */
+export interface PlatformRelay {
+  readonly host: string;
+  readonly port: 465 | 587;
+  readonly username: string | null;
+  readonly password: string | null;
+  readonly fromAddress: string;
+  /** The most mails a tenant may send through it an hour (EM-S). */
+  readonly hourly: number;
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+
 /** How long a manifest's child may take: its ten seconds, and a start. */
 const MANIFEST_SPAWN_MS = 12_000;
 /** How long a reference call's child may take: its fifteen seconds, and a start. */
@@ -380,6 +405,8 @@ export interface Supervisor {
   reference(request: ReferenceRequest, signal?: AbortSignal): 'busy' | Promise<ReferenceAnswer>;
   /** A webhook delivery (the WB plan, WB-F): `busy` where its own cap is reached, else its answer. */
   deliver(request: DeliverRequest, signal?: AbortSignal): 'busy' | Promise<DeliverAnswer>;
+  /** A mail (the EM plan, EM-I): `busy` where its own cap is reached, else its answer. */
+  mail(request: MailRequest, signal?: AbortSignal): 'busy' | Promise<MailAnswer>;
   /** How many children are running. */
   active(): number;
 }
@@ -406,6 +433,15 @@ export function createSupervisor(options: {
   readonly maxModels?: number;
   /** The most of those children that may be deliveries at once: `MAX_DELIVERIES` unless a test says. */
   readonly maxDeliveries?: number;
+  /** The most of those children that may be mails at once: `MAX_MAILS` unless a test says. */
+  readonly maxMails?: number;
+  /** The operator's relay, where this deployment offers one (EM-B). */
+  readonly platformRelay?: PlatformRelay;
+  /**
+   * Where a test's relay listens in place of the port a channel names, which is 465 or 587: a
+   * parameter, never configuration, which production's server never passes.
+   */
+  readonly mailPort?: (declared: number) => number;
   /** The ranges a webhook is refused besides `deny`: production's private ones, unless it allows them. */
   readonly webhookDeny?: readonly string[];
   /** Whether a reference extension, never a built-in source, may reach a private address (XR-J). */
@@ -445,6 +481,10 @@ export function createSupervisor(options: {
   let models = 0;
   const maxDeliveries = options.maxDeliveries ?? MAX_DELIVERIES;
   let deliveries = 0;
+  const maxMails = options.maxMails ?? MAX_MAILS;
+  let mails = 0;
+  /** When each tenant sent through the operator's relay, this past hour (EM-S). */
+  const sentByTenant = new Map<string, number[]>();
   const sweep = options.sweep ?? sweepUser;
   const connectTimeoutMs = options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS;
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
@@ -878,6 +918,115 @@ export function createSupervisor(options: {
     );
   }
 
+  /**
+   * A mail's child (EM-I): the operator's relay named here, from its own address, within the tenant's
+   * hour; a tenant's own opened only for the host, port and username its password was sealed to.
+   */
+  async function mailWork(
+    request: MailRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<MailAnswer> {
+    const refused = (code: 'relay_not_configured' | 'quota_reached' | 'secret_refused') =>
+      ({ type: 'failed', code, latencyMs: 0 }) as const;
+    let relay: ChildMailRequest['relay'];
+    if (request.relay.kind === 'platform') {
+      const platform = options.platformRelay;
+      if (platform === undefined) return refused('relay_not_configured');
+      const now = Date.now();
+      const sent = (sentByTenant.get(request.tenant) ?? []).filter((at) => at > now - HOUR_MS);
+      if (sent.length >= platform.hourly) {
+        sentByTenant.set(request.tenant, sent);
+        return refused('quota_reached');
+      }
+      sentByTenant.set(request.tenant, [...sent, now]);
+      relay = {
+        host: platform.host,
+        port: platform.port,
+        implicitTls: platform.port === 465,
+        username: platform.username,
+        password: platform.password,
+        fromAddress: platform.fromAddress,
+      };
+    } else {
+      const own = request.relay;
+      let password: string | null = null;
+      if (own.username !== null) {
+        if (own.sealed === null) return refused('secret_refused');
+        try {
+          password = openSecret(
+            options.sealingKey,
+            'mail-credential',
+            request.tenant,
+            own.sealed,
+            mailCredentialContext(own.host, own.port, own.username),
+          );
+        } catch {
+          return refused('secret_refused');
+        }
+      }
+      relay = {
+        host: own.host,
+        port: own.port,
+        implicitTls: own.port === 465,
+        username: own.username,
+        password,
+        fromAddress: own.fromAddress,
+      };
+    }
+    const input: ChildMailRequest = {
+      kind: 'mail',
+      relay: { ...relay, port: options.mailPort?.(relay.port) ?? relay.port },
+      message: {
+        id: request.id,
+        fromName: request.fromName,
+        to: request.to,
+        subject: request.subject,
+        text: request.text,
+      },
+      // A tenant's own relay may be on a private address, past the guard's permanent refusals: only a
+      // code is ever shown of what it answers (the EM plan's defaults).
+      deny: [...options.deny],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: MailAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        MAIL_DEADLINE_MS + 2000,
+        (line) => {
+          try {
+            const parsed = mailAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        code: outcome.kind === 'timeout' ? 'timeout' : 'connector_error',
+        latencyMs: MAIL_DEADLINE_MS,
+      }
+    );
+  }
+
   /** An embedding call's child: the key opened as a model call's, one line in and one answer out. */
   async function embedWork(
     request: EmbedRequest,
@@ -1006,6 +1155,24 @@ export function createSupervisor(options: {
           .finally(() => {
             active -= 1;
             deliveries -= 1;
+          }),
+      ).then(() => answer!);
+    },
+    mail(request, signal) {
+      if (mails >= maxMails) return 'busy';
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      mails += 1;
+      let answer: MailAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        mailWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+            mails -= 1;
           }),
       ).then(() => answer!);
     },

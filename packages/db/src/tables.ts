@@ -228,6 +228,32 @@ export interface MailChannelTable {
   from_name: string | null;
   updated_at: ColumnType<Date, Date | undefined, Date>;
   updated_by: string | null;
+  failing_since: Date | null;
+  last_success_at: Date | null;
+}
+
+/** A mail to send (0205; the EM plan, EM-F): whom to and why, never an address or a word. */
+export interface EmailDeliveryTable {
+  id: Generated<string>;
+  purpose: 'test';
+  principal_id: string;
+  state: Generated<'pending' | 'sent' | 'given_up' | 'dropped'>;
+  dropped_reason: string | null;
+  attempts: Generated<number>;
+  next_at: Generated<Date>;
+  locked_until: Date | null;
+  first_attempt_at: Date | null;
+  created_at: Generated<Date>;
+}
+
+/** One attempt at a mail (0205; EM-N): its codes, never the relay's words. */
+export interface EmailAttemptTable {
+  id: Generated<string>;
+  delivery_id: string;
+  at: Generated<Date>;
+  failure: string | null;
+  smtp_code: number | null;
+  latency_ms: number;
 }
 
 export interface WebhookSubscriptionTable {
@@ -1442,6 +1468,8 @@ export interface TenantTables {
   api_token: ApiTokenTable;
   service_identity: ServiceIdentityTable;
   mail_channel: MailChannelTable;
+  email_delivery: EmailDeliveryTable;
+  email_attempt: EmailAttemptTable;
   webhook_subscription: WebhookSubscriptionTable;
   extension: ExtensionTable;
   extension_version: ExtensionVersionTable;

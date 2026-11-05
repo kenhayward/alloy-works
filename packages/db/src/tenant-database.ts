@@ -137,7 +137,7 @@ export function createTenantDatabase(
     async liveTenants() {
       const rows = await db
         .selectFrom('platform.tenant')
-        .select(['id', 'schema_name', 'role_name'])
+        .select(['id', 'schema_name', 'role_name', 'name'])
         .where('state', '=', 'active')
         // A tenant still being made has no tables yet (TL-N), and one sweep's failure stops the rest.
         .where(
@@ -146,7 +146,12 @@ export function createTenantDatabase(
         )
         .orderBy('id')
         .execute();
-      return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));
+      return rows.map((row) => ({
+        id: row.id,
+        schema: row.schema_name,
+        role: row.role_name,
+        name: row.name,
+      }));
     },
 
     async closingTenants() {
