@@ -14,6 +14,11 @@ The Part panel gets tidier: a component's version is one row whose menu can no l
 - **Overrides is an icon in the head.** A badge counts the paragraphs reworded here, and turns to the warning colour where one no longer applies. That is also said in the list, to everyone who can read the part.
 - **Tips in panel heads show at once.** The Part, Assistant and Threads panels' head icons, and a side panel's Close, say their name at once on hover and on focus, in place of the browser's delayed tip. Overrides also says what it does.
 
+### Fixed
+
+- **A component open in place holds still.** Pressing in it no longer shifts its text: its text is set at the sheet's own zoom, exactly where the read text stood.
+- **An open component's rule runs its whole height.** There is no gap beside its text and no stubs over its neighbours.
+
 ## 0.236.0 - 2026-11-04 (PR #981)
 
 Editing a part of a document now feels like a word processor: clicking moves nothing, one line marks the part, one toolbar holds what applies, the panel follows, titles can be typed where they stand, and what you typed stays on the page when you move on.

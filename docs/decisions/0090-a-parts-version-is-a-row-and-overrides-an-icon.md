@@ -1,4 +1,4 @@
-# 0089 - A part's version is a row, its overrides an icon, and panel headers tip at once
+# 0090 - A part's version is a row, its overrides an icon, and panel headers tip at once
 
 - **Status:** Accepted
 - **Date:** 2026-11-05
