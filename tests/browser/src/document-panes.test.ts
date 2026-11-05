@@ -200,6 +200,116 @@ describe("the panes beside a document's text, in Chromium", () => {
     });
   });
 
+  it('stands the formatting toolbar under the menus, its tools unmoved as a part opens', async () => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const bar = page.getByRole('toolbar', { name: 'Formatting' });
+      await bar.waitFor();
+      const places = () =>
+        bar.evaluate((own) =>
+          [...own.querySelectorAll('button')].map((each) => {
+            const { left, top } = each.getBoundingClientRect();
+            return [each.getAttribute('aria-label'), Math.round(left), Math.round(top)];
+          }),
+        );
+      const idle = await places();
+      expect(new Set(idle.map(([, , top]) => top)).size).toBe(1);
+
+      // Under the menus and starting with them, in the header, with the panels below it.
+      const standing = await bar.evaluate((own) => {
+        const menus = document.querySelector('[role="menubar"]')!.getBoundingClientRect();
+        const box = own.getBoundingClientRect();
+        const header = own.closest('header')!.getBoundingClientRect();
+        const dock = document.querySelector('[data-side-dock]')!;
+        return {
+          inHeader: own.closest('header') !== null,
+          under: box.top - menus.bottom,
+          start: box.left - menus.left,
+          dockBelow: dock.getBoundingClientRect().top - header.bottom,
+          dockTools: dock.querySelectorAll('[role="toolbar"]').length,
+        };
+      });
+      expect(standing.inHeader).toBe(true);
+      expect(standing.under).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(standing.start)).toBeLessThanOrEqual(8);
+      expect(standing.dockBelow).toBeGreaterThanOrEqual(0);
+      expect(standing.dockTools).toBe(0);
+
+      // A tip stands wholly in view, below the row.
+      await bar.getByRole('button', { name: 'Emphasis' }).hover();
+      const tip = bar.locator('[data-name-tip]');
+      await tip.waitFor();
+      const seen = await tip.evaluate((own) => {
+        const { left, right, top, bottom } = own.getBoundingClientRect();
+        const owner = own.closest('[role="toolbar"]')!.getBoundingClientRect();
+        return {
+          below: top >= owner.bottom - 4,
+          hit: [left + 2, right - 2].map((x) =>
+            own.contains(document.elementFromPoint(x, (top + bottom) / 2)),
+          ),
+        };
+      });
+      expect(seen).toEqual({ below: true, hit: [true, true] });
+      await page.mouse.move(640, 600);
+
+      // Nothing along the row moves as a part opens.
+      await page.getByText('Paragraph 2.', { exact: false }).first().click();
+      await page.getByRole('textbox', { name: /^Content of / }).waitFor();
+      expect(await places()).toEqual(idle);
+
+      // A flyout opens under its button, over the desk.
+      await bar.getByRole('button', { name: 'Insert' }).click();
+      const menu = page.getByRole('menu', { name: 'Insert' });
+      await menu.waitFor();
+      const opened = await menu.evaluate((own) => {
+        const box = own.getBoundingClientRect();
+        const button = own.parentElement!.getBoundingClientRect();
+        return { under: box.top - button.bottom, start: box.left - button.left };
+      });
+      expect(opened.under).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(opened.start)).toBeLessThanOrEqual(1);
+      await page.keyboard.press('Escape');
+
+      // Right to left, it starts at the other edge, its flyouts going with it.
+      await page.evaluate(() => {
+        document.documentElement.dir = 'rtl';
+      });
+      const mirrored = await bar.evaluate((own) => {
+        const lefts = [...own.querySelectorAll('button')].map(
+          (each) => each.getBoundingClientRect().left,
+        );
+        const menus = document.querySelector('[role="menubar"]')!.getBoundingClientRect();
+        return {
+          runsBack: lefts[0]! > lefts.at(-1)!,
+          start: own.getBoundingClientRect().right - menus.right,
+        };
+      });
+      expect(mirrored.runsBack).toBe(true);
+      expect(Math.abs(mirrored.start)).toBeLessThanOrEqual(8);
+      await bar.getByRole('button', { name: 'Insert' }).click();
+      await menu.waitFor();
+      const flipped = await menu.evaluate((own) => {
+        const box = own.getBoundingClientRect();
+        const button = own.parentElement!.getBoundingClientRect();
+        return { under: box.top - button.bottom, start: box.right - button.right };
+      });
+      expect(flipped.under).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(flipped.start)).toBeLessThanOrEqual(1);
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => {
+        document.documentElement.dir = 'ltr';
+      });
+
+      // Reading has no row.
+      await page.getByRole('button', { name: 'Done editing' }).click();
+      const reading = page.getByRole('radio', { name: 'Reading' });
+      await reading.click();
+      await expect.poll(() => bar.count()).toBe(0);
+    });
+  });
+
   it('keeps a dock flyout inside the window, its rows reachable, and gives the focus back to the text', async () => {
     await withPage(async (page) => {
       await page.setViewportSize({ width: 1280, height: 720 });
@@ -230,7 +340,10 @@ describe("the panes beside a document's text, in Chromium", () => {
       expect(box.scrolls).toBe(true);
       // What the tip would have said stands aside for the menu it names.
       expect(await page.locator('[data-name-tip]:visible').count()).toBe(0);
+      // The focus goes into the menu as it opens, so its keys are its own.
+      expect(await menu.evaluate((element) => element.contains(document.activeElement))).toBe(true);
       await page.keyboard.press('Escape');
+      await expect.poll(() => menu.count()).toBe(0);
       await expect
         .poll(() => surface.evaluate((element) => element === document.activeElement))
         .toBe(true);

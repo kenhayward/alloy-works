@@ -1191,6 +1191,6 @@ describe('scanning the repository for test files', () => {
     // 157, from 156 (2026-11-01): admin/Themes.test.tsx, citing STY-029, STY-031, STY-034, STY-057, STY-067 and STY-069 (SYb).
     // 164, from 163 (2026-11-03): lifecycle/MoveDialog.test.tsx, citing nothing (MV).
     // 165, from 164 (2026-11-03): shell/SignInScreen.test.tsx, citing IAM-011 and ADM-051.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(180);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(181);
   });
 });

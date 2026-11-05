@@ -21,6 +21,38 @@ function Banded({ children }: { children: ReactNode }) {
 const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
 
 describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
+  it('keeps the same tools in the band while the part is still being read, so none blinks', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    open(
+      {
+        'GET /v1/components/{id}': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+      },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const band = await screen.findByTestId('band');
+    const reading = await within(band).findByRole('toolbar', { name: 'Formatting' });
+    const names = within(reading)
+      .getAllByRole('button')
+      .map((each) => each.getAttribute('aria-label'));
+    for (const button of within(reading).getAllByRole('button')) {
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+    }
+    answer(json(200, opened()));
+    await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    expect(
+      within(within(band).getByRole('toolbar', { name: 'Formatting' }))
+        .getAllByRole('button')
+        .map((each) => each.getAttribute('aria-label')),
+    ).toEqual(names);
+  });
+
   it('stands outside the sheet, holding the acts, and no Component menu', async () => {
     open(
       { 'GET /v1/components/{id}': () => json(200, opened()) },

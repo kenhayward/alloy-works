@@ -29,6 +29,7 @@ import { ComponentEditor, type Mine } from './ComponentEditor.js';
 import styles from './ComponentPage.module.css';
 import { Icon } from './Icon.js';
 import { InPlaceBand } from './InPlaceBand.js';
+import { ToolbarRow, useToolbarHost } from './ToolbarRow.js';
 import { SpacePane } from './SpacePane.js';
 import { VersionsPanel } from './VersionsPanel.js';
 
@@ -73,7 +74,7 @@ export function ComponentPage({
   const dockPane = usePaneWidth(DOCK_PANE);
   const tablePane = usePaneWidth(TABLE_PANE);
   const setDockArea = useDockRoom();
-  const [band, setBand] = useState<HTMLElement | null>(null);
+  const band = useToolbarHost();
   const [selectionHost, setSelectionHost] = useState<HTMLElement | null>(null);
   const [selectionHeld, setSelectionHeld] = useState(false);
   const [fieldsHost, setFieldsHost] = useState<HTMLElement | null>(null);
@@ -160,8 +161,9 @@ export function ComponentPage({
         <ZoomControl />
       </StatusTools>
       <InPlaceSettings.Provider value={{ host: selectionHost, onHeld: setSelectionHeld }}>
-        <InPlaceBand.Provider value={band}>
+        <InPlaceBand.Provider value={modeNow === 'authoring' ? band : null}>
           <ShellPage labelledBy="component-title">
+            {modeNow === 'authoring' && <ToolbarRow host={band} />}
             <ShellLayout
               startCollapsed={spacePane.collapsed}
               panelsCollapsed={dockPane.collapsed}
@@ -183,12 +185,6 @@ export function ComponentPage({
                     </button>
                   </NameTip>
                 </div>
-                {modeNow === 'authoring' && (
-                  <>
-                    <span className={shellClass.dockRule} />
-                    <div ref={setBand} data-inplace-band="" />
-                  </>
-                )}
               </ShellSideDock>
               {/* Placed as a document's outline is, by the shell's rules for a start pane. */}
               <div data-panel="">

@@ -89,13 +89,13 @@ export interface EditorToolbarProps {
    */
   readonly ref?: Ref<HTMLDivElement>;
   /**
-   * A row above the surface, or the side dock's column (ADR-0075): the frequent tools as buttons, naming
-   * themselves at once, and the rest in flyouts.
+   * A row above the surface, or the row under the menus (ADR-0092): the frequent tools as buttons,
+   * naming themselves at once, and the rest in flyouts.
    */
-  readonly layout?: 'row' | 'dock';
-  /** The paragraph styles offered where the selection stands, for the dock's first flyout. */
+  readonly layout?: 'row' | 'band';
+  /** The paragraph styles offered where the selection stands, for the band's first flyout. */
   readonly styleEntries?: readonly MenuEntry[];
-  /** **Comment**, the dock's last, where the page offers it. */
+  /** **Comment**, the band's last tool, where the page offers it. */
   readonly onComment?: () => void;
 }
 
@@ -244,15 +244,15 @@ export function EditorToolbar({
     pressCommand({ view, command, newIdentifier, prompt, onRefused, openDialog });
   };
 
-  if (layout === 'dock') {
+  if (layout === 'band') {
     const named = (label: string) => EDITOR_COMMANDS.find((each) => each.label === label)!;
     const tool = (label: string) => {
       const command = named(label);
       return (
-        <NameTip name={command.said} keys={chordSaid(command.shortcut)}>
+        <NameTip name={command.said} keys={chordSaid(command.shortcut)} below>
           <button
             type="button"
-            className={styles['dockButton']}
+            className={styles['bandButton']}
             aria-label={command.said}
             aria-disabled={unavailable(command)}
             aria-keyshortcuts={ariaKeyShortcuts(command.shortcut)}
@@ -287,38 +287,13 @@ export function EditorToolbar({
       run === undefined ? [] : [{ kind: 'item', key, label, icon: key, enabled, run }];
     const ready = enabled && view !== null;
     return (
-      <Toolbar
-        ref={ref}
-        label={words('editor.formatting')}
-        className={styles['dockTools']}
-        orientation="vertical"
-      >
-        {leading && leading.length > 0 && (
-          <>
-            {leading.map((act) => (
-              <NameTip key={act.label} name={act.label}>
-                <button
-                  type="button"
-                  className={styles['dockButton']}
-                  aria-label={act.label}
-                  aria-disabled={act.disabled}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    if (!act.disabled) act.onPress();
-                  }}
-                >
-                  <Icon name={act.icon} />
-                </button>
-              </NameTip>
-            ))}
-            <Toolbar.Divider className={styles['dockDivider']} />
-          </>
-        )}
-        <NameTip name={words('menu.paragraph-style')}>
+      <Toolbar ref={ref} label={words('editor.formatting')} className={styles['bandTools']}>
+        <NameTip name={words('menu.paragraph-style')} below>
           <Flyout
             label={words('menu.paragraph-style')}
             entries={styleEntries}
-            className={styles['dockButton']}
+            className={styles['bandButton']}
+            under
             disabled={!ready || styleEntries.length === 0}
           >
             <Icon name="Paragraph" />
@@ -327,7 +302,7 @@ export function EditorToolbar({
         {tool('Strong')}
         {tool('Emphasis')}
         {tool('Underline')}
-        <NameTip name={words('editor.more-text-formatting')}>
+        <NameTip name={words('editor.more-text-formatting')} below>
           <Flyout
             label={words('editor.more-text-formatting')}
             entries={[
@@ -339,21 +314,22 @@ export function EditorToolbar({
               'Quotation',
               'Preformatted text',
             ].map(row)}
-            className={styles['dockButton']}
+            className={styles['bandButton']}
+            under
             disabled={!enabled}
           >
-            <span className={styles['dockLetters']} aria-hidden="true">
+            <span className={styles['bandLetters']} aria-hidden="true">
               {words('editor.more-text-formatting-mark')}
             </span>
           </Flyout>
         </NameTip>
-        <Toolbar.Divider className={styles['dockDivider']} />
+        <Toolbar.Divider className={styles['bandDivider']} />
         {tool('Link')}
         {tool('Term')}
-        <Toolbar.Divider className={styles['dockDivider']} />
+        <Toolbar.Divider className={styles['bandDivider']} />
         {tool('Bulleted list')}
         {tool('Numbered list')}
-        <NameTip name={words('menu.insert')}>
+        <NameTip name={words('menu.insert')} below>
           <Flyout
             label={words('menu.insert')}
             entries={[
@@ -379,7 +355,8 @@ export function EditorToolbar({
                 onPasteMarkdown,
               ),
             ]}
-            className={styles['dockButton']}
+            className={styles['bandButton']}
+            under
             disabled={!enabled}
           >
             <Icon name="Insert" />
@@ -387,11 +364,11 @@ export function EditorToolbar({
         </NameTip>
         {onComment && (
           <>
-            <Toolbar.Divider className={styles['dockDivider']} />
-            <NameTip name={words('menu.comment')}>
+            <Toolbar.Divider className={styles['bandDivider']} />
+            <NameTip name={words('menu.comment')} below>
               <button
                 type="button"
-                className={styles['dockButton']}
+                className={styles['bandButton']}
                 aria-label={words('menu.comment')}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={onComment}
@@ -399,6 +376,28 @@ export function EditorToolbar({
                 <Icon name="Threads" />
               </button>
             </NameTip>
+          </>
+        )}
+        {/* A part's own acts last, so the tools before them never move as they come (ADR-0092). */}
+        {leading && leading.length > 0 && (
+          <>
+            <Toolbar.Divider className={styles['bandDivider']} />
+            {leading.map((act) => (
+              <NameTip key={act.label} name={act.label} below>
+                <button
+                  type="button"
+                  className={styles['bandButton']}
+                  aria-label={act.label}
+                  aria-disabled={act.disabled}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (!act.disabled) act.onPress();
+                  }}
+                >
+                  <Icon name={act.icon} />
+                </button>
+              </NameTip>
+            ))}
           </>
         )}
       </Toolbar>

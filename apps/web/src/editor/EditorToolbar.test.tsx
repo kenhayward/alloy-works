@@ -10,7 +10,7 @@ import {
   type EditorView,
   type Transaction,
 } from '@alloy-works/editor';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -217,6 +217,57 @@ function renderToolbar(options: ToolbarOptions = {}) {
   );
   return { view: view as EditorView, dispatched, prompt, onRefused };
 }
+
+describe('the formatting toolbar in the row under the menus', () => {
+  const band = (leading: EditorToolbarProps['leading'] = []) =>
+    render(
+      <EditorToolbar
+        layout="band"
+        view={null}
+        enabled={false}
+        leading={leading}
+        newIdentifier={() => ''}
+        prompt={() => Promise.resolve(null)}
+        onComment={() => undefined}
+      />,
+    );
+  const named = () =>
+    within(screen.getByRole('toolbar', { name: 'Formatting' }))
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'));
+
+  it('moves along the row with Left and Right, and says it is no column', async () => {
+    band();
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+    expect(toolbar).not.toHaveAttribute('aria-orientation');
+    const buttons = within(toolbar).getAllByRole('button');
+    buttons[0]!.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(buttons[1]);
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it('stands a part’s own acts last, so the tools before them never move as they come', () => {
+    const act = { label: 'Done', icon: 'Done', disabled: false, onPress: () => undefined };
+    band([act]);
+    const withActs = named();
+    expect(withActs.at(-1)).toBe('Done');
+    cleanup();
+    band();
+    expect(withActs.slice(0, -1)).toEqual(named());
+  });
+
+  it('tips below its buttons, where a tip beside one would stand over the next', () => {
+    band();
+    const strong = screen.getByRole('button', { name: 'Strong' });
+    fireEvent.mouseEnter(strong);
+    expect(strong.parentElement!.querySelector('[data-name-tip]')).toHaveAttribute(
+      'data-below',
+      'true',
+    );
+  });
+});
 
 describe('the formatting toolbar', () => {
   it('CNT-077 offers every command as a button reachable by keyboard alone', async () => {

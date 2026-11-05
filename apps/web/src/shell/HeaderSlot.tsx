@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 import { usePageShown } from './Status.js';
 
-type SlotName = 'lead' | 'lifecycle' | 'tools';
+type SlotName = 'lead' | 'lifecycle' | 'tools' | 'toolbar';
 type Hosts = Partial<Record<SlotName, HTMLElement | null>>;
 
 interface HeaderHosts {

@@ -82,6 +82,7 @@ function Menu({
   onAlong,
   focusLast = false,
   nested = false,
+  under = false,
 }: {
   label: string;
   entries: readonly MenuEntry[];
@@ -92,6 +93,8 @@ function Menu({
   onAlong?: (by: 1 | -1) => void;
   focusLast?: boolean;
   nested?: boolean;
+  /** Nested, and still under what opened it rather than beside: a row's flyout. */
+  under?: boolean;
 }) {
   const own = useRef<HTMLDivElement>(null);
   const [opened, setOpened] = useState<string | null>(null);
@@ -108,29 +111,33 @@ function Menu({
     const rtl = getComputedStyle(menu).direction === 'rtl';
     const { offsetWidth: width, scrollHeight: height } = menu;
     const most = Math.max(window.innerHeight - 2 * room, 0);
-    const wanted = nested ? box.top - 7 : box.bottom + 4;
+    const aside = nested && !under;
+    const wanted = aside ? box.top - 7 : box.bottom + 4;
     const top = Math.max(
       room,
       Math.min(wanted, window.innerHeight - room - Math.min(height, most)),
     );
     const beside = rtl ? box.left - width - 2 : box.right + 2;
     const flipped = rtl ? box.right + 2 : box.left - width - 2;
-    const under = rtl ? box.right - width : box.left;
+    const below = rtl ? box.right - width : box.left;
     const fits = (left: number) => left >= 0 && left + width <= window.innerWidth;
-    const left = nested ? (fits(beside) || !fits(flipped) ? beside : flipped) : under;
+    const left = aside ? (fits(beside) || !fits(flipped) ? beside : flipped) : below;
     setAt({
       top,
       left: Math.max(room, Math.min(left, window.innerWidth - room - width)),
       maxHeight: most,
     });
-  }, [nested]);
+  }, [nested, under]);
 
+  // Once, as it opens and only when placed: a hidden element takes no focus, and the menu's rows
+  // change as a page's state does, and the focus stays.
+  const focused = useRef(false);
   useEffect(() => {
+    if (focused.current || at.visibility === 'hidden') return;
+    focused.current = true;
     const rows = own.current === null ? [] : focusables(own.current);
     (focusLast ? rows.at(-1) : rows[0])?.focus();
-    // Once, as it opens: the menu's rows change as a page's state does, and the focus stays.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [at, focusLast]);
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const key = inlineKey(event.key);
@@ -276,12 +283,15 @@ export function Flyout({
   children,
   className,
   disabled = false,
+  under = false,
 }: {
   label: string;
   entries: readonly MenuEntry[];
   children: ReactNode;
   className?: string | undefined;
   disabled?: boolean;
+  /** Opens under its button, for one in a row; beside it otherwise. */
+  under?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
@@ -325,6 +335,7 @@ export function Flyout({
           label={label}
           entries={entries}
           nested
+          under={under}
           onChosen={(item) => {
             setOpen(false);
             giveBack();
