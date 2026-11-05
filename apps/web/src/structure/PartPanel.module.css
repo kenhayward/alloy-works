@@ -56,8 +56,100 @@
   display: contents;
 }
 
-.removeIcon > button {
+.removeIcon button {
   color: var(--danger);
+}
+
+.overridesIcon {
+  display: contents;
+}
+
+.overridesIcon button {
+  position: relative;
+}
+
+.overridesIcon[data-standing] button {
+  color: var(--accent-text);
+}
+
+/* A pill on the icon's corner, ringed in the header's colour: on --warn where one no longer applies. */
+.badge {
+  --part-badge: 14px;
+
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-end: 0;
+  min-width: var(--part-badge);
+  height: var(--part-badge);
+  padding-inline: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--chrome);
+  color: var(--on-accent);
+  font-family: var(--mono);
+  font-size: 8px;
+  line-height: var(--part-badge);
+  text-align: center;
+}
+
+.overridesIcon[data-stale] .badge {
+  background: var(--warn);
+}
+
+/* What is true of it, a list: the version first (part-panel-2, decision 1). */
+.factList {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--border);
+  list-style: none;
+}
+
+.factList > li {
+  min-width: 0;
+  border-block-end: 1px solid var(--border);
+}
+
+.fact,
+.factAct {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 34px;
+  padding-inline: var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.fact > svg,
+.factAct > svg {
+  flex: none;
+}
+
+.fact[data-warn] {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.factValue {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+.factAct {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.factAct:hover {
+  background: var(--sunken);
 }
 
 .identity {

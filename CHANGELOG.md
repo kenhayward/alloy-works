@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.237.0 - 2026-11-05 (PR #984)
+## 0.238.0 - 2026-11-05 (PR #984)
 
 The whole life of a tenant: an organisation makes one, can suspend it, closes it with 30 days to give that up and its export offered first, and it provably no longer exists a day after that.
 
@@ -15,10 +15,21 @@ The whole life of a tenant: an organisation makes one, can suspend it, closes it
 - **An organisation's own tenant.** An organisation can administer from a tenant of its own, holding no content: it sees its tenants' names, addresses and states, can suspend one and lift that, and can give up a closure someone began. Each act is in both logs, and the tenant's own says only that the organisation did it. An administrator can also suspend their own environment in an incident, where an organisation can lift it.
 - **Making a tenant and sharing a provider.** An organisation can make a tenant from its console, naming its address and who is invited to administer it, and can share an identity provider with its tenants: each gets a copy kept current, which it can close and not edit.
 
+## 0.237.0 - 2026-11-05 (PR #983)
+
+The Part panel gets tidier: a component's version is one row whose menu can no longer be cut off, Overrides moves into the head with a count, and the head's tips show at once.
+
+### Changed
+
+- **A component's version is one row.** It sits under the chips and says the number and the mode: Always the latest, Pinned, or Latest approved with its revision. What else is true of the part follows in the same list, with its states still shown as lozenges.
+- **The version menu stands over everything.** It opens under its row, as wide as it, and no pane can cut it off or cover it. With no room below it opens above. Each choice says what it is now, each version its date and time, and a version that stands approved says so.
+- **Overrides is an icon in the head.** A badge counts the paragraphs reworded here, and turns to the warning colour where one no longer applies. That is also said in the list, to everyone who can read the part.
+- **Tips in panel heads show at once.** The Part, Assistant and Threads panels' head icons, and a side panel's Close, say their name at once on hover and on focus, in place of the browser's delayed tip. Overrides also says what it does.
+
 ### Fixed
 
-- **Holding still.** A component open in place no longer shifts its text when you press in it: its text is set at the sheet's own zoom, exactly where the read text stood.
-- **The whole rule.** The rule beside an open component now runs its whole height, with no gap beside its text and no stubs over its neighbours.
+- **A component open in place holds still.** Pressing in it no longer shifts its text: its text is set at the sheet's own zoom, exactly where the read text stood.
+- **An open component's rule runs its whole height.** There is no gap beside its text and no stubs over its neighbours.
 
 ## 0.236.0 - 2026-11-04 (PR #981)
 

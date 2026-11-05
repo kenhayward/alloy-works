@@ -100,6 +100,71 @@ beforeEach(() => {
   window.localStorage.removeItem('aw.part.groups');
 });
 
+describe('Overrides in the head (part-panel-2, decision 3)', () => {
+  const icon = (name: RegExp | string) => screen.getByRole('button', { name });
+  const badge = () => document.querySelector('[class*="badge"]');
+
+  it('REU-011 opens the dialog, plain and with no badge where none stands here', async () => {
+    const opened: string[] = [];
+    render(
+      <Panel
+        facts={factsOf(placed('r', 'c1'), {
+          overrides: { count: 0, stale: 0, onOpen: () => opened.push('r') },
+        })}
+      />,
+    );
+    const button = icon('Overrides');
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAccessibleDescription(/in this document only/);
+    expect(badge()).toBeNull();
+    await userEvent.click(button);
+    expect(opened).toEqual(['r']);
+  });
+
+  it('REU-011 counts the paragraphs reworded here, on its badge and in its name', () => {
+    render(
+      <Panel
+        facts={factsOf(placed('r', 'c1'), {
+          overrides: { count: 2, stale: 0, onOpen: () => undefined },
+        })}
+      />,
+    );
+    icon('Overrides, 2 paragraphs reworded here');
+    expect(badge()).toHaveTextContent('2');
+    expect(badge()?.parentElement?.closest('[data-stale]')).toBeNull();
+  });
+
+  it('REU-015 says where one no longer applies, on its badge, in its name and in its tip', async () => {
+    render(
+      <Panel
+        facts={factsOf(placed('r', 'c1'), {
+          overrides: { count: 2, stale: 1, onOpen: () => undefined },
+        })}
+      />,
+    );
+    const button = icon('Overrides, 2 paragraphs reworded here, 1 no longer applies');
+    expect(badge()?.closest('[data-stale]')).not.toBeNull();
+    await userEvent.hover(button);
+    expect(document.querySelector('[data-name-tip]')).toHaveTextContent(
+      'Overrides · 2 paragraphs reworded here, 1 no longer applies',
+    );
+  });
+
+  it('is not there where it is not offered, nor on a section', () => {
+    render(<Panel facts={factsOf(section('s', 'Methods'))} />);
+    expect(screen.queryByRole('button', { name: /^Overrides/ })).toBeNull();
+  });
+
+  it('every icon tips at once, in place of the browser tip, keeping its name', async () => {
+    render(<Panel facts={factsOf(section('s', 'Methods'))} />);
+    const remove = icon('Remove section Methods');
+    expect(remove).not.toHaveAttribute('title');
+    await userEvent.hover(remove);
+    expect(document.querySelector('[data-name-tip]')).toHaveTextContent(/^Remove section$/);
+    expect(icon('Go to it in the text')).not.toHaveAttribute('title');
+  });
+});
+
 describe('the Part panel, grouped and folding', () => {
   it('says what a part is and where it sits, its chips, its acts as icons', () => {
     render(
@@ -117,7 +182,6 @@ describe('the Part panel, grouped and folding', () => {
       '#/components/c1',
     );
     expect(screen.getByText('Number 6.1')).toBeInTheDocument();
-    expect(screen.getByText('Pinned version')).toBeInTheDocument();
     expect(screen.getByText('Approved')).toBeInTheDocument();
     for (const name of [
       'Go to it in the text',

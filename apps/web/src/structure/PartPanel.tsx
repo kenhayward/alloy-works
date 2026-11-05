@@ -380,19 +380,14 @@ export interface PartFacts {
   readonly placed: readonly ComponentChoice[];
   readonly usedIn: ((component: ComponentChoice) => ReactNode) | undefined;
   readonly fieldCount: number;
-  /** The version a reference resolves to, by its number, once the page has read it. */
-  readonly version?: string | undefined;
+  /** Its overrides, where the reader may change them from here: how many, and how many no longer apply. */
+  readonly overrides?:
+    { readonly count: number; readonly stale: number; readonly onOpen: () => void } | undefined;
   /** Who holds it now, in words (CNT-074), where anyone does. */
   readonly heldSaid?: string | undefined;
   /** What is true of it and what may be done from here, from the page (the EP plan, EP4). */
   readonly standing?: ReactNode;
 }
-
-const MODE_WORDS = {
-  latest: () => say('document.latest-version'),
-  approved: () => say('document.approved-version'),
-  pinned: () => say('document.pinned-version'),
-} as const;
 
 /** The part's words of where it stands, in the kicker: "Section · Body · Top level". */
 function kickerOf({ node, parent, matter, names }: PartFacts): string {
@@ -419,7 +414,7 @@ function PartIdentity({
   /** The address the clipboard would not take, to be copied by hand (the plan, R7). */
   uncopied: string | null;
 }) {
-  const { node, names, state, number, fieldCount, version, heldSaid, standing } = facts;
+  const { node, names, state, number, fieldCount, heldSaid, standing } = facts;
   const unreadable = node.type === 'reference' && node.component === null;
   const count = node.type === 'section' ? componentsBeneath(node) : 0;
   const name = nodeName(node, names);
@@ -480,9 +475,6 @@ function PartIdentity({
               {say('document.count-fields', { count: fieldCount })}
             </Chip>
           )}
-          {node.type === 'reference' && !unreadable && standing === undefined && (
-            <Chip className={part['chip']}>{version ?? MODE_WORDS[node.mode.kind]()}</Chip>
-          )}
         </div>
       </div>
       {unreadable && <p className={part['note']}>{say('document.may-not-read-this-component')}</p>}
@@ -501,7 +493,50 @@ function PartIdentity({
   );
 }
 
-/** The heading, and the part's three acts as icons: go to it, copy its link, and Remove in red. */
+/**
+ * Overrides, as an icon (part-panel-2, decision 3; REU-011, REU-015): how many paragraphs are reworded
+ * here on a badge, in `--warn` where any no longer applies, and in its name and tip in words.
+ */
+function OverridesIcon({ overrides }: { overrides: NonNullable<PartFacts['overrides']> }) {
+  const { count, stale, onOpen } = overrides;
+  return (
+    <span
+      className={part['overridesIcon']}
+      data-standing={count > 0 ? '' : undefined}
+      data-stale={stale > 0 ? '' : undefined}
+    >
+      <IconButton
+        label={
+          count === 0
+            ? say('document.overrides')
+            : stale > 0
+              ? say('document.overrides-reworded-stale', { count, stale })
+              : say('document.overrides-reworded', { count })
+        }
+        tip={{
+          name:
+            count === 0
+              ? say('document.overrides')
+              : stale > 0
+                ? say('document.overrides-tip-stale', { count, stale })
+                : say('document.overrides-tip', { count }),
+          hint: say('document.overrides-hint'),
+        }}
+        aria-haspopup="dialog"
+        onClick={onOpen}
+      >
+        <Icon name="Override" size={16} />
+        {count > 0 && (
+          <span className={part['badge']} aria-hidden="true">
+            {count}
+          </span>
+        )}
+      </IconButton>
+    </span>
+  );
+}
+
+/** The heading, and the part's acts as icons: go to it, copy its link, its overrides, and Remove in red. */
 function PartHead({
   facts,
   onGoTo,
@@ -519,12 +554,13 @@ function PartHead({
       <h2 className={part['heading']}>{say('document.part')}</h2>
       {facts !== undefined && (
         <div className={part['acts']}>
-          <IconButton label={say('document.go-to-it-in-the-text')} onClick={onGoTo}>
+          <IconButton label={say('document.go-to-it-in-the-text')} tip onClick={onGoTo}>
             <Icon name="Go to the table" size={16} />
           </IconButton>
           {facts.address !== undefined && (
             <IconButton
               label={say('document.copy-a-link-to', { name })}
+              tip={{ name: say('document.copy-a-link') }}
               onClick={() => {
                 const copying = navigator.clipboard?.writeText(facts.address ?? '');
                 if (!copying) return onCopied?.(true);
@@ -537,6 +573,7 @@ function PartHead({
               <Icon name="Link" size={16} />
             </IconButton>
           )}
+          {facts.overrides !== undefined && <OverridesIcon overrides={facts.overrides} />}
           {onRemove !== undefined && (
             <>
               <span className={part['rule']} aria-hidden="true" />
@@ -547,6 +584,12 @@ function PartHead({
                       ? say('document.remove-section-named', { name })
                       : say('document.remove-component-named', { name })
                   }
+                  tip={{
+                    name:
+                      facts.node.type === 'section'
+                        ? say('document.remove-section')
+                        : say('document.remove-component'),
+                  }}
                   onClick={onRemove}
                 >
                   <Icon name="Delete" size={16} />

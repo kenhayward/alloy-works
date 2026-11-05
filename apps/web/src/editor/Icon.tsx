@@ -245,6 +245,7 @@ const ADMIN: Record<string, readonly string[]> = {
   Add: ['M12 5v14M5 12h14'],
   Minus: ['M5 12h14'],
   Confirmed: ['m5 12.5 4.5 4.5L19 7'],
+  Override: ['M4 6h16M4 10h10M4 14h6M4 18h5M14.5 20.5 21 14a1.8 1.8 0 0 0-2.5-2.5L12 18l-.5 3z'],
   Edit: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
   // The document panels' rail (ADR-0074).
   Part: ['M12 3 3 7.5l9 4.5 9-4.5z', 'm3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5'],

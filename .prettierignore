@@ -67,6 +67,7 @@ docs/interface/handoffs/authoring-page/*.html
 docs/interface/handoffs/threads-panel/*.html
 docs/interface/handoffs/versions-panel/*.html
 docs/interface/handoffs/part-panel/*.html
+docs/interface/handoffs/part-panel-2/*.html
 docs/interface/lifecycle-states/*.html
 
 # The Word validator's NuGet lock file, written by `dotnet restore` and checked by the image's

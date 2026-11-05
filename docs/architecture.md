@@ -4205,6 +4205,8 @@ or with the cursor in no table, `TableReadOnly.tsx` shows the last table entered
 in hand, which a pill or a press on its cell sets (`holdBoundTableColumn`), by decorations outside
 the history; `Status.place` says where in the status bar. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
 
+The Part panel's facts are one list ([ADR-0090](decisions/0090-a-parts-version-is-a-row-and-overrides-an-icon.md)): `PartRows` draws them, `PartStanding` keeps them in words beside the text, and `VersionChoice`'s menu is portalled to the page and placed from its row. `IconButton`'s `tip` is `NameTip` in place of the browser's title, for icons in a panel's head.
+
 | Where                                                     | What                                                  |
 | --------------------------------------------------------- | ----------------------------------------------------- |
 | `domain: src/data/table.ts`                               | `checkTable`, `layoutTable`'s `limit`                 |

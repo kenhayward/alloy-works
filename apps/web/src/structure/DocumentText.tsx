@@ -64,7 +64,7 @@ import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
 import { usePresentation } from '../theme/presentation.js';
 import { NewerVersion, type VersionNamed } from './NewerVersion.js';
-import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
+import { versionSaid } from './VersionChoice.js';
 import { words as say } from '../words/words.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
@@ -148,28 +148,22 @@ export interface Editable {
  * the same component is open on this page already. A hold past its expected release holds nothing:
  * it lapses as that time passes, and the next claim takes it.
  */
-function EditableState({ state, openHere }: { state: Editable | undefined; openHere: boolean }) {
+export function editableSaid(state: Editable | undefined, openHere: boolean): string | null {
   if (state === undefined) return null;
   const lock =
     state.lock !== null && new Date(state.lock.expectedRelease).getTime() > Date.now()
       ? state.lock
       : null;
-  if (lock?.yours) {
-    return openHere ? null : (
-      <p className={styles['state']}>{say('document.you-are-editing-this-component')}</p>
-    );
-  }
+  if (lock?.yours) return openHere ? null : say('document.you-are-editing-this-component');
   if (lock !== null) {
-    return (
-      <p className={styles['state']}>
-        {heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease })}
-      </p>
-    );
+    return heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease });
   }
-  if (!state.mayEdit) {
-    return <p className={styles['state']}>{say('document.you-may-read-this-component')}</p>;
-  }
-  return null;
+  return state.mayEdit ? null : say('document.you-may-read-this-component');
+}
+
+function EditableState({ state, openHere }: { state: Editable | undefined; openHere: boolean }) {
+  const said = editableSaid(state, openHere);
+  return said === null ? null : <p className={styles['state']}>{said}</p>;
 }
 
 /** What hovering over a part says where it cannot simply be edited; null where it can. */
@@ -201,56 +195,35 @@ export interface Standing {
   readonly openComponent?: string | null | undefined;
   readonly present?: Parameters<typeof DocumentText>[0]['present'];
   readonly threadCounts?: ReadonlyMap<string, number> | undefined;
-  /** The acts on it, in the Part panel only: left out, it says and offers nothing. */
-  readonly acts?: {
-    readonly choosing?: Choosing | undefined;
-    readonly onOverride?: ((node: string) => void) | undefined;
-    readonly onSuggest?: ((node: string) => void) | undefined;
-    /** The part a suggestion is being drafted in: none is offered there again. */
-    readonly drafting?: string | null | undefined;
-    readonly hasText?: boolean | undefined;
-  };
 }
 
 /**
- * **What is true of a part** (the EP plan, EP4; CNT-162, LIF-018, LIF-046, LOC-016, REU-015): its version
- * and how it is placed, its lines, translations, review and overrides, who may edit it and who is here.
- * In the Part panel, with its acts; beside the text, in words for a screen reader, without them.
+ * **What is true of a part, in words for a screen reader reaching it in the text** (the EP plan, EP4;
+ * CNT-162, LIF-018, LIF-046, LOC-016, REU-015). The Part panel says the same in `PartRows`, with its acts.
  */
 export function PartStanding({ node, standing }: { node: OutlineViewNode; standing: Standing }) {
   const { names, changed, movedParts, resolved, revisions, lines, diverged, translated } = standing;
-  const { pastReview, overridesOf, editable, openComponent, present, threadCounts, acts } =
-    standing;
+  const { pastReview, overridesOf, editable, openComponent, present, threadCounts } = standing;
   if (node.type !== 'reference') return null;
   const name = nodeName(node, names);
   return (
     <>
-      {acts === undefined && <span className={styles['labelName']}>{name}</span>}
+      <span className={styles['labelName']}>{name}</span>
       {changed?.has(node.id) === true && (
         <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
       )}
       {node.component === null ? (
         <>
-          {acts === undefined && <Lozenge kind="notYoursToRead" size="small" />}
+          <Lozenge kind="notYoursToRead" size="small" />
           {movedParts?.includes(node.id) === true && (
             <span>{say('moving.part-moved-with-threads')}</span>
           )}
         </>
       ) : (
         <>
-          {acts?.choosing ? (
-            <VersionChoice
-              node={node}
-              component={node.component}
-              name={name}
-              said={versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
-              choosing={acts.choosing}
-            />
-          ) : (
-            <span className={styles['versionSaid']}>
-              {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
-            </span>
-          )}
+          <span className={styles['versionSaid']}>
+            {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
+          </span>
           {lines?.has(node.id) === true && (
             <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
           )}
@@ -295,28 +268,6 @@ export function PartStanding({ node, standing }: { node: OutlineViewNode; standi
               })}
             </span>
           )}
-          {acts?.onOverride && acts.hasText === true && (
-            <button
-              type="button"
-              className={styles['open']}
-              onClick={() => acts.onOverride!(node.id)}
-              aria-label={say('document.overrides-of', { value1: name })}
-            >
-              {say('document.overrides')}
-            </button>
-          )}
-          {acts?.onSuggest &&
-            editable?.get(node.id)?.maySuggest === true &&
-            acts.drafting !== node.id && (
-              <button
-                type="button"
-                className={styles['open']}
-                onClick={() => acts.onSuggest!(node.id)}
-                aria-label={say('document.suggest-changes-to', { value1: name })}
-              >
-                {say('document.suggest-changes')}
-              </button>
-            )}
         </>
       )}
     </>

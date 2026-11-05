@@ -35,94 +35,95 @@ when a record is missing from it, when a row points at a file that is not there,
 disagree about a status. A stale index is worse than no index, because it says a decision does not
 exist.
 
-| #                                                                                 | Decision                                                                      | Status             |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------ |
-| [0001](0001-record-architecture-decisions.md)                                     | Record architecture decisions                                                 | Accepted           |
-| [0002](0002-pnpm-workspaces-and-turborepo.md)                                     | pnpm workspaces with Turborepo                                                | Accepted           |
-| [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                  | Accepted           |
-| [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                            | Accepted           |
-| [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
-| [0049](0049-administration-is-a-page.md)                                          | Administration is a page                                                      | Accepted           |
-| [0050](0050-a-detail-page-is-a-header-a-strip-and-tabs.md)                        | A detail page is a header, a state strip and tabs                             | Accepted           |
-| [0051](0051-the-bound-table-panel-is-a-band-of-tabs.md)                           | The Bound table panel is a band of tabs                                       | Superseded by 0052 |
-| [0052](0052-table-formatting-is-a-tab-beside-the-text.md)                         | Table formatting is a tab beside the text                                     | Accepted           |
-| [0053](0053-the-toolbar-has-a-second-line.md)                                     | The toolbar has a second line                                                 | Accepted           |
-| [0054](0054-the-part-and-data-tabs-are-labelled-rows.md)                          | The Part and Data tabs are labelled rows                                      | Accepted           |
-| [0055](0055-a-figure-is-one-line-and-its-settings-a-dialog.md)                    | A figure is one line, and its settings a dialog                               | Accepted           |
-| [0056](0056-the-editing-canvas-is-a-page-on-a-desk.md)                            | The editing canvas is a page on a desk                                        | Accepted           |
-| [0057](0057-t3s-order-and-template-moves-leave-for-t9.md)                         | T3's order, and template moves leave for T9                                   | Accepted           |
-| [0058](0058-suggestions-are-proposals-beside-the-content.md)                      | Suggestions are proposals beside the content                                  | Accepted           |
-| [0059](0059-a-suggestion-merges-by-whole-block.md)                                | A suggestion merges by whole block                                            | Accepted           |
-| [0060](0060-deletion-is-a-tombstone-and-retention-a-minimum.md)                   | Deletion is a tombstone, and retention a minimum                              | Accepted           |
-| [0061](0061-t9s-order.md)                                                         | T9's order                                                                    | Accepted           |
-| [0062](0062-a-templates-query-set-is-computed.md)                                 | A template's query set is computed                                            | Accepted           |
-| [0064](0064-model-calls-leave-through-the-connector.md)                           | Model calls leave through the connector                                       | Accepted           |
-| [0065](0065-mcp-is-a-few-tools-over-the-api.md)                                   | MCP is a few tools over the API, as their caller                              | Accepted           |
-| [0066](0066-an-extension-is-a-manifest-and-a-remote-service.md)                   | An extension is a manifest and a remote service                               | Accepted           |
-| [0063](0063-a-line-is-numbered-below-the-main-line.md)                            | A line is numbered below the main line                                        | Accepted           |
-| [0067](0067-citations-are-csl-rendered-by-citeproc-js.md)                         | Citations are CSL, rendered by citeproc-js                                    | Accepted           |
-| [0068](0068-reference-sources-are-declared-and-reached-through-the-connector.md)  | Reference sources are declared and reached through the connector              | Accepted           |
-| [0069](0069-an-import-is-a-proposal-read-in-the-worker.md)                        | An import is a proposal, read in the worker                                   | Accepted           |
-| [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                      | Accepted           |
-| [0071](0071-ct-studio-delivers-straight-in-as-a-service-identity.md)              | CT Studio delivers straight in, as a service identity                         | Accepted           |
-| [0072](0072-the-desktop-app-asks-which-environment.md)                            | The desktop app asks which environment to connect to                          | Accepted           |
-| [0073](0073-desktop-releases-live-in-a-public-releases-repository.md)             | Desktop releases live in a public releases repository                         | Accepted           |
-| [0074](0074-panels-are-chosen-from-an-icon-rail.md)                               | A document's panels are chosen from an icon rail                              | Accepted           |
-| [0075](0075-one-header-a-side-dock-and-margin-labels.md)                          | One header, a side dock and style labels in the margin                        | Accepted           |
-| [0076](0076-one-registry-of-commands-and-keys.md)                                 | One registry of commands and keys                                             | Accepted           |
-| [0077](0077-the-threads-panel-reads-as-cards.md)                                  | The threads panel reads as cards, found in the browser                        | Accepted           |
-| [0078](0078-a-drafted-comment-stays-its-persons.md)                               | A comment the assistant drafted stays its person's                            | Accepted           |
-| [0085](0085-a-components-page-shares-the-documents-shell.md)                      | A component's page shares the document's shell                                | Accepted           |
-| [0086](0086-one-floating-toolbar-over-the-part.md)                                | One floating toolbar stands over the part                                     | Accepted           |
-| [0087](0087-a-parts-standing-is-in-the-part-panel.md)                             | A part's standing is in the Part panel                                        | Accepted           |
-| [0088](0088-moving-on-counts-as-done-editing.md)                                  | Moving on counts as Done editing                                              | Accepted           |
-| [0089](0089-in-place-the-editor-takes-the-sheets-zoom.md)                         | In place, the editor takes the sheet's zoom, and computes none of its own     | Accepted           |
-| [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation      | Accepted           |
-| [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                     | Accepted           |
-| [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can         | Accepted           |
-| [0081](0081-lifecycle-states-are-lozenges.md)                                     | Lifecycle states are lozenges, and a version has none                         | Accepted           |
-| [0080](0080-restoring-is-a-process-of-its-own.md)                                 | Restoring is a process of its own, and an archive comes in as the owner       | Accepted           |
-| [0079](0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)                      | A table's toolbar floats on the table, and its tab is a map                   | Accepted           |
-| [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
-| [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
-| [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |
-| [0045](0045-t3-is-the-collaboration.md)                                           | T3 is the collaboration                                                       | Accepted           |
-| [0044](0044-the-delegated-tokens-requirement-moves-past-the-first-release.md)     | The delegated token's requirement moves past the first release                | Accepted           |
-| [0043](0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)           | A template's bindings, query set and variables move to T4                     | Accepted           |
-| [0042](0042-grouping-totals-transposition-and-emphasis-rules-move-to-t3.md)       | Grouping, totals, transposition and emphasis rules move to T3                 | Accepted           |
-| [0041](0041-the-delegated-provider-token-is-deferred-past-the-first-release.md)   | The delegated provider token is deferred past the first release               | Accepted           |
-| [0040](0040-asserted-identity-trusts-the-sources-function-authors.md)             | Asserted identity trusts the source's function authors                        | Accepted           |
-| [0039](0039-ci-at-two-speeds-and-fewer-prs.md)                                    | CI at two speeds, and fewer PRs                                               | Accepted           |
-| [0038](0038-sql-server-is-deferred-past-the-first-release.md)                     | SQL Server is deferred past the first release                                 | Accepted           |
-| [0037](0037-change-fragments-and-versions-at-a-close.md)                          | Change fragments, and versions at a close                                     | Accepted           |
-| [0036](0036-revising-a-bound-value-by-hand-moves-to-t3.md)                        | Revising a bound value by hand moves to T3                                    | Accepted           |
-| [0035](0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) | Bindings hold stored results, and a publish never queries a source            | Accepted           |
-| [0034](0034-data-connectors-run-apart-as-a-declared-identity.md)                  | Data connectors run apart, as a declared identity, and pin a canonical result | Superseded by 0035 |
-| [0033](0033-t2-is-the-data-spine.md)                                              | T2 is the data spine                                                          | Accepted           |
-| [0032](0032-words-fidelity-to-the-pdf-leaves-t1.md)                               | Word's fidelity to the PDF leaves T1                                          | Accepted           |
-| [0031](0031-t1-publishes-headings-to-six-levels.md)                               | T1 publishes headings to six levels                                           | Accepted           |
-| [0030](0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md)   | The conformance report joins a publication after it is recorded               | Accepted           |
-| [0029](0029-a-browser-suite-in-ci-and-attested-audits.md)                         | A browser suite in CI, and audits a person attests                            | Accepted           |
-| [0028](0028-personal-api-tokens-in-t1.md)                                         | Personal API tokens in T1, service identities with the MCP facade             | Accepted           |
-| [0027](0027-the-warm-range-preview-leaves-t1.md)                                  | The warm range preview leaves T1                                              | Accepted           |
-| [0026](0026-a-definition-is-its-own-editor-node.md)                               | A definition is its own editor node                                           | Accepted           |
-| [0025](0025-the-editor-schema-is-not-the-stored-model-one-for-one.md)             | The editor schema is not the stored model one for one                         | Superseded by 0026 |
-| [0024](0024-a-version-digest-over-the-whole-version.md)                           | A version digest over the whole version, and a content hash beside it         | Accepted           |
-| [0023](0023-prosemirror-as-the-editor-and-its-model.md)                           | ProseMirror as the editor, and one view per component                         | Accepted           |
-| [0022](0022-the-desktop-window-loads-the-service.md)                              | The desktop window loads the service                                          | Superseded by 0072 |
-| [0021](0021-object-storage-a-credential-per-tenant.md)                            | Object storage: a credential per tenant, scoped to its own prefix             | Accepted           |
-| [0020](0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)            | Service foundations: tenants by hostname and role, zod-first APIs, Kysely     | Accepted           |
-| [0019](0019-platform-typescript-service-publishing-workers-object-storage.md)     | The platform: a TypeScript service, publishing workers, object storage        | Accepted           |
-| [0018](0018-realtime-one-push-channel-postgres-fan-out.md)                        | Realtime: one push channel, fanned out through Postgres                       | Accepted           |
-| [0017](0017-relationships-in-postgres-traversed-by-recursive-sql.md)              | Relationships in Postgres, traversed by recursive SQL                         | Accepted           |
-| [0016](0016-search-in-postgres-behind-one-interface.md)                           | Search in Postgres, behind one interface                                      | Accepted           |
-| [0015](0015-word-output-our-own-writer-reflowable.md)                             | Word output: our own writer, reflowable by design                             | Accepted           |
-| [0014](0014-themes-resolve-once-project-three-times.md)                           | Themes: resolve once, project three times                                     | Accepted           |
-| [0013](0013-typst-rendering-resolved-data-through-a-fixed-template.md)            | Typst, rendering resolved data through a fixed template                       | Accepted           |
-| [0012](0012-relational-version-chain-hashed-content.md)                           | A relational version chain with hashed content                                | Superseded by 0024 |
-| [0011](0011-external-participation-guests-and-identified-links.md)                | External participation: guest principals and identified links                 | Accepted           |
-| [0010](0010-open-licence-typefaces-only.md)                                       | Open-licence typefaces only                                                   | Accepted           |
-| [0009](0009-federation-and-google-accounts-no-local-passwords.md)                 | Federation and Google accounts, no local passwords                            | Accepted           |
-| [0008](0008-schema-per-tenant-isolation.md)                                       | Schema-per-tenant isolation                                                   | Accepted           |
-| [0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md)                | No per-server licensing in the publishing pipeline                            | Accepted           |
-| [0006](0006-iteration-version-revision.md)                                        | Iteration, version and revision                                               | Accepted           |
+| #                                                                                 | Decision                                                                        | Status             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------ |
+| [0001](0001-record-architecture-decisions.md)                                     | Record architecture decisions                                                   | Accepted           |
+| [0002](0002-pnpm-workspaces-and-turborepo.md)                                     | pnpm workspaces with Turborepo                                                  | Accepted           |
+| [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                    | Accepted           |
+| [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                              | Accepted           |
+| [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                     | Accepted           |
+| [0049](0049-administration-is-a-page.md)                                          | Administration is a page                                                        | Accepted           |
+| [0050](0050-a-detail-page-is-a-header-a-strip-and-tabs.md)                        | A detail page is a header, a state strip and tabs                               | Accepted           |
+| [0051](0051-the-bound-table-panel-is-a-band-of-tabs.md)                           | The Bound table panel is a band of tabs                                         | Superseded by 0052 |
+| [0052](0052-table-formatting-is-a-tab-beside-the-text.md)                         | Table formatting is a tab beside the text                                       | Accepted           |
+| [0053](0053-the-toolbar-has-a-second-line.md)                                     | The toolbar has a second line                                                   | Accepted           |
+| [0054](0054-the-part-and-data-tabs-are-labelled-rows.md)                          | The Part and Data tabs are labelled rows                                        | Accepted           |
+| [0055](0055-a-figure-is-one-line-and-its-settings-a-dialog.md)                    | A figure is one line, and its settings a dialog                                 | Accepted           |
+| [0056](0056-the-editing-canvas-is-a-page-on-a-desk.md)                            | The editing canvas is a page on a desk                                          | Accepted           |
+| [0057](0057-t3s-order-and-template-moves-leave-for-t9.md)                         | T3's order, and template moves leave for T9                                     | Accepted           |
+| [0058](0058-suggestions-are-proposals-beside-the-content.md)                      | Suggestions are proposals beside the content                                    | Accepted           |
+| [0059](0059-a-suggestion-merges-by-whole-block.md)                                | A suggestion merges by whole block                                              | Accepted           |
+| [0060](0060-deletion-is-a-tombstone-and-retention-a-minimum.md)                   | Deletion is a tombstone, and retention a minimum                                | Accepted           |
+| [0061](0061-t9s-order.md)                                                         | T9's order                                                                      | Accepted           |
+| [0062](0062-a-templates-query-set-is-computed.md)                                 | A template's query set is computed                                              | Accepted           |
+| [0064](0064-model-calls-leave-through-the-connector.md)                           | Model calls leave through the connector                                         | Accepted           |
+| [0065](0065-mcp-is-a-few-tools-over-the-api.md)                                   | MCP is a few tools over the API, as their caller                                | Accepted           |
+| [0066](0066-an-extension-is-a-manifest-and-a-remote-service.md)                   | An extension is a manifest and a remote service                                 | Accepted           |
+| [0063](0063-a-line-is-numbered-below-the-main-line.md)                            | A line is numbered below the main line                                          | Accepted           |
+| [0067](0067-citations-are-csl-rendered-by-citeproc-js.md)                         | Citations are CSL, rendered by citeproc-js                                      | Accepted           |
+| [0068](0068-reference-sources-are-declared-and-reached-through-the-connector.md)  | Reference sources are declared and reached through the connector                | Accepted           |
+| [0069](0069-an-import-is-a-proposal-read-in-the-worker.md)                        | An import is a proposal, read in the worker                                     | Accepted           |
+| [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                        | Accepted           |
+| [0071](0071-ct-studio-delivers-straight-in-as-a-service-identity.md)              | CT Studio delivers straight in, as a service identity                           | Accepted           |
+| [0072](0072-the-desktop-app-asks-which-environment.md)                            | The desktop app asks which environment to connect to                            | Accepted           |
+| [0073](0073-desktop-releases-live-in-a-public-releases-repository.md)             | Desktop releases live in a public releases repository                           | Accepted           |
+| [0074](0074-panels-are-chosen-from-an-icon-rail.md)                               | A document's panels are chosen from an icon rail                                | Accepted           |
+| [0075](0075-one-header-a-side-dock-and-margin-labels.md)                          | One header, a side dock and style labels in the margin                          | Accepted           |
+| [0076](0076-one-registry-of-commands-and-keys.md)                                 | One registry of commands and keys                                               | Accepted           |
+| [0077](0077-the-threads-panel-reads-as-cards.md)                                  | The threads panel reads as cards, found in the browser                          | Accepted           |
+| [0078](0078-a-drafted-comment-stays-its-persons.md)                               | A comment the assistant drafted stays its person's                              | Accepted           |
+| [0085](0085-a-components-page-shares-the-documents-shell.md)                      | A component's page shares the document's shell                                  | Accepted           |
+| [0086](0086-one-floating-toolbar-over-the-part.md)                                | One floating toolbar stands over the part                                       | Accepted           |
+| [0087](0087-a-parts-standing-is-in-the-part-panel.md)                             | A part's standing is in the Part panel                                          | Accepted           |
+| [0088](0088-moving-on-counts-as-done-editing.md)                                  | Moving on counts as Done editing                                                | Accepted           |
+| [0089](0089-in-place-the-editor-takes-the-sheets-zoom.md)                         | In place, the editor takes the sheet's zoom, and computes none of its own       | Accepted           |
+| [0090](0090-a-parts-version-is-a-row-and-overrides-an-icon.md)                    | A part's version is a row, its overrides an icon, and panel headers tip at once | Accepted           |
+| [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
+| [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                       | Accepted           |
+| [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can           | Accepted           |
+| [0081](0081-lifecycle-states-are-lozenges.md)                                     | Lifecycle states are lozenges, and a version has none                           | Accepted           |
+| [0080](0080-restoring-is-a-process-of-its-own.md)                                 | Restoring is a process of its own, and an archive comes in as the owner         | Accepted           |
+| [0079](0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)                      | A table's toolbar floats on the table, and its tab is a map                     | Accepted           |
+| [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                               | Accepted           |
+| [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                       | Accepted           |
+| [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                            | Accepted           |
+| [0045](0045-t3-is-the-collaboration.md)                                           | T3 is the collaboration                                                         | Accepted           |
+| [0044](0044-the-delegated-tokens-requirement-moves-past-the-first-release.md)     | The delegated token's requirement moves past the first release                  | Accepted           |
+| [0043](0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)           | A template's bindings, query set and variables move to T4                       | Accepted           |
+| [0042](0042-grouping-totals-transposition-and-emphasis-rules-move-to-t3.md)       | Grouping, totals, transposition and emphasis rules move to T3                   | Accepted           |
+| [0041](0041-the-delegated-provider-token-is-deferred-past-the-first-release.md)   | The delegated provider token is deferred past the first release                 | Accepted           |
+| [0040](0040-asserted-identity-trusts-the-sources-function-authors.md)             | Asserted identity trusts the source's function authors                          | Accepted           |
+| [0039](0039-ci-at-two-speeds-and-fewer-prs.md)                                    | CI at two speeds, and fewer PRs                                                 | Accepted           |
+| [0038](0038-sql-server-is-deferred-past-the-first-release.md)                     | SQL Server is deferred past the first release                                   | Accepted           |
+| [0037](0037-change-fragments-and-versions-at-a-close.md)                          | Change fragments, and versions at a close                                       | Accepted           |
+| [0036](0036-revising-a-bound-value-by-hand-moves-to-t3.md)                        | Revising a bound value by hand moves to T3                                      | Accepted           |
+| [0035](0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) | Bindings hold stored results, and a publish never queries a source              | Accepted           |
+| [0034](0034-data-connectors-run-apart-as-a-declared-identity.md)                  | Data connectors run apart, as a declared identity, and pin a canonical result   | Superseded by 0035 |
+| [0033](0033-t2-is-the-data-spine.md)                                              | T2 is the data spine                                                            | Accepted           |
+| [0032](0032-words-fidelity-to-the-pdf-leaves-t1.md)                               | Word's fidelity to the PDF leaves T1                                            | Accepted           |
+| [0031](0031-t1-publishes-headings-to-six-levels.md)                               | T1 publishes headings to six levels                                             | Accepted           |
+| [0030](0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md)   | The conformance report joins a publication after it is recorded                 | Accepted           |
+| [0029](0029-a-browser-suite-in-ci-and-attested-audits.md)                         | A browser suite in CI, and audits a person attests                              | Accepted           |
+| [0028](0028-personal-api-tokens-in-t1.md)                                         | Personal API tokens in T1, service identities with the MCP facade               | Accepted           |
+| [0027](0027-the-warm-range-preview-leaves-t1.md)                                  | The warm range preview leaves T1                                                | Accepted           |
+| [0026](0026-a-definition-is-its-own-editor-node.md)                               | A definition is its own editor node                                             | Accepted           |
+| [0025](0025-the-editor-schema-is-not-the-stored-model-one-for-one.md)             | The editor schema is not the stored model one for one                           | Superseded by 0026 |
+| [0024](0024-a-version-digest-over-the-whole-version.md)                           | A version digest over the whole version, and a content hash beside it           | Accepted           |
+| [0023](0023-prosemirror-as-the-editor-and-its-model.md)                           | ProseMirror as the editor, and one view per component                           | Accepted           |
+| [0022](0022-the-desktop-window-loads-the-service.md)                              | The desktop window loads the service                                            | Superseded by 0072 |
+| [0021](0021-object-storage-a-credential-per-tenant.md)                            | Object storage: a credential per tenant, scoped to its own prefix               | Accepted           |
+| [0020](0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)            | Service foundations: tenants by hostname and role, zod-first APIs, Kysely       | Accepted           |
+| [0019](0019-platform-typescript-service-publishing-workers-object-storage.md)     | The platform: a TypeScript service, publishing workers, object storage          | Accepted           |
+| [0018](0018-realtime-one-push-channel-postgres-fan-out.md)                        | Realtime: one push channel, fanned out through Postgres                         | Accepted           |
+| [0017](0017-relationships-in-postgres-traversed-by-recursive-sql.md)              | Relationships in Postgres, traversed by recursive SQL                           | Accepted           |
+| [0016](0016-search-in-postgres-behind-one-interface.md)                           | Search in Postgres, behind one interface                                        | Accepted           |
+| [0015](0015-word-output-our-own-writer-reflowable.md)                             | Word output: our own writer, reflowable by design                               | Accepted           |
+| [0014](0014-themes-resolve-once-project-three-times.md)                           | Themes: resolve once, project three times                                       | Accepted           |
+| [0013](0013-typst-rendering-resolved-data-through-a-fixed-template.md)            | Typst, rendering resolved data through a fixed template                         | Accepted           |
+| [0012](0012-relational-version-chain-hashed-content.md)                           | A relational version chain with hashed content                                  | Superseded by 0024 |
+| [0011](0011-external-participation-guests-and-identified-links.md)                | External participation: guest principals and identified links                   | Accepted           |
+| [0010](0010-open-licence-typefaces-only.md)                                       | Open-licence typefaces only                                                     | Accepted           |
+| [0009](0009-federation-and-google-accounts-no-local-passwords.md)                 | Federation and Google accounts, no local passwords                              | Accepted           |
+| [0008](0008-schema-per-tenant-isolation.md)                                       | Schema-per-tenant isolation                                                     | Accepted           |
+| [0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md)                | No per-server licensing in the publishing pipeline                              | Accepted           |
+| [0006](0006-iteration-version-revision.md)                                        | Iteration, version and revision                                                 | Accepted           |
