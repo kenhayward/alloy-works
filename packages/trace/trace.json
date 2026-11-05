@@ -26230,13 +26230,19 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 51,
+      "line": 99,
       "kind": "title"
     },
     {
       "id": "CNT-191",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 153,
+      "line": 201,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
+      "line": 48,
       "kind": "title"
     },
     {
@@ -26842,31 +26848,31 @@
     {
       "id": "CNT-113",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 101,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "COL-026",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 101,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "LOC-012",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 377,
+      "line": 395,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 88,
+      "line": 106,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 215,
+      "line": 233,
       "kind": "title"
     },
     {
@@ -28054,13 +28060,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1562,
+      "line": 1561,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1719,
+      "line": 1718,
       "kind": "title"
     },
     {
@@ -28072,7 +28078,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2659,
+      "line": 2658,
       "kind": "title"
     },
     {
@@ -28102,13 +28108,13 @@
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2425,
+      "line": 2424,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2122,
+      "line": 2121,
       "kind": "title"
     },
     {
@@ -28132,13 +28138,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2327,
+      "line": 2326,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2162,
+      "line": 2161,
       "kind": "title"
     },
     {
@@ -28162,7 +28168,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1853,
+      "line": 1852,
       "kind": "title"
     },
     {
@@ -37007,6 +37013,12 @@
       "id": "CNT-162",
       "file": "tests/browser/src/part-panel.test.ts",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "tests/browser/src/part-panel.test.ts",
+      "line": 141,
       "kind": "title"
     },
     {

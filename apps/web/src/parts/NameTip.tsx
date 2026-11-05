@@ -1,6 +1,16 @@
-import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 
 import styles from './NameTip.module.css';
+
+/** What a tip keeps between itself and the window's edge. */
+const EDGE = 4;
 
 /**
  * A control's name and keys, shown at once on hover and on focus (ADR-0075), not on a delay: on an icon
@@ -29,6 +39,16 @@ export function NameTip({
   className?: string | undefined;
 }) {
   const [at, setAt] = useState<CSSProperties | null>(null);
+  const tip = useRef<HTMLSpanElement>(null);
+  // Kept in the window: a long name under an icon near its edge moves over, and its control stays clear.
+  useLayoutEffect(() => {
+    const own = tip.current;
+    if (own === null) return;
+    own.style.transform = '';
+    const { left, right } = own.getBoundingClientRect();
+    const over = Math.min(0, window.innerWidth - EDGE - right) || Math.max(0, EDGE - left);
+    if (over !== 0) own.style.transform = `translateX(${over}px)`;
+  }, [at]);
   const show = (anchor: HTMLElement) => {
     const { top, bottom, left, right } = anchor.getBoundingClientRect();
     const rtl = getComputedStyle(anchor).direction === 'rtl';
@@ -65,6 +85,7 @@ export function NameTip({
       {children}
       {at !== null && (
         <span
+          ref={tip}
           className={styles['tip']}
           style={at}
           aria-hidden="true"

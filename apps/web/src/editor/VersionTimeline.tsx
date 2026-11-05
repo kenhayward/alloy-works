@@ -5,6 +5,7 @@ import { Icon } from './Icon.js';
 import { componentVersionLink } from '../search/links.js';
 import { documentVersionLink, baselineLink, comparisonLink } from '../structure/links.js';
 import { IconButton } from '../parts/IconButton.js';
+import { NameTip } from '../parts/NameTip.js';
 import { kept, keep } from '../layouts/PaneWidth.js';
 import { followInFrame } from '../publishing/Preview.js';
 import { readStanding } from '../lifecycle/Workflow.js';
@@ -24,6 +25,9 @@ import {
 import styles from './VersionTimeline.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
+
+/** An icon says what it does at once, not after the browser's delay (ADR-0075), under itself in a row. */
+const AT_ONCE = { align: 'center' } as const;
 
 /** A version as the list shows it. */
 export interface ListedVersion {
@@ -577,17 +581,19 @@ export function VersionTimeline({
           {showsActions && (
             <span className={styles['actions']}>
               {!isLatest && (
-                <a
-                  className={styles['action']}
-                  href={link}
-                  aria-label={words('editor.open-2', { number: version.number })}
-                  title={words('editor.open-2', { number: version.number })}
-                >
-                  <Icon name="View" size={16} />
-                </a>
+                <NameTip below name={words('editor.open-2', { number: version.number })}>
+                  <a
+                    className={styles['action']}
+                    href={link}
+                    aria-label={words('editor.open-2', { number: version.number })}
+                  >
+                    <Icon name="View" size={16} />
+                  </a>
+                </NameTip>
               )}
               {onCompare && !isLatest && (
                 <IconButton
+                  tip={AT_ONCE}
                   className={styles['action']}
                   data-accent=""
                   label={words('editor.compare-with', {
@@ -601,6 +607,7 @@ export function VersionTimeline({
               )}
               {onRestore && !isLatest && (
                 <IconButton
+                  tip={AT_ONCE}
                   className={styles['action']}
                   label={words('editor.restore', { number: version.number })}
                   onClick={() => onRestore(version, latest)}
@@ -610,6 +617,7 @@ export function VersionTimeline({
               )}
               {onDetails && (
                 <IconButton
+                  tip={AT_ONCE}
                   className={styles['action']}
                   label={words('editor.version-details', { number: version.number })}
                   onClick={() => onDetails(version, versions)}
@@ -618,6 +626,7 @@ export function VersionTimeline({
                 </IconButton>
               )}
               <IconButton
+                tip={AT_ONCE}
                 className={styles['action']}
                 label={words('editor.copy-link-to', { number: version.number })}
                 onClick={() => void copyLink(version)}
@@ -659,14 +668,15 @@ export function VersionTimeline({
               })}
         </span>
         <span className={styles['actions']}>
-          <a
-            className={styles['action']}
-            href={comparisonLink(id, baseline.id, 'now')}
-            aria-label={words('editor.compare-with-now', { name: baseline.name })}
-            title={words('editor.compare-with-now', { name: baseline.name })}
-          >
-            <Icon name="Compare" size={16} />
-          </a>
+          <NameTip below name={words('editor.compare-with-now', { name: baseline.name })}>
+            <a
+              className={styles['action']}
+              href={comparisonLink(id, baseline.id, 'now')}
+              aria-label={words('editor.compare-with-now', { name: baseline.name })}
+            >
+              <Icon name="Compare" size={16} />
+            </a>
+          </NameTip>
         </span>
       </div>
     </li>
@@ -692,16 +702,21 @@ export function VersionTimeline({
           })}
         </span>
         <span className={styles['actions']}>
-          <a
-            className={styles['action']}
-            href={`#/publications/${publication.id}`}
-            aria-label={words('editor.open-the-publication-of', { number: publication.version })}
-            title={words('editor.open-the-publication-of', { number: publication.version })}
+          <NameTip
+            below
+            name={words('editor.open-the-publication-of', { number: publication.version })}
           >
-            <Icon name="View" size={16} />
-          </a>
+            <a
+              className={styles['action']}
+              href={`#/publications/${publication.id}`}
+              aria-label={words('editor.open-the-publication-of', { number: publication.version })}
+            >
+              <Icon name="View" size={16} />
+            </a>
+          </NameTip>
           {publication.formats.length > 0 && (
             <IconButton
+              tip={AT_ONCE}
               className={styles['action']}
               label={words('editor.download-the-publication-of', { number: publication.version })}
               onClick={() => void download(publication)}
@@ -728,6 +743,7 @@ export function VersionTimeline({
         </span>
         {onCompareTwo && (
           <IconButton
+            tip={AT_ONCE}
             label={words('editor.compare-two-versions')}
             pressed={choosing}
             onClick={() => {
@@ -739,6 +755,7 @@ export function VersionTimeline({
           </IconButton>
         )}
         <IconButton
+          tip={AT_ONCE}
           label={words(anyOpen ? 'editor.collapse-every-day' : 'editor.expand-every-day')}
           onClick={every}
         >
@@ -760,6 +777,7 @@ export function VersionTimeline({
       <div className={styles['finding']}>
         <VersionSearch onFind={(q) => narrow({ q })} />
         <IconButton
+          tip={AT_ONCE}
           label={words('editor.filter-versions')}
           pressed={filtering}
           onClick={() => setFiltering((now) => !now)}
@@ -767,6 +785,7 @@ export function VersionTimeline({
           <Icon name="Filter" size={16} />
         </IconButton>
         <IconButton
+          tip={AT_ONCE}
           label={words('editor.go-to-a-date')}
           pressed={picking}
           onClick={() => setPicking((now) => !now)}
@@ -775,6 +794,7 @@ export function VersionTimeline({
         </IconButton>
         {!graphShown && activity !== null && (
           <IconButton
+            tip={AT_ONCE}
             label={words('editor.show-the-activity-graph')}
             onClick={() => rememberGraph('shown')}
           >

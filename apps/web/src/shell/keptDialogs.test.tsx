@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RecoveryPanel } from '../editor/RecoveryPanel.js';
+import { Modal } from '../layouts/Modal.js';
 import { modalOpen, PageShown, usePageLayer } from './Status.js';
 
 /** A page as the workspace keeps it, which the test leaves and returns to. */
@@ -87,6 +88,25 @@ describe('a dialog on a page the workspace keeps (#962)', () => {
     const field = screen.getByRole('textbox', { name: 'Caption' });
     expect(field).toHaveValue('Readings');
     expect(field).toHaveFocus();
+  });
+
+  it('stands a Modal beside the application, whatever stacks where it was asked for, and hides it with the page', () => {
+    const { Kept, leave, back } = kept();
+    const { container } = render(
+      <Kept>
+        <aside style={{ position: 'sticky', zIndex: 2 }}>
+          <Modal labelledBy="heading" onClose={() => undefined}>
+            <h2 id="heading">Where it is used</h2>
+          </Modal>
+        </aside>
+      </Kept>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Where it is used' });
+    expect(container).not.toContainElement(dialog);
+    leave();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    back();
+    expect(screen.getByRole('dialog', { name: 'Where it is used' })).toBe(dialog);
   });
 
   it('draws on the body where nothing keeps the page', () => {

@@ -85,6 +85,24 @@ describe('the Versions panel', () => {
     expect(asked).toContain(`/v1/components/${COMPONENT}/comparison?from=${V2}&to=${V3}`);
   });
 
+  it('says what each icon does at once on hover, and leaves the delayed title behind', async () => {
+    const { client } = service();
+    render(<VersionsPanel client={client} id={COMPONENT} />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await opening(list, '0.2');
+    for (const [role, name] of [
+      ['link', 'Open 0.2'],
+      ['button', 'Compare 0.2 with 0.3'],
+      ['button', 'Copy a link to 0.2'],
+    ] as const) {
+      const icon = within(list).getByRole(role, { name });
+      expect(icon).not.toHaveAttribute('title');
+      await userEvent.hover(icon);
+      expect(document.querySelector('[data-name-tip]')).toHaveTextContent(name);
+      await userEvent.unhover(icon);
+    }
+  });
+
   it('SCH-058 opens each earlier version on its own page, read only', async () => {
     const { client } = service();
     render(<VersionsPanel client={client} id={COMPONENT} />);

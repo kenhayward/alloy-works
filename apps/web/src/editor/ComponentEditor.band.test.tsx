@@ -1,3 +1,4 @@
+import { CONTENT_LANGUAGES } from '@alloy-works/domain';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cloneElement, useState, type ReactElement, type ReactNode } from 'react';
@@ -20,7 +21,7 @@ function Banded({ children }: { children: ReactNode }) {
 const banded = (page: React.JSX.Element) => <Banded>{page}</Banded>;
 
 describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
-  it('stands outside the sheet, holding the acts and the Component menu', async () => {
+  it('stands outside the sheet, holding the acts, and no Component menu', async () => {
     open(
       { 'GET /v1/components/{id}': () => json(200, opened()) },
       quick,
@@ -34,7 +35,7 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
     expect(bar.closest('.aw-canvas')).toBeNull();
     expect(bar.closest('article')).toBeNull();
     expect(within(bar).getByRole('button', { name: 'Done editing' })).toBeInTheDocument();
-    const menu = within(bar).getByRole('button', { name: 'Component' });
+    expect(within(bar).queryByRole('button', { name: 'Component' })).toBeNull();
     expect(within(bar).queryByRole('button', { name: /settings/ })).toBeNull();
     // One tab stop, and arrows between them.
     expect(
@@ -42,10 +43,57 @@ describe('the one toolbar on a part of a document (the EP plan, EP3)', () => {
         .getAllByRole('button')
         .filter((each) => each.tabIndex === 0),
     ).toHaveLength(1);
-    await userEvent.click(menu);
-    expect(menu).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.keyboard('{Escape}');
-    expect(menu).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('LOC-044 says its language and direction on its own buttons, choosing from the declared list, a declared language setting its direction', async () => {
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/3': () => json(200, { sequence: 3, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/4': () => json(200, { sequence: 4, lock }),
+      },
+      quick,
+      false,
+      { onDone: () => undefined },
+      undefined,
+      banded,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Part toolbar' });
+    const language = await within(bar).findByRole('button', { name: 'Base language: en-GB' });
+    expect(language).toHaveTextContent(/^EN$/);
+    const direction = within(bar).getByRole('button', { name: 'Base direction: left to right' });
+    expect(direction).toHaveTextContent(/^LTR$/);
+    await waitFor(() => expect(direction).toHaveAttribute('aria-disabled', 'false'));
+
+    // The direction is a toggle, there and back, and the same button throughout, so the focus stays.
+    direction.focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(direction).toHaveAccessibleName('Base direction: right to left'));
+    expect(direction).toHaveTextContent(/^RTL$/);
+    expect(direction).toHaveFocus();
+    await userEvent.click(direction);
+    await waitFor(() => expect(direction).toHaveTextContent(/^LTR$/));
+
+    // The language is a list to choose from, narrowed by typing, the current one first.
+    await userEvent.click(language);
+    const dialog = screen.getByRole('dialog', { name: 'Choose a language' });
+    const list = within(dialog).getByRole('list');
+    const rows = within(list).getAllByRole('button');
+    expect(rows.length).toBeGreaterThanOrEqual(CONTENT_LANGUAGES.length);
+    expect(rows[0]).toHaveAttribute('aria-current', 'true');
+    expect(rows[0]).toHaveAccessibleName('British English, en-GB');
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Find a language' }),
+      'arabic',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Arabic, ar$/ }));
+    expect(screen.queryByRole('dialog', { name: 'Choose a language' })).toBeNull();
+    await waitFor(() => expect(language).toHaveAccessibleName('Base language: ar'));
+    expect(language).toHaveTextContent(/^AR$/);
+    await waitFor(() => expect(direction).toHaveTextContent(/^RTL$/));
   });
 
   it('CNT-077 is reached by F6 after the formatting toolbar, and goes back by Shift-F6', async () => {
