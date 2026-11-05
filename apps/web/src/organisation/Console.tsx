@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 
 import styles from './Console.module.css';
 import { Administration, sectionOf, type Section } from '../admin/Administration.js';
@@ -18,6 +18,21 @@ interface OrganisationTenant {
   readonly graceEndsAt: string | null;
   readonly hostnames: readonly string[];
 }
+
+interface OrganisationTenantRequest {
+  readonly id: string;
+  readonly name: string;
+  readonly hostname: string;
+  readonly state: 'waiting' | 'failed';
+}
+
+/** What it says of a refusal to make a tenant, by the code the service answers. */
+const CANNOT_MAKE: Readonly<Record<string, WordKey>> = {
+  no_shared_provider: 'organisation.new-no-provider',
+  organisation_address_taken: 'organisation.new-taken',
+  organisation_address_refused: 'organisation.new-taken',
+  organisation_no_addresses: 'organisation.new-no-suffix',
+};
 
 /** What an organisation's tenant has of Administration; the rest needs content (TL-K). */
 const SECTIONS: readonly Section[] = ['people', 'groups', 'roles', 'sign-in', 'audit', 'export'];
@@ -49,11 +64,18 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
   const [stopping, setStopping] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [stale, setStale] = useState(false);
+  const addressId = useId();
+  const [requests, setRequests] = useState<readonly OrganisationTenantRequest[]>([]);
+  const [suffix, setSuffix] = useState<string | null>(null);
+  const [making, setMaking] = useState({ name: '', label: '', firstAdministrator: '' });
 
   const read = useCallback(async () => {
     const { data, response } = await client.GET('/v1/organisation/tenants');
-    if (data) setTenants(data.items);
-    else if (response.status === 403) setSaid(words('organisation.no-permission'));
+    if (data) {
+      setTenants(data.items);
+      setRequests(data.requests ?? []);
+      setSuffix(data.hostnameSuffix ?? null);
+    } else if (response.status === 403) setSaid(words('organisation.no-permission'));
     else setSaid(words('organisation.could-not-read'));
   }, [client]);
 
@@ -66,12 +88,14 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
     setStale(false);
     try {
       const { response, error } = await act();
-      setStale((error as { code?: string } | undefined)?.code === 'reauthentication_required');
+      const code = (error as { code?: string } | undefined)?.code ?? '';
+      setStale(code === 'reauthentication_required');
       if (response.ok) {
         setStopping(null);
         setReason('');
+        setMaking({ name: '', label: '', firstAdministrator: '' });
         await read();
-      } else setSaid(words('organisation.could-not-do'));
+      } else setSaid(words(CANNOT_MAKE[code] ?? 'organisation.could-not-do'));
     } catch {
       setSaid(words('organisation.could-not-do'));
     }
@@ -104,6 +128,23 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
       {said !== '' && <p role="alert">{said}</p>}
       {stale && <SignInAgain client={client} />}
       {tenants?.length === 0 && <p>{words('organisation.none')}</p>}
+      {requests.length > 0 && (
+        <section aria-label={words('organisation.requests')}>
+          <h2>{words('organisation.requests')}</h2>
+          <ul>
+            {requests.map((request) => (
+              <li key={request.id}>
+                {request.name} ({request.hostname}):{' '}
+                {words(
+                  request.state === 'failed'
+                    ? 'organisation.request-failed'
+                    : 'organisation.request-waiting',
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {tenants !== null && tenants.length > 0 && (
         <table aria-label={words('organisation.tenants')}>
           <thead>
@@ -189,6 +230,56 @@ export function Console({ client }: { client: Client }): React.JSX.Element {
             ))}
           </tbody>
         </table>
+      )}
+      {tenants !== null && suffix === null && <p>{words('organisation.new-no-suffix')}</p>}
+      {suffix !== null && (
+        <form
+          aria-label={words('organisation.new')}
+          className={styles['making']}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void did(() => client.POST('/v1/organisation/tenants', { body: making }));
+          }}
+        >
+          <h2>{words('organisation.new')}</h2>
+          <label>
+            {words('organisation.new-name')}
+            <input
+              value={making.name}
+              onChange={(event) => setMaking({ ...making, name: event.target.value })}
+            />
+          </label>
+          <label htmlFor={addressId}>{words('organisation.new-label')}</label>
+          <span className={styles['address']}>
+            <input
+              id={addressId}
+              value={making.label}
+              onChange={(event) =>
+                setMaking({ ...making, label: event.target.value.toLowerCase() })
+              }
+            />
+            <span>{suffix}</span>
+          </span>
+          <label>
+            {words('organisation.new-first-administrator')}
+            <input
+              type="email"
+              value={making.firstAdministrator}
+              onChange={(event) => setMaking({ ...making, firstAdministrator: event.target.value })}
+            />
+          </label>
+          <p>{words('organisation.new-hint')}</p>
+          <button
+            type="submit"
+            disabled={
+              making.name.trim() === '' ||
+              making.label === '' ||
+              !making.firstAdministrator.includes('@')
+            }
+          >
+            {words('organisation.new-create')}
+          </button>
+        </form>
       )}
     </main>
   );

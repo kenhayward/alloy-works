@@ -1900,6 +1900,16 @@ describe('routes that check a permission', () => {
     // Not at a tenant holding content, which comes before asking what anybody holds; what a person
     // holding nothing is told at an organisation's own is in organisation-routes.test.ts.
     listOrganisationTenants: () => ({ url: '/v1/organisation/tenants', status: 404 }),
+    createOrganisationTenant: () => ({
+      url: '/v1/organisation/tenants',
+      status: 404,
+      payload: { name: 'Legal', label: 'legal', firstAdministrator: 'ada@example.test' },
+    }),
+    shareProvider: () => ({
+      url: '/v1/organisation/providers/2a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d/shared',
+      status: 404,
+      payload: { shared: true },
+    }),
     suspendOrganisationTenant: () => ({
       url: '/v1/organisation/tenants/prod/suspension',
       status: 404,

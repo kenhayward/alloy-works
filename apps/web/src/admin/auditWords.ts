@@ -185,6 +185,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'import.restored'() {
     return words('admin.import-restored');
   },
+  get 'tenant.created'() {
+    return words('admin.tenant-created');
+  },
   get 'tenant.closing'() {
     return words('admin.tenant-closing');
   },

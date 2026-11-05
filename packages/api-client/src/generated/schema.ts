@@ -4975,6 +4975,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organisation/providers/{id}/shared": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Share one of the organisation's identity providers with its tenants, or stop
+         * @description Marks one of the organisation's identity providers as shared, so each of its tenants has a copy, its secret resealed for that tenant and kept current. A tenant can close its copy and cannot edit it. Stopping leaves each tenant the provider as its own. Needs `share_provider`.
+         */
+        put: operations["shareProvider"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organisation/tenants": {
         parameters: {
             query?: never;
@@ -4988,7 +5008,11 @@ export interface paths {
          */
         get: operations["listOrganisationTenants"];
         put?: never;
-        post?: never;
+        /**
+         * Ask for another tenant for this organisation
+         * @description Asks for another tenant under this organisation's addresses, and invites its first administrator by address, through the provider the organisation shares. It is made a little later, and its address is forgotten here once the invitation exists. Recorded in this tenant's log, and in the new tenant's when it is made. Needs `create_tenant`.
+         */
+        post: operations["createOrganisationTenant"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11210,7 +11234,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider";
                             allowed: boolean;
                         }[];
                     };
@@ -11336,7 +11360,7 @@ export interface operations {
                         disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider";
                             allowed: boolean;
                             /**
                              * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -37376,7 +37400,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -37849,7 +37873,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -88516,6 +88540,197 @@ export interface operations {
             };
         };
     };
+    shareProvider: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "shared": false
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Whether this organisation's tenants have a copy kept current */
+                    shared: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Marked: what is configured now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sharing": false,
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "scimUrl": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `share_provider` is not held at this organisation's tenant, or the sign-in is too old */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such open provider here */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listOrganisationTenants: {
         parameters: {
             query?: never;
@@ -88538,7 +88753,9 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "items": []
+                     *       "items": [],
+                     *       "requests": [],
+                     *       "hostnameSuffix": "example"
                      *     }
                      */
                     "application/json": {
@@ -88566,6 +88783,27 @@ export interface operations {
                             /** @description The addresses it answers at */
                             hostnames: string[];
                         }[];
+                        /** @description Tenants asked for and not made: never the first administrator's address */
+                        requests: {
+                            /** @description The tenant it will be */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /** @description The address it will answer at */
+                            hostname: string;
+                            /**
+                             * @description Being made, or could not be: the operator can see why
+                             * @enum {string}
+                             */
+                            state: "waiting" | "failed";
+                            /**
+                             * Format: date-time
+                             * @description When it was asked for
+                             */
+                            createdAt: string;
+                        }[];
+                        /** @description What a new tenant's address ends in; none means the operator has yet to say */
+                        hostnameSuffix: string | null;
                     };
                 };
             };
@@ -88631,21 +88869,40 @@ export interface operations {
             };
         };
     };
-    cancelOrganisationClosure: {
+    createOrganisationTenant: {
         parameters: {
             query?: never;
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
             };
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "label": "example",
+                 *       "firstAdministrator": "developer@example.com"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description What it is called */
+                    name: string;
+                    /** @description What comes before the organisation's suffix in its address */
+                    label: string;
+                    /**
+                     * Format: email
+                     * @description Who is invited to administer it: forgotten here once the invitation exists
+                     */
+                    firstAdministrator: string;
+                };
+            };
+        };
         responses: {
-            /** @description Back as it was: its tenants as they now stand */
+            /** @description Asked for: its tenants as they now stand */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -88655,7 +88912,9 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "items": []
+                     *       "items": [],
+                     *       "requests": [],
+                     *       "hostnameSuffix": "example"
                      *     }
                      */
                     "application/json": {
@@ -88683,6 +88942,187 @@ export interface operations {
                             /** @description The addresses it answers at */
                             hostnames: string[];
                         }[];
+                        /** @description Tenants asked for and not made: never the first administrator's address */
+                        requests: {
+                            /** @description The tenant it will be */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /** @description The address it will answer at */
+                            hostname: string;
+                            /**
+                             * @description Being made, or could not be: the operator can see why
+                             * @enum {string}
+                             */
+                            state: "waiting" | "failed";
+                            /**
+                             * Format: date-time
+                             * @description When it was asked for
+                             */
+                            createdAt: string;
+                        }[];
+                        /** @description What a new tenant's address ends in; none means the operator has yet to say */
+                        hostnameSuffix: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `create_tenant` is not held at this organisation's tenant, or the sign-in is too old */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No provider is shared for its first administrator to sign in through, the address is taken, or this organisation has no addresses yet */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    cancelOrganisationClosure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Back as it was: its tenants as they now stand */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "requests": [],
+                     *       "hostnameSuffix": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The tenant */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /**
+                             * @description Where it is in its life
+                             * @enum {string}
+                             */
+                            state: "active" | "suspended" | "closing" | "retained" | "deleting" | "deleted";
+                            /**
+                             * Format: date-time
+                             * @description When it came to be in this state
+                             */
+                            since: string;
+                            /** @description Who stopped it: an organisation may start only what a person stopped */
+                            suspendedBy: ("person" | "operator") | null;
+                            /** @description Who began a closure: an organisation may give up only a person's */
+                            closedBy: ("person" | "operator") | null;
+                            /** @description When a closure can no longer be given up */
+                            graceEndsAt: string | null;
+                            /** @description The addresses it answers at */
+                            hostnames: string[];
+                        }[];
+                        /** @description Tenants asked for and not made: never the first administrator's address */
+                        requests: {
+                            /** @description The tenant it will be */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /** @description The address it will answer at */
+                            hostname: string;
+                            /**
+                             * @description Being made, or could not be: the operator can see why
+                             * @enum {string}
+                             */
+                            state: "waiting" | "failed";
+                            /**
+                             * Format: date-time
+                             * @description When it was asked for
+                             */
+                            createdAt: string;
+                        }[];
+                        /** @description What a new tenant's address ends in; none means the operator has yet to say */
+                        hostnameSuffix: string | null;
                     };
                 };
             };
@@ -88824,7 +89264,9 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "items": []
+                     *       "items": [],
+                     *       "requests": [],
+                     *       "hostnameSuffix": "example"
                      *     }
                      */
                     "application/json": {
@@ -88852,6 +89294,27 @@ export interface operations {
                             /** @description The addresses it answers at */
                             hostnames: string[];
                         }[];
+                        /** @description Tenants asked for and not made: never the first administrator's address */
+                        requests: {
+                            /** @description The tenant it will be */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /** @description The address it will answer at */
+                            hostname: string;
+                            /**
+                             * @description Being made, or could not be: the operator can see why
+                             * @enum {string}
+                             */
+                            state: "waiting" | "failed";
+                            /**
+                             * Format: date-time
+                             * @description When it was asked for
+                             */
+                            createdAt: string;
+                        }[];
+                        /** @description What a new tenant's address ends in; none means the operator has yet to say */
+                        hostnameSuffix: string | null;
                     };
                 };
             };
@@ -88981,7 +89444,9 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "items": []
+                     *       "items": [],
+                     *       "requests": [],
+                     *       "hostnameSuffix": "example"
                      *     }
                      */
                     "application/json": {
@@ -89009,6 +89474,27 @@ export interface operations {
                             /** @description The addresses it answers at */
                             hostnames: string[];
                         }[];
+                        /** @description Tenants asked for and not made: never the first administrator's address */
+                        requests: {
+                            /** @description The tenant it will be */
+                            id: string;
+                            /** @description Its name */
+                            name: string;
+                            /** @description The address it will answer at */
+                            hostname: string;
+                            /**
+                             * @description Being made, or could not be: the operator can see why
+                             * @enum {string}
+                             */
+                            state: "waiting" | "failed";
+                            /**
+                             * Format: date-time
+                             * @description When it was asked for
+                             */
+                            createdAt: string;
+                        }[];
+                        /** @description What a new tenant's address ends in; none means the operator has yet to say */
+                        hostnameSuffix: string | null;
                     };
                 };
             };
@@ -90352,7 +90838,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -102831,7 +103317,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -102966,7 +103452,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
                 };
             };
         };
@@ -102994,7 +103480,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
                         };
                     };
                 };
@@ -105504,7 +105990,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -105538,7 +106024,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -107442,6 +107928,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -107462,6 +107949,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -107471,6 +107960,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -107611,6 +108104,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -107631,6 +108125,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -107640,6 +108136,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -107812,6 +108312,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -107832,6 +108333,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -107841,6 +108344,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -108002,6 +108509,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -108022,6 +108530,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -108031,6 +108541,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -108198,6 +108712,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -108218,6 +108733,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -108227,6 +108744,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -108409,6 +108930,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -108429,6 +108951,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -108438,6 +108962,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -108585,6 +109113,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -108605,6 +109134,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -108614,6 +109145,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -108776,7 +109311,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -108925,6 +109460,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -108945,6 +109481,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -108954,6 +109492,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -109114,6 +109656,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
+                     *       "sharing": false,
                      *       "providers": [],
                      *       "google": {
                      *         "available": false,
@@ -109134,6 +109677,8 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
+                        /** @description Whether this is an organisation's tenant, which can share a provider */
+                        sharing: boolean;
                         /** @description Every provider, the open before the closed. A client secret is never here */
                         providers: {
                             id: string & (unknown & unknown);
@@ -109143,6 +109688,10 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            /** @description Copied into this organisation's tenants, and kept current */
+                            shared: boolean;
+                            /** @description A copy of the organisation's: it can be closed here, not edited */
+                            managed: boolean;
                             scim: {
                                 /** @description It provisions: it admits only those it pushed */
                                 on: boolean;
@@ -129500,7 +130049,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -129617,7 +130166,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -129651,7 +130200,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;

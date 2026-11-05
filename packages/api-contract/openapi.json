@@ -16220,7 +16220,9 @@
                               "import_environment",
                               "close_environment",
                               "suspend_environment",
-                              "suspend_tenant"
+                              "suspend_tenant",
+                              "create_tenant",
+                              "share_provider"
                             ]
                           },
                           "allowed": {
@@ -16519,7 +16521,9 @@
                               "import_environment",
                               "close_environment",
                               "suspend_environment",
-                              "suspend_tenant"
+                              "suspend_tenant",
+                              "create_tenant",
+                              "share_provider"
                             ]
                           },
                           "allowed": {
@@ -90765,7 +90769,9 @@
                                   "hold",
                                   "rotate_secrets",
                                   "configure_services",
-                                  "configure_webhooks"
+                                  "configure_webhooks",
+                                  "create_tenant",
+                                  "share_provider"
                                 ]
                               },
                               "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -91947,7 +91953,9 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks"
+                              "configure_webhooks",
+                              "create_tenant",
+                              "share_provider"
                             ]
                           },
                           "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -253577,6 +253585,466 @@
         }
       }
     },
+    "/v1/organisation/providers/{id}/shared": {
+      "put": {
+        "operationId": "shareProvider",
+        "summary": "Share one of the organisation's identity providers with its tenants, or stop",
+        "description": "Marks one of the organisation's identity providers as shared, so each of its tenants has a copy, its secret resealed for that tenant and kept current. A tenant can close its copy and cannot edit it. Stopping leaves each tenant the provider as its own. Needs `share_provider`.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "share_provider",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shared": {
+                    "type": "boolean",
+                    "description": "Whether this organisation's tenants have a copy kept current"
+                  }
+                },
+                "required": [
+                  "shared"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "shared": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Marked: what is configured now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "issuer": {
+                            "type": "string"
+                          },
+                          "clientId": {
+                            "type": "string"
+                          },
+                          "groupsClaim": {
+                            "type": "string"
+                          },
+                          "closed": {
+                            "type": "boolean",
+                            "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "issuer",
+                          "clientId",
+                          "groupsClaim",
+                          "closed",
+                          "shared",
+                          "managed",
+                          "scim"
+                        ]
+                      },
+                      "description": "Every provider, the open before the closed. A client secret is never here"
+                    },
+                    "google": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean",
+                          "description": "Whether this service holds a Google client at all"
+                        },
+                        "open": {
+                          "type": "boolean"
+                        },
+                        "domains": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "available",
+                        "open",
+                        "domains"
+                      ]
+                    },
+                    "sessions": {
+                      "type": "object",
+                      "properties": {
+                        "idleMinutes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "absoluteHours": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "idleMinutes",
+                        "absoluteHours"
+                      ]
+                    },
+                    "redirectUri": {
+                      "type": "string",
+                      "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
+                    },
+                    "recentSignIn": {
+                      "type": "boolean",
+                      "description": "Whether this session authenticated recently enough to change any of this"
+                    },
+                    "signedInThrough": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "route": {
+                              "type": "string",
+                              "enum": [
+                                "organisation",
+                                "google"
+                              ]
+                            },
+                            "provider": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "route",
+                            "provider"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The way in of the session asking, which it may not close; null for a token"
+                    }
+                  },
+                  "required": [
+                    "sharing",
+                    "providers",
+                    "google",
+                    "sessions",
+                    "redirectUri",
+                    "scimUrl",
+                    "recentSignIn",
+                    "signedInThrough"
+                  ]
+                },
+                "example": {
+                  "sharing": false,
+                  "providers": [],
+                  "google": {
+                    "available": false,
+                    "open": false,
+                    "domains": []
+                  },
+                  "sessions": {
+                    "idleMinutes": -9007199254740991,
+                    "absoluteHours": -9007199254740991
+                  },
+                  "redirectUri": "example",
+                  "scimUrl": "example",
+                  "recentSignIn": false,
+                  "signedInThrough": {
+                    "route": "organisation",
+                    "provider": "00000000-0000-4000-8000-000000000001"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`share_provider` is not held at this organisation's tenant, or the sign-in is too old",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such open provider here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/organisation/tenants": {
       "get": {
         "operationId": "listOrganisationTenants",
@@ -253705,14 +254173,67 @@
                           "hostnames"
                         ]
                       }
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant it will be"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "hostname": {
+                            "type": "string",
+                            "description": "The address it will answer at"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "failed"
+                            ],
+                            "description": "Being made, or could not be: the operator can see why"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it was asked for"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "state",
+                          "createdAt"
+                        ]
+                      },
+                      "description": "Tenants asked for and not made: never the first administrator's address"
+                    },
+                    "hostnameSuffix": {
+                      "description": "What a new tenant's address ends in; none means the operator has yet to say",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "requests",
+                    "hostnameSuffix"
                   ]
                 },
                 "example": {
-                  "items": []
+                  "items": [],
+                  "requests": [],
+                  "hostnameSuffix": "example"
                 }
               }
             },
@@ -253768,6 +254289,413 @@
           },
           "403": {
             "description": "`suspend_tenant` is not held at this organisation's tenant, or the sign-in is too old",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrganisationTenant",
+        "summary": "Ask for another tenant for this organisation",
+        "description": "Asks for another tenant under this organisation's addresses, and invites its first administrator by address, through the provider the organisation shares. It is made a little later, and its address is forgotten here once the invitation exists. Recorded in this tenant's log, and in the new tenant's when it is made. Needs `create_tenant`.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "create_tenant",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80,
+                    "description": "What it is called"
+                  },
+                  "label": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$",
+                    "description": "What comes before the organisation's suffix in its address"
+                  },
+                  "firstAdministrator": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Who is invited to administer it: forgotten here once the invitation exists"
+                  }
+                },
+                "required": [
+                  "name",
+                  "label",
+                  "firstAdministrator"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "name": "example",
+                "label": "example",
+                "firstAdministrator": "developer@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asked for: its tenants as they now stand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "suspended",
+                              "closing",
+                              "retained",
+                              "deleting",
+                              "deleted"
+                            ],
+                            "description": "Where it is in its life"
+                          },
+                          "since": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it came to be in this state"
+                          },
+                          "suspendedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who stopped it: an organisation may start only what a person stopped"
+                          },
+                          "closedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "person",
+                                  "operator"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who began a closure: an organisation may give up only a person's"
+                          },
+                          "graceEndsAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "When a closure can no longer be given up"
+                          },
+                          "hostnames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The addresses it answers at"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "state",
+                          "since",
+                          "suspendedBy",
+                          "closedBy",
+                          "graceEndsAt",
+                          "hostnames"
+                        ]
+                      }
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant it will be"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "hostname": {
+                            "type": "string",
+                            "description": "The address it will answer at"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "failed"
+                            ],
+                            "description": "Being made, or could not be: the operator can see why"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it was asked for"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "state",
+                          "createdAt"
+                        ]
+                      },
+                      "description": "Tenants asked for and not made: never the first administrator's address"
+                    },
+                    "hostnameSuffix": {
+                      "description": "What a new tenant's address ends in; none means the operator has yet to say",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "requests",
+                    "hostnameSuffix"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "requests": [],
+                  "hostnameSuffix": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`create_tenant` is not held at this organisation's tenant, or the sign-in is too old",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No provider is shared for its first administrator to sign in through, the address is taken, or this organisation has no addresses yet",
             "content": {
               "application/json": {
                 "schema": {
@@ -253987,14 +254915,67 @@
                           "hostnames"
                         ]
                       }
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant it will be"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "hostname": {
+                            "type": "string",
+                            "description": "The address it will answer at"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "failed"
+                            ],
+                            "description": "Being made, or could not be: the operator can see why"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it was asked for"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "state",
+                          "createdAt"
+                        ]
+                      },
+                      "description": "Tenants asked for and not made: never the first administrator's address"
+                    },
+                    "hostnameSuffix": {
+                      "description": "What a new tenant's address ends in; none means the operator has yet to say",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "requests",
+                    "hostnameSuffix"
                   ]
                 },
                 "example": {
-                  "items": []
+                  "items": [],
+                  "requests": [],
+                  "hostnameSuffix": "example"
                 }
               }
             },
@@ -254351,14 +255332,67 @@
                           "hostnames"
                         ]
                       }
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant it will be"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "hostname": {
+                            "type": "string",
+                            "description": "The address it will answer at"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "failed"
+                            ],
+                            "description": "Being made, or could not be: the operator can see why"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it was asked for"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "state",
+                          "createdAt"
+                        ]
+                      },
+                      "description": "Tenants asked for and not made: never the first administrator's address"
+                    },
+                    "hostnameSuffix": {
+                      "description": "What a new tenant's address ends in; none means the operator has yet to say",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "requests",
+                    "hostnameSuffix"
                   ]
                 },
                 "example": {
-                  "items": []
+                  "items": [],
+                  "requests": [],
+                  "hostnameSuffix": "example"
                 }
               }
             },
@@ -254738,14 +255772,67 @@
                           "hostnames"
                         ]
                       }
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The tenant it will be"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Its name"
+                          },
+                          "hostname": {
+                            "type": "string",
+                            "description": "The address it will answer at"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "failed"
+                            ],
+                            "description": "Being made, or could not be: the operator can see why"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it was asked for"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "state",
+                          "createdAt"
+                        ]
+                      },
+                      "description": "Tenants asked for and not made: never the first administrator's address"
+                    },
+                    "hostnameSuffix": {
+                      "description": "What a new tenant's address ends in; none means the operator has yet to say",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "requests",
+                    "hostnameSuffix"
                   ]
                 },
                 "example": {
-                  "items": []
+                  "items": [],
+                  "requests": [],
+                  "hostnameSuffix": "example"
                 }
               }
             },
@@ -257782,7 +258869,9 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks"
+                                "configure_webhooks",
+                                "create_tenant",
+                                "share_provider"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -295366,7 +296455,9 @@
                                 "import_environment",
                                 "close_environment",
                                 "suspend_environment",
-                                "suspend_tenant"
+                                "suspend_tenant",
+                                "create_tenant",
+                                "share_provider"
                               ]
                             }
                           }
@@ -295692,7 +296783,9 @@
                         "import_environment",
                         "close_environment",
                         "suspend_environment",
-                        "suspend_tenant"
+                        "suspend_tenant",
+                        "create_tenant",
+                        "share_provider"
                       ]
                     },
                     "description": "What it holds, each once. Without read it can only be granted as a denial"
@@ -295757,7 +296850,9 @@
                               "import_environment",
                               "close_environment",
                               "suspend_environment",
-                              "suspend_tenant"
+                              "suspend_tenant",
+                              "create_tenant",
+                              "share_provider"
                             ]
                           }
                         }
@@ -302203,7 +303298,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 18,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -302225,7 +303320,9 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks"
+                        "configure_webhooks",
+                        "create_tenant",
+                        "share_provider"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -302289,7 +303386,9 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "create_tenant",
+                          "share_provider"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -306504,6 +307603,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -306535,6 +307638,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -306573,6 +307684,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -306676,6 +307789,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -306686,6 +307800,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -306923,6 +308038,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -306954,6 +308073,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -306992,6 +308119,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -307095,6 +308224,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -307105,6 +308235,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -307411,6 +308542,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -307442,6 +308577,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -307480,6 +308623,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -307583,6 +308728,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -307593,6 +308739,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -307883,6 +309030,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -307914,6 +309065,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -307952,6 +309111,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -308055,6 +309216,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -308065,6 +309227,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -308374,6 +309537,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -308405,6 +309572,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -308443,6 +309618,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -308546,6 +309723,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -308556,6 +309734,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -308865,6 +310044,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -308896,6 +310079,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -308934,6 +310125,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -309037,6 +310230,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -309047,6 +310241,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -309340,6 +310535,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -309371,6 +310570,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -309409,6 +310616,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -309512,6 +310721,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -309522,6 +310732,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -309823,7 +311034,9 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "create_tenant",
+                          "share_provider"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -310164,6 +311377,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -310195,6 +311412,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -310233,6 +311458,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -310336,6 +311563,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -310346,6 +311574,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -310622,6 +311851,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "sharing": {
+                      "type": "boolean",
+                      "description": "Whether this is an organisation's tenant, which can share a provider"
+                    },
                     "providers": {
                       "type": "array",
                       "items": {
@@ -310653,6 +311886,14 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "shared": {
+                            "type": "boolean",
+                            "description": "Copied into this organisation's tenants, and kept current"
+                          },
+                          "managed": {
+                            "type": "boolean",
+                            "description": "A copy of the organisation's: it can be closed here, not edited"
                           },
                           "scim": {
                             "type": "object",
@@ -310691,6 +311932,8 @@
                           "clientId",
                           "groupsClaim",
                           "closed",
+                          "shared",
+                          "managed",
                           "scim"
                         ]
                       },
@@ -310794,6 +312037,7 @@
                     }
                   },
                   "required": [
+                    "sharing",
                     "providers",
                     "google",
                     "sessions",
@@ -310804,6 +312048,7 @@
                   ]
                 },
                 "example": {
+                  "sharing": false,
                   "providers": [],
                   "google": {
                     "available": false,
@@ -373187,7 +374432,9 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks"
+                                "configure_webhooks",
+                                "create_tenant",
+                                "share_provider"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -373450,7 +374697,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 18,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -373472,7 +374719,9 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks"
+                        "configure_webhooks",
+                        "create_tenant",
+                        "share_provider"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -373536,7 +374785,9 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "create_tenant",
+                          "share_provider"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"

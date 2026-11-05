@@ -871,7 +871,10 @@ export {
 export { MyPreferences, preferenceRoutes } from './preferences.js';
 export { ClosureBody, ClosureView, closureRoutes } from './closure.js';
 export {
+  NewTenantBody,
+  OrganisationTenantRequest,
   OrganisationTenantParams,
+  SharedBody,
   OrganisationTenants,
   OrganisationTenantView,
   Suspended,

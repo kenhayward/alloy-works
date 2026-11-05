@@ -8,6 +8,8 @@ export interface Tenant {
   readonly id: string;
   readonly schema: string;
   readonly role: string;
+  /** Where it was resolved from a hostname; an organisation's own tenant holds no content (TL-K). */
+  readonly kind?: 'content' | 'organisation';
 }
 
 export interface NewTenant {

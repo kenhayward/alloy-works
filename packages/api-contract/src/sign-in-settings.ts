@@ -82,6 +82,9 @@ export const SessionSettingsBody = z.strictObject({
 export type SessionSettingsBody = z.infer<typeof SessionSettingsBody>;
 
 export const SignInSettings = z.object({
+  sharing: z
+    .boolean()
+    .describe("Whether this is an organisation's tenant, which can share a provider"),
   providers: z
     .array(
       z.object({
@@ -91,6 +94,10 @@ export const SignInSettings = z.object({
         clientId: z.string(),
         groupsClaim: z.string(),
         closed: z.boolean().describe('Closed: it signs nobody in'),
+        shared: z.boolean().describe("Copied into this organisation's tenants, and kept current"),
+        managed: z
+          .boolean()
+          .describe("A copy of the organisation's: it can be closed here, not edited"),
         scim: z.object({
           on: z.boolean().describe('It provisions: it admits only those it pushed'),
           claim: ScimClaim,

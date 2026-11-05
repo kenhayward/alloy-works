@@ -74,6 +74,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   downloadTenantExport: writes('export.downloaded'),
   suspendEnvironment: writes('tenant.suspended', 'organisation.changed'),
   listOrganisationTenants: read,
+  createOrganisationTenant: writes('organisation.changed'),
+  shareProvider: writes('sign_in.configured'),
   suspendOrganisationTenant: writes('organisation.changed', 'tenant.suspended'),
   liftOrganisationSuspension: writes('organisation.changed', 'tenant.resumed'),
   cancelOrganisationClosure: writes('organisation.changed', 'tenant.closure_cancelled'),
@@ -750,6 +752,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {
+    createTenantMaker: writes('tenant.created'),
     closeProvider: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
     closeSignInRoute: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
     configureOrganisationSignIn: writes('sign_in_route.configured'),

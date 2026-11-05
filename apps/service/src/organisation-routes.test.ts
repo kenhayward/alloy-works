@@ -198,4 +198,118 @@ describe("an organisation's tenant through the service (the TL plan, TLd)", () =
     });
     expect(HOST).not.toBe(ORG_HOST);
   });
+  describe('creating a tenant and sharing a provider (TLe)', () => {
+    let cookie = '';
+    let provider = '';
+
+    beforeAll(async () => {
+      await queryAs(
+        h.db.adminUrl,
+        `update platform.organisation set hostname_suffix = '.acme.harness.test' where id = 'acme'`,
+      );
+      cookie = await signIn(h.app, ORG_HOST, 'ada', h.issuer);
+      const me = await h.app.inject({ url: '/v1/me', headers: { host: ORG_HOST, cookie } });
+      const id = me.json<{ id: string }>().id;
+      await h.tenantDb.withTenant(organisation, async (trx) => {
+        await grant(trx, {
+          roleId: (await findRole(trx, 'Administrator'))!.id,
+          subject: { principal: id },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: id,
+        });
+      });
+      const settings = await h.app.inject({
+        url: '/v1/sign-in-settings',
+        headers: { host: ORG_HOST, cookie },
+      });
+      provider = settings.json<{ providers: { id: string }[] }>().providers[0]!.id;
+    });
+
+    const asked = (body: object) =>
+      h.app.inject({
+        method: 'POST',
+        url: '/v1/organisation/tenants',
+        headers: { host: ORG_HOST, cookie },
+        payload: body,
+      });
+    const ASKING = { name: 'Legal', label: 'legal', firstAdministrator: 'ada@example.test' };
+
+    it('IAM-059 refuses a tenant nobody could sign in to', async () => {
+      const answer = await asked(ASKING);
+      expect(answer.statusCode, answer.body).toBe(409);
+      expect(answer.json()).toMatchObject({ code: 'no_shared_provider' });
+    });
+
+    it('IAM-068 shares a provider, and answers a tenant asked for without the address', async () => {
+      const shared = await h.app.inject({
+        method: 'PUT',
+        url: `/v1/organisation/providers/${provider}/shared`,
+        headers: { host: ORG_HOST, cookie },
+        payload: { shared: true },
+      });
+      expect(shared.statusCode, shared.body).toBe(200);
+      expect(shared.json()).toMatchObject({
+        sharing: true,
+        providers: [{ id: provider, shared: true, managed: false }],
+      });
+      const answer = await asked(ASKING);
+      expect(answer.statusCode, answer.body).toBe(200);
+      expect(answer.json()).toMatchObject({
+        hostnameSuffix: '.acme.harness.test',
+        requests: [{ name: 'Legal', hostname: 'legal.acme.harness.test', state: 'waiting' }],
+      });
+      expect(answer.body).not.toContain('ada@example.test');
+      const again = await asked({ ...ASKING, name: 'Twice' });
+      expect(again.json()).toMatchObject({ code: 'organisation_address_taken' });
+    });
+
+    it('IAM-068 neither act is open to a token or a content tenant', async () => {
+      const content = await h.app.inject({
+        method: 'POST',
+        url: '/v1/organisation/tenants',
+        headers: { host: HOST },
+        payload: ASKING,
+      });
+      expect(content.statusCode).toBe(404);
+      expect(content.json()).toMatchObject({ code: 'environment_not_here' });
+    });
+
+    it('IAM-085 refuses to change a copy, and offers its closure', async () => {
+      const copy = await h.tenantDb.withTenant(h.tenant, (trx) =>
+        trx
+          .insertInto('identity_provider')
+          .values({
+            name: 'Copy',
+            issuer: 'https://copy.example',
+            client_id: 'x',
+            sealed_secret: 'sealed',
+            secret_name: null,
+            managed_by_organisation: true,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow(),
+      );
+      const content = await signIn(h.app, HOST, 'ada', h.issuer);
+      const me = await h.app.inject({ url: '/v1/me', headers: { host: HOST, cookie: content } });
+      const id = me.json<{ id: string }>().id;
+      await h.tenantDb.withTenant(h.tenant, async (trx) => {
+        await grant(trx, {
+          roleId: (await findRole(trx, 'Administrator'))!.id,
+          subject: { principal: id },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: id,
+        });
+      });
+      const changed = await h.app.inject({
+        method: 'PATCH',
+        url: `/v1/sign-in-settings/providers/${copy.id}`,
+        headers: { host: HOST, cookie: content },
+        payload: { name: 'Mine' },
+      });
+      expect(changed.statusCode, changed.body).toBe(409);
+      expect(changed.json()).toMatchObject({ code: 'provider_managed_by_organisation' });
+    });
+  });
 });
