@@ -39,9 +39,10 @@ services:
     environment:
       KEYCLOAK_URL: http://keycloak:${IDP_PORT:-9090}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-admin}
-      # Where the service's callback may be, and so where a sign-in may return.
+      # Where the service's callback may be, and so where a sign-in may return. A tenant made from an
+      # organisation's console joins through ALLOY_EXTRA_REDIRECT_URIS, as this list replaces Keycloak's.
       ALLOY_REDIRECT_URIS: >-
-        http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://org.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback${ALLOY_LAN_ADDRESS:+,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback}
+        http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://org.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback${ALLOY_LAN_ADDRESS:+,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback}${ALLOY_EXTRA_REDIRECT_URIS:+,${ALLOY_EXTRA_REDIRECT_URIS}}
     volumes:
       - ./keycloak/configure.sh:/configure.sh:ro
     depends_on:

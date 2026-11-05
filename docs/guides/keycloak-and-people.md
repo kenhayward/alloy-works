@@ -125,6 +125,19 @@ a moment, return to the application and sign in again.
 
 To see two people side by side, use a private window or another browser profile for each.
 
+## 5. Make a tenant
+
+An organisation's console, at `http://org.acme.localhost:8088`, makes tenants under `.acme.localhost`. Keycloak
+refuses a sign-in returning to an address it does not know, so before the tenant's first sign-in add its callback
+to `deploy/.env`, comma-separated, then run the `up` from section 1 again:
+
+```bash
+ALLOY_EXTRA_REDIRECT_URIS=http://test.acme.localhost:8088/v1/sign-in/organisation/callback
+```
+
+An address added in Keycloak's console works until the next start, which replaces the list. The whole procedure
+is in [Setting up an organisation and making tenants](organisations-and-tenants.md).
+
 ## Starting again
 
 To go back to the stand-in, leave Keycloak's file out and remove its containers, which would hold the port:

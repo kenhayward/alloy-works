@@ -182,6 +182,10 @@ For other machines too, set `ALLOY_SIGN_IN=keycloak` in `deploy/.env` and run `d
 which adds `compose.lan.yaml` and tells Keycloak its address. By hand, that is `ALLOY_IDP_UPSTREAM=keycloak`
 and `KEYCLOAK_PUBLIC_URL=https://<address>:9443` beside the three files.
 
+Every start replaces the list of addresses a sign-in may return to, so one added in Keycloak's console does
+not last. A tenant made from an organisation's console goes in `ALLOY_EXTRA_REDIRECT_URIS` in `deploy/.env`,
+comma-separated, each ending `/v1/sign-in/organisation/callback`, and takes effect at the next `up`.
+
 It answers on the provider's port and name, and its realm (`deploy/keycloak/alloy-realm.json`, with their
 development password) holds the stand-in's people and client, so an existing stack moves without losing
 anybody: the setup points the environment's provider at it and carries Ada's and Grace's grants across.
@@ -216,8 +220,8 @@ without writing SQL. It also gives Ada **Full access (development)**, every perm
 whole environment, so every part of the product can be tried as her.
 
 An organisation's own tenant, holding no content, is at `http://org.acme.localhost:8088`, where Ada administers
-too. A tenant made from its console answers under `.acme.localhost`; the stand-in signs nobody in there until its
-address is added to `STAND_IN_REDIRECT_URIS`. To make an organisation elsewhere:
+too: [the guide](../docs/guides/organisations-and-tenants.md). A tenant made from its console answers under `.acme.localhost`; the stand-in signs nobody in there until its
+address is added to `STAND_IN_REDIRECT_URIS`, or under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS` in `deploy/.env`. To make an organisation elsewhere:
 
 ```bash
 docker compose -f deploy/compose.yaml run --rm steward organisation --id <id> --name <name> --tenant <new tenant id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> --google
