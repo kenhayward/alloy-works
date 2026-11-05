@@ -6,7 +6,26 @@ export {
 } from './bootstrap.js';
 export { inSavepoint } from './savepoint.js';
 export { unresolvedVariables } from './variable-check.js';
-export { migrate, type MigrateOptions, type MigrationReport } from './migrate.js';
+export { migrate, migrateTenant, type MigrateOptions, type MigrationReport } from './migrate.js';
+export {
+  createTenantMaker,
+  hostnameSuffix,
+  REQUEST_ATTEMPTS,
+  requestTenant,
+  tenantRequests,
+  type OrganisationRequest,
+  type TenantMaker,
+  type TenantRequest,
+  type TenantRequestRefusal,
+  type TenantRequestView,
+} from './tenant-creation.js';
+export {
+  copySharedProviders,
+  hasSharedProvider,
+  markProviderShared,
+  queueProviderCopy,
+  type CopiedProviders,
+} from './provider-sharing.js';
 export { tenantNames, type TenantNames } from './names.js';
 export {
   addHostnames,

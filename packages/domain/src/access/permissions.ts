@@ -38,6 +38,9 @@ export const permissions = [
   'close_environment',
   'suspend_environment',
   'suspend_tenant',
+  // An organisation's acts, meaningful only in its own tenant (tenant-lifecycle.md, TL-L).
+  'create_tenant',
+  'share_provider',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -92,6 +95,8 @@ export const externalCap: readonly Permission[] = [
   'close_environment',
   'suspend_environment',
   'suspend_tenant',
+  'create_tenant',
+  'share_provider',
 ];
 
 /**
@@ -110,6 +115,8 @@ export const administrativePermissions: readonly Permission[] = [
   'close_environment',
   'suspend_environment',
   'suspend_tenant',
+  'create_tenant',
+  'share_provider',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

@@ -22,6 +22,13 @@ export async function asAdministrator<T = void>(
       `select set_config('search_path', $1, true), set_config('${AUDIT_SETTING}', $2, true)`,
       [`${schema}, extensions`, auditContextSetting({ actorKind: 'vendor' })],
     );
+    // The steward works in a tenant as its owner, its membership not inheriting; a superuser has no need.
+    const { rows } = await client.query<{ steward: boolean }>(
+      `select current_user = 'aw_steward' as steward`,
+    );
+    if (rows[0]?.steward) {
+      await client.query(`set local role ${client.escapeIdentifier(`${tenant.role}_owner`)}`);
+    }
     const answer = await work(client, schema);
     await client.query('commit');
     return answer;

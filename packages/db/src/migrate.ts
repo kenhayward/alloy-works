@@ -110,26 +110,60 @@ export async function migrate(
     );
     const tenants: Record<string, readonly string[]> = {};
     for (const tenant of rows) {
-      const role = assertTenantRole(tenant.role_name);
-      tenants[tenant.id] = await applyAll(
+      tenants[tenant.id] = await applyToTenant(
         client,
-        {
-          schema: assertTenantRole(tenant.schema_name),
-          owner: `${role}_owner`,
-          runtime: role,
-          after: async (applied) => {
-            // Each scope once, the current set first: none rebuilds another's rows, but the whole
-            // holds every thread's.
-            await reindexScopes(
-              transactionOver(client),
-              applied.flatMap((version) => REINDEXED_BY.get(version) ?? []),
-            );
-          },
-        },
+        tenant.schema_name,
+        tenant.role_name,
         tenantMigrations,
       );
     }
     return { platform, tenants };
+  } finally {
+    await client.end();
+  }
+}
+
+const applyToTenant = (
+  client: pg.Client,
+  schema: string,
+  runtime: string,
+  migrations: readonly Migration[],
+) => {
+  const role = assertTenantRole(runtime);
+  return applyAll(
+    client,
+    {
+      schema: assertTenantRole(schema),
+      owner: `${role}_owner`,
+      runtime: role,
+      after: async (applied) => {
+        // Each scope once, the current set first: none rebuilds another's rows, but the whole
+        // holds every thread's.
+        await reindexScopes(
+          transactionOver(client),
+          applied.flatMap((version) => REINDEXED_BY.get(version) ?? []),
+        );
+      },
+    },
+    migrations,
+  );
+};
+
+/**
+ * Brings one tenant to the current version, as any login that may become its owner: how the steward
+ * finishes making one, without a login that reaches every tenant (TL-N). Takes turns as `migrate` does.
+ */
+export async function migrateTenant(
+  url: string,
+  tenant: { readonly schema: string; readonly role: string },
+  options: MigrateOptions = {},
+): Promise<void> {
+  const migrations = await load(options.migrationsDir ?? DEFAULT_DIR, 'tenant');
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('select pg_advisory_lock(hashtext($1))', ['alloy-works:migrate']);
+    await applyToTenant(client, tenant.schema, tenant.role, migrations);
   } finally {
     await client.end();
   }

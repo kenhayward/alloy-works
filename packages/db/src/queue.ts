@@ -31,6 +31,7 @@ export type JobKind =
   | 'tenant_export'
   | 'restoration'
   | 'tenant_purge'
+  | 'provider_share'
   | 'range'
   | 'embed'
   | 'import'
@@ -212,6 +213,8 @@ export function createJobQueue(url: string): JobQueue {
          where finished_at is null and failed_at is null
            and attempts >= max_attempts
            and locked_until < now()
+           -- The steward's, which fails its own: no other process may (TL-I).
+           and kind <> 'provider_share'
            -- Its failing writes into the tenant, which waits with everything else but the export
            -- a closing tenant's grace period is for (TL-C), as claim has it.
            and exists (select 1 from platform.tenant t

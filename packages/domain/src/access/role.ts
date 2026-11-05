@@ -77,5 +77,5 @@ export const starterRoles: readonly StarterRole[] = [
  */
 export const organisationRole: StarterRole = {
   name: 'Organisation administrator',
-  permissions: ['read', 'suspend_tenant'],
+  permissions: ['read', 'suspend_tenant', 'create_tenant', 'share_provider'],
 };

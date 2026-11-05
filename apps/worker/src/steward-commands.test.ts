@@ -7,6 +7,7 @@ import {
   type StewardDatabase,
   type Tenant,
   type TenantDatabase,
+  type TenantMaker,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -30,7 +31,12 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
   let reach: StewardDatabase;
   const lines: string[] = [];
   const run = (...argv: string[]) =>
-    runSteward(argv, { db: steward, steward: reach, out: (line) => lines.push(line) });
+    runSteward(argv, {
+      db: steward,
+      steward: reach,
+      maker: {} as TenantMaker,
+      out: (line) => lines.push(line),
+    });
 
   beforeAll(async () => {
     db = await freshDatabase();

@@ -15,7 +15,7 @@ export interface NewTenant {
   readonly tenant: { readonly id: string; readonly name: string };
   readonly hostnames: readonly string[];
   /** An organisation administers from a tenant of its own, holding no content (TL-K). */
-  readonly kind?: 'organisation';
+  readonly kind?: 'content' | 'organisation';
 }
 
 /**
@@ -33,12 +33,17 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
   const id = (name: string) => client.escapeIdentifier(name);
   try {
     await client.query('begin');
+    // The steward, making a tenant, gets `set` on each role this way: it holds admin on what it makes
+    // already, and may not grant itself that again (TL-N). A superuser takes no notice of this.
+    await client.query(`set local createrole_self_grant to 'set'`);
     await client.query(`create role ${id(names.owner)} nologin`);
     await client.query(`create role ${id(names.role)} nologin`);
     // Inherited, unlike the login roles' membership: inside withTenant the tenant's role carries the
     // rights every tenant has, which is how it puts its own work on the queue.
     await client.query(`grant aw_tenant to ${id(names.role)}`);
     await client.query(`create schema ${id(names.schema)} authorization ${id(names.owner)}`);
+    // As its owner, which is all the steward may be here; a superuser can be it as well.
+    await client.query(`set local role ${id(names.owner)}`);
     await client.query(`grant usage on schema ${id(names.schema)} to ${id(names.role)}`);
     await client.query(
       `alter default privileges for role ${id(names.owner)} in schema ${id(names.schema)}
@@ -48,6 +53,7 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
       `alter default privileges for role ${id(names.owner)} in schema ${id(names.schema)}
          grant usage, select on sequences to ${id(names.role)}`,
     );
+    await client.query('reset role');
     // Assumable, never inherited: code that skips withTenant runs as the login role, and is refused.
     await client.query(`grant ${id(names.role)} to aw_service, aw_worker with inherit false`);
     await client.query(`grant ${id(names.owner)} to aw_migrator with inherit false`);
@@ -55,24 +61,30 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
       `grant ${id(names.owner)}, ${id(names.role)} to aw_restorer with inherit false`,
     );
     // To record a change of state in the tenant's own log, and in time to remove both (TL-A, TL-I).
-    await client.query(
-      `grant ${id(names.owner)}, ${id(names.role)} to aw_steward with inherit false, admin true`,
+    const { rows: login } = await client.query<{ steward: boolean }>(
+      `select current_user = 'aw_steward' as steward`,
     );
+    if (!login[0]?.steward) {
+      await client.query(
+        `grant ${id(names.owner)}, ${id(names.role)} to aw_steward with inherit false, admin true`,
+      );
+    }
     await client.query(
       'insert into platform.organisation (id, name) values ($1, $2) on conflict (id) do nothing',
       [input.organisation.id, input.organisation.name],
     );
     await client.query(
-      `insert into platform.tenant (id, organisation_id, name, schema_name, role_name)
-       values ($1, $2, $3, $4, $5)`,
-      [input.tenant.id, input.organisation.id, input.tenant.name, names.schema, names.role],
-    );
-    if (input.kind) {
-      await client.query('update platform.tenant set kind = $1 where id = $2', [
-        input.kind,
+      `insert into platform.tenant (id, organisation_id, name, schema_name, role_name, kind)
+       values ($1, $2, $3, $4, $5, $6)`,
+      [
         input.tenant.id,
-      ]);
-    }
+        input.organisation.id,
+        input.tenant.name,
+        names.schema,
+        names.role,
+        input.kind ?? 'content',
+      ],
+    );
     for (const hostname of input.hostnames) {
       await client.query(
         'insert into platform.tenant_hostname (hostname, tenant_id) values ($1, $2)',
@@ -130,23 +142,34 @@ export async function createTenant(
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
   try {
-    await client.query(
-      `insert into ${client.escapeIdentifier(tenant.schema)}.profile (display_name) values ($1)`,
-      [input.tenant.name],
-    );
-    if (input.kind === 'organisation') {
-      const schema = client.escapeIdentifier(tenant.schema);
-      await client.query(`insert into ${schema}.role (name, permissions) values ($1, $2)`, [
-        organisationRole.name,
-        organisationRole.permissions,
-      ]);
-      await client.query(
-        `update ${schema}.role set permissions = permissions || array['suspend_tenant']
-          where name = 'Administrator'`,
-      );
-    }
+    await seedTenant(client, client.escapeIdentifier(tenant.schema), input);
   } finally {
     await client.end();
   }
   return tenant;
+}
+
+/** A new tenant's first rows, on a connection that may write them. `schema` is escaped already. */
+export async function seedTenant(
+  client: pg.Client,
+  schema: string,
+  input: Pick<NewTenant, 'tenant' | 'kind'>,
+): Promise<void> {
+  await client.query(
+    `insert into ${schema}.profile (display_name)
+     select $1::text where not exists (select from ${schema}.profile)`,
+    [input.tenant.name],
+  );
+  if (input.kind !== 'organisation') return;
+  await client.query(
+    `insert into ${schema}.role (name, permissions)
+     select $1::text, $2::text[]
+      where not exists (select from ${schema}.role where name = $1::text)`,
+    [organisationRole.name, organisationRole.permissions],
+  );
+  await client.query(
+    `update ${schema}.role
+        set permissions = permissions || array['suspend_tenant', 'create_tenant', 'share_provider']
+      where name = 'Administrator' and not 'suspend_tenant' = any(permissions)`,
+  );
 }

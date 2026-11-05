@@ -267,6 +267,9 @@ export const auditKindSpecs = {
         'provider_renamed',
         'provider_secret_replaced',
         'provider_closed',
+        'provider_shared',
+        'provider_unshared',
+        'provider_copied',
         'google_opened',
         'google_closed',
         'google_domains',
@@ -946,6 +949,7 @@ export const auditKindSpecs = {
         'closure_cancelled',
         'retained',
         'closed',
+        'requested',
       ]),
       by: z.enum(['organisation', 'environment', 'operator', 'system']),
       reason: z.string().min(1).max(2000).optional(),
@@ -979,6 +983,12 @@ export const auditKindSpecs = {
   'import.review_ended': kind(['IMP-048'], Restoring, 'apps/service/src/restorations.ts'),
   // A closure begun, its answer about the export (ADM-029), or the operator's notice at a contract's
   // end (TL-P); given up; and held past its grace period by a legal hold (TL-H).
+  // Made, and by whose asking (TL-N): the first event in its log.
+  'tenant.created': kind(
+    ['IAM-068'],
+    z.strictObject({ by: z.enum(['organisation', 'operator']) }),
+    'packages/db/src/tenant-creation.ts',
+  ),
   'tenant.closing': kind(
     ['ADM-029', 'ADM-030'],
     z.strictObject({

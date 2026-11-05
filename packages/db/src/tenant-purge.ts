@@ -151,6 +151,7 @@ export function createStewardDatabase(url: string): StewardDatabase {
           trx,
         );
         await sql`delete from platform.job where tenant_id = ${tenant.id}`.execute(trx);
+        await sql`delete from platform.tenant_request where tenant_id = ${tenant.id}`.execute(trx);
       });
     },
 

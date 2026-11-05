@@ -478,6 +478,10 @@ export async function applyWholeRestore(
     } else if (table === 'identity_provider') {
       // Who signs in here is this tenant's to say: never what an archive's row says (ADM-054).
       row['scim_identity'] = null;
+      // A copy arrives an ordinary closed provider (TL-M), and a mark means nothing away from its tenants.
+      if (row['managed_by_organisation'] === true) row['closed_at'] = new Date().toISOString();
+      row['shared'] = false;
+      row['managed_by_organisation'] = false;
       row['closed_at'] ??= new Date().toISOString();
       const others = providers.filter((each) => each.issuer !== row['issuer']);
       if (others.some((each) => each.name === row['name'])) {
