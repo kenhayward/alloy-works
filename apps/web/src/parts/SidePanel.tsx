@@ -71,6 +71,7 @@ export function SidePanel({
           {description !== undefined && <p>{description}</p>}
         </div>
         <IconButton
+          tip
           label={words('parts.close')}
           shortcut={words('parts.escape-key')}
           onClick={onClose}

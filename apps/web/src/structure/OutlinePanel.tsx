@@ -371,8 +371,8 @@ export interface OutlinePanelProps {
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
   /** The node last clicked in the text: chosen, with the focus and the text left where they are. */
   readonly pointed?: { readonly node: string; readonly arrival: number } | null;
-  /** What the panel says of the version a reference resolves to, once the page has read it. */
-  readonly versionOf?: (node: OutlineViewNode) => string | undefined;
+  /** A reference's overrides, where the reader may change them from the panel (part-panel-2). */
+  readonly overridesFor?: (node: OutlineViewNode) => PartFacts['overrides'];
   /** A node's shareable address (STR-044), shown for the selected node. */
   readonly linkOf?: (node: string) => string;
   /** Where a component the selected node places is used, as the page offers it (STR-075; R14-B). */
@@ -500,7 +500,7 @@ export function OutlinePanel({
   onSelected = () => {},
   inView = null,
   pointed = null,
-  versionOf,
+  overridesFor,
   marks,
   heldSaid,
   standing,
@@ -866,7 +866,7 @@ export function OutlinePanel({
         : [],
     usedIn,
     fieldCount: sectionFields?.length ?? 0,
-    version: versionOf?.(node),
+    overrides: overridesFor?.(node),
   });
   const referring = (id: string) =>
     referencesTo !== undefined && (

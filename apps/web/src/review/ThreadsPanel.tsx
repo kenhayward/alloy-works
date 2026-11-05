@@ -1014,7 +1014,12 @@ export function ThreadsPanel({
         onKeyDown={onPanelKey}
       >
         <header className={styles['head']}>
-          <IconButton className={styles['icon']} label={say('review.all-threads')} onClick={leave}>
+          <IconButton
+            className={styles['icon']}
+            tip
+            label={say('review.all-threads')}
+            onClick={leave}
+          >
             <Icon name="Back" size={16} />
           </IconButton>
           {at >= 0 && (
@@ -1027,6 +1032,7 @@ export function ThreadsPanel({
             <>
               <IconButton
                 className={styles['icon']}
+                tip
                 label={say('review.previous-thread')}
                 shortcut="K"
                 aria-disabled={at === 0}
@@ -1036,6 +1042,7 @@ export function ThreadsPanel({
               </IconButton>
               <IconButton
                 className={styles['icon']}
+                tip
                 label={say('review.next-thread')}
                 shortcut="J"
                 aria-disabled={at === shown.length - 1}
@@ -1050,6 +1057,7 @@ export function ThreadsPanel({
           {mayAct(opened) && internalButton(opened)}
           <IconButton
             className={styles['icon']}
+            tip
             label={say('review.copy-link')}
             onClick={() => void copyLink(opened.id)}
           >
@@ -1127,6 +1135,7 @@ export function ThreadsPanel({
         {targets.length > 0 && (
           <IconButton
             className={styles['icon']}
+            tip
             label={say('review.new-thread')}
             pressed={starting}
             onClick={() => setStarting(!starting)}
@@ -1136,6 +1145,7 @@ export function ThreadsPanel({
         )}
         <IconButton
           className={styles['icon']}
+          tip
           label={say('review.mark-all-as-read')}
           disabled={newOnes.length === 0}
           onClick={() => markRead(newOnes.map((each) => ({ id: each.id, to: each.lastAt })))}

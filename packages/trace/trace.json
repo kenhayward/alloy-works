@@ -27628,19 +27628,19 @@
     {
       "id": "COL-070",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 594,
+      "line": 595,
       "kind": "title"
     },
     {
       "id": "COL-071",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 553,
+      "line": 554,
       "kind": "title"
     },
     {
       "id": "GEN-063",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 622,
+      "line": 623,
       "kind": "title"
     },
     {
@@ -28030,13 +28030,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1561,
+      "line": 1562,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1718,
+      "line": 1719,
       "kind": "title"
     },
     {
@@ -28048,7 +28048,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2658,
+      "line": 2659,
       "kind": "title"
     },
     {
@@ -28072,19 +28072,19 @@
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 932,
+      "line": 933,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2424,
+      "line": 2425,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2121,
+      "line": 2122,
       "kind": "title"
     },
     {
@@ -28096,25 +28096,25 @@
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 959,
+      "line": 960,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1091,
+      "line": 1092,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2326,
+      "line": 2327,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2161,
+      "line": 2162,
       "kind": "title"
     },
     {
@@ -28126,7 +28126,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1140,
+      "line": 1141,
       "kind": "title"
     },
     {
@@ -28138,7 +28138,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1852,
+      "line": 1853,
       "kind": "title"
     },
     {
@@ -28460,69 +28460,93 @@
       "kind": "title"
     },
     {
+      "id": "REU-011",
+      "file": "apps/web/src/structure/PartPanel.test.tsx",
+      "line": 107,
+      "kind": "title"
+    },
+    {
+      "id": "REU-015",
+      "file": "apps/web/src/structure/PartPanel.test.tsx",
+      "line": 137,
+      "kind": "title"
+    },
+    {
       "id": "STR-076",
       "file": "apps/web/src/structure/PartPanel.test.tsx",
-      "line": 200,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "apps/web/src/structure/PartPanel.test.tsx",
-      "line": 324,
+      "line": 388,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-158",
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 174,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-159",
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "CNT-162",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 33,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 62,
       "kind": "title"
     },
     {
       "id": "CNT-163",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 40,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 74,
       "kind": "title"
     },
     {
       "id": "COL-069",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 85,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 130,
       "kind": "title"
     },
     {
       "id": "LIF-018",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 45,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "LIF-046",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 59,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 103,
       "kind": "title"
     },
     {
       "id": "LOC-016",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 50,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 94,
       "kind": "title"
     },
     {
       "id": "REU-011",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 64,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 118,
       "kind": "title"
     },
     {
       "id": "REU-015",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 64,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 118,
       "kind": "title"
     },
     {
       "id": "REU-050",
-      "file": "apps/web/src/structure/PartStanding.test.tsx",
-      "line": 33,
+      "file": "apps/web/src/structure/PartRows.test.tsx",
+      "line": 62,
       "kind": "title"
     },
     {
@@ -36890,6 +36914,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-158",
+      "file": "tests/browser/src/part-panel.test.ts",
+      "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-162",
+      "file": "tests/browser/src/part-panel.test.ts",
+      "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "REU-011",
+      "file": "tests/browser/src/part-panel.test.ts",
+      "line": 101,
+      "kind": "title"
+    },
+    {
       "id": "DAT-022",
       "file": "tests/browser/src/placing.test.ts",
       "line": 113,
@@ -36898,19 +36940,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1019,
+      "line": 1023,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1015,
+      "line": 1019,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 1015,
+      "line": 1019,
       "kind": "title"
     },
     {

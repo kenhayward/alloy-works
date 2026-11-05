@@ -1041,7 +1041,7 @@ describe('the citations in the committed model', () => {
     // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
     // 2463 (2026-11-03): the sign-in screen's tests cite IAM-011 and ADM-051.
-    expect(model.citations).toHaveLength(2567);
+    expect(model.citations).toHaveLength(2574);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1190,6 +1190,6 @@ describe('scanning the repository for test files', () => {
     // 157, from 156 (2026-11-01): admin/Themes.test.tsx, citing STY-029, STY-031, STY-034, STY-057, STY-067 and STY-069 (SYb).
     // 164, from 163 (2026-11-03): lifecycle/MoveDialog.test.tsx, citing nothing (MV).
     // 165, from 164 (2026-11-03): shell/SignInScreen.test.tsx, citing IAM-011 and ADM-051.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(178);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(179);
   });
 });

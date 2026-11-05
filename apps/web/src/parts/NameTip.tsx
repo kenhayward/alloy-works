@@ -11,25 +11,38 @@ import styles from './NameTip.module.css';
 export function NameTip({
   name,
   keys,
+  hint,
   children,
   className,
   below = false,
+  align = 'center',
 }: {
   name: string;
   keys?: string | undefined;
+  /** A line under the name saying what the control does. The control describes itself with the same. */
+  hint?: string | undefined;
   /** Under its control, for one in a row: beside it, a tip would stand over the next one. */
   below?: boolean;
+  /** Below, at the end of its control rather than centred, for icons at the end of a header. */
+  align?: 'center' | 'end';
   children: ReactNode;
   className?: string | undefined;
 }) {
   const [at, setAt] = useState<CSSProperties | null>(null);
   const show = (anchor: HTMLElement) => {
     const { top, bottom, left, right } = anchor.getBoundingClientRect();
+    const rtl = getComputedStyle(anchor).direction === 'rtl';
+    if (below && align === 'end') {
+      setAt({
+        top: bottom + 4,
+        ...(rtl ? { left } : { right: window.innerWidth - right }),
+      });
+      return;
+    }
     if (below) {
       setAt({ top: bottom + 4, left: (left + right) / 2 });
       return;
     }
-    const rtl = getComputedStyle(anchor).direction === 'rtl';
     setAt({
       top: (top + bottom) / 2,
       ...(rtl ? { right: window.innerWidth - left + 4 } : { left: right + 4 }),
@@ -57,9 +70,16 @@ export function NameTip({
           aria-hidden="true"
           data-name-tip=""
           data-below={below}
+          data-align={align}
+          data-hinted={hint !== undefined}
         >
-          {name}
+          <span>{name}</span>
           {keys !== undefined && <kbd className={styles['keys']}>{keys}</kbd>}
+          {hint !== undefined && (
+            <span className={styles['hint']} data-name-tip-hint="">
+              {hint}
+            </span>
+          )}
         </span>
       )}
     </span>
