@@ -118,7 +118,14 @@ const Environment = z
  * malformed. Messages name the variable and the rule, never the value - which may be a secret.
  */
 export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
-  const result = Environment.safeParse(env);
+  // Empty is none, for a stack without Google: compose.keycloak.yaml cannot always remove them.
+  const google = ['GOOGLE_ISSUER', 'GOOGLE_CLIENT_ID', 'SIGN_IN_HOST'].filter(
+    (name) => env[name] === '',
+  );
+  const result = Environment.safeParse({
+    ...env,
+    ...Object.fromEntries(google.map((name) => [name, undefined])),
+  });
   if (!result.success) {
     const problems = result.error.issues.map((issue) => `${issue.path.join('.')} ${issue.message}`);
     throw new ConfigError(`The service cannot start:\n  ${problems.join('\n  ')}`);

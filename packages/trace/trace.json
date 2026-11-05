@@ -22544,13 +22544,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 827,
+      "line": 833,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 840,
+      "line": 846,
       "kind": "title"
     },
     {
@@ -29816,19 +29816,19 @@
     {
       "id": "ADM-028",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 62,
+      "line": 70,
       "kind": "title"
     },
     {
       "id": "ADM-030",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 75,
+      "line": 83,
       "kind": "title"
     },
     {
       "id": "IAM-087",
       "file": "apps/worker/src/steward-commands.test.ts",
-      "line": 114,
+      "line": 122,
       "kind": "title"
     },
     {
@@ -29936,7 +29936,7 @@
     {
       "id": "IAM-086",
       "file": "apps/worker/src/tenant-create.test.ts",
-      "line": 228,
+      "line": 237,
       "kind": "title"
     },
     {

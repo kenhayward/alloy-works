@@ -657,6 +657,9 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   get translation() {
     return words('admin.translation');
   },
+  get mail_channel() {
+    return words('admin.mail-channel');
+  },
   get webhook() {
     return words('admin.webhooks');
   },

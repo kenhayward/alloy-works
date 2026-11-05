@@ -164,6 +164,105 @@ export async function configureOrganisationSignIn(
   });
 }
 
+/** Why the operator may not give a tenant its first way in. */
+export type FirstProviderRefusal = 'in_use' | 'no_invitation' | 'several_providers';
+
+/** Whether the operator may give a tenant its first way in. The caller holds the epoch and invitations. */
+async function firstProviderGate(
+  client: pg.ClientBase,
+  schema: string,
+  inviting: boolean,
+): Promise<FirstProviderRefusal | undefined> {
+  const { rows } = await client.query<{ in_use: boolean; waiting: boolean }>(
+    `select exists (select from ${schema}.access_grant g
+                      join ${schema}.principal p on p.id = g.principal_id
+                     where p.issuer is not null)
+            or exists (select from ${schema}.invitation where accepted_at is not null) as in_use,
+            exists (select from ${schema}.invitation
+                     where accepted_at is null and expires_at > now()) as waiting`,
+  );
+  if (rows[0]!.in_use) return 'in_use';
+  return !inviting && !rows[0]!.waiting ? 'no_invitation' : undefined;
+}
+
+/** The access epoch and every invitation: a claim holds its invitation until it commits, and is waited for. */
+async function holdForFirstProvider(client: pg.ClientBase, schema: string): Promise<void> {
+  await client.query(`select 1 from ${schema}.access_epoch for update`);
+  await client.query(`select 1 from ${schema}.invitation for update`);
+}
+
+/** The check alone, changing nothing: to ask before inviting anybody. */
+export async function firstProviderRefusal(
+  stewardUrl: string,
+  tenant: Tenant,
+  inviting: boolean,
+): Promise<FirstProviderRefusal | undefined> {
+  return asAdministrator(stewardUrl, tenant, async (client, schema) => {
+    await holdForFirstProvider(client, schema);
+    return firstProviderGate(client, schema, inviting);
+  });
+}
+
+/**
+ * A tenant's first way in, by the operator (the SP plan). Refused once anybody who signed in holds a grant
+ * or an invitation has been accepted, so the vendor can never replace the sign-in of a tenant in use
+ * (IAM-087). Until then it corrects the one provider in place, so a waiting invitation stays with it: a
+ * second would leave the first able to claim it. What the old one let in ends. A claim already running is
+ * waited for, and one that began through the old one finds its issuer gone (`claimInvitation`).
+ */
+export async function configureFirstProvider(
+  stewardUrl: string,
+  tenant: Tenant,
+  provider: {
+    readonly issuer: string;
+    readonly clientId: string;
+    readonly clientSecret: string;
+    readonly name?: string;
+  },
+  key: Buffer,
+  inviting: boolean,
+): Promise<FirstProviderRefusal | undefined> {
+  const sealed = sealSecret(key, 'sign-in', tenant.id, provider.clientSecret);
+  return asAdministrator(stewardUrl, tenant, async (client, schema) => {
+    await holdForFirstProvider(client, schema);
+    const refused = await firstProviderGate(client, schema, inviting);
+    if (refused !== undefined) return refused;
+    const held = await client.query<{ id: string }>(
+      `select id from ${schema}.identity_provider for update`,
+    );
+    if (held.rows.length > 1) return 'several_providers';
+    const [one] = held.rows;
+    if (one) {
+      await endSessions(client, schema, 'provider_id = $1', one.id, 'provider_closed');
+      await revokeTokens(
+        client,
+        schema,
+        `p.issuer = (select issuer from ${schema}.identity_provider where id = $1)`,
+        [one.id],
+      );
+      await client.query(`delete from ${schema}.sign_in_attempt where provider_id = $1`, [one.id]);
+      await client.query(
+        `update ${schema}.identity_provider
+            set issuer = $1, client_id = $2, sealed_secret = $3, secret_name = null, closed_at = null,
+                name = coalesce($4, name)
+          where id = $5`,
+        [provider.issuer, provider.clientId, sealed, provider.name ?? null, one.id],
+      );
+    } else {
+      await client.query(
+        `insert into ${schema}.identity_provider (issuer, client_id, sealed_secret, name)
+         values ($1, $2, $3, coalesce($4, '${DEFAULT_PROVIDER_NAME}'))`,
+        [provider.issuer, provider.clientId, sealed, provider.name ?? null],
+      );
+    }
+    await client.query(
+      `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,
+    );
+    await routeEvent(client, 'sign_in_route.configured', 'organisation');
+    return undefined;
+  });
+}
+
 /**
  * Closes one provider (IAM-011, IAM-043): nobody signs in through it again, and every session it
  * issued ends now, with every sign-in to it in progress. The organisation's route stays open for its

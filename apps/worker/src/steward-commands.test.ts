@@ -1,9 +1,12 @@
 import {
   bootstrapCluster,
+  claimInvitation,
   createTenant,
   createStewardDatabase,
   createTenantDatabase,
+  createTenantMaker,
   migrate,
+  openSecret,
   type StewardDatabase,
   type Tenant,
   type TenantDatabase,
@@ -18,7 +21,8 @@ import {
 } from '@alloy-works/db/testing';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runSteward } from './steward-commands.js';
+import { sealingKey } from '@alloy-works/objects';
+import { decodedSecret, runSteward } from './steward-commands.js';
 import { sweepClosures } from './sweep.js';
 
 const HOST = 'steward.alloy.test';
@@ -35,6 +39,10 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
       db: steward,
       steward: reach,
       maker: {} as TenantMaker,
+      readSecret: () => Promise.reject(new Error('Only `provider` reads a secret')),
+      key: () => {
+        throw new Error('Only `provider` needs the key');
+      },
       out: (line) => lines.push(line),
     });
 
@@ -126,5 +134,353 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
     expect(await run('resume', '--tenant', tenant.id)).toBe(1);
     expect(lines.join('\n')).toMatch(/is active/);
     expect((await service.resolveHostname(HOST))?.state).toBe('active');
+  });
+
+  describe('a first way in through any provider (the SP plan)', () => {
+    const KEY = sealingKey(Buffer.alloc(32, 7).toString('base64'));
+    const SECRET = 'not-a-real-secret-1234';
+    const ISSUER = 'https://idp.example/realms/first';
+    let maker: TenantMaker;
+    const said: string[] = [];
+    const provider = (secret: string, ...argv: string[]) =>
+      runSteward(['provider', ...argv], {
+        db: steward,
+        steward: reach,
+        maker,
+        out: (line) => said.push(line),
+        readSecret: () => Promise.resolve(secret),
+        key: () => KEY,
+      });
+    const made = (kind: 'content' | 'organisation') =>
+      createTenant(db.adminUrl, db.migratorUrl, {
+        // An organisation has one tenant of its own, so each here is another's.
+        organisation: { id: `org${Math.random().toString(36).slice(2)}`, name: 'First' },
+        tenant: { id: db.newTenantId(), name: kind },
+        hostnames: [`${kind}${Math.random().toString(36).slice(2)}.alloy.test`],
+        kind,
+      });
+    const providers = (where: Tenant) =>
+      service.withTenant(where, (trx) =>
+        trx
+          .selectFrom('identity_provider')
+          .select(['issuer', 'client_id', 'name', 'sealed_secret'])
+          .execute(),
+      );
+
+    beforeAll(() => {
+      maker = createTenantMaker(db.stewardUrl);
+    });
+    afterAll(async () => {
+      await maker.close();
+    });
+
+    const INVITE = ['--first-administrator', 'ada@example.com'];
+    const opened = (where: Tenant, sealed: string | null) =>
+      openSecret(KEY, 'sign-in', where.id, sealed!);
+
+    it('configures a sealed provider and opens the route, printing no secret, and audits as the vendor', async () => {
+      const organisation = await made('organisation');
+      said.length = 0;
+      expect(
+        await provider(
+          `${SECRET}\r\n`,
+          '--tenant',
+          organisation.id,
+          '--issuer',
+          ISSUER,
+          '--client-id',
+          'alloy',
+          '--name',
+          'First sign-in',
+          ...INVITE,
+        ),
+      ).toBe(0);
+      const [held] = await providers(organisation);
+      expect(held).toMatchObject({ issuer: ISSUER, client_id: 'alloy', name: 'First sign-in' });
+      expect(opened(organisation, held!.sealed_secret)).toBe(SECRET);
+      expect(JSON.stringify(said)).not.toContain(SECRET);
+      const { route, event, waiting } = await service.withTenant(organisation, async (trx) => ({
+        route: await trx.selectFrom('sign_in_route').select('route').execute(),
+        event: await trx
+          .selectFrom('audit_event')
+          .select('actor_kind')
+          .where('kind', '=', 'sign_in_route.configured')
+          .executeTakeFirst(),
+        waiting: await trx.selectFrom('invitation').select('email').execute(),
+      }));
+      expect(route).toContainEqual({ route: 'organisation' });
+      expect(event).toEqual({ actor_kind: 'vendor' });
+      expect(waiting).toEqual([{ email: 'ada@example.com' }]);
+    });
+
+    it('corrects a mistake in place before anybody holds access, the invitation staying with the one provider', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider('first-try', ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const other = 'https://idp.example/realms/second';
+      expect(await provider(SECRET, ...args, '--issuer', other, '--name', 'Second')).toBe(0);
+      const held = await providers(organisation);
+      expect(held).toHaveLength(1);
+      expect(held[0]).toMatchObject({ issuer: other, name: 'Second' });
+      expect(opened(organisation, held[0]!.sealed_secret)).toBe(SECRET);
+    });
+
+    it('is not stopped by somebody who signed in and holds nothing', async () => {
+      const organisation = await made('organisation');
+      await service.withTenant(organisation, (trx) =>
+        trx
+          .insertInto('principal')
+          .values({ issuer: ISSUER, subject: 'stray', kind: 'user' } as never)
+          .execute(),
+      );
+      const args = ['--tenant', organisation.id, '--issuer', ISSUER, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, ...INVITE)).toBe(0);
+    });
+
+    it('refuses once somebody who signed in holds access, changing nothing', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--issuer', ISSUER, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, ...INVITE)).toBe(0);
+      await service.withTenant(organisation, async (trx) => {
+        const person = await trx
+          .insertInto('principal')
+          .values({ issuer: ISSUER, subject: 'ada', kind: 'user' } as never)
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const role = await trx
+          .selectFrom('role')
+          .select('id')
+          .where('name', '=', 'Reader')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('access_grant')
+          .values({
+            principal_id: person.id,
+            role_id: role.id,
+            level: 'tenant',
+            effect: 'allow',
+            granted_by: person.id,
+          })
+          .execute();
+      });
+      said.length = 0;
+      expect(await provider('takeover', ...args)).toBe(1);
+      expect(said.join()).toMatch(/signed in/);
+      const after = await providers(organisation);
+      expect(opened(organisation, after[0]!.sealed_secret)).toBe(SECRET);
+    });
+
+    it('refuses where nobody is invited, unless it is told whom to invite', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--issuer', ISSUER, '--client-id', 'alloy'];
+      said.length = 0;
+      expect(await provider(SECRET, ...args)).toBe(1);
+      expect(said.join()).toMatch(/--first-administrator/);
+      expect(await providers(organisation)).toEqual([]);
+      expect(await provider(SECRET, ...args, ...INVITE)).toBe(0);
+    });
+
+    it('refuses a content tenant, an unknown tenant and a suspended one', async () => {
+      const args = ['--issuer', ISSUER, '--client-id', 'alloy', ...INVITE];
+      const content = await made('content');
+      expect(await provider(SECRET, '--tenant', content.id, ...args)).toBe(1);
+      expect(await providers(content)).toEqual([]);
+      expect(await provider(SECRET, '--tenant', 'nobody', ...args)).toBe(1);
+      const suspended = await made('organisation');
+      await run('suspend', '--tenant', suspended.id, '--reason', 'Testing');
+      expect(await provider(SECRET, '--tenant', suspended.id, ...args)).toBe(1);
+      expect(await providers(suspended)).toEqual([]);
+    });
+
+    it('understands no missing or malformed argument, and asks for no secret then', async () => {
+      const organisation = await made('organisation');
+      const reading = { count: 0 };
+      const asked = (...argv: string[]) =>
+        runSteward(['provider', '--tenant', organisation.id, ...argv], {
+          db: steward,
+          steward: reach,
+          maker,
+          out: () => undefined,
+          readSecret: () => {
+            reading.count += 1;
+            return Promise.resolve(SECRET);
+          },
+          key: () => KEY,
+        });
+      const good = ['--issuer', ISSUER, '--client-id', 'alloy'];
+      expect(await asked('--client-id', 'alloy')).toBe(2);
+      expect(await asked('--issuer', ISSUER)).toBe(2);
+      expect(await asked('--issuer', 'ftp://x', '--client-id', 'a')).toBe(2);
+      expect(await asked(...good, '--name', ' padded ')).toBe(2);
+      expect(await asked(...good, '--name', 'x'.repeat(81))).toBe(2);
+      expect(await asked(...good, '--first-administrator', 'nobody')).toBe(2);
+      expect(reading.count).toBe(0);
+    });
+
+    it('refuses no secret at all', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--issuer', ISSUER, '--client-id', 'alloy'];
+      expect(await provider('\r\n', ...args, ...INVITE)).toBe(1);
+      expect(await providers(organisation)).toEqual([]);
+    });
+
+    const providerId = async (where: Tenant) =>
+      service.withTenant(where, (trx) =>
+        trx.selectFrom('identity_provider').select('id').executeTakeFirstOrThrow(),
+      );
+    const ada = {
+      issuer: ISSUER,
+      subject: 'ada',
+      email: 'ada@example.com',
+      emailVerified: true,
+      name: 'Ada',
+    };
+
+    it('leaves a sign-in begun through what it replaced claiming nothing', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      const other = 'https://idp.example/realms/second';
+      expect(await provider(SECRET, ...args, '--issuer', other)).toBe(0);
+      const claimed = await service.withTenant(organisation, (trx) =>
+        claimInvitation(trx, ada, { route: 'organisation', providerId: id }),
+      );
+      expect(claimed).toBeUndefined();
+      const through = await service.withTenant(organisation, (trx) =>
+        claimInvitation(trx, { ...ada, issuer: other }, { route: 'organisation', providerId: id }),
+      );
+      expect(through).toEqual(expect.any(String));
+    });
+
+    it('waits for a claim already running, and is then refused', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      let holding: () => void = () => undefined;
+      let release: () => void = () => undefined;
+      const held = new Promise<void>((resolve) => (holding = resolve));
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const claim = service.withTenant(organisation, async (trx) => {
+        await claimInvitation(trx, ada, { route: 'organisation', providerId: id });
+        holding();
+        await gate;
+      });
+      await held;
+      const correcting = provider(SECRET, ...args, '--issuer', 'https://idp.example/realms/late');
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release();
+      await claim;
+      expect(await correcting).toBe(1);
+      expect((await providers(organisation))[0]).toMatchObject({ issuer: ISSUER });
+    });
+
+    it('changes nothing when the invitation it was asked for is refused', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      said.length = 0;
+      expect(
+        await provider(
+          'another',
+          ...args,
+          '--issuer',
+          'https://idp.example/realms/late',
+          '--first-administrator',
+          'grace@example.com',
+        ),
+      ).toBe(1);
+      expect(said.join()).toMatch(/invited already/);
+      const [held] = await providers(organisation);
+      expect(held).toMatchObject({ issuer: ISSUER });
+      expect(opened(organisation, held!.sealed_secret)).toBe(SECRET);
+    });
+
+    it('ends what the provider it replaced had let in', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      await service.withTenant(organisation, async (trx) => {
+        const stray = await trx
+          .insertInto('principal')
+          .values({ issuer: ISSUER, subject: 'stray', kind: 'user' } as never)
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('session')
+          .values({
+            principal_id: stray.id,
+            provider_id: id,
+            token_hash: 'x'.repeat(64),
+            route: 'organisation',
+            idle_expires_at: new Date(Date.now() + 86_400_000),
+            expires_at: new Date(Date.now() + 86_400_000),
+          } as never)
+          .execute();
+      });
+      expect(await provider(SECRET, ...args, '--issuer', 'https://idp.example/realms/second')).toBe(
+        0,
+      );
+      const left = await service.withTenant(organisation, (trx) =>
+        trx.selectFrom('session').select('id').execute(),
+      );
+      expect(left).toEqual([]);
+    });
+
+    it('takes no option for a value, and says when the sealing key is wrong', async () => {
+      const organisation = await made('organisation');
+      const base = ['--tenant', organisation.id, '--issuer', ISSUER];
+      expect(await provider(SECRET, ...base, '--client-id', '--name', 'x')).toBe(2);
+      expect(
+        await provider(SECRET, ...base, '--client-id', 'a', '--first-administrator', '@'),
+      ).toBe(2);
+      said.length = 0;
+      const answer = await runSteward(['provider', ...base, '--client-id', 'a', ...INVITE], {
+        db: steward,
+        steward: reach,
+        maker,
+        out: (line) => said.push(line),
+        readSecret: () => Promise.resolve(SECRET),
+        key: () => {
+          throw new Error('whatever it was');
+        },
+      });
+      expect(answer).toBe(1);
+      expect(said.join()).toMatch(/SECRET_OBJECT_STORE_KEY/);
+      expect(await providers(organisation)).toEqual([]);
+    });
+
+    it('reads a secret however Windows wrote it', () => {
+      expect(decodedSecret(Buffer.from('plain\r\n'))).toBe('plain\r\n');
+      expect(decodedSecret(Buffer.from([0xef, 0xbb, 0xbf, 0x61]))).toBe('a');
+      expect(decodedSecret(Buffer.from([0xff, 0xfe, 0x61, 0x00]))).toBe('a');
+      expect(decodedSecret(Buffer.from([0xfe, 0xff, 0x00, 0x61]))).toBe('a');
+    });
+
+    it('says only a code when the store refuses, however it refuses', async () => {
+      said.length = 0;
+      const failing = {
+        firstProvider: () =>
+          Promise.reject(
+            Object.assign(new Error(`Failing row contains ${SECRET}`), { code: '23514' }),
+          ),
+      } as unknown as TenantMaker;
+      const answer = await runSteward(
+        ['provider', '--tenant', 'x', '--issuer', ISSUER, '--client-id', 'a'],
+        {
+          db: steward,
+          steward: reach,
+          maker: failing,
+          out: (line) => said.push(line),
+          readSecret: () => Promise.resolve(SECRET),
+          key: () => KEY,
+        },
+      );
+      expect(answer).toBe(1);
+      expect(said.join()).toContain('23514');
+      expect(said.join()).not.toContain(SECRET);
+    });
   });
 });

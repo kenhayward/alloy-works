@@ -223,7 +223,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   invited to administer it; the address is forgotten once the invitation exists, and it arrives a little later with its
   own store. A holder of `share_provider` shares a sign-in provider from **Sign-in**: each tenant has a copy, kept
   current, which it can close and not edit, and once it is no longer shared each tenant keeps it as its own. The operator
-  makes an organisation's own tenant with `steward organisation`.
+  makes an organisation's own tenant with `steward organisation`, and gives it a first way in through any provider with `steward provider`, or Google.
 - **Setting up an installation.** `pnpm environment:setup` prepares a database and store for one real environment on every
   deploy, from settings with no defaults: no seed, no stand-in, and it refuses any secret this repository publishes.
   It configures sign-in once, then leaves it to Administration. [The settings](../deploy/README.md).
