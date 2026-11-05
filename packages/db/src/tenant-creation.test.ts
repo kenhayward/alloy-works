@@ -37,9 +37,6 @@ describe('creating a tenant and sharing a provider (the TL plan, TLe)', () => {
   let organisation: Tenant;
   const org = 'acme';
 
-  const asOrganisation = <T>(work: Parameters<TenantDatabase['withTenant']>[1]) =>
-    service.withTenant(organisation, work) as Promise<T>;
-
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
@@ -273,16 +270,12 @@ describe('creating a tenant and sharing a provider (the TL plan, TLe)', () => {
     });
 
     it('a build refuses a request naming a tenant of another organisation or kind', async () => {
-      const id = db.newTenantId();
-      await admin
-        .query(
-          `insert into platform.tenant_request
+      await admin.query(
+        `insert into platform.tenant_request
            (organisation_id, tenant_id, name, hostname, kind, requested_by)
          values ($1, $2, 'Forged', 'forged.acme.alloy.test', 'organisation', 'operator')`,
-          [org, organisation.id],
-        )
-        .catch(() => undefined);
-      void id;
+        [org, organisation.id],
+      );
       const request = (await maker.claim(LEASE))!;
       await expect(maker.build({ ...request, organisationId: 'wayne' })).rejects.toThrow(/another/);
       await admin.query('delete from platform.tenant_request where id = $1', [request.id]);
