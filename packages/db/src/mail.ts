@@ -152,6 +152,23 @@ export type MailPurpose = 'test';
 /** How long a mail is tried, from its first attempt, decided at claiming (EM-M). */
 const AGE: Readonly<Record<MailPurpose, string>> = { test: '1 hour' };
 
+/** Whether a person may be mailed at all: a person, not erased or disabled, at a verified address (EM-G). */
+export async function mailableAddress(trx: TenantTransaction, principalId: string): Promise<boolean> {
+  const row = await trx
+    .selectFrom('principal')
+    .select(['kind', 'email', 'email_verified', 'erased_at', 'disabled_at'])
+    .where('id', '=', principalId)
+    .executeTakeFirst();
+  return (
+    row !== undefined &&
+    row.kind !== 'service' &&
+    row.erased_at === null &&
+    row.disabled_at === null &&
+    row.email !== null &&
+    row.email_verified
+  );
+}
+
 /** Queues a test of the channel to the caller's own address (EM-P). Answers its id. */
 export async function queueTestMail(trx: TenantTransaction, principalId: string): Promise<string> {
   const { id } = await trx

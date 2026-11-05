@@ -1,11 +1,18 @@
 import type {
   MailChannelRead,
+  MailList,
+  MailListQuery,
+  MailTestQueued,
   SetMailChannelBody,
   SetMailPasswordBody,
 } from '@alloy-works/api-contract';
 import {
+  listMail,
+  mailableAddress,
   mailChannel,
+  mailCounts,
   NO_MAIL_CHANNEL,
+  queueTestMail,
   setMailChannel,
   setMailPassword,
   type MailChannel,
@@ -13,6 +20,7 @@ import {
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
+import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import { createConnectorClient } from './data/connector.js';
 import type { ConnectorOptions } from './data/connections.js';
 import { AppError } from './errors.js';
@@ -34,10 +42,31 @@ export function mailChannelHandlers(
   const client = connector ? createConnectorClient(connector) : undefined;
 
   const read = (channel: Omit<MailChannel, 'id'> | undefined): MailChannelRead => {
-    const { hasPassword, enabled, relay, host, port, username, fromAddress, fromName } =
-      channel ?? NO_MAIL_CHANNEL;
+    const {
+      hasPassword,
+      enabled,
+      relay,
+      host,
+      port,
+      username,
+      fromAddress,
+      fromName,
+      failingSince,
+      lastSuccessAt,
+    } = channel ?? NO_MAIL_CHANNEL;
     return {
-      channel: { enabled, relay, host, port, username, fromAddress, fromName, hasPassword },
+      channel: {
+        enabled,
+        relay,
+        host,
+        port,
+        username,
+        fromAddress,
+        fromName,
+        hasPassword,
+        failingSince: failingSince && failingSince.toISOString(),
+        lastSuccessAt: lastSuccessAt && lastSuccessAt.toISOString(),
+      },
       platform: platform
         ? { offered: true, fromAddress: platform.fromAddress }
         : { offered: false },
@@ -110,6 +139,44 @@ export function mailChannelHandlers(
       }
       await setMailPassword(trx, held.id, answer.answer.sealed, principalId);
       return read(await mailChannel(trx));
+    },
+
+    /** A test to the caller's own verified address alone, by whatever relay is chosen (EM-P). */
+    testMailChannel: async (
+      _request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<MailTestQueued> => {
+      if (!(await mailableAddress(trx, principalId))) {
+        throw new AppError(
+          409,
+          'mail_no_verified_address',
+          'Your own address is not one your provider has verified, so no test can be sent to it.',
+        );
+      }
+      return { id: await queueTestMail(trx, principalId) };
+    },
+
+    listMail: async (request: FastifyRequest, { trx }: Authorised): Promise<MailList> => {
+      const query = request.query as MailListQuery;
+      const after = afterCursor(query.cursor);
+      const page = await listMail(trx, {
+        ...(after === undefined ? {} : { after }),
+        limit: pageLimit(query.limit),
+      });
+      return {
+        items: page.items.map((each) => ({
+          id: each.id,
+          purpose: each.purpose,
+          state: each.state,
+          droppedReason: each.droppedReason,
+          attempts: each.attempts,
+          createdAt: each.createdAt.toISOString(),
+          nextAt: each.nextAt && each.nextAt.toISOString(),
+          last: each.last && { ...each.last, at: each.last.at.toISOString() },
+        })),
+        next: cursorAfter(page.after),
+        counts: await mailCounts(trx),
+      };
     },
   };
 }

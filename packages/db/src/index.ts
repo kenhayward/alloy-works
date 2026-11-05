@@ -1542,6 +1542,7 @@ export {
 export {
   claimMail,
   listMail,
+  mailableAddress,
   mailChannel,
   mailCounts,
   NO_MAIL_CHANNEL,

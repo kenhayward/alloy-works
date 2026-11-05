@@ -42,8 +42,14 @@ const read = (name: string) => readFileSync(fileURLToPath(new URL(name, SOURCES)
 /** The development S3 source's CA, as PEM. */
 export const S3_CA = read('ca.pem');
 
-/** Both development CAs, as the suite's children trust them beside the system's. */
-export const SOURCES_CA = `${DEV_CA}${S3_CA}`;
+/** The development mail CA (the EM plan), which signs Mailpit's certificate. */
+const MAIL_CA = readFileSync(
+  fileURLToPath(new URL('../../../../deploy/sources/mail/ca.pem', import.meta.url)),
+  'utf8',
+);
+
+/** Every development CA, as the suite's children trust them beside the system's. */
+export const SOURCES_CA = `${DEV_CA}${S3_CA}${MAIL_CA}`;
 
 /** The suite's SeaweedFS, as `scripts/source-s3.js` starts it. */
 export const S3_SOURCE_PORT = Number(process.env.ALLOY_TEST_S3_SOURCE_PORT ?? '8489');

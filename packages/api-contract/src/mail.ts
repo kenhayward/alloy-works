@@ -9,6 +9,7 @@ import {
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
+import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody } from './schemas.js';
 
 /** A tenant's mail channel (mail.md; the EM plan), never its password. */
@@ -21,6 +22,11 @@ export const MailChannelView = z.strictObject({
   fromAddress: z.string().nullable().describe('The address its own relay sends from'),
   fromName: z.string().nullable().describe('The name shown as the sender'),
   hasPassword: z.boolean().describe('Whether a password is held; it is never answered'),
+  failingSince: z
+    .string()
+    .nullable()
+    .describe('Since when its relay has failed, cleared by the next mail it sends'),
+  lastSuccessAt: z.string().nullable().describe('When its relay last took a mail'),
 });
 export type MailChannelView = z.infer<typeof MailChannelView>;
 
@@ -54,6 +60,59 @@ export const SetMailChannelBody = z
     'its own relay names a host, port and address, and the operator’s none of them',
   );
 export type SetMailChannelBody = z.infer<typeof SetMailChannelBody>;
+
+export const MailTestQueued = z.strictObject({
+  id: z.uuid().describe('The test’s own id, which it is sent with as its Message-ID'),
+});
+export type MailTestQueued = z.infer<typeof MailTestQueued>;
+
+export const MailListQuery = z.object(pageQuery);
+export type MailListQuery = z.infer<typeof MailListQuery>;
+
+export const MailSummary = z.strictObject({
+  id: z.uuid().describe('Its own id, which it is sent with as its Message-ID'),
+  purpose: z.enum(['test']).describe('Why it is sent'),
+  state: z
+    .enum(['pending', 'sent', 'given_up', 'dropped'])
+    .describe(
+      '`pending`: to be tried, at `nextAt`; `sent`: the relay took it; `given_up`: refused for good, or tried too long; `dropped`: never sent, for `droppedReason`',
+    ),
+  droppedReason: z
+    .string()
+    .nullable()
+    .describe(
+      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured`',
+    ),
+  attempts: z.number().int(),
+  createdAt: z.string(),
+  nextAt: z.string().nullable(),
+  last: z
+    .strictObject({
+      at: z.string(),
+      failure: z
+        .string()
+        .nullable()
+        .describe('Why it was not sent, by code: `auth_failed`, `tls_failed` and the like'),
+      smtpCode: z.number().int().nullable().describe('What the relay answered, by its code alone'),
+    })
+    .nullable()
+    .describe('Its last attempt, never the relay’s words, which can quote an address'),
+});
+export type MailSummary = z.infer<typeof MailSummary>;
+
+export const MailList = z.strictObject({
+  items: z.array(MailSummary),
+  next: nextCursor,
+  counts: z
+    .strictObject({
+      waiting: z.number().int(),
+      sent: z.number().int(),
+      givenUp: z.number().int(),
+      dropped: z.record(z.string(), z.number().int()).describe('By reason'),
+    })
+    .describe('These 30 days'),
+});
+export type MailList = z.infer<typeof MailList>;
 
 export const SetMailPasswordBody = z.strictObject({
   password: mailPasswordSchema.describe('The relay’s password, write-only'),
@@ -131,6 +190,44 @@ export const mailChannelRoutes = {
         schema: ErrorBody,
       },
       503: { description: 'connector_unavailable: it cannot be sealed now', schema: ErrorBody },
+    },
+  },
+  testMailChannel: {
+    operationId: 'testMailChannel',
+    method: 'POST',
+    path: '/v1/mail-channel/test',
+    summary: 'Send a test of this environment’s mail to your own address',
+    tenantScoped: true,
+    access: CONFIGURE,
+    idempotencyKey: false,
+    responses: {
+      // 200, not 202: a permission-checked handler cannot set a status.
+      200: { description: 'Queued; it is sent within a minute', schema: MailTestQueued },
+      401: unauthenticated,
+      403: forbidden,
+      409: {
+        description:
+          'mail_no_verified_address: your own address is not one your provider has verified',
+        schema: ErrorBody,
+      },
+    },
+  },
+  listMail: {
+    operationId: 'listMail',
+    method: 'GET',
+    path: '/v1/mail-channel/mail',
+    summary: 'This environment’s mail, newest first, kept 30 days',
+    tenantScoped: true,
+    access: CONFIGURE,
+    query: MailListQuery,
+    responses: {
+      200: { description: 'A page of its mail, and what waits', schema: MailList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: forbidden,
     },
   },
 } as const satisfies Record<string, RouteContract>;
