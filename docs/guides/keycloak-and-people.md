@@ -112,8 +112,9 @@ administrator of the whole environment can give access to a group.
 **See the result** without signing in as them: in the same Access panel, choose the person under **Whose
 access** and **Show**. It lists every permission with its answer, and the level and grants that decided it.
 
-A narrower role that keeps `administer` is no boundary: its holder can grant themselves Administrator. Test
-limits with roles that do not hold it.
+A narrower role that keeps `administer` cannot give an administrative permission it does not hold, such as
+`close_environment`. It can still give itself any content role, such as Author, so test those limits with roles
+that do not hold `administer`.
 
 ## 4. Sign in as somebody else
 

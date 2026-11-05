@@ -16,6 +16,7 @@ import {
   permissionName,
   personName,
   placesFor,
+  refusalCode,
   refusalMessage,
   targetOf,
   type AccessAt,
@@ -581,6 +582,9 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
     if (status === 409 || status === 400) return refusalMessage(error) ?? REFUSED_UNREADABLE();
     if (status === 401) return SIGNED_OUT();
     if (status === 404) return missing;
+    if (status === 403 && refusalCode(error) === 'grant_beyond_held') {
+      return refusalMessage(error) ?? words('access.you-may-not-manage-access-2');
+    }
     if (status === 403) return words('access.you-may-not-manage-access-2');
     return CHANGE_UNKNOWN();
   };

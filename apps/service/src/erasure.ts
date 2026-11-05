@@ -4,9 +4,15 @@ import type {
   ErasureRefusalView,
   ErasureView,
 } from '@alloy-works/api-contract';
-import { erasePerson, erasureOf, type ErasureRefusal } from '@alloy-works/db';
+import {
+  erasePerson,
+  erasureOf,
+  principalAllowsInForce,
+  type ErasureRefusal,
+} from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { refuseBeyondHoldingAt } from './grant-limits.js';
 import { refused } from './wire-codes.js';
 
 /** A refusal as the wire lists it. */
@@ -37,11 +43,11 @@ export function erasureHandlers() {
       };
     },
 
-    erasePrincipal: async (
-      request: FastifyRequest,
-      { trx, principalId }: Authorised,
-    ): Promise<Erased> => {
+    erasePrincipal: async (request: FastifyRequest, authorised: Authorised): Promise<Erased> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as ErasureParams;
+      // Irreversible, and takes what they hold through a group too (the GL plan).
+      await refuseBeyondHoldingAt(trx, authorised, await principalAllowsInForce(trx, id));
       const answer = await erasePerson(trx, id, principalId);
       if (!answer) throw notFound();
       if (answer.answer === 'refused') {

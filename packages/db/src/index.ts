@@ -1615,3 +1615,9 @@ export {
   type StewardDatabase,
   type TenantRecord,
 } from './tenant-purge.js';
+export {
+  grantInForce,
+  groupGrantsInForce,
+  principalAllowsInForce,
+  type GrantInForce,
+} from './grant-limits.js';

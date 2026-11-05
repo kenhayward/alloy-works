@@ -33,9 +33,11 @@ import {
   type ProviderRefusal,
   type Tenant,
   type TenantTransaction,
+  principalAllowsInForce,
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
+import { refuseBeyondHoldingAt } from './grant-limits.js';
 import type { Credential } from './app.js';
 import { AppError } from './errors.js';
 import { SCIM_ROOT } from './scim.js';
@@ -311,8 +313,18 @@ export function signInSettingsHandlers(options: {
       return { id, disabled: true };
     },
 
-    enablePerson: async (request: FastifyRequest, { trx }: Authorised) => {
+    enablePerson: async (request: FastifyRequest, authorised: Authorised) => {
+      const { trx } = authorised;
       const { id } = request.params as PrincipalParams;
+      // Enabling gives back all they hold, so it is limited as giving it would be (the GL plan).
+      const held = await trx
+        .selectFrom('principal')
+        .select('disabled_at')
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (held?.disabled_at != null) {
+        await refuseBeyondHoldingAt(trx, authorised, await principalAllowsInForce(trx, id));
+      }
       const answer = await enablePrincipal(trx, id, 'person');
       if (answer !== 'enabled') throw personRefused(answer);
       return { id, disabled: false };
@@ -321,7 +333,12 @@ export function signInSettingsHandlers(options: {
 }
 
 function personRefused(
-  refusal: 'principal.missing' | 'principal.service' | 'principal.erased' | 'principal.last_way_in',
+  refusal:
+    | 'principal.missing'
+    | 'principal.service'
+    | 'principal.erased'
+    | 'principal.last_way_in'
+    | 'principal.last_holder',
 ): AppError {
   switch (refusal) {
     case 'principal.missing':
@@ -336,5 +353,11 @@ function personRefused(
       return new AppError(409, 'principal_erased', 'That person has been erased.');
     case 'principal.last_way_in':
       return lastWayIn();
+    case 'principal.last_holder':
+      return new AppError(
+        409,
+        'principal_last_holder',
+        'Nobody would hold an administrative permission they hold then, and nobody could give it again, so they cannot be disabled.',
+      );
   }
 }

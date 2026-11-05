@@ -86,7 +86,7 @@ const forbidden = {
 } as const;
 const forbiddenOrToken = {
   description:
-    'The caller may not administer this environment; or token_not_allowed: a token never erases',
+    'The caller may not administer this environment; or token_not_allowed: a token never erases; or grant_beyond_held: they hold an administrative permission the caller does not, which the message names',
   schema: ErrorBody,
 } as const;
 const missing = { description: 'No such person in this environment', schema: ErrorBody } as const;

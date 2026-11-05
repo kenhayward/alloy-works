@@ -167,6 +167,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   each may read and every grant reaching them with its expiry, and **Extend** gives one a later day, no
   further than the environment's limit; a grant to them can be made with its own expiry too.
 
+  **Nobody can give an administrative permission they do not hold**, so a role keeping administer but not, say,
+  closing the environment cannot grant itself Administrator, join or leave a group holding it, make a role holding it,
+  issue a service identity a token for it, or enable or erase somebody holding it. Content permissions are not limited.
+  The last person holding an administrative permission cannot be removed, denied it, disabled or taken out of a group giving it.
+
   **This is grants to people, not the whole of managing access.** Nothing sends the invitation: the
   administrator tells the person to sign in. Nothing creates or changes a role or marks somebody who has
   already signed in as from outside the organisation, and no page shows a template on its own, so its access is reached from its row in Templates.

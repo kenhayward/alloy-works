@@ -135,6 +135,7 @@ describe('the domain package', () => {
         'allowable',
         'checkRole',
         'administerOrAbove',
+        'beyondHolding',
         'decide',
         'externalCap',
         'formatLevel',

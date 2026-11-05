@@ -17,6 +17,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   extendGrant,
+  grantInForce,
   listExternalReach,
   grant,
   listGrants,
@@ -32,6 +33,7 @@ import {
 import { formatLevel } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { refuseBeyondHolding } from './grant-limits.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import type { AppError } from './errors.js';
 import { refused } from './wire-codes.js';
@@ -56,6 +58,7 @@ const REFUSALS = new Map<
   | GrantRefusal
   | 'grant.last_administrator'
   | 'grant.last_way_in'
+  | 'grant.last_holder'
   | 'grant.not_external'
   | 'grant.not_later',
   string
@@ -99,6 +102,10 @@ const REFUSALS = new Map<
     'This is the last grant that lets anyone administer this environment, so it cannot be removed.',
   ],
   [
+    'grant.last_holder',
+    'Nobody would hold an administrative permission of this role then, and nobody could give it again, so this grant cannot be removed.',
+  ],
+  [
     'grant.last_way_in',
     'Nobody who can still sign in would hold administer then, so this grant cannot be removed.',
   ],
@@ -118,6 +125,7 @@ function refuse(
     | GrantRefusal
     | 'grant.last_administrator'
     | 'grant.last_way_in'
+    | 'grant.last_holder'
     | 'grant.not_external'
     | 'grant.not_later',
 ): AppError {
@@ -156,8 +164,12 @@ export function managingAccessHandlers() {
       };
     },
 
-    createRole: async (request: FastifyRequest, { trx }: Authorised): Promise<RoleMade> => {
+    createRole: async (
+      request: FastifyRequest,
+      { trx, facts, target }: Authorised,
+    ): Promise<RoleMade> => {
       const body = request.body as RoleBody;
+      refuseBeyondHolding(body.permissions, facts, target);
       const answer = await createRole(trx, body.name, body.permissions);
       if ('refused' in answer) {
         throw refused(409, answer.refused, ROLE_REFUSALS.get(answer.refused)!);
@@ -184,9 +196,15 @@ export function managingAccessHandlers() {
 
     makeGrant: async (
       request: FastifyRequest,
-      { trx, principalId, target }: Authorised,
+      { trx, principalId, target, facts }: Authorised,
     ): Promise<GrantMade> => {
       const body = request.body as GrantBody;
+      const role = await trx
+        .selectFrom('role')
+        .select('permissions')
+        .where('id', '=', body.role)
+        .executeTakeFirst();
+      if (role) refuseBeyondHolding(role.permissions, facts, target);
       const answer = await grant(trx, {
         roleId: body.role,
         subject: body.subject,
@@ -247,8 +265,14 @@ export function managingAccessHandlers() {
       })),
     }),
 
-    removeGrant: async (request: FastifyRequest, { trx }: Authorised): Promise<GrantRemoved> => {
+    removeGrant: async (
+      request: FastifyRequest,
+      { trx, facts, target }: Authorised,
+    ): Promise<GrantRemoved> => {
       const { id } = request.params as GrantParams;
+      // Taking an allow away is open; taking a denial away gives back what it denied (GL-D).
+      const removing = await grantInForce(trx, id);
+      if (removing?.effect === 'deny') refuseBeyondHolding(removing.permissions, facts, target);
       const answer = await removeGrant(trx, id);
       if ('refused' in answer) {
         if (answer.refused === 'grant.missing') throw notFound();

@@ -337,7 +337,8 @@ export const signInSettingsRoutes = {
       403: forbidden,
       404: { description: 'There is no such person', schema: ErrorBody },
       409: {
-        description: 'last_way_in, principal_own_account, principal_service or principal_erased',
+        description:
+          'last_way_in, principal_last_holder, principal_own_account, principal_service or principal_erased',
         schema: ErrorBody,
       },
     },
@@ -354,7 +355,11 @@ export const signInSettingsRoutes = {
     responses: {
       200: { description: 'Enabled, or enabled already', schema: PersonDisablement },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: { description: 'There is no such person', schema: ErrorBody },
       409: { description: 'principal_service or principal_erased', schema: ErrorBody },
     },

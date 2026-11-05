@@ -19,6 +19,7 @@ export {
 export { formatLevel, parseLevel, sameLevel, type Level } from './level.js';
 export {
   administerOrAbove,
+  beyondHolding,
   decide,
   type AccessFacts,
   type AccessGrant,

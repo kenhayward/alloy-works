@@ -1638,9 +1638,9 @@ const descriptions: Readonly<Record<string, string>> = {
   createGroup:
     'Creates a local group or a group representing a value asserted by the identity provider.',
   deleteGroup:
-    'Deletes a group together with its memberships and grants. This changes access immediately.',
+    'Deletes a group together with its memberships and grants. This changes access immediately. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.',
   setGroupMembers:
-    'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead.',
+    'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.',
   listInvitations: 'Lists waiting and accepted invitations in stable cursor pages.',
   invite:
     'Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.',
@@ -1667,18 +1667,19 @@ const descriptions: Readonly<Record<string, string>> = {
   disablePerson:
     'Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.',
   enablePerson:
-    'Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.',
+    'Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment, and is refused `grant_beyond_held` where they hold an administrative permission the caller does not. Audited.',
   startReauthentication:
     'Asks for this session to be signed in again and answers where to send the browser: the way in it came by, with the provider told to authenticate the person afresh. It comes back through the sign-in callbacks and is accepted only for the same person, authenticated since this was asked; a route needing a recent sign-in then accepts the session. A session only, never a token.',
   withdrawInvitation:
     'Withdraws an unaccepted invitation and removes the principal and grants created for it.',
   listRoles: 'Lists roles available to grants and the permissions each role holds.',
   createRole:
-    "Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Audited, with what it holds.",
+    "Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Refused `grant_beyond_held` where it holds an administrative permission the caller does not. Audited, with what it holds.",
   listGrants: 'Lists access grants at one level using an opaque cursor.',
   makeGrant:
-    'Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.',
-  removeGrant: 'Removes a grant unless it is needed to keep the environment administered.',
+    'Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request. Refused `grant_beyond_held` where it would give an administrative permission the caller does not hold. A token is held to its scopes, so granting Administrator takes a session.',
+  removeGrant:
+    'Removes a grant unless it is needed to keep the environment administered, or `grant_last_holder` where nobody would then hold one of its administrative permissions. Removing a denial of an administrative permission the caller does not hold is refused `grant_beyond_held`.',
   extendGrant:
     'Extends a grant to somebody from outside the organisation: a new grant with a later expiry, no later than the tenant cap from now, which names and replaces the one it extends in the same change. A positive act by an administrator of where it stands, audited with both expiries; a grant to somebody inside the organisation is not extended this way.',
   listExternalAccess:

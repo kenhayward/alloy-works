@@ -224288,7 +224288,7 @@
       "post": {
         "operationId": "makeGrant",
         "summary": "Grant a role to a person or a group at one level, as an allow or a denial",
-        "description": "Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.",
+        "description": "Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request. Refused `grant_beyond_held` where it would give an administrative permission the caller does not hold. A token is held to its scopes, so granting Administrator takes a session.",
         "tags": [
           "Roles and grants"
         ],
@@ -224665,7 +224665,7 @@
             }
           },
           "403": {
-            "description": "The caller may read the level but may not administer it, or anything above it",
+            "description": "The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -224747,7 +224747,7 @@
             }
           },
           "409": {
-            "description": "grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
+            "description": "grant_last_holder, grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
             "content": {
               "application/json": {
                 "schema": {
@@ -224835,7 +224835,7 @@
       "delete": {
         "operationId": "removeGrant",
         "summary": "Remove a grant, unless it is the last that keeps this environment administered",
-        "description": "Removes a grant unless it is needed to keep the environment administered.",
+        "description": "Removes a grant unless it is needed to keep the environment administered, or `grant_last_holder` where nobody would then hold one of its administrative permissions. Removing a denial of an administrative permission the caller does not hold is refused `grant_beyond_held`.",
         "tags": [
           "Roles and grants"
         ],
@@ -224967,6 +224967,47 @@
               }
             }
           },
+          "403": {
+            "description": "grant_beyond_held: a denial of an administrative permission they do not hold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such level or grant in this environment, or none the caller may see",
             "content": {
@@ -225009,7 +225050,7 @@
             }
           },
           "409": {
-            "description": "grant_last_administrator",
+            "description": "grant_last_administrator, last_way_in or grant_last_holder",
             "content": {
               "application/json": {
                 "schema": {
@@ -226268,7 +226309,7 @@
       "delete": {
         "operationId": "deleteGroup",
         "summary": "Delete a group, with its memberships and every grant it holds",
-        "description": "Deletes a group together with its memberships and grants. This changes access immediately.",
+        "description": "Deletes a group together with its memberships and grants. This changes access immediately. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.",
         "tags": [
           "Groups"
         ],
@@ -226401,7 +226442,7 @@
             }
           },
           "403": {
-            "description": "The caller may not administer this environment",
+            "description": "The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -226571,7 +226612,7 @@
       "put": {
         "operationId": "setGroupMembers",
         "summary": "Set the members of one of the environment's own groups",
-        "description": "Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead.",
+        "description": "Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.",
         "tags": [
           "Groups"
         ],
@@ -226802,7 +226843,7 @@
             }
           },
           "403": {
-            "description": "The caller may not administer this environment",
+            "description": "The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -226884,7 +226925,7 @@
             }
           },
           "409": {
-            "description": "group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
+            "description": "group_from_provider, group_member_missing, group_member_erased, group_last_holder, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
             "content": {
               "application/json": {
                 "schema": {
@@ -257428,7 +257469,7 @@
       "delete": {
         "operationId": "enablePerson",
         "summary": "Enable a person disabled; what ended stays ended",
-        "description": "Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.",
+        "description": "Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment, and is refused `grant_beyond_held` where they hold an administrative permission the caller does not. Audited.",
         "tags": [
           "Sign-in settings"
         ],
@@ -257573,7 +257614,7 @@
             }
           },
           "403": {
-            "description": "The permission this needs is not held at the environment",
+            "description": "The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -257968,7 +258009,7 @@
             }
           },
           "409": {
-            "description": "last_way_in, principal_own_account, principal_service or principal_erased",
+            "description": "last_way_in, principal_last_holder, principal_own_account, principal_service or principal_erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -258194,7 +258235,7 @@
             }
           },
           "403": {
-            "description": "The caller may not administer this environment; or token_not_allowed: a token never erases",
+            "description": "The caller may not administer this environment; or token_not_allowed: a token never erases; or grant_beyond_held: they hold an administrative permission the caller does not, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -296701,7 +296742,7 @@
       "post": {
         "operationId": "createRole",
         "summary": "Make a role: a named set of permissions, which does nothing until it is granted",
-        "description": "Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Audited, with what it holds.",
+        "description": "Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Refused `grant_beyond_held` where it holds an administrative permission the caller does not. Audited, with what it holds.",
         "tags": [
           "Roles and grants"
         ],
@@ -296972,7 +297013,7 @@
             }
           },
           "403": {
-            "description": "The caller may read the level but may not administer it, or anything above it",
+            "description": "The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {
@@ -303515,7 +303556,7 @@
             }
           },
           "403": {
-            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token",
+            "description": "The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names",
             "content": {
               "application/json": {
                 "schema": {

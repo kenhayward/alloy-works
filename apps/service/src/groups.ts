@@ -12,6 +12,7 @@ import {
   createGroup,
   deleteGroup,
   countGroups,
+  groupGrantsInForce,
   listGroups,
   readGroup,
   setGroupMembers,
@@ -20,6 +21,7 @@ import {
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { refuseBeyondHoldingAt } from './grant-limits.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import type { AppError } from './errors.js';
 import { refused } from './wire-codes.js';
@@ -56,6 +58,10 @@ const REFUSALS = new Map<GroupRefusal, string>([
     "This group's members are whoever the organisation's sign-in says are in it, so they cannot be named here.",
   ],
   ['group.member_missing', 'There is no such person in this environment.'],
+  [
+    'group.last_holder',
+    'Nobody would hold an administrative permission this group gives then, and nobody could give it again, so this cannot be done.',
+  ],
   ['group.member_erased', 'Somebody chosen was erased, and joins no group again.'],
   [
     'grant.external_at_tenant',
@@ -112,9 +118,24 @@ export function groupHandlers() {
       return { group: groupView(made ?? { ...answer.group, members: [] }) };
     },
 
-    setGroupMembers: async (request: FastifyRequest, { trx }: Authorised): Promise<GroupMade> => {
+    setGroupMembers: async (
+      request: FastifyRequest,
+      authorised: Authorised,
+    ): Promise<GroupMade> => {
+      const { trx } = authorised;
       const { id } = request.params as GroupParams;
       const { principals } = request.body as GroupMembersBody;
+      // A group holding more than its maker is not theirs to change (GL-C, GL-D). An unchanged list
+      // changes nothing, and the source of a group from a provider refuses it anyway.
+      const before = await readGroup(trx, id);
+      const wanted = new Set(principals);
+      if (
+        before &&
+        (before.members.length !== wanted.size ||
+          before.members.some((member) => !wanted.has(member.id)))
+      ) {
+        await refuseBeyondHoldingAt(trx, authorised, await groupGrantsInForce(trx, id));
+      }
       const answer = await setGroupMembers(trx, id, principals);
       if ('refused' in answer) {
         if (answer.refused === 'group.missing') throw notFound();
@@ -126,11 +147,16 @@ export function groupHandlers() {
       return { group: groupView(group) };
     },
 
-    deleteGroup: async (request: FastifyRequest, { trx }: Authorised): Promise<GroupDeleted> => {
+    deleteGroup: async (request: FastifyRequest, authorised: Authorised): Promise<GroupDeleted> => {
+      const { trx } = authorised;
       const { id } = request.params as GroupParams;
+      await refuseBeyondHoldingAt(trx, authorised, await groupGrantsInForce(trx, id));
       const answer = await deleteGroup(trx, id);
       if ('refused' in answer && answer.refused === 'group.in_scope') {
         throw refused(409, 'group.in_scope', 'A scope names this group to accept a revision.');
+      }
+      if ('refused' in answer && answer.refused === 'group.last_holder') {
+        throw refuse(answer.refused);
       }
       if ('refused' in answer) throw notFound();
       return answer;

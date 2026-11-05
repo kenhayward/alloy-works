@@ -281,7 +281,7 @@ function peopleService(tenant: Record<string, unknown> = { name: 'Development' }
   }[] = [];
   const sent: { method: string; path: string; body: unknown }[] = [];
   const asked: URL[] = [];
-  const erasure = { granted: 0 };
+  const erasure = { granted: 0, beyond: false };
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
@@ -339,6 +339,13 @@ function peopleService(tenant: Record<string, unknown> = { name: 'Development' }
       });
     }
     if (route === 'POST /v1/principals/p2/erase') {
+      if (erasure.beyond) {
+        return json(403, {
+          code: 'grant_beyond_held',
+          message: 'You cannot give access you do not hold: hold.',
+          traceId: 't',
+        });
+      }
       people[1] = { ...people[1]!, name: 'Erased person', email: null, erased: true };
       return json(200, { erased: true, labels: 14 });
     }
@@ -608,6 +615,22 @@ describe('People in Administration', () => {
     expect([explained.searchParams.get('principal'), explained.searchParams.get('target')]).toEqual(
       ['p1', 'tenant'],
     );
+  });
+
+  it('says what the caller does not hold when erasing is refused for it, rather than to try again', async () => {
+    const { client, erasure } = peopleService();
+    erasure.beyond = true;
+    const { table } = await openPeople(client);
+    await userEvent.click(
+      within(row(table, /Marta/)).getByRole('button', { name: 'More actions for Marta' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Erase' }));
+    const asking = await screen.findByRole('dialog', { name: 'Erase Marta?' });
+    await within(asking).findByText(/becomes "Erased person" everywhere/);
+    await userEvent.click(within(asking).getByRole('button', { name: 'Erase' }));
+    expect(
+      await within(asking).findByText('You cannot give access you do not hold: hold.'),
+    ).toBeInTheDocument();
   });
 
   it('VER-038 erases a person only after saying what goes and what stays, then shows them Erased', async () => {

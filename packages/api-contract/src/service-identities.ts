@@ -165,7 +165,11 @@ export const serviceIdentityRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
-      403: notAdministering,
+      403: {
+        description:
+          'The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: missing,
       409: {
         description: 'service_identity_disabled: a disabled service identity is issued nothing',
