@@ -64,7 +64,10 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
     );
   const channel = () =>
     as(async (trx) =>
-      trx.selectFrom('mail_channel').select(['failing_since', 'last_success_at']).executeTakeFirst(),
+      trx
+        .selectFrom('mail_channel')
+        .select(['failing_since', 'last_success_at'])
+        .executeTakeFirst(),
     );
 
   beforeAll(async () => {
@@ -206,9 +209,7 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
     await as((trx) => sql`update email_delivery set next_at = now() where id = ${id}`.execute(trx));
     const [second] = (await claim()).claimed;
     expect(
-      await as((trx) =>
-        recordMailAttempt(trx, id, { kind: 'sent', latencyMs: 30 }, second!.lease),
-      ),
+      await as((trx) => recordMailAttempt(trx, id, { kind: 'sent', latencyMs: 30 }, second!.lease)),
     ).toEqual({ relayFailed: false });
     expect(await delivery(id)).toMatchObject({ state: 'sent', attempts: 2 });
     expect(await channel()).toMatchObject({ failing_since: null });
@@ -259,15 +260,15 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
   it('lets a full connector or a spent hour wait, costing no attempt', async () => {
     const id = await as((trx) => queueTestMail(trx, ada));
     for (const failure of ['wait', 'quota_reached'] as const) {
-      await as((trx) => sql`update email_delivery set next_at = now() where id = ${id}`.execute(trx));
+      await as((trx) =>
+        sql`update email_delivery set next_at = now() where id = ${id}`.execute(trx),
+      );
       const [one] = (await claim()).claimed;
       await as((trx) =>
         recordMailAttempt(
           trx,
           id,
-          failure === 'wait'
-            ? { kind: 'wait' }
-            : { kind: 'failed', failure, latencyMs: 0 },
+          failure === 'wait' ? { kind: 'wait' } : { kind: 'failed', failure, latencyMs: 0 },
           one!.lease,
         ),
       );

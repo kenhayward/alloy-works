@@ -106,7 +106,9 @@ describe("Administration's Email (the EM plan, EMb)", () => {
     const { client, calls } = service();
     render(<Mail client={client} mayChange />);
     expect(await screen.findByText(/From mail@operator\.test/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Send mail from this environment' }));
+    await userEvent.click(
+      screen.getByRole('checkbox', { name: 'Send mail from this environment' }),
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(calls.find((each) => each.method === 'PUT')?.body).toEqual({

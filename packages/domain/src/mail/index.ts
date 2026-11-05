@@ -157,7 +157,13 @@ export const childMailRequestSchema = z.strictObject({
     password: mailPasswordSchema.nullable(),
     fromAddress: mailAddressSchema,
   }),
-  message: mailRequestSchema.pick({ id: true, fromName: true, to: true, subject: true, text: true }),
+  message: mailRequestSchema.pick({
+    id: true,
+    fromName: true,
+    to: true,
+    subject: true,
+    text: true,
+  }),
   deny: z.array(z.string()),
   connectTimeoutMs: z.number().int().min(1).max(60_000),
   ca: z

@@ -135,7 +135,7 @@ function failureOf(error: unknown): { code: MailFailureCode; smtpCode?: number }
 /** Whether a socket's error was TLS refusing the relay's certificate or its handshake. */
 function tlsError(error: unknown): boolean {
   const seen = new Set<unknown>();
-  for (let each: unknown = error; each && !seen.has(each); ) {
+  for (let each: unknown = error; each && !seen.has(each);) {
     seen.add(each);
     // The library keeps the socket's own code as `originalCode`.
     const { code, originalCode, cause } = each as {

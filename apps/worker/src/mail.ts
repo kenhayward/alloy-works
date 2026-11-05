@@ -34,7 +34,11 @@ const PRODUCT = 'Alloy Works';
  * first failure, so a black-holed relay holds up only its own tenant. A suspended or closing tenant's
  * mail waits, costing no attempt (EM-T). Answers how many were attempted.
  */
-export async function sendMail(db: TenantDatabase, mailer: Mailer, log: WorkerLog): Promise<number> {
+export async function sendMail(
+  db: TenantDatabase,
+  mailer: Mailer,
+  log: WorkerLog,
+): Promise<number> {
   const waiting = [...(await db.liveTenants())];
   let attempted = 0;
   await Promise.all(

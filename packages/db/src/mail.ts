@@ -153,7 +153,10 @@ export type MailPurpose = 'test';
 const AGE: Readonly<Record<MailPurpose, string>> = { test: '1 hour' };
 
 /** Whether a person may be mailed at all: a person, not erased or disabled, at a verified address (EM-G). */
-export async function mailableAddress(trx: TenantTransaction, principalId: string): Promise<boolean> {
+export async function mailableAddress(
+  trx: TenantTransaction,
+  principalId: string,
+): Promise<boolean> {
   const row = await trx
     .selectFrom('principal')
     .select(['kind', 'email', 'email_verified', 'erased_at', 'disabled_at'])
@@ -255,7 +258,9 @@ export async function claimMail(
       from due, principal p
      where d.id = due.id and p.id = d.principal_id
     returning d.id, d.purpose, d.locked_until::text as lease, p.kind, p.email, p.email_verified,
-              p.erased_at is not null as erased, p.disabled_at is not null as disabled`.execute(trx);
+              p.erased_at is not null as erased, p.disabled_at is not null as disabled`.execute(
+    trx,
+  );
   let dropped = 0;
   const sendable: DueRow[] = [];
   for (const row of rows) {
@@ -460,8 +465,7 @@ export async function listMail(
       attempts: row.attempts,
       createdAt: row.created_at,
       nextAt: row.state === 'pending' ? row.next_at : null,
-      last:
-        row.at === null ? null : { at: row.at, failure: row.failure, smtpCode: row.smtp_code },
+      last: row.at === null ? null : { at: row.at, failure: row.failure, smtpCode: row.smtp_code },
     })),
     page.limit,
   );

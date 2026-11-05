@@ -1714,6 +1714,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Turn on** one turned off, **Remove** one after asking, and **Deliveries** shows each: what was
   sent and, at every attempt, what came back or why nothing did. Through the API that is
   `/v1/webhooks/{id}/deliveries`.
+- **Email, its channel and a test.** Administration's **Email** turns an environment's mail on or
+  off and chooses how it leaves: by the operator's relay, from the operator's address with the
+  environment's name, or by a relay of its own on port 465 or 587, always over TLS with its
+  certificate checked. Its own relay's password is set write-only, sealed to that host, port and
+  username, and asked for again when any of them changes. **Send a test to yourself** sends one, by
+  the relay saved, to your own address where your provider has verified it, and the mail of the last
+  30 days is listed: sent, waiting, given up or not sent and why, each attempt by its code and SMTP
+  code alone. A relay that fails is tried again from 30 seconds, doubling to an hour, and the page
+  says since when it has failed. Every change is recorded in the audit log, naming no host, address
+  or password, and a restored environment's mail arrives off. Through the API it is
+  `/v1/mail-channel`, needing configure services, and its password rotate secrets. Nothing but a
+  test is sent yet: notifications, invitations and closure notices by email come next.
 - **Extensions.** An administrator installs an extension, a source type someone else
   hosts, by its manifest's HTTPS URL at `/v1/extensions`: the connector fetches the manifest, and its
   preview shows what it is, the settings and secret a connection to it takes, what it can do and the
@@ -2264,7 +2276,7 @@ Named explicitly so nobody has to read the source to find out:
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search by meaning, no taxonomy. No layout the product seeds declares an approval page. Conditional text
   and suggestion handling are described in the content model and neither runs.
-- No email or webhook: a notification is in the inbox alone. A thread is seen by whoever may read what
+- No notification by email yet: a notification is in the inbox alone, or a webhook's. A thread is seen by whoever may read what
   it is on, but for an internal one, which nobody from outside the organisation sees, is told of or
   finds.
 - No signed or published release - the installer builds locally and is unsigned.

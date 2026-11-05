@@ -74,7 +74,9 @@ describe('a mail sent by the connector’s child (the EM plan, EM-I and EM-J)', 
     expect(message!.tlsBeforeAuth).toBe(true);
     expect(message!.to).toEqual(['<grace@example.test>']);
     expect(message!.from).toBe('<news@example.test>');
-    expect(message!.data).toMatch(/^Message-ID: <0b8f5f2a-6d0e-4c1b-9b8e-3f2c1d0a9e01@example\.test>/m);
+    expect(message!.data).toMatch(
+      /^Message-ID: <0b8f5f2a-6d0e-4c1b-9b8e-3f2c1d0a9e01@example\.test>/m,
+    );
     expect(message!.data).toMatch(/^X-Alloy-Event-Id: 0b8f5f2a-6d0e-4c1b-9b8e-3f2c1d0a9e01/im);
     expect(message!.data).toMatch(/^Auto-Submitted: auto-generated/m);
     expect(message!.data).toMatch(/^From: Acme <news@example\.test>/m);
@@ -186,7 +188,9 @@ describe('a mail sent by the connector’s child (the EM plan, EM-I and EM-J)', 
     const rebinding = () => {
       asked += 1;
       return Promise.resolve([
-        asked === 1 ? { address: '127.0.0.1', family: 4 } : { address: '169.254.169.254', family: 4 },
+        asked === 1
+          ? { address: '127.0.0.1', family: 4 }
+          : { address: '169.254.169.254', family: 4 },
       ]);
     };
     expect(await answerMail(mailTo(fake.port), { lookup: rebinding })).toMatchObject({

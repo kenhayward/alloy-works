@@ -811,6 +811,31 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s Email: the channel, a relay of its own and the mail of 30 days (the EM plan)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/admin/email`);
+      await check('how the environment’s mail leaves', {
+        shows: [
+          page.getByRole('checkbox', { name: 'Send mail from this environment' }),
+          page.getByRole('button', { name: 'Send a test to yourself' }),
+        ],
+      });
+      await page.getByRole('radio', { name: /^By a relay of your own/ }).check();
+      await check('a relay of its own being named', {
+        shows: [
+          page.getByRole('textbox', { name: 'Host' }),
+          page.getByRole('combobox', { name: 'Port' }),
+        ],
+      });
+    });
+  });
+
   it('passes axe on the document themes, a paragraph and a character style being edited, the reach of a change, a theme duplicated and the styles offered (the SY plan, SYb to SYd)', async ({
     task,
   }) => {
