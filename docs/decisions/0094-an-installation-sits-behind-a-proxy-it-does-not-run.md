@@ -1,4 +1,4 @@
-# 0093 - An installation sits behind a proxy it does not run
+# 0094 - An installation sits behind a proxy it does not run
 
 - **Status:** Accepted
 - **Date:** 2026-11-05
