@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.237.0 - 2026-11-05 (PR #PPPP)
+## 0.237.0 - 2026-11-05 (PR #983)
 
 The Part panel gets tidier: a component's version is one row whose menu can no longer be cut off, Overrides moves into the head with a count, and the head's tips show at once.
 
