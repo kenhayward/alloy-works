@@ -220,7 +220,7 @@ without writing SQL. It also gives Ada **Full access (development)**, every perm
 whole environment, so every part of the product can be tried as her.
 
 An organisation's own tenant, holding no content, is at `http://org.acme.localhost:8088`, where Ada administers
-too. A tenant made from its console answers under `.acme.localhost`; the stand-in signs nobody in there until its
+too: [the guide](../docs/guides/organisations-and-tenants.md). A tenant made from its console answers under `.acme.localhost`; the stand-in signs nobody in there until its
 address is added to `STAND_IN_REDIRECT_URIS`, or under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS` in `deploy/.env`. To make an organisation elsewhere:
 
 ```bash

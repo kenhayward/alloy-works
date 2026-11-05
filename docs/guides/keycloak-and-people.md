@@ -135,7 +135,8 @@ to `deploy/.env`, comma-separated, then run the `up` from section 1 again:
 ALLOY_EXTRA_REDIRECT_URIS=http://test.acme.localhost:8088/v1/sign-in/organisation/callback
 ```
 
-An address added in Keycloak's console works until the next start, which replaces the list.
+An address added in Keycloak's console works until the next start, which replaces the list. The whole procedure
+is in [Setting up an organisation and making tenants](organisations-and-tenants.md).
 
 ## Starting again
 
