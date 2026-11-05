@@ -41,3 +41,19 @@ describe('the root dev:setup script', () => {
     }
   });
 });
+
+describe('the root environment:setup script', () => {
+  const setup = (
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../../package.json', import.meta.url)), 'utf8'),
+    ) as { scripts: Record<string, string | undefined> }
+  ).scripts['environment:setup'];
+
+  it('builds what the setups import, then sets up the database before the store', () => {
+    expect(setup).toBe(
+      'pnpm --filter "@alloy-works/db^..." --filter "@alloy-works/objects^..." build' +
+        ' && pnpm --filter @alloy-works/db environment:setup' +
+        ' && pnpm --filter @alloy-works/objects environment:setup',
+    );
+  });
+});

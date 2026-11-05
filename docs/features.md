@@ -224,6 +224,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   own store. A holder of `share_provider` shares a sign-in provider from **Sign-in**: each tenant has a copy, kept
   current, which it can close and not edit, and once it is no longer shared each tenant keeps it as its own. The operator
   makes an organisation's own tenant with `steward organisation`.
+- **Setting up an installation.** `pnpm environment:setup` prepares a database and store for one real environment on every
+  deploy, from settings with no defaults: no seed, no stand-in, and it refuses any secret this repository publishes.
+  It configures sign-in once, then leaves it to Administration. [The settings](../deploy/README.md).
 - **Closing an environment.** Someone holding `close_environment` and both export permissions closes one
   from Administration's **Export**: a recent sign-in, its name typed, and a whole export from the last 24
   hours or that one is declined, recorded. For 30 days only those holding `close_environment` or `hold`, or
