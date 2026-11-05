@@ -17,7 +17,12 @@ export function refuseBeyondHolding(
   if (first === undefined) return;
   const names = beyond.map((decision) => decision.permission).join(', ');
   throw refusedBy(
-    new AppError(403, 'grant_beyond_held', `You cannot give access you do not hold: ${names}.`),
+    new AppError(
+      403,
+      'grant_beyond_held',
+      `You cannot give access you do not hold: ${names}.`,
+      'IAM-088',
+    ),
     first,
     facts,
     target,

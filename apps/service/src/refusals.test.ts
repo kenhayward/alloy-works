@@ -51,6 +51,8 @@ describe('the rule behind a refusal', () => {
       ['approval.author', 'approval_author', 'LIF-010'],
       ['conditions.unmet', 'conditions_unmet', 'LIF-004'],
       ['prompt.output_mismatch', 'prompt_output_mismatch', 'GEN-004'],
+      ['grant.last_holder', 'grant_last_holder', 'IAM-088'],
+      ['group.last_holder', 'group_last_holder', 'IAM-088'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -77,7 +79,6 @@ describe('the rule behind a refusal', () => {
       'grant.role_missing',
       'grant.subject_missing',
       'grant.last_administrator',
-      'grant.last_holder',
       // Refuses more than IAM-057 names, which access.md therefore does not claim.
       'grant.external_capped',
       'invitation.signed_in',
@@ -99,7 +100,6 @@ describe('the rule behind a refusal', () => {
       'group.provider_unknown',
       'group.from_provider',
       'group.member_missing',
-      'group.last_holder',
       // A value written that does not fit, or that nothing can be checked against because the
       // document's template no longer resolves: the design's own guards (templates.md, "Values"). A
       // missing required value is TPL-055's, refused at publication and not here.
