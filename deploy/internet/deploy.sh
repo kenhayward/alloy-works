@@ -124,8 +124,13 @@ compose up -d --wait --wait-timeout 900 --remove-orphans || record_failure "it d
 
 # Through the door itself: the service, answering for nobody signed in.
 app=$(setting ALLOY_APP_HOST)
-answer=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "$app:443:127.0.0.1" \
-  "https://$app/v1/me" || true)
+answer=''
+for _ in $(seq 1 30); do
+  answer=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "$app:443:127.0.0.1" \
+    "https://$app/v1/me" || true)
+  [ "$answer" = 401 ] && break
+  sleep 2
+done
 [ "$answer" = 401 ] || record_failure "the service answered $answer rather than 401"
 
 echo "$target" >"$STATE/deployed"

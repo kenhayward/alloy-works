@@ -144,6 +144,11 @@ describe('the internet stack', () => {
     expect(caddy).toMatch(/respond @elsewhere 404/);
   });
 
+  it('has the store answer on the network the door reaches it by', () => {
+    expect(services.get('seaweedfs')).toMatch(/'-s3\.ip\.bind=0\.0\.0\.0'/);
+    expect(services.get('seaweedfs')).toMatch(/edge: \{\}/);
+  });
+
   it('believes only the proxy, and decides what the service is told', () => {
     expect(caddy).toMatch(/trusted_proxies static \{\$PROXY_ADDRESS\}/);
     expect(caddy).toMatch(/trusted_proxies_strict/);

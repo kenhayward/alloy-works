@@ -127,6 +127,18 @@ services:
     restart: unless-stopped
 
   seaweedfs:
+    # As compose.yaml's, and answering on `edge` too: it binds only its first network otherwise.
+    command:
+      [
+        'server',
+        '-dir=/data',
+        '-volume.max=200',
+        '-master.volumeSizeLimitMB=64',
+        '-s3',
+        '-s3.port=${STORE_PORT:-8333}',
+        '-s3.iam.readOnly=false',
+        '-s3.ip.bind=0.0.0.0',
+      ]
     environment:
       AWS_ACCESS_KEY_ID: ${OBJECT_STORE_ADMIN_KEY:?}
       AWS_SECRET_ACCESS_KEY: ${OBJECT_STORE_ADMIN_SECRET:?}
