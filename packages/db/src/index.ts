@@ -1539,6 +1539,13 @@ export {
   type WebhookSubscription,
 } from './webhooks.js';
 export {
+  mailChannel,
+  NO_MAIL_CHANNEL,
+  setMailChannel,
+  setMailPassword,
+  type MailChannel,
+} from './mail.js';
+export {
   extensionAtDigest,
   extensionUses,
   installedExtension,

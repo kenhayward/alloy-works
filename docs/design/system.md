@@ -299,4 +299,3 @@ give, and the whole-system suite's isolation test is the check to run on it.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New | Hosting and self-hosting, open in scope §10                                                                                                             |
 | New | How many tenants one account's object store credentials serve before short-lived credentials are needed instead: AWS caps IAM users at 5,000 (ADR-0021) |
-| New | Which email delivery service. Only the inbox is designed; a provider needs choosing before notifications by email (COL-033) are built                   |

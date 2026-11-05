@@ -10,6 +10,8 @@ import {
   modelCredentialContext,
   modelRequestSchema,
   modelSealRequestSchema,
+  mailCredentialContext,
+  mailSealRequestSchema,
   webhookSealRequestSchema,
   deliverRequestSchema,
   manifestRequestSchema,
@@ -56,6 +58,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/model/seal': MAX_BODY_BYTES,
   // A webhook subscription's signing secret (the WB plan, WB-G).
   '/v1/webhook/seal': MAX_BODY_BYTES,
+  // A mail relay's password, sealed to it (the EM plan, EM-I).
+  '/v1/mail/seal': MAX_BODY_BYTES,
   // A webhook delivery: its thin body and two sealed secrets (WB-F).
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   // An extension's manifest, by its URL (the EX plan, EX-B).
@@ -221,6 +225,20 @@ export function createConnectorServer(options: {
           parsed.data.tenant,
           parsed.data.secret,
           webhookSecretContext(parsed.data.subscription, parsed.data.url),
+        ),
+      };
+      return send(200, answer);
+    }
+    if (path === '/v1/mail/seal') {
+      const parsed = mailSealRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const answer: SealAnswer = {
+        sealed: sealSecret(
+          config.sealingKey,
+          'mail-credential',
+          parsed.data.tenant,
+          parsed.data.password,
+          mailCredentialContext(parsed.data.host, parsed.data.port, parsed.data.username),
         ),
       };
       return send(200, answer);

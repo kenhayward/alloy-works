@@ -138,6 +138,7 @@ describe('the audit kinds', () => {
       // The AU1 review's (M4): one for each requirement saying its act is audited that none named.
       'secret.accessed',
       'tenant.closed',
+      'mail_channel.changed',
       'webhook.changed',
       'extension.changed',
       'organisation.changed',

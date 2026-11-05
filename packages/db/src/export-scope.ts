@@ -105,6 +105,7 @@ export const PARTIAL_CONFIGURATION: ReadonlySet<string> = new Set([
   'images_policy',
   'import_policy',
   'layout_default',
+  'mail_channel',
   'model_credential',
   'model_endpoint',
   'model_route',

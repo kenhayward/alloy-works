@@ -464,6 +464,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'translation.machine_accepted'() {
     return words('admin.machine-draft-accepted');
   },
+  get 'mail_channel.changed'() {
+    return words('admin.mail-channel-changed');
+  },
   get 'webhook.changed'() {
     return words('admin.webhook-changed');
   },

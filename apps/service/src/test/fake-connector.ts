@@ -11,6 +11,8 @@ import {
   type EmbedAnswer,
   type EmbedRequest,
   modelSealRequestSchema,
+  mailCredentialContext,
+  mailSealRequestSchema,
   webhookSealRequestSchema,
   webhookSecretContext,
   type ModelEvent,
@@ -157,13 +159,15 @@ export function fakeConnector(): FakeConnector {
                       ? modelSealRequestSchema
                       : path === '/v1/webhook/seal'
                         ? webhookSealRequestSchema
-                        : path === '/v1/reference'
-                          ? referenceRequestSchema
-                          : path === '/v1/reference/seal'
-                            ? referenceSealRequestSchema
-                            : path === '/v1/vocabulary-source'
-                              ? vocabularySourceRequestSchema
-                              : undefined;
+                        : path === '/v1/mail/seal'
+                          ? mailSealRequestSchema
+                          : path === '/v1/reference'
+                            ? referenceRequestSchema
+                            : path === '/v1/reference/seal'
+                              ? referenceSealRequestSchema
+                              : path === '/v1/vocabulary-source'
+                                ? vocabularySourceRequestSchema
+                                : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -204,6 +208,17 @@ export function fakeConnector(): FakeConnector {
             reason: 'refused',
           },
         );
+      }
+      if (path === '/v1/mail/seal') {
+        return Response.json({
+          sealed: sealSecret(
+            sealingKey,
+            'mail-credential',
+            String(body.tenant),
+            String(body.password),
+            mailCredentialContext(String(body.host), Number(body.port), String(body.username)),
+          ),
+        });
       }
       if (path === '/v1/webhook/seal') {
         return Response.json({

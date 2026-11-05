@@ -15,6 +15,7 @@ import { exportRoutes } from './exports.js';
 import { restorationRoutes } from './restorations.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
 import { serviceIdentityRoutes } from './service-identities.js';
+import { mailChannelRoutes } from './mail.js';
 import { webhookDeliveryRoutes, webhookRoutes } from './webhooks.js';
 import { extensionRoutes } from './extensions.js';
 import { assistantRoutes } from './assistant.js';
@@ -464,6 +465,7 @@ type Routes = typeof ownRoutes &
   typeof modelEndpointRoutes &
   typeof serviceIdentityRoutes &
   typeof webhookRoutes &
+  typeof mailChannelRoutes &
   typeof webhookDeliveryRoutes &
   typeof extensionRoutes &
   typeof assistantRoutes &
@@ -550,6 +552,7 @@ export const routes: Routes = {
   ...modelEndpointRoutes,
   ...serviceIdentityRoutes,
   ...webhookRoutes,
+  ...mailChannelRoutes,
   ...webhookDeliveryRoutes,
   ...extensionRoutes,
   ...assistantRoutes,

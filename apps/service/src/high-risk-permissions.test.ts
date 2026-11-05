@@ -48,10 +48,13 @@ const SPLIT: Readonly<Record<string, readonly string[]>> = {
     'setConnectionCredential',
     'setModelEndpointKey',
     'rotateWebhookSecret',
+    'setMailPassword',
     'replaceProviderSecret',
     'issueScimToken',
   ],
   configure_services: [
+    'getMailChannel',
+    'setMailChannel',
     'createConnection',
     'recordConnectionVersion',
     'listModelEndpoints',

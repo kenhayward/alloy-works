@@ -215,6 +215,21 @@ export interface ExtensionVersionTable {
 }
 
 /** A webhook subscription (0139; the WB plan): never answered with its sealed secrets. */
+export interface MailChannelTable {
+  id: Generated<string>;
+  singleton: Generated<boolean>;
+  enabled: boolean;
+  relay: string;
+  host: string | null;
+  port: number | null;
+  username: string | null;
+  sealed_password: string | null;
+  from_address: string | null;
+  from_name: string | null;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+  updated_by: string | null;
+}
+
 export interface WebhookSubscriptionTable {
   id: Generated<string>;
   service_identity: string;
@@ -1426,6 +1441,7 @@ export interface TenantTables {
   session: SessionTable;
   api_token: ApiTokenTable;
   service_identity: ServiceIdentityTable;
+  mail_channel: MailChannelTable;
   webhook_subscription: WebhookSubscriptionTable;
   extension: ExtensionTable;
   extension_version: ExtensionVersionTable;

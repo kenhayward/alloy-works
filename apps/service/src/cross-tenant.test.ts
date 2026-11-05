@@ -1124,6 +1124,8 @@ const VALID_INPUT: Readonly<
     },
   },
   changeWebhook: { payload: { description: 'Elsewhere' } },
+  setMailChannel: { payload: { enabled: false, relay: 'platform' } },
+  setMailPassword: { payload: { password: 'not-a-real-password' } },
   previewExtension: { payload: { url: 'https://elsewhere.example.test/manifest.json' } },
   installExtension: {
     payload: { url: 'https://elsewhere.example.test/manifest.json', digest: 'a'.repeat(64) },
