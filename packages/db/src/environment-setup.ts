@@ -2,13 +2,12 @@
 // none published in this repository, no seed, no stand-in. Runs on every deploy.
 import pg from 'pg';
 import { sealingKey } from '@alloy-works/sealing';
-import { asAdministrator } from './admin.js';
 import { bootstrapCluster, type LoginPasswords } from './bootstrap.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
-import { configureOrganisationSignIn } from './sign-in.js';
+import { configureOrganisationSignIn, hasIdentityProvider } from './sign-in.js';
 
 /** The sealing key compose.yaml publishes. */
 const PUBLISHED_KEY = 'ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=';
@@ -211,11 +210,8 @@ export async function setUpEnvironment(settings: EnvironmentSettings): Promise<E
 
   const names = tenantNames(settings.tenant.id);
   const tenant = { id: settings.tenant.id, schema: names.schema, role: names.role };
-  const hasProvider = await asAdministrator(adminUrl, tenant, async (admin, schema) => {
-    const { rowCount } = await admin.query(`select 1 from ${schema}.identity_provider limit 1`);
-    return (rowCount ?? 0) > 0;
-  });
-  if (hasProvider) return { created: !found, signInConfigured: false };
+  if (await hasIdentityProvider(adminUrl, tenant))
+    return { created: !found, signInConfigured: false };
 
   // Before any route opens, so nobody can have signed in with the address first (IAM-059). A run that
   // stopped between these two steps renews the invitation and goes on.
