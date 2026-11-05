@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.237.0 - 2026-11-05 (PR #PRNUMBER)
+## 0.237.0 - 2026-11-05 (PR #984)
 
 The whole life of a tenant: an organisation makes one, can suspend it, closes it with 30 days to give that up and its export offered first, and it provably no longer exists a day after that.
 
