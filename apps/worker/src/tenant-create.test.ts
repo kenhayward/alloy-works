@@ -199,7 +199,16 @@ describe("the steward's making of tenants (the TL plan, TLe)", () => {
   it('TL-P the operator asks for an organisation at the command line, which refuses what is taken', async () => {
     const said: string[] = [];
     const run = (argv: string[]) =>
-      runSteward(argv, { db: tenants, steward, maker, out: (line) => said.push(line) });
+      runSteward(argv, {
+        db: tenants,
+        steward,
+        maker,
+        readSecret: () => Promise.reject(new Error('Not asked')),
+        key: () => {
+          throw new Error('Not asked');
+        },
+        out: (line) => said.push(line),
+      });
     const asking = [
       'organisation',
       '--id',

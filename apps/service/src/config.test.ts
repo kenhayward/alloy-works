@@ -57,6 +57,16 @@ describe('configuration', () => {
     expect(described).toContain('aw_service:***@127.0.0.1:5432/alloy_dev');
   });
 
+  it('treats empty Google settings as none, as a stack without Google sets them', () => {
+    const loaded = loadConfig({
+      DATABASE_URL: url,
+      GOOGLE_ISSUER: '',
+      GOOGLE_CLIENT_ID: '',
+      SIGN_IN_HOST: '',
+    });
+    expect(loaded.google).toBeUndefined();
+  });
+
   it('offers the Google route only with both its client and the sign-in address', () => {
     expect(loadConfig({ DATABASE_URL: url }).google).toBeUndefined();
     expect(

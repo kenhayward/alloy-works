@@ -2,12 +2,17 @@ import { sql } from 'kysely';
 import pg from 'pg';
 import { asAdministrator } from './admin.js';
 import { recordEvent, recordEventSql } from './audit.js';
-import { inviteFirstAdministrator } from './first-administrator.js';
+import { inviteFirstAdministrator, type FirstAdministratorAnswer } from './first-administrator.js';
 import { invitedAddress } from './invitations.js';
 import { migrateTenant } from './migrate.js';
 import { tenantNames } from './names.js';
 import { provisionTenant, seedTenant, type Tenant } from './provision.js';
-import { permitGoogleSignIn } from './sign-in.js';
+import {
+  configureFirstProvider,
+  firstProviderRefusal,
+  permitGoogleSignIn,
+  type FirstProviderRefusal,
+} from './sign-in.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -15,6 +20,8 @@ import type { TenantTransaction } from './tables.js';
  * exists for a job to name, and the steward carries it out in stages that repeat safely. It gets its
  * address last, so nothing reaches a tenant still being made.
  */
+
+type FirstAdministratorRefusal = Extract<FirstAdministratorAnswer, { refused: string }>['refused'];
 
 export const REQUEST_ATTEMPTS = 10;
 
@@ -151,6 +158,26 @@ export interface TenantMaker {
   giveUpIfSpent(request: TenantRequest): Promise<boolean>;
   /** The operator's second try at one that failed, whose address has gone unless given again. */
   retry(tenantId: string, firstAdministrator: string | undefined): Promise<boolean>;
+  /** An organisation's first way in, from the operator (the SP plan); undefined where it was done. */
+  firstProvider(
+    tenantId: string,
+    provider: {
+      readonly issuer: string;
+      readonly clientId: string;
+      readonly clientSecret: string;
+      readonly name?: string;
+    },
+    key: Buffer,
+    firstAdministrator?: string,
+  ): Promise<
+    | FirstProviderRefusal
+    | 'no_tenant'
+    | 'not_organisation'
+    | 'being_made'
+    | 'not_active'
+    | FirstAdministratorRefusal
+    | undefined
+  >;
   organisationOf(tenantId: string): Promise<string>;
   /** Tenants of the organisation a provider's copy goes to, and its own, if it has one. */
   family(organisationId: string): Promise<{
@@ -383,6 +410,39 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
         [tenantId, firstAdministrator === undefined ? null : invitedAddress(firstAdministrator)],
       );
       return (rowCount ?? 0) > 0;
+    },
+
+    async firstProvider(tenantId, provider, key, firstAdministrator) {
+      const { rows } = await pool.query<{ kind: string; state: string; request: string | null }>(
+        `select t.kind, t.state, r.state as request
+           from platform.tenant t left join platform.tenant_request r on r.tenant_id = t.id
+          where t.id = $1`,
+        [tenantId],
+      );
+      const [found] = rows;
+      if (!found) {
+        const asked = await pool.query(
+          'select 1 from platform.tenant_request where tenant_id = $1',
+          [tenantId],
+        );
+        return asked.rowCount ? 'being_made' : 'no_tenant';
+      }
+      if (found.kind !== 'organisation') return 'not_organisation';
+      if (found.request !== null && found.request !== 'done') return 'being_made';
+      if (found.state !== 'active') return 'not_active';
+      const tenant = named(tenantId);
+      const inviting = firstAdministrator !== undefined;
+      // Asked before inviting, and invited before changing, so a refusal changes nothing.
+      const refused = await firstProviderRefusal(stewardUrl, tenant, inviting);
+      if (refused !== undefined) return refused;
+      if (firstAdministrator !== undefined) {
+        const invited = await inviteFirstAdministrator(stewardUrl, tenant, {
+          email: firstAdministrator,
+          namedBy: 'steward provider',
+        });
+        if ('refused' in invited) return invited.refused;
+      }
+      return configureFirstProvider(stewardUrl, tenant, provider, key, inviting);
     },
 
     async organisationOf(tenantId) {

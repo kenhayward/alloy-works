@@ -196,6 +196,7 @@ export {
   closeProvider,
   closeSignInRoute,
   configureOrganisationSignIn,
+  configureFirstProvider,
   identifyKnown,
   inviteToTenant,
   permitGoogleSignIn,
