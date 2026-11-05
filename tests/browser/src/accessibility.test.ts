@@ -1563,6 +1563,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.keyboard.press('Escape');
       await leave(versions);
+      // The head's tip that says what Overrides does (part-panel-2).
+      await page.getByRole('button', { name: /^Overrides/ }).hover();
+      await check('the tip on Overrides', { shows: page.locator('[data-name-tip-hint]') });
+      await page.mouse.move(0, 0);
 
       // A section's title editor, and the Equation dialog beside it.
       await row(/Methods/).click();

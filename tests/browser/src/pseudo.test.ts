@@ -515,8 +515,12 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       await documentDrawn(page, language).check();
       // In the Part panel, on the part clicked, in Authoring (the EP plan, EP4).
       await page.getByText('The pond survey found newts.').click();
-      const [before] = say(language, 'document.overrides-of', { value1: 'HERE' }).split('HERE');
-      await page.locator(`button[aria-label^="${before!.trimEnd()}"]`).first().click();
+      await page
+        .locator(
+          `button[aria-haspopup="dialog"][aria-label^="${say(language, 'document.overrides')}"]`,
+        )
+        .first()
+        .click();
       return page.getByRole('dialog');
     },
   },

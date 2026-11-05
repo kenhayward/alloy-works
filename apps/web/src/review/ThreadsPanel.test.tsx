@@ -474,7 +474,8 @@ describe('the threads panel', () => {
     await userEvent.keyboard('k');
     expect(await screen.findByText('2 of 3 threads')).toBeInTheDocument();
     screen.getByRole('button', { name: 'Copy link' }).focus();
-    await userEvent.keyboard('{Escape}');
+    // The first takes the icon's tip away (ADR-0075), the next goes back.
+    await userEvent.keyboard('{Escape}{Escape}');
     expect(
       await screen.findByRole('button', { name: /Grace/, description: 'Which printer?' }),
     ).toHaveFocus();

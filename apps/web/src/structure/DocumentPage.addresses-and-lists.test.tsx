@@ -547,7 +547,7 @@ describe('the address of every node', () => {
       const part = screen.getByRole('tabpanel', { name: 'Part' });
       expect(within(part).getByText(/^Component/)).toBeInTheDocument();
       // Which version, by its number, wherever the panel is read (the EP plan, EP1).
-      expect(within(part).getByText(/^Version .*latest/)).toBeInTheDocument();
+      expect(within(part).getByText('Always the latest')).toBeInTheDocument();
       expect(window.location.hash).toContain(`/nodes/${REFERENCE}`);
       expect(scrolled).not.toHaveBeenCalled();
       // The tree says so, with the focus left alone.
@@ -885,10 +885,11 @@ describe('the address of every node', () => {
       });
       expect(chooser).toHaveAttribute('aria-expanded', 'false');
       await userEvent.click(chooser);
-      const menu = await within(label()).findByRole('menu');
-      const items = await within(menu).findAllByRole('menuitemradio');
+      const menu = await screen.findByRole('menu');
+      await within(menu).findByRole('menuitemradio', { name: /^Version 0\.3/ });
+      const items = within(menu).getAllByRole('menuitemradio');
       // Always the latest, the latest approved revision, then each version, newest first.
-      expect(items.map((each) => each.textContent)).toEqual([
+      expect(items.map((each) => each.getAttribute('aria-label'))).toEqual([
         'Always the latest',
         'Always the latest approved revision',
         expect.stringMatching(/^Version 0\.3/),
@@ -903,22 +904,22 @@ describe('the address of every node', () => {
       await userEvent.keyboard('{ArrowDown}');
       expect(items[2]).toHaveFocus();
       await userEvent.keyboard('{Escape}');
-      expect(within(label()).queryByRole('menu')).toBeNull();
+      expect(screen.queryByRole('menu')).toBeNull();
       expect(chooser).toHaveFocus();
       // Reopened from the keyboard, and 0.1 chosen: the outline's own act, pinned to that version.
       await userEvent.keyboard('{Enter}');
-      const again = await within(label()).findByRole('menu');
+      const again = await screen.findByRole('menu');
       await userEvent.click(within(again).getByRole('menuitemradio', { name: /^Version 0\.1/ }));
       await waitFor(() => expect(fake.edits()).toHaveLength(1));
       expect(fake.edits()[0]!.body).toMatchObject({
         operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'pinned', version: V1 } },
       });
       // The texts are read again, and the label shows what it now is.
-      await waitFor(() => expect(label()).toHaveTextContent('Version 0.1, pinned'));
+      await within(label()).findByRole('button', { name: /^Version 0.1, pinned/ });
       expect(listed.length).toBeGreaterThan(0);
       // And back to the latest, from the pinned one.
       await userEvent.click(within(label()).getByRole('button', { name: /^Version 0\.1, pinned/ }));
-      const third = await within(label()).findByRole('menu');
+      const third = await screen.findByRole('menu');
       await userEvent.click(
         within(third).getByRole('menuitemradio', { name: 'Always the latest' }),
       );
@@ -926,14 +927,14 @@ describe('the address of every node', () => {
       expect(fake.edits()[1]!.body).toMatchObject({
         operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'latest' } },
       });
-      await waitFor(() => expect(label()).toHaveTextContent('Version 0.3, latest'));
+      await within(label()).findByRole('button', { name: /^Version 0.3, latest/ });
     });
 
     it('CNT-159 lets an author choose, from the document view, that a reference track the latest approved revision', async () => {
       const { fake, text } = await openVersions({ document: true });
       const label = () => partOf(text, FOLLOWING);
       await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
-      const menu = await within(label()).findByRole('menu');
+      const menu = await screen.findByRole('menu');
       await userEvent.click(
         within(menu).getByRole('menuitemradio', { name: 'Always the latest approved revision' }),
       );
@@ -941,13 +942,13 @@ describe('the address of every node', () => {
       expect(fake.edits()[0]!.body).toMatchObject({
         operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'approved' } },
       });
-      await waitFor(() => expect(label()).toHaveTextContent('Revision 1, latest approved'));
+      await within(label()).findByRole('button', { name: /^Revision 1, latest approved/ });
       expect(screen.getByRole('status')).toHaveTextContent(
         'Install the printer now shows its latest approved revision.',
       );
       // Chosen again, it is checked, and choosing it again does nothing.
       await userEvent.click(within(label()).getByRole('button', { name: /^Revision 1/ }));
-      const again = await within(label()).findByRole('menu');
+      const again = await screen.findByRole('menu');
       const approved = within(again).getByRole('menuitemradio', {
         name: 'Always the latest approved revision',
       });
@@ -1002,7 +1003,7 @@ describe('the address of every node', () => {
       });
       const label = () => partOf(text, FOLLOWING);
       await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
-      const menu = await within(label()).findByRole('menu');
+      const menu = await screen.findByRole('menu');
       await within(menu).findByText('The versions could not be read.');
       const latest = within(menu).getByRole('menuitemradio', { name: 'Always the latest' });
       expect(latest).toHaveFocus();

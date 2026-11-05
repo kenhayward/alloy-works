@@ -109,7 +109,7 @@ and shows in both modes to whoever may publish (DV-D).
 
 ## Versions
 
-**Shown** (CNT-162): the Part panel names the version its reference resolves to - `Version 1.2`
+**Shown** (CNT-162): the Part panel's version row names the version its reference resolves to - `Version 1.2`
 
 - and **latest** or **pinned**. The texts route already answers each occurrence's resolved version by
   identifier; it answers its number too. A component the reader may not read shows neither, as its text is

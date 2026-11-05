@@ -90,8 +90,8 @@ import { boundTablesByKey, type TableRows } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
-import textStyles from './DocumentText.module.css';
-import { DocumentText, PartStanding, type Editable, type Place } from './DocumentText.js';
+import { DocumentText, type Editable, type Place } from './DocumentText.js';
+import { PartRows } from './PartRows.js';
 import { dataState } from './dataStates.js';
 import type { NodeMarks, Titling } from './OutlinePanel.js';
 import { heldBack, TitleField } from './PartPanel.js';
@@ -139,7 +139,7 @@ import {
   useReadingPosition,
   watchReader,
 } from './position.js';
-import { versionSaid, type Choosing, type OfferedVersion } from './VersionChoice.js';
+import { type Choosing, type OfferedVersion } from './VersionChoice.js';
 import type { VersionNamed } from './NewerVersion.js';
 import { ModeSwitch } from '../parts/ModeSwitch.js';
 import { usePanelChoice } from '../parts/usePanelChoice.js';
@@ -1967,6 +1967,13 @@ export function DocumentPage({
   // A component's versions, newest first, a page at a time (document-view.md, "Versions"): what a
   // reference's label offers it to be pinned to. Each checked rather than trusted; null where the page
   // could not be read, which the list says.
+  // Overrides are offered from the panel's head to an author, on a part with text to reword.
+  const overridesOffered = (node: OutlineViewNode): boolean =>
+    node.type === 'reference' &&
+    node.component !== null &&
+    document?.mayEdit === true &&
+    authoring &&
+    texts.has(node.id);
   const listVersions = useCallback(
     async (component: string, cursor: string | undefined) => {
       const { data } = await client.GET('/v1/components/{id}/versions', {
@@ -1978,7 +1985,16 @@ export function DocumentPage({
         typeof each.id === 'string' &&
         typeof each.number === 'string' &&
         typeof each.createdAt === 'string'
-          ? [{ id: each.id, number: each.number, createdAt: each.createdAt }]
+          ? [
+              {
+                id: each.id,
+                number: each.number,
+                createdAt: each.createdAt,
+                revision: isRecord(each.revision)
+                  ? (each.revision as unknown as OfferedVersion['revision'])
+                  : null,
+              },
+            ]
           : [],
       );
       return { items, next: typeof data.next === 'string' ? data.next : null };
@@ -2827,40 +2843,45 @@ export function DocumentPage({
                   titling={titling}
                   standing={(node) =>
                     node.type === 'reference' ? (
-                      <div className={textStyles['standing']}>
-                        <PartStanding
-                          node={node}
-                          standing={{
-                            names,
-                            changed: changedNodes,
-                            movedParts: document.movedParts,
-                            resolved,
-                            revisions: revisionByNode,
-                            lines: lineByNode,
-                            diverged: divergedByNode,
-                            translated: translatedByNode,
-                            pastReview: pastReviewNodes,
-                            overridesOf: overridesByNode,
-                            editable: editableNow,
-                            openComponent:
-                              editing === null ? null : (componentOfNode.get(editing) ?? null),
-                            present: presentIn,
-                            ...(threadsShown ? { threadCounts } : {}),
-                            acts: {
-                              hasText: texts.has(node.id),
-                              drafting,
-                              ...(document.mayEdit && authoring
-                                ? { choosing, onOverride: setOverriding }
-                                : {}),
-                              ...(reviewing && principalId !== undefined
-                                ? { onSuggest: suggestIn }
-                                : {}),
-                            },
-                          }}
-                        />
-                      </div>
+                      <PartRows
+                        node={node}
+                        standing={{
+                          names,
+                          changed: changedNodes,
+                          movedParts: document.movedParts,
+                          resolved,
+                          revisions: revisionByNode,
+                          lines: lineByNode,
+                          diverged: divergedByNode,
+                          translated: translatedByNode,
+                          pastReview: pastReviewNodes,
+                          overridesOf: overridesByNode,
+                          editable: editableNow,
+                          openComponent:
+                            editing === null ? null : (componentOfNode.get(editing) ?? null),
+                          present: presentIn,
+                          ...(threadsShown ? { threadCounts } : {}),
+                        }}
+                        acts={{
+                          drafting,
+                          overridesInHead: overridesOffered(node),
+                          ...(document.mayEdit && authoring ? { choosing } : {}),
+                          ...(reviewing && principalId !== undefined
+                            ? { onSuggest: suggestIn }
+                            : {}),
+                        }}
+                      />
                     ) : null
                   }
+                  overridesFor={(node) => {
+                    if (!overridesOffered(node)) return undefined;
+                    const held = overridesByNode.get(node.id) ?? [];
+                    return {
+                      count: held.length,
+                      stale: held.filter((each) => each.stale).length,
+                      onOpen: () => setOverriding(node.id),
+                    };
+                  }}
                   {...(referencesTo === undefined ? {} : { referencesTo })}
                   head={
                     // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
@@ -2974,13 +2995,6 @@ export function DocumentPage({
                   onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
                   linked={linked}
                   pointed={pointed}
-                  versionOf={(node) =>
-                    node.type === 'reference' &&
-                    node.component !== null &&
-                    (node.mode.kind === 'approved' || resolved.has(node.id))
-                      ? versionSaid(node.mode, resolved.get(node.id), revisionByNode.get(node.id))
-                      : undefined
-                  }
                   usedIn={(component) => (
                     <UsedInRow
                       client={client}

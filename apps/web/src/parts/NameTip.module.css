@@ -41,6 +41,29 @@
   translate: -50% 0;
 }
 
+.tip[data-below='true'][data-align='end'] {
+  translate: 0 0;
+}
+
+/* With a line saying what it does: it grows, and the line wraps (part-panel-2). */
+.tip[data-hinted='true'] {
+  --name-tip-hint-width: 248px;
+
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  height: auto;
+  max-width: calc(var(--name-tip-hint-width) + 64px);
+  padding: 6px 9px;
+  white-space: normal;
+}
+
+.hint {
+  max-width: var(--name-tip-hint-width);
+  color: var(--tip-keys);
+  font-weight: 400;
+}
+
 .tip[data-below='true']::before {
   inset-block: -4px 100%;
   inset-inline: 0;

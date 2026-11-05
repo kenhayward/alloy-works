@@ -3,6 +3,22 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.237.0 - 2026-11-05 (PR #983)
+
+The Part panel gets tidier: a component's version is one row whose menu can no longer be cut off, Overrides moves into the head with a count, and the head's tips show at once.
+
+### Changed
+
+- **A component's version is one row.** It sits under the chips and says the number and the mode: Always the latest, Pinned, or Latest approved with its revision. What else is true of the part follows in the same list, with its states still shown as lozenges.
+- **The version menu stands over everything.** It opens under its row, as wide as it, and no pane can cut it off or cover it. With no room below it opens above. Each choice says what it is now, each version its date and time, and a version that stands approved says so.
+- **Overrides is an icon in the head.** A badge counts the paragraphs reworded here, and turns to the warning colour where one no longer applies. That is also said in the list, to everyone who can read the part.
+- **Tips in panel heads show at once.** The Part, Assistant and Threads panels' head icons, and a side panel's Close, say their name at once on hover and on focus, in place of the browser's delayed tip. Overrides also says what it does.
+
+### Fixed
+
+- **A component open in place holds still.** Pressing in it no longer shifts its text: its text is set at the sheet's own zoom, exactly where the read text stood.
+- **An open component's rule runs its whole height.** There is no gap beside its text and no stubs over its neighbours.
+
 ## 0.236.0 - 2026-11-04 (PR #981)
 
 Editing a part of a document now feels like a word processor: clicking moves nothing, one line marks the part, one toolbar holds what applies, the panel follows, titles can be typed where they stand, and what you typed stays on the page when you move on.

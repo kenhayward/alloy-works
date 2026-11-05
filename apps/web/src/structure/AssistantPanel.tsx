@@ -972,6 +972,7 @@ export function AssistantPanel({
           <span className={styles['spacer']} />
           <IconButton
             ref={promptsButton}
+            tip
             label={words('document.prompts')}
             aria-haspopup="dialog"
             aria-expanded={offering}
@@ -998,6 +999,7 @@ export function AssistantPanel({
           />
           <IconButton
             ref={nameButton}
+            tip
             label={words('document.name-this-conversation')}
             pressed={naming !== null}
             disabled={running || opened === null}
@@ -1006,6 +1008,7 @@ export function AssistantPanel({
             <Icon name="Rename" size={16} />
           </IconButton>
           <IconButton
+            tip
             label={words('document.keep-this-conversation')}
             pressed={opened?.kept ?? false}
             disabled={running || opened === null}
@@ -1014,6 +1017,7 @@ export function AssistantPanel({
             <Icon name="Keep" size={16} />
           </IconButton>
           <IconButton
+            tip
             label={words('document.a-new-conversation')}
             disabled={running || conversation === null}
             onClick={() => open(null)}
