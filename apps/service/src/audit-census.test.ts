@@ -755,7 +755,13 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     createTenantMaker: writes('tenant.created'),
     closeProvider: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
     closeSignInRoute: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
+    configureFirstProvider: writes(
+      'sign_in_route.configured',
+      'authentication.signed_out',
+      'token.revoked',
+    ),
     configureOrganisationSignIn: writes('sign_in_route.configured'),
+    firstProviderRefusal: read,
     inviteToTenant: writes('tenant.invited'),
     permitGoogleSignIn: writes('sign_in_route.configured'),
     inviteFirstAdministrator: writes(
