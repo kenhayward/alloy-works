@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { formats, words } from '../words/words.js';
 /** Who holds a component, as the service says: a name where it has one, and when it lapses. */
 export interface Held {
@@ -24,19 +26,36 @@ export function heldSentence(held: Held, now: Date = new Date()): string {
   return words('editor.held.back-on', { who, time, day });
 }
 
+/** A part's lock, as whatever draws it needs it. */
+export interface Lock {
+  readonly holder: { readonly name: string | null };
+  readonly expectedRelease: string;
+  readonly yours: boolean;
+}
+
 /**
  * What a part's lock says, on its symbol and in the Part panel (the EP plan, EP7): whose it is, and for
  * a lock of the reader's own, whether it is this window's.
  */
-export function lockSentence(
-  lock: {
-    readonly holder: { readonly name: string | null };
-    readonly expectedRelease: string;
-    readonly yours: boolean;
-  },
-  openHere: boolean,
-  now: Date = new Date(),
-): string {
+export function lockSentence(lock: Lock, openHere: boolean, now: Date = new Date()): string {
   if (lock.yours) return words(openHere ? 'editor.held.you-here' : 'editor.held.you-elsewhere');
   return heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease }, now);
+}
+
+/**
+ * Whether a lock's symbol still stands. It goes when the lock lapses, which no event says; a lock the
+ * reader is using here renews itself, and goes when the stream says it has.
+ */
+export function useLockStands(lock: Lock, openHere: boolean): boolean {
+  const release = new Date(lock.expectedRelease).getTime();
+  const inUseHere = lock.yours && openHere;
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const left = release - Date.now();
+    if (inUseHere || left <= 0) return undefined;
+    // setTimeout holds no more than this; a longer wait simply looks again.
+    const timer = setTimeout(() => setTick((was) => was + 1), Math.min(left + 1, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [release, inUseHere, tick]);
+  return inUseHere || release > Date.now();
 }

@@ -470,9 +470,39 @@ describe('clicking into a document, in Chromium', () => {
       });
       expect(stack).toEqual({ sameRow: true, apart: true });
 
+      // The contents draw the same lock, just before the part's text, and it tips at once.
+      const contents = page.getByRole('tree', { name: 'Outline' });
+      const listed = contents.locator('[data-lock="theirs"]');
+      await listed.waitFor();
+      expect(await listed.evaluate((own) => getComputedStyle(own).color)).toBe(amber);
+      const space = await listed.evaluate((own) => {
+        const label = own.nextElementSibling!;
+        return label.getBoundingClientRect().left - own.getBoundingClientRect().right;
+      });
+      expect(space).toBeGreaterThan(0);
+      expect(space).toBeLessThanOrEqual(6);
+      await listed.locator('svg').hover();
+      const tip = listed.locator('[data-name-tip]');
+      await tip.waitFor();
+      // All of it stands over the rail beside the contents and the text: none of it goes behind them.
+      const seen = await tip.evaluate((own) => {
+        const { left, right, top, bottom } = own.getBoundingClientRect();
+        const middle = (top + bottom) / 2;
+        return [left + 2, (left + right) / 2, right - 2].map((x) =>
+          own.contains(document.elementFromPoint(x, middle)),
+        );
+      });
+      expect(seen).toEqual([true, true, true]);
+      await page.mouse.move(900, 900);
+
       await theirs.click();
       await expect
-        .poll(() => page.getByText(/^Grace is editing this component/).count())
+        .poll(() =>
+          page
+            .locator('[data-part="details"]')
+            .getByText(/^Grace is editing this component/)
+            .count(),
+        )
         .toBeGreaterThan(0);
 
       // Yours appears at the first change, in the other colour, and moves nothing.
@@ -486,8 +516,12 @@ describe('clicking into a document, in Chromium', () => {
       await page.keyboard.type('x');
       const mine = page.getByRole('button', { name: 'You are editing this component.' });
       await mine.waitFor();
-      expect(await mine.evaluate((own) => getComputedStyle(own).color)).not.toBe(amber);
+      const green = await mine.evaluate((own) => getComputedStyle(own).color);
+      expect(green).not.toBe(amber);
       expect((await words.boundingBox())!.y).toBeCloseTo(before.y, 0);
+      const listedMine = contents.locator('[data-lock="yours"]');
+      await listedMine.waitFor();
+      expect(await listedMine.evaluate((own) => getComputedStyle(own).color)).toBe(green);
 
       // Reading stays clean.
       await page.getByRole('button', { name: 'Done editing' }).click();
@@ -495,6 +529,8 @@ describe('clicking into a document, in Chromium', () => {
       await reading.click();
       await expect.poll(() => reading.isChecked()).toBe(true);
       await expect.poll(() => theirs.count()).toBe(0);
+      // The contents still say who holds what.
+      expect(await listed.count()).toBe(1);
     });
   });
 

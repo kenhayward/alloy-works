@@ -317,7 +317,28 @@
   padding-inline: var(--space-4);
 }
 
-/* What matters about a node to an author (STR-038), after its title: who holds it, what is broken. */
+/* Who holds a part, just before its text and closer to it than the row's other items. */
+.lock {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-inline-end: calc(var(--space-4) - var(--space-8));
+}
+
+.lock[data-lock='yours'] {
+  color: var(--ok);
+}
+
+.lock[data-lock='theirs'] {
+  color: var(--warn);
+}
+
+@media (forced-colors: active) {
+  .lock[data-lock] {
+    color: CanvasText;
+  }
+}
+
+/* What matters about a node to an author (STR-038), after its title: what is broken. */
 .nodeMarks {
   margin-inline-start: var(--space-8);
   color: var(--warn-ink, var(--muted));
