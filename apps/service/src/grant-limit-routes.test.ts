@@ -177,7 +177,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
   const members = (group: string, cookie: string, principals: readonly string[]) =>
     send('PUT', `/v1/groups/${group}/members`, cookie, { principals });
 
-  it('refuses granting himself Administrator, at the environment or at a space', async () => {
+  it('IAM-088 refuses granting himself Administrator, at the environment or at a space', async () => {
     const whole = await send(
       'POST',
       '/v1/grants',
@@ -198,7 +198,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(there.json()).toMatchObject(BEYOND);
   });
 
-  it('refuses granting Administrator to a group, or denying what he could not allow', async () => {
+  it('IAM-088 refuses granting Administrator to a group, or denying what he could not allow', async () => {
     const group = await newGroup('Refused a grant');
     const allow = await send('POST', '/v1/grants', bob.cookie, giving('Administrator', { group }));
     expect(allow.json()).toMatchObject(BEYOND);
@@ -211,7 +211,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(deny.json()).toMatchObject(BEYOND);
   });
 
-  it('lets him grant a content role he does not hold, and an administrative one he does', async () => {
+  it('IAM-088 lets him grant a content role he does not hold, and an administrative one he does', async () => {
     const carol = await holding('carol');
     const author = await send(
       'POST',
@@ -233,7 +233,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(same.statusCode).toBe(200);
   });
 
-  it('refuses making a role holding what he does not, and lets him make one of content', async () => {
+  it('IAM-088 refuses making a role holding what he does not, and lets him make one of content', async () => {
     const refused = await send('POST', '/v1/roles', bob.cookie, {
       name: 'Closer',
       permissions: ['read', 'close_environment'],
@@ -246,7 +246,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(made.statusCode).toBe(200);
   });
 
-  it('refuses joining, or leaving, a group holding what he does not, at any level', async () => {
+  it('IAM-088 refuses joining, or leaving, a group holding what he does not, at any level', async () => {
     const dan = await holding('dan');
     const whole = await newGroup('Administrators');
     await madeBy(giving('Administrator', { group: whole }));
@@ -260,7 +260,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect((await members(whole, bob.cookie, [])).json()).toMatchObject(BEYOND);
   });
 
-  it('lets him set the members of a group of content, and ignores a grant that has ended', async () => {
+  it('IAM-088 lets him set the members of a group of content, and ignores a grant that has ended', async () => {
     const authors = await newGroup('Authors');
     await madeBy(giving('Author', { group: authors }));
     expect((await members(authors, bob.cookie, [bob.id])).statusCode).toBe(200);
@@ -283,7 +283,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect((await members(ended, bob.cookie, [bob.id])).statusCode).toBe(200);
   });
 
-  it('refuses deleting a group holding what he does not, and lets him delete one of content', async () => {
+  it('IAM-088 refuses deleting a group holding what he does not, and lets him delete one of content', async () => {
     const held = await newGroup('Not his to delete');
     await madeBy(giving('Administrator', { group: held }));
     expect((await send('DELETE', `/v1/groups/${held}`, bob.cookie)).json()).toMatchObject(BEYOND);
@@ -293,7 +293,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect((await send('DELETE', `/v1/groups/${authors}`, bob.cookie)).statusCode).toBe(200);
   });
 
-  it('lets him remove an allow of Administrator, and refuses removing a denial of it', async () => {
+  it('IAM-088 lets him remove an allow of Administrator, and refuses removing a denial of it', async () => {
     const erin = await holding('erin', 'Administrator');
     expect((await send('DELETE', `/v1/grants/${erin.grant}`, bob.cookie)).statusCode).toBe(200);
 
@@ -325,7 +325,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect((await send('DELETE', `/v1/grants/${ended.id}`, bob.cookie)).statusCode).toBe(200);
   });
 
-  it('refuses re-enabling somebody holding what he does not, but not somebody holding less', async () => {
+  it('IAM-088 refuses re-enabling somebody holding what he does not, but not somebody holding less', async () => {
     const hal = await holding('hal', 'Administrator');
     expect(
       (await send('POST', `/v1/principals/${hal.id}/disablement`, ada.cookie, {})).statusCode,
@@ -343,7 +343,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     ).toBe(200);
   });
 
-  it('refuses erasing somebody holding what he does not through a group', async () => {
+  it('IAM-088 refuses erasing somebody holding what he does not through a group', async () => {
     const jon = await holding('jon');
     const group = await newGroup('Held by Jon');
     await madeBy(giving('Administrator', { group }));
@@ -352,7 +352,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(erased.json()).toMatchObject(BEYOND);
   });
 
-  it('refuses a service identity a token scoped past what he holds', async () => {
+  it('IAM-088 refuses a service identity a token scoped past what he holds', async () => {
     const made = await send('POST', '/v1/service-identities', ada.cookie, { name: 'Backups' });
     expect(made.statusCode).toBe(200);
     const id = made.json<{ id: string }>().id;
@@ -366,7 +366,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect((await token(['edit'])).statusCode).toBe(200);
   });
 
-  it('holds a token to its scopes, so one scoped administer alone cannot grant Administrator', async () => {
+  it('IAM-088 holds a token to its scopes, so one scoped administer alone cannot grant Administrator', async () => {
     const issued = await send('POST', '/v1/tokens', ada.cookie, {
       name: 'Administers alone',
       scopes: ['administer'],
@@ -382,7 +382,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(grant.json()).toMatchObject(BEYOND);
   });
 
-  it('lets an Administrator do all of it, and records the refusal in the audit log', async () => {
+  it('IAM-088 lets an Administrator do all of it, and records the refusal in the audit log', async () => {
     const group = await newGroup('Ada makes these');
     const granted = await send(
       'POST',
@@ -414,7 +414,7 @@ describe('grant limits: nobody gives an administrative permission they do not ho
   });
 
   // Last, since it takes Ada's grant: nobody could ever give a stranded permission again.
-  it('refuses taking the last holder of an administrative permission, by removal or disablement', async () => {
+  it('IAM-088 refuses taking the last holder of an administrative permission, by removal or disablement', async () => {
     const fay = await holding('fay', 'Administrator');
     // Somebody else may still configure sign-in, so it is this guard that answers and not the lockout's.
     await holding('gil', 'Sign-in keeper', ['read', 'configure_services']);
