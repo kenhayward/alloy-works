@@ -93,6 +93,8 @@ describe('migration 0083, which gives Administrator the retire permission', () =
                 'import_environment',
                 // And 0201's.
                 'close_environment',
+                // And 0202's.
+                'suspend_environment',
               ],
             }
           : role,

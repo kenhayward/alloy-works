@@ -45,6 +45,7 @@ const tokenNotAllowed = {
 export const sessionRoutes = {
   listSessions: {
     operationId: 'listSessions',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/sessions',
     summary: "The caller's own sessions that have not ended",
@@ -58,6 +59,7 @@ export const sessionRoutes = {
   },
   endSession: {
     operationId: 'endSession',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/sessions/{id}',
     summary: "End one of the caller's own sessions; ending this one signs out",
@@ -73,6 +75,7 @@ export const sessionRoutes = {
   },
   endOtherSessions: {
     operationId: 'endOtherSessions',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/sessions',
     summary: "End every session of the caller's but this one",

@@ -908,6 +908,7 @@ describe('the domain package', () => {
         'SEED_PROMPT_WORKFLOW',
         'acceptsModel',
         'administrativePermissions',
+        'organisationRole',
         'promptCall',
         'tooLarge',
         'wholeText',

@@ -208,6 +208,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
 - **Suspending an environment.** The operator suspends one with a reason, from the `steward` command line, and lifts that the same way. Every route refuses within 30 seconds, an open stream ends, jobs and sweeps wait, and a person is told it is suspended, never why, though a download link already signed lives out its 5 minutes. Lifting loses nothing, and a webhook still being tried loses no time. An administrator cannot suspend from inside yet.
+- **An organisation's own tenant.** An organisation administers from a tenant holding no content: sign-in, people,
+  roles, sessions, audit and export are the ones every tenant has, and everything else there answers as not there. Its
+  console lists its tenants' names, addresses and states, and nothing in them. A holder of `suspend_tenant` suspends one
+  and lifts that, and gives up a closure a person began. Each act is in both logs, the tenant's naming no person, and a
+  tenant's closure is in the organisation's log, which is what remains after it has gone. A holder of
+  `suspend_environment` can also stop their own environment in an incident, where an organisation can lift it. Creating
+  a tenant and sharing a provider are still to come.
 - **Closing an environment.** Someone holding `close_environment` and both export permissions closes one
   from Administration's **Export**: a recent sign-in, its name typed, and a whole export from the last 24
   hours or that one is declined, recorded. For 30 days only those holding `close_environment` or `hold`, or

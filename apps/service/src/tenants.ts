@@ -32,6 +32,39 @@ const CLOSING_ROUTES: ReadonlySet<string> = new Set(
     .map((route) => `${route.method} ${route.path.replace(/\{(\w+)\}/g, ':$1')}`),
 );
 
+const ORGANISATION_ROUTES: ReadonlySet<string> = new Set(
+  allRoutes
+    .filter((route) => route.organisationTenant)
+    .map((route) => `${route.method} ${route.path.replace(/\{(\w+)\}/g, ':$1')}`),
+);
+
+const notHere = () =>
+  new AppError(
+    404,
+    'environment_not_here',
+    'That is not something this environment has.',
+    'IAM-069',
+  );
+
+/**
+ * Whether a request gets past its tenant's kind (TL-K): an organisation's holds no content, and
+ * carries the routes that say so, with SCIM, which a provider pushes people to. What only an
+ * organisation has is not at any other.
+ */
+export function kindRefusal(
+  kind: 'content' | 'organisation',
+  request: { readonly method: string; readonly route: string | undefined },
+): AppError | undefined {
+  const route = request.route ?? '';
+  if (kind === 'organisation') {
+    if (route.startsWith('/scim/') || route.startsWith('/docs') || route.startsWith('/openapi/')) {
+      return undefined;
+    }
+    return ORGANISATION_ROUTES.has(`${request.method} ${route}`) ? undefined : notHere();
+  }
+  return route.startsWith('/v1/organisation/') ? notHere() : undefined;
+}
+
 /**
  * Whether a request gets past its tenant's state (TL-A, TL-B). A closing or retained tenant answers
  * only what helps it close, by session: a token is automation, and this is a person's to do.

@@ -870,3 +870,11 @@ export {
 } from './relationships.js';
 export { MyPreferences, preferenceRoutes } from './preferences.js';
 export { ClosureBody, ClosureView, closureRoutes } from './closure.js';
+export {
+  OrganisationTenantParams,
+  OrganisationTenants,
+  OrganisationTenantView,
+  Suspended,
+  organisationRoutes,
+  SuspensionBody,
+} from './organisation.js';

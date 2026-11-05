@@ -77,7 +77,7 @@ services:
     environment:
       STAND_IN_ISSUER: https://${ALLOY_LAN_ADDRESS}:${LAN_IDP_PORT:-9443}
       STAND_IN_TRUST_PROXY: 'true'
-      STAND_IN_REDIRECT_URIS: http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://127.0.0.1:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback
+      STAND_IN_REDIRECT_URIS: http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://org.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://127.0.0.1:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback
 
   setup:
     environment:

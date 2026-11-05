@@ -933,7 +933,25 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/extensions.ts',
   ),
-  'organisation.changed': kind(['IAM-068'], empty, LATER),
+  // What happened to one of an organisation's tenants, in the organisation's own log, which outlasts
+  // it (tenant-lifecycle.md, TL-J, TL-L). The target's log says the same, and names no person.
+  'organisation.changed': kind(
+    ['IAM-068'],
+    z.strictObject({
+      tenant: z.string().min(1).max(200),
+      change: z.enum([
+        'suspended',
+        'resumed',
+        'closing',
+        'closure_cancelled',
+        'retained',
+        'closed',
+      ]),
+      by: z.enum(['organisation', 'environment', 'operator', 'system']),
+      reason: z.string().min(1).max(2000).optional(),
+    }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
   // An import accepted into a document, its subject, or abandoned by its importer or by the sweep (the
   // IM plan, IM-F): the import and how many components it made, never the file's name.
   'import.accepted': kind(
@@ -971,7 +989,11 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/tenant-lifecycle.ts',
   ),
-  'tenant.closure_cancelled': kind(['ADM-030'], empty, 'packages/db/src/tenant-lifecycle.ts'),
+  'tenant.closure_cancelled': kind(
+    ['ADM-030'],
+    z.strictObject({ organisationEvent: z.string().optional() }),
+    'packages/db/src/tenant-lifecycle.ts',
+  ),
   'tenant.retained': kind(
     ['LIF-066'],
     z.strictObject({ holds: z.number().int().positive() }),
@@ -980,12 +1002,18 @@ export const auditKindSpecs = {
   // A tenant stopped and started again (ADM-028; tenant-lifecycle.md, TL-O).
   'tenant.suspended': kind(
     ['ADM-028'],
-    z.strictObject({ reason: z.string().min(1).max(2000) }),
+    z.strictObject({
+      reason: z.string().min(1).max(2000),
+      organisationEvent: z.string().optional(),
+    }),
     'packages/db/src/tenant-lifecycle.ts',
   ),
   'tenant.resumed': kind(
     ['ADM-028'],
-    z.strictObject({ suspendedSeconds: z.number().int().nonnegative() }),
+    z.strictObject({
+      suspendedSeconds: z.number().int().nonnegative(),
+      organisationEvent: z.string().optional(),
+    }),
     'packages/db/src/tenant-lifecycle.ts',
   ),
   'library.changed': kind(['LIB-056'], empty, LATER),

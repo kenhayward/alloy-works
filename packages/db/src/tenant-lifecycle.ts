@@ -1,7 +1,14 @@
-import { decide, GRACE_DAYS, type Permission, type TenantState } from '@alloy-works/domain';
+import {
+  decide,
+  GRACE_DAYS,
+  type AuditContext,
+  type Permission,
+  type TenantState,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts } from './access-facts.js';
-import { recordEvent } from './audit.js';
+import { AUDIT_SETTING, auditContextSetting, recordEvent } from './audit.js';
+import { assertTenantRole, tenantNames } from './names.js';
 import { excludeDeletionDependants } from './deletion.js';
 import { PURGE_ATTEMPTS } from './tenant-purge.js';
 import type { Tenant } from './provision.js';
@@ -40,6 +47,13 @@ const change = async (
 };
 
 /** Stops everything in a tenant (ADM-028), recording why. Nothing in it changes. */
+/** Whether somebody outside this tenant could lift a suspension of it, other than the operator. */
+export async function hasOrganisationToLift(trx: TenantTransaction): Promise<boolean> {
+  const { rows } = await sql`
+    select 1 from platform.own_organisation_tenant()`.execute(trx);
+  return rows.length > 0;
+}
+
 export async function suspendTenant(
   trx: TenantTransaction,
   tenant: Tenant,
@@ -47,6 +61,196 @@ export async function suspendTenant(
 ): Promise<void> {
   await change(trx, tenant, 'suspended', reason);
   await recordEvent(trx, { kind: 'tenant.suspended', detail: { reason } });
+  await alsoInOrganisationLog(trx, tenant, 'suspended', reason);
+}
+
+type Named = Pick<Tenant, 'schema' | 'role'>;
+
+/**
+ * Work in another tenant, within this transaction, then back: both logs or neither (TL-L). The one
+ * place a transaction changes role twice, and any login reaches only what it is already a member of.
+ */
+async function within<T>(
+  trx: TenantTransaction,
+  other: Named,
+  context: AuditContext,
+  work: () => Promise<T>,
+): Promise<T> {
+  const { rows } = await sql<{ role: string; path: string; audit: string | null }>`
+    select current_user::text as role, current_setting('search_path') as path,
+           current_setting(${AUDIT_SETTING}, true) as audit`.execute(trx);
+  const was = rows[0]!;
+  await sql`set local role ${sql.id(assertTenantRole(other.role))}`.execute(trx);
+  await sql`select set_config('search_path', ${`${assertTenantRole(other.schema)}, extensions`}, true),
+    set_config(${AUDIT_SETTING}, ${auditContextSetting(context)}, true)`.execute(trx);
+  const answer = await work();
+  await sql`set local role ${sql.id(assertTenantRole(was.role))}`.execute(trx);
+  await sql`select set_config('search_path', ${was.path}, true),
+    set_config(${AUDIT_SETTING}, ${was.audit ?? ''}, true)`.execute(trx);
+  return answer;
+}
+
+/** Who the transaction is acting for, as an organisation's log may say it: never a person's name. */
+const actingAs = async (trx: TenantTransaction): Promise<'environment' | 'operator' | 'system'> => {
+  const { rows } = await sql<{ kind: string | null }>`
+    select nullif(current_setting(${AUDIT_SETTING}, true), '')::jsonb ->> 'actorKind' as kind`.execute(
+    trx,
+  );
+  const kind = rows[0]?.kind;
+  if (kind === 'vendor') return 'operator';
+  return kind === 'person' || kind === 'token' ? 'environment' : 'system';
+};
+
+type TenantChange =
+  'suspended' | 'resumed' | 'closing' | 'closure_cancelled' | 'retained' | 'closed';
+
+/**
+ * A change to this tenant, in its organisation's log, which is what remains of it after it has gone
+ * (TL-J, TL-L). Where it has no organisation's tenant, the tenant's own log is all there is.
+ */
+async function alsoInOrganisationLog(
+  trx: TenantTransaction,
+  tenant: Tenant,
+  what: TenantChange,
+  reason?: string,
+): Promise<void> {
+  const { rows } = await sql<{ schema_name: string; role_name: string; tenant_name: string }>`
+    select schema_name, role_name, tenant_name
+      from platform.organisation_log_of_own_tenant()`.execute(trx);
+  const organisation = rows[0];
+  if (!organisation) return;
+  const by = await actingAs(trx);
+  await within(
+    trx,
+    { schema: organisation.schema_name, role: organisation.role_name },
+    { actorKind: 'system' },
+    () =>
+      recordEvent(
+        trx,
+        {
+          kind: 'organisation.changed',
+          subject: { kind: 'tenant' },
+          detail: { tenant: tenant.id, change: what, by, ...(reason ? { reason } : {}) },
+        },
+        [{ role: 'subject', text: organisation.tenant_name }],
+      ),
+  );
+}
+
+/** What an organisation sees of its tenants: state and addresses, and never content (IAM-069). */
+export interface OrganisationTenant {
+  readonly id: string;
+  readonly name: string;
+  readonly state: TenantState;
+  readonly since: Date;
+  readonly closingBy: 'person' | 'operator' | null;
+  readonly suspendedBy: 'person' | 'operator' | null;
+  readonly graceEndsAt: Date | null;
+  readonly hostnames: readonly string[];
+}
+
+export async function organisationTenants(
+  trx: TenantTransaction,
+): Promise<readonly OrganisationTenant[]> {
+  const { rows } = await sql<{
+    id: string;
+    name: string;
+    state: TenantState;
+    state_since: Date;
+    closing_by: 'person' | 'operator' | null;
+    suspended_by: 'person' | 'operator' | null;
+    grace_ends_at: Date | null;
+    hostnames: string[];
+  }>`select id, name, state, state_since, closing_by, suspended_by, grace_ends_at, hostnames
+       from platform.organisation_tenants()`.execute(trx);
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    state: row.state,
+    since: row.state_since,
+    closingBy: row.closing_by,
+    suspendedBy: row.suspended_by,
+    graceEndsAt: row.grace_ends_at,
+    hostnames: row.hostnames,
+  }));
+}
+
+/** A tenant of this organisation by id, or nothing: another's is no different from one not there. */
+const organisationsOwn = async (trx: TenantTransaction, id: string) => {
+  const found = (await organisationTenants(trx)).find((each) => each.id === id);
+  if (!found) return undefined;
+  const names = tenantNames(id);
+  return { id, name: found.name, schema: names.schema, role: names.role };
+};
+
+const FROM_ORGANISATION: AuditContext = { actorKind: 'organisation' };
+
+/**
+ * An organisation's act on one of its tenants (TL-L), from a transaction in the organisation's tenant,
+ * whose context names the person: an event there, and one in the target saying only that it was them.
+ */
+const eventInOrganisation = (
+  trx: TenantTransaction,
+  target: { readonly id: string; readonly name: string },
+  change: TenantChange,
+  reason?: string,
+) =>
+  recordEvent(
+    trx,
+    {
+      kind: 'organisation.changed',
+      subject: { kind: 'tenant' },
+      detail: { tenant: target.id, change, by: 'organisation', ...(reason ? { reason } : {}) },
+    },
+    [{ role: 'subject', text: target.name }],
+  );
+
+export async function suspendFromOrganisation(
+  trx: TenantTransaction,
+  id: string,
+  reason: string,
+): Promise<'done' | 'missing'> {
+  const target = await organisationsOwn(trx, id);
+  if (!target) return 'missing';
+  await change(trx, target, 'suspended', reason);
+  const organisationEvent = await eventInOrganisation(trx, target, 'suspended', reason);
+  await within(trx, target, FROM_ORGANISATION, () =>
+    recordEvent(trx, { kind: 'tenant.suspended', detail: { reason, organisationEvent } }),
+  );
+  return 'done';
+}
+
+export async function liftFromOrganisation(
+  trx: TenantTransaction,
+  id: string,
+): Promise<'done' | 'missing'> {
+  const target = await organisationsOwn(trx, id);
+  if (!target) return 'missing';
+  const since = await change(trx, target, 'active', null);
+  const organisationEvent = await eventInOrganisation(trx, target, 'resumed');
+  await within(trx, target, FROM_ORGANISATION, async () => {
+    const suspendedSeconds = await moveClocksOn(trx, since);
+    await recordEvent(trx, {
+      kind: 'tenant.resumed',
+      detail: { suspendedSeconds, organisationEvent },
+    });
+  });
+  return 'done';
+}
+
+export async function cancelClosureFromOrganisation(
+  trx: TenantTransaction,
+  id: string,
+): Promise<'done' | 'missing'> {
+  const target = await organisationsOwn(trx, id);
+  if (!target) return 'missing';
+  const since = await change(trx, target, 'cancelled', null);
+  const organisationEvent = await eventInOrganisation(trx, target, 'closure_cancelled');
+  await within(trx, target, FROM_ORGANISATION, async () => {
+    if ((await ownTenantState(trx)).state === 'active') await moveClocksOn(trx, since);
+    await recordEvent(trx, { kind: 'tenant.closure_cancelled', detail: { organisationEvent } });
+  });
+  return 'done';
 }
 
 /** What a person's or a job's taken work would lose to the clock, moved on by how long it stood (TL-D). */
@@ -81,6 +285,7 @@ export async function resumeTenant(trx: TenantTransaction, tenant: Tenant): Prom
   const since = await change(trx, tenant, 'active', null);
   const seconds = await moveClocksOn(trx, since);
   await recordEvent(trx, { kind: 'tenant.resumed', detail: { suspendedSeconds: seconds } });
+  await alsoInOrganisationLog(trx, tenant, 'resumed');
 }
 
 /** A tenant's state as its own role may read it. */
@@ -146,6 +351,7 @@ export async function startClosing(
     kind: 'tenant.closing',
     detail: { graceEndsAt: own.toISOString(), ...offer },
   });
+  await alsoInOrganisationLog(trx, tenant, 'closing');
   const { rows: people } = await sql<{ principal_id: string }>`
     select distinct principal_id from session`.execute(trx);
   for (const { principal_id } of people) {
@@ -173,6 +379,7 @@ export async function cancelClosing(trx: TenantTransaction, tenant: Tenant): Pro
   // Back to a suspension, the time is credited when that is lifted, from when it began.
   if ((await ownTenantState(trx)).state === 'active') await moveClocksOn(trx, since);
   await recordEvent(trx, { kind: 'tenant.closure_cancelled' });
+  await alsoInOrganisationLog(trx, tenant, 'closure_cancelled');
 }
 
 /**
@@ -201,6 +408,7 @@ export async function advanceClosure(
     if (own.state === 'closing') {
       await change(trx, tenant, 'retained', null);
       await recordEvent(trx, { kind: 'tenant.retained', detail: { holds } });
+      await alsoInOrganisationLog(trx, tenant, 'retained');
     }
     return 'retained';
   }
@@ -213,6 +421,7 @@ export async function advanceClosure(
   );
   await change(trx, tenant, 'deleting', null);
   await recordEvent(trx, { kind: 'tenant.closed', detail: { exportTaken: taken[0]!.taken } });
+  await alsoInOrganisationLog(trx, tenant, 'closed');
   // The steward's from here (TL-I). In this transaction, so deletion never begins with nobody to do it.
   await sql`insert into platform.job (tenant_id, kind, max_attempts)
             values (${tenant.id}, 'tenant_purge', ${PURGE_ATTEMPTS})`.execute(trx);

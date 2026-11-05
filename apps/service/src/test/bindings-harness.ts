@@ -124,6 +124,8 @@ export const binding = (id: string, query: string, over: Json = {}) => ({
 
 export interface Harness {
   readonly db: TestDatabase;
+  /** The stand-in provider, for another tenant in a test to sign in with. */
+  readonly issuer: string;
   readonly store: TestObjectStore;
   readonly stores: ObjectStores;
   readonly tenantDb: TenantDatabase;
@@ -213,6 +215,8 @@ export interface HarnessOptions {
   readonly development?: boolean;
   /** The service's secrets, as its environment would hold them: `SINK_BRIDGE_KEYS` or `SECRET_DELIVERED_URL`, say. */
   readonly secrets?: Readonly<Record<string, string>>;
+  /** Other environments a test makes, whose people sign in at the stand-in too. */
+  readonly alsoSignsInAt?: readonly string[];
   /** Anything else the service is built with: a renderer to serve, a shorter cache of tenants. */
   readonly appOptions?: Pick<
     AppOptions,
@@ -230,7 +234,9 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       {
         clientId: 'alloy',
         clientSecret: 'stand-in-secret',
-        redirectUris: [`http://${HOST}/v1/sign-in/organisation/callback`],
+        redirectUris: [HOST, ...(options.alsoSignsInAt ?? [])].map(
+          (host) => `http://${host}/v1/sign-in/organisation/callback`,
+        ),
       },
     ],
   });
@@ -348,6 +354,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
 
   const harness: Harness = {
     db,
+    issuer: idp.issuer,
     store,
     stores,
     tenantDb,

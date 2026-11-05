@@ -157,6 +157,7 @@ const notAdministering = {
 export const administeredTokenRoutes = {
   listPrincipalTokens: {
     operationId: 'listPrincipalTokens',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/principals/{id}/tokens',
     summary: "A person's tokens, a page at a time, never their secrets: an administrator's",
@@ -182,6 +183,7 @@ export const administeredTokenRoutes = {
   },
   revokePrincipalToken: {
     operationId: 'revokePrincipalToken',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/principals/{id}/tokens/{token}',
     summary: "Revoke a person's token, as an administrator: the next request with it is refused",

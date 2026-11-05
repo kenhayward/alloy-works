@@ -171,6 +171,10 @@ export function registerMcp(
         if (/^environment_(suspended|closing)$/.test((error as { code?: string }).code ?? '')) {
           return send(reply, 503, failure(null, INVALID_REQUEST, error.message));
         }
+        // Nothing to read at an organisation's tenant (TL-K).
+        if ((error as { code?: string }).code === 'environment_not_here') {
+          return send(reply, 404, failure(null, INVALID_REQUEST, error.message));
+        }
         if (status === 400) {
           return send(reply, 400, failure(null, PARSE_ERROR, 'The body is not JSON.'));
         }

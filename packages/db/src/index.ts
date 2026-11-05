@@ -262,6 +262,12 @@ export {
 } from './tenant-database.js';
 export {
   advanceClosure,
+  cancelClosureFromOrganisation,
+  hasOrganisationToLift,
+  liftFromOrganisation,
+  organisationTenants,
+  suspendFromOrganisation,
+  type OrganisationTenant,
   closureFacts,
   isRecentWholeExport,
   cancelClosing,

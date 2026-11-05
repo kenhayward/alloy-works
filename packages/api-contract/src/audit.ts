@@ -31,7 +31,7 @@ export const AuditEventView = z.object({
     .describe("The event's place in the log: order is the sequence's, never the time's"),
   at: z.string().describe('When, in UTC'),
   kind: z.string(),
-  actorKind: z.enum(['person', 'token', 'system', 'vendor', 'anonymous']),
+  actorKind: z.enum(['person', 'token', 'system', 'vendor', 'anonymous', 'organisation']),
   actor: z.string().nullable().describe('The principal who acted, by session or by token'),
   token: z.string().nullable().describe('The token they acted by, where they did'),
   subject: z
@@ -117,6 +117,7 @@ const forbidden = {
 export const auditRoutes = {
   listAuditEvents: {
     operationId: 'listAuditEvents',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/audit',
     summary: "The environment's audit log, newest first, filtered, a page at a time",
@@ -136,6 +137,7 @@ export const auditRoutes = {
   },
   requestAuditExport: {
     operationId: 'requestAuditExport',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/audit/exports',
     summary: 'Export every event matching these filters, as the log stands now',
@@ -154,6 +156,7 @@ export const auditRoutes = {
   },
   getAuditExport: {
     operationId: 'getAuditExport',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/audit/exports/{id}',
     summary: 'An export of the audit log: whether it is ready, and what it holds',
@@ -169,6 +172,7 @@ export const auditRoutes = {
   },
   downloadAuditExport: {
     operationId: 'downloadAuditExport',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/audit/exports/{id}/download',
     summary: 'A link to download an export of the audit log; each one handed out is recorded',

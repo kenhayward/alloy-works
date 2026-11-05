@@ -67,6 +67,7 @@ const forbidden = {
 export const closureRoutes = {
   getClosure: {
     operationId: 'getClosure',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/closure',
     summary: 'Where this environment is in its life, and what closing it would do',
@@ -81,6 +82,7 @@ export const closureRoutes = {
   },
   startClosure: {
     operationId: 'startClosure',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/closure',
     summary: 'Close this environment, beginning its grace period',
@@ -101,6 +103,7 @@ export const closureRoutes = {
   },
   cancelClosure: {
     operationId: 'cancelClosure',
+    organisationTenant: true,
     method: 'DELETE',
     path: '/v1/closure',
     summary: 'Give up closing this environment, while that can still be done',

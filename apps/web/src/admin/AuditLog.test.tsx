@@ -134,6 +134,28 @@ describe('the Audit log in Administration', () => {
     expect(asked.at(-1)!.searchParams.get('subject')).toBe(REVIEWERS);
   });
 
+  it('IAM-068 says which tenant of an organisation changed, and how', async () => {
+    const { client } = service(() =>
+      json(200, {
+        items: [
+          event('3', {
+            kind: 'organisation.changed',
+            subject: { kind: 'tenant', id: null, version: null },
+            detail: { tenant: 'prod', change: 'suspended', by: 'organisation' },
+            labels: {
+              actor: { text: 'Ada', erased: false },
+              subject: { text: 'Production', erased: false },
+            },
+          }),
+        ],
+        next: null,
+      }),
+    );
+    render(<AuditLog client={client} />);
+    expect(await screen.findByText('Production')).toBeInTheDocument();
+    expect(screen.getByText(/Organisation changed: suspended/)).toBeInTheDocument();
+  });
+
   it('says so where the reader may not read the log, and where nothing matches', async () => {
     const refused = service(() => json(403, { code: 'forbidden', message: 'No' }));
     const { unmount } = render(<Administration client={refused.client} about={null} />);

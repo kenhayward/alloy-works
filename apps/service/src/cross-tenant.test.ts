@@ -86,7 +86,11 @@ import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 const A = 'acme.alloy.test';
 const B = 'dev.acme.alloy.test';
 
-const authenticated = allRoutes.filter((route) => route.access.check !== 'none');
+// Not an organisation's own routes: at a tenant holding content they are not there, session or no
+// session, and a session from elsewhere at an organisation's is in organisation-routes.test.ts.
+const authenticated = allRoutes.filter(
+  (route) => route.access.check !== 'none' && !route.path.startsWith('/v1/organisation/'),
+);
 
 /** An editing session and a version id, well formed: what the request's shape needs, and no more. */
 const SESSION = '11111111-1111-4111-8111-111111111111';
@@ -1029,6 +1033,7 @@ const VALID_INPUT: Readonly<
   requestTenantExport: { payload: {} },
   createTenantRestoration: {},
   startClosure: { payload: { name: 'Production', declined: true } },
+  suspendEnvironment: { payload: { reason: 'An incident' } },
   listTenantRestorations: {},
   getTenantRestoration: {},
   sendTenantRestorationArchive: {},

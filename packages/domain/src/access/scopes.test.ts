@@ -61,13 +61,17 @@ describe("a token's scopes, a mask over its creator's grants (TK-A)", () => {
         (permission) =>
           permission !== 'read' &&
           permission !== 'import_environment' &&
-          permission !== 'close_environment',
+          permission !== 'close_environment' &&
+          permission !== 'suspend_environment' &&
+          permission !== 'suspend_tenant',
       ),
     );
     expect(tokenScopes).not.toContain('read');
     // Nor restoring, which is a person's act alone (IMP-048).
     expect(tokenScopes).not.toContain('import_environment');
     expect(tokenScopes).not.toContain('close_environment');
+    expect(tokenScopes).not.toContain('suspend_environment');
+    expect(tokenScopes).not.toContain('suspend_tenant');
   });
 
   it('decides a session, which carries no scopes, exactly as before', () => {

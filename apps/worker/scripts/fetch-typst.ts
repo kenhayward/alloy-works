@@ -7,6 +7,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { fetchRetrying } from '../src/testing/fetch-retrying.js';
 import { currentPlatform, fetchedBinary, TYPST_RELEASE } from '../src/typst-release.js';
 
 const run = promisify(execFile);
@@ -21,7 +22,7 @@ const platform = currentPlatform();
 const asset = TYPST_RELEASE.assets[platform];
 const url = `https://github.com/typst/typst/releases/download/v${TYPST_RELEASE.version}/${asset.name}`;
 console.log(`Fetching ${url}`);
-const response = await fetch(url);
+const response = await fetchRetrying(url);
 if (!response.ok) throw new Error(`${url} answered ${response.status}`);
 const archive = Buffer.from(await response.arrayBuffer());
 const sha256 = createHash('sha256').update(archive).digest('hex');

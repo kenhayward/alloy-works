@@ -93,6 +93,8 @@ export interface RouteContract {
   readonly tenantScoped: boolean;
   /** Still answers while its environment is closing or retained, for those it lets in (TL-A). */
   readonly openWhileClosing?: true;
+  /** Answers at an organisation's tenant, which holds no content; everything else is not there (TL-K). */
+  readonly organisationTenant?: true;
   /** What it checks. Anything but `none` needs a session, and the cross-tenant harness tests it. */
   readonly access: RouteAccess;
   /** Path parameters, named as the path names them. The service validates them before a handler. */

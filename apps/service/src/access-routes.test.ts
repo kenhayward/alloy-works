@@ -1897,6 +1897,27 @@ describe('routes that check a permission', () => {
       payload: { name: 'Production', declined: true },
     }),
     cancelClosure: () => ({ url: '/v1/closure', status: 403 }),
+    // Not at a tenant holding content, which comes before asking what anybody holds; what a person
+    // holding nothing is told at an organisation's own is in organisation-routes.test.ts.
+    listOrganisationTenants: () => ({ url: '/v1/organisation/tenants', status: 404 }),
+    suspendOrganisationTenant: () => ({
+      url: '/v1/organisation/tenants/prod/suspension',
+      status: 404,
+      payload: { reason: 'An incident' },
+    }),
+    liftOrganisationSuspension: () => ({
+      url: '/v1/organisation/tenants/prod/suspension',
+      status: 404,
+    }),
+    cancelOrganisationClosure: () => ({
+      url: '/v1/organisation/tenants/prod/closure',
+      status: 404,
+    }),
+    suspendEnvironment: () => ({
+      url: '/v1/suspension',
+      status: 403,
+      payload: { reason: 'An incident' },
+    }),
     listTenantRestorations: () => ({ url: '/v1/restorations', status: 403 }),
     getTenantRestoration: () => ({ url: `/v1/restorations/${randomUUID()}`, status: 403 }),
     sendTenantRestorationArchive: () => ({

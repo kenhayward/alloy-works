@@ -736,6 +736,8 @@ describe('the listings through the service', () => {
       'listThemes',
       // And the restorations: the latest twenty, for a page to pick up where it left off (EIc).
       'listTenantRestorations',
+      // And an organisation's tenants: a handful, and answered only at its own tenant (TLd).
+      'listOrganisationTenants',
     ];
     const listings = allRoutes.filter(
       (route) =>

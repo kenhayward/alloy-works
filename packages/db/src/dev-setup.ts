@@ -10,7 +10,7 @@ import {
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
-import { addHostnames, createTenant } from './provision.js';
+import { addHostnames, createTenant, type NewTenant } from './provision.js';
 import { sealingKey } from '@alloy-works/sealing';
 import { closeSignInRoute, configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
 import { createTenantDatabase } from './tenant-database.js';
@@ -52,11 +52,17 @@ const organisation = { id: 'acme', name: 'Acme' };
 // Hostnames anything can reach, whatever it makes of `*.localhost`, separated by commas: the
 // end-to-end suite uses one, and deploy/compose.lan.yaml adds this machine's address on the network.
 const extra = process.env.DEV_EXTRA_HOSTNAME?.split(',').filter(Boolean) ?? [];
-const environments = [
+const environments: readonly Omit<NewTenant, 'organisation'>[] = [
   { tenant: { id: 'acme', name: 'Production' }, hostnames: ['acme.localhost'] },
   {
     tenant: { id: 'acmedev', name: 'Development' },
     hostnames: ['dev.acme.localhost', ...extra],
+  },
+  // The organisation's own, holding no content, which administers the two above (TL-K).
+  {
+    tenant: { id: 'acmeorg', name: 'Acme' },
+    hostnames: ['org.acme.localhost'],
+    kind: 'organisation',
   },
 ];
 const gone = new Set<string>();
@@ -110,7 +116,7 @@ for (const environment of environments.filter((each) => !gone.has(each.tenant.id
 const serviceDb = createTenantDatabase(
   inDatabase(server, database, 'aw_service', TEST_PASSWORDS.service),
 );
-for (const environment of environments) {
+for (const environment of environments.filter((each) => each.kind === undefined)) {
   const tenant = tenantNames(environment.tenant.id);
   const seeded = await serviceDb.withTenant(
     { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },

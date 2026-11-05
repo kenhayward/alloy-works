@@ -82,6 +82,40 @@ describe('the sign-in screen', () => {
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
   });
 
+  it('ADM-028 says an environment is suspended when the answer came from before it was', async () => {
+    serviceThat(
+      () => json(200, { id: 'ada', environmentKind: 'content', environmentState: 'suspended' }),
+      () => json(200, ONE_WAY),
+    );
+    open();
+    expect(
+      await screen.findByRole('heading', { name: 'This environment is suspended' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('the workspace')).toBeNull();
+  });
+
+  it("IAM-069 shows an organisation's tenant its console, in place of the shell", async () => {
+    serviceThat(
+      () => json(200, { id: 'ada', environmentKind: 'organisation', environmentState: 'active' }),
+      () => json(200, { items: [] }),
+    );
+    open();
+    expect(
+      await screen.findByRole('heading', { name: "Your organisation's tenants" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('the workspace')).toBeNull();
+  });
+
+  it("ADM-030 shows an organisation's tenant that is closing the way to give that up", async () => {
+    serviceThat(
+      () => json(200, { id: 'ada', environmentKind: 'organisation', environmentState: 'closing' }),
+      () => json(200, { items: [] }),
+    );
+    open();
+    expect(await screen.findByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: "Your organisation's tenants" })).toBeNull();
+  });
+
   it('ADM-030 says an environment past closing has closed, in place of the shell and any way in', async () => {
     serviceThat(
       () => json(503, { code: 'environment_closing', message: 'Closing.' }),

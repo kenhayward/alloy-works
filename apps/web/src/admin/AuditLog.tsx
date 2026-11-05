@@ -10,7 +10,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { FAMILY_WORDS, kindWords } from './auditWords.js';
-import { formats, words } from '../words/words.js';
+import { formats, words, type WordKey } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type AuditEventView =
@@ -87,6 +87,9 @@ type Exporting =
 const UNNAMED: Readonly<Record<string, string>> = {
   get system() {
     return words('admin.the-system');
+  },
+  get organisation() {
+    return words('admin.the-organisation');
   },
   get vendor() {
     return words('admin.the-vendor');
@@ -409,6 +412,8 @@ export function AuditLog({
                   <td>{who(event)}</td>
                   <td>
                     {kindWords(event.kind)}
+                    {event.kind === 'organisation.changed' &&
+                      `: ${words(`admin.organisation-change-${String(event.detail['change'])}` as WordKey)}`}
                     {event.outcome === 'refused' && event.kind !== 'access.refused' && (
                       <>
                         {' '}

@@ -95,6 +95,7 @@ const missing = { description: 'No such person in this environment', schema: Err
 export const erasureRoutes = {
   getErasure: {
     operationId: 'getErasure',
+    organisationTenant: true,
     method: 'GET',
     path: '/v1/principals/{id}/erasure',
     summary: 'What erasing a person takes, what stays, and what refuses it',
@@ -110,6 +111,7 @@ export const erasureRoutes = {
   },
   erasePrincipal: {
     operationId: 'erasePrincipal',
+    organisationTenant: true,
     method: 'POST',
     path: '/v1/principals/{id}/erase',
     summary: 'Erase a person: their name, address and audit labels, and their access',

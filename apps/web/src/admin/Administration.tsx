@@ -16,6 +16,7 @@ import { Webhooks } from './Webhooks.js';
 import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
 import { CloseEnvironment } from './Closure.js';
+import { Suspension } from './Suspension.js';
 import { Restore } from './Restore.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
@@ -285,7 +286,7 @@ const SECTIONS = [
     group: 'data',
   },
 ] as const;
-type Section = (typeof SECTIONS)[number]['slug'];
+export type Section = (typeof SECTIONS)[number]['slug'];
 const GROUPS = ['environment', 'people', 'data', 'system'] as const;
 
 /** A group's name, in the menu and the trail. */
@@ -318,11 +319,12 @@ function useSection(): Section {
  * How many each section holds, for the menu (AD-A): a listing's `total`, or the rows of one that is a
  * page already; nothing where the reader may not see it, or it could not be read.
  */
-function useCounts(client: Client): Partial<Record<Section, number>> {
+function useCounts(client: Client, only?: readonly Section[]): Partial<Record<Section, number>> {
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   useEffect(() => {
     let current = true;
     const count = (section: Section, read: () => Promise<number | undefined>) => {
+      if (only !== undefined && !only.includes(section)) return;
       read()
         .then((found) => {
           if (current && found !== undefined) setCounts((was) => ({ ...was, [section]: found }));
@@ -392,7 +394,7 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     return () => {
       current = false;
     };
-  }, [client]);
+  }, [client, only]);
   return counts;
 }
 
@@ -405,13 +407,17 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
 export function Administration({
   client,
   about,
+  only,
 }: {
   client: Client;
   /** What About holds beside the version: the scaffolding's environment panel, for now. */
   about: React.ReactNode;
+  /** The sections there are, where not all are: an organisation's tenant has only its own (TL-K). */
+  only?: readonly Section[];
 }) {
-  const shown = useSection();
-  const counts = useCounts(client);
+  const asked = useSection();
+  const shown = only === undefined || only.includes(asked) ? asked : only[0]!;
+  const counts = useCounts(client, only);
   const title = SECTIONS.find((each) => each.slug === shown)!;
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
@@ -512,7 +518,9 @@ export function Administration({
               {groupName(group)}
             </p>
             <ul aria-labelledby={`admin-group-${group}`}>
-              {SECTIONS.filter((each) => each.group === group).map((section) => (
+              {SECTIONS.filter(
+                (each) => each.group === group && (only === undefined || only.includes(each.slug)),
+              ).map((section) => (
                 <li key={section.slug}>
                   <a
                     href={`#/admin/${section.slug}`}
@@ -570,7 +578,7 @@ export function Administration({
         {shown === 'vocabularies' && <Vocabularies client={client} />}
         {shown === 'licences' && <Licences client={client} />}
         {shown === 'themes' && <Themes client={client} />}
-        {shown === 'people' && <People client={client} />}
+        {shown === 'people' && <People client={client} makesServices={only === undefined} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && (
           <Roles read={roles} client={client} onMade={() => setRolesRead((read) => read + 1)} />
@@ -586,7 +594,8 @@ export function Administration({
         {shown === 'export' && (
           <>
             <TenantExport client={client} />
-            <Restore client={client} />
+            {only === undefined && <Restore client={client} />}
+            {only === undefined && <Suspension client={client} />}
             <CloseEnvironment client={client} />
           </>
         )}
