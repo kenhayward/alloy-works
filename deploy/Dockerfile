@@ -73,8 +73,8 @@ RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
  && pnpm deploy --filter @alloy-works/worker --prod /prod/worker \
  && pnpm deploy --filter @alloy-works/connector --prod /prod/connector
 
-# Development only: the whole workspace, so the compose stack can prepare a database and run the
-# stand-in provider. No deployed installation runs this.
+# The whole workspace, so a stack can prepare its database: development with dev:setup, an installation
+# with environment:setup (deploy/README.md). Only development also runs the stand-in provider from it.
 FROM build AS tools
 WORKDIR /repo
 CMD ["pnpm", "dev:setup"]

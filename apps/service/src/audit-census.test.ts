@@ -772,6 +772,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
       'invitation.withdrawn',
     ),
     recordStoreCredential: { none: 'platform' },
+    hasIdentityProvider: read,
+    hasStoreCredential: read,
   },
   /** Development's setup (packages/db/src/dev-content.ts), as the vendor. */
   development: {

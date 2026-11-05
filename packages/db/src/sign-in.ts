@@ -64,6 +64,14 @@ export async function identifyKnown(
   return { id: known.id };
 }
 
+/** Whether the tenant has any provider, open or closed, asked as an administrator. */
+export async function hasIdentityProvider(adminUrl: string, tenant: Tenant): Promise<boolean> {
+  return asAdministrator(adminUrl, tenant, async (client, schema) => {
+    const { rowCount } = await client.query(`select 1 from ${schema}.identity_provider limit 1`);
+    return (rowCount ?? 0) > 0;
+  });
+}
+
 /**
  * Points a tenant at one of its organisation's identity providers (the ID plan, IDa; IAM-011) and
  * permits the route, run as an administrator; the provider's id is returned. The provider is the one of

@@ -7,6 +7,14 @@ export interface SealedStoreCredential {
   readonly sealedSecret: string;
 }
 
+/** Whether this tenant has a credential for its objects yet, asked as an administrator. */
+export async function hasStoreCredential(adminUrl: string, tenant: Tenant): Promise<boolean> {
+  return asAdministrator(adminUrl, tenant, async (client, schema) => {
+    const { rowCount } = await client.query(`select 1 from ${schema}.object_store_credential`);
+    return (rowCount ?? 0) > 0;
+  });
+}
+
 /**
  * Records the credential this tenant's objects are reached with, run as an administrator. The
  * secret arrives sealed: nothing here has the key that opens it.
