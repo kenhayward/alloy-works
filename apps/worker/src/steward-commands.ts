@@ -38,7 +38,9 @@ const OPERATOR = { actorKind: 'vendor' } as const;
 
 const option = (argv: readonly string[], name: string): string | undefined => {
   const at = argv.indexOf(`--${name}`);
-  return at < 0 ? undefined : argv[at + 1];
+  // The next option is not this one's value.
+  const value = at < 0 ? undefined : argv[at + 1];
+  return value?.startsWith('--') ? undefined : value;
 };
 
 /** What each refusal of a first way in says, for an operator rather than for somebody reading the code. */
@@ -55,7 +57,23 @@ const FIRST_PROVIDER: Readonly<Record<string, string>> = {
     'That address has signed in already, and an invitation cannot reach them: use another.',
   'first_administrator.administrator_exists': 'That tenant has an administrator already.',
   'first_administrator.external': 'That address is somebody from outside the organisation.',
+  'first_administrator.already_invited':
+    'Somebody else is invited already. Leave out --first-administrator, or let their invitation lapse.',
+  'first_administrator.no_administrator_role': 'That tenant has no Administrator role.',
 };
+
+/**
+ * A secret's bytes as text. Windows' tools write a byte order mark, and PowerShell's `>` UTF-16, which
+ * sealed as they came would be a wrong secret reported as done.
+ */
+export function decodedSecret(bytes: Buffer): string {
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return bytes.subarray(2).toString('utf16le');
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return Buffer.from(bytes.subarray(2)).swap16().toString('utf16le');
+  }
+  const start = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0;
+  return bytes.subarray(start).toString('utf8');
+}
 
 const HTTP_URL = (value: string): boolean => {
   try {
@@ -82,12 +100,19 @@ const giveFirstProvider = async (
     !clientId ||
     clientId.length > 500 ||
     (name !== undefined && (name === '' || name !== name.trim() || name.length > 80)) ||
-    (address !== undefined && !address.includes('@'))
+    (argv.includes('--first-administrator') && !/^[^@\s]+@[^@\s]+$/.test(address ?? ''))
   ) {
     deps.out(USAGE);
     return 2;
   }
-  const key = deps.key();
+  let key: Buffer;
+  try {
+    key = deps.key();
+  } catch {
+    deps.out('SECRET_OBJECT_STORE_KEY is missing or malformed.');
+    return 1;
+  }
+  deps.out('Reading the client secret from standard input.');
   // Only line endings: a secret's own characters are its own.
   const clientSecret = (await deps.readSecret()).replace(/[\r\n]+$/, '');
   if (clientSecret === '') {

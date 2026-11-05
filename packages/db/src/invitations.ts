@@ -368,6 +368,16 @@ export async function claimInvitation(
     .forUpdate()
     .executeTakeFirst();
   if (!open) return undefined;
+  // Its own statement, after that lock: the operator correcting a first way in holds it too (the SP
+  // plan), and a sign-in begun through what it replaced must not claim under the old issuer.
+  if (providerId !== null) {
+    const current = await trx
+      .selectFrom('identity_provider')
+      .select('issuer')
+      .where('id', '=', providerId)
+      .executeTakeFirst();
+    if (current?.issuer !== identity.issuer) return undefined;
+  }
   const identified = await trx
     .updateTable('principal')
     .set({

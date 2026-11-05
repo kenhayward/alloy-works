@@ -1,5 +1,6 @@
 import {
   bootstrapCluster,
+  claimInvitation,
   createTenant,
   createStewardDatabase,
   createTenantDatabase,
@@ -21,7 +22,7 @@ import {
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sealingKey } from '@alloy-works/objects';
-import { runSteward } from './steward-commands.js';
+import { decodedSecret, runSteward } from './steward-commands.js';
 import { sweepClosures } from './sweep.js';
 
 const HOST = 'steward.alloy.test';
@@ -321,6 +322,141 @@ describe("the operator's command line (the TL plan, TL-P)", () => {
       const args = ['--tenant', organisation.id, '--issuer', ISSUER, '--client-id', 'alloy'];
       expect(await provider('\r\n', ...args, ...INVITE)).toBe(1);
       expect(await providers(organisation)).toEqual([]);
+    });
+
+    const providerId = async (where: Tenant) =>
+      service.withTenant(where, (trx) =>
+        trx.selectFrom('identity_provider').select('id').executeTakeFirstOrThrow(),
+      );
+    const ada = {
+      issuer: ISSUER,
+      subject: 'ada',
+      email: 'ada@example.com',
+      emailVerified: true,
+      name: 'Ada',
+    };
+
+    it('leaves a sign-in begun through what it replaced claiming nothing', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      const other = 'https://idp.example/realms/second';
+      expect(await provider(SECRET, ...args, '--issuer', other)).toBe(0);
+      const claimed = await service.withTenant(organisation, (trx) =>
+        claimInvitation(trx, ada, { route: 'organisation', providerId: id }),
+      );
+      expect(claimed).toBeUndefined();
+      const through = await service.withTenant(organisation, (trx) =>
+        claimInvitation(trx, { ...ada, issuer: other }, { route: 'organisation', providerId: id }),
+      );
+      expect(through).toEqual(expect.any(String));
+    });
+
+    it('waits for a claim already running, and is then refused', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      let holding: () => void = () => undefined;
+      let release: () => void = () => undefined;
+      const held = new Promise<void>((resolve) => (holding = resolve));
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const claim = service.withTenant(organisation, async (trx) => {
+        await claimInvitation(trx, ada, { route: 'organisation', providerId: id });
+        holding();
+        await gate;
+      });
+      await held;
+      const correcting = provider(SECRET, ...args, '--issuer', 'https://idp.example/realms/late');
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release();
+      await claim;
+      expect(await correcting).toBe(1);
+      expect((await providers(organisation))[0]).toMatchObject({ issuer: ISSUER });
+    });
+
+    it('changes nothing when the invitation it was asked for is refused', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      said.length = 0;
+      expect(
+        await provider(
+          'another',
+          ...args,
+          '--issuer',
+          'https://idp.example/realms/late',
+          '--first-administrator',
+          'grace@example.com',
+        ),
+      ).toBe(1);
+      expect(said.join()).toMatch(/invited already/);
+      const [held] = await providers(organisation);
+      expect(held).toMatchObject({ issuer: ISSUER });
+      expect(opened(organisation, held!.sealed_secret)).toBe(SECRET);
+    });
+
+    it('ends what the provider it replaced had let in', async () => {
+      const organisation = await made('organisation');
+      const args = ['--tenant', organisation.id, '--client-id', 'alloy'];
+      expect(await provider(SECRET, ...args, '--issuer', ISSUER, ...INVITE)).toBe(0);
+      const { id } = await providerId(organisation);
+      await service.withTenant(organisation, async (trx) => {
+        const stray = await trx
+          .insertInto('principal')
+          .values({ issuer: ISSUER, subject: 'stray', kind: 'user' } as never)
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('session')
+          .values({
+            principal_id: stray.id,
+            provider_id: id,
+            token_hash: 'x'.repeat(64),
+            route: 'organisation',
+            idle_expires_at: new Date(Date.now() + 86_400_000),
+            expires_at: new Date(Date.now() + 86_400_000),
+          } as never)
+          .execute();
+      });
+      expect(await provider(SECRET, ...args, '--issuer', 'https://idp.example/realms/second')).toBe(
+        0,
+      );
+      const left = await service.withTenant(organisation, (trx) =>
+        trx.selectFrom('session').select('id').execute(),
+      );
+      expect(left).toEqual([]);
+    });
+
+    it('takes no option for a value, and says when the sealing key is wrong', async () => {
+      const organisation = await made('organisation');
+      const base = ['--tenant', organisation.id, '--issuer', ISSUER];
+      expect(await provider(SECRET, ...base, '--client-id', '--name', 'x')).toBe(2);
+      expect(
+        await provider(SECRET, ...base, '--client-id', 'a', '--first-administrator', '@'),
+      ).toBe(2);
+      said.length = 0;
+      const answer = await runSteward(['provider', ...base, '--client-id', 'a', ...INVITE], {
+        db: steward,
+        steward: reach,
+        maker,
+        out: (line) => said.push(line),
+        readSecret: () => Promise.resolve(SECRET),
+        key: () => {
+          throw new Error('whatever it was');
+        },
+      });
+      expect(answer).toBe(1);
+      expect(said.join()).toMatch(/SECRET_OBJECT_STORE_KEY/);
+      expect(await providers(organisation)).toEqual([]);
+    });
+
+    it('reads a secret however Windows wrote it', () => {
+      expect(decodedSecret(Buffer.from('plain\r\n'))).toBe('plain\r\n');
+      expect(decodedSecret(Buffer.from([0xef, 0xbb, 0xbf, 0x61]))).toBe('a');
+      expect(decodedSecret(Buffer.from([0xff, 0xfe, 0x61, 0x00]))).toBe('a');
+      expect(decodedSecret(Buffer.from([0xfe, 0xff, 0x00, 0x61]))).toBe('a');
     });
 
     it('says only a code when the store refuses, however it refuses', async () => {

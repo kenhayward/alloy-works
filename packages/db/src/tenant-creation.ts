@@ -9,6 +9,7 @@ import { tenantNames } from './names.js';
 import { provisionTenant, seedTenant, type Tenant } from './provision.js';
 import {
   configureFirstProvider,
+  firstProviderRefusal,
   permitGoogleSignIn,
   type FirstProviderRefusal,
 } from './sign-in.js';
@@ -419,24 +420,29 @@ export function createTenantMaker(stewardUrl: string): TenantMaker {
         [tenantId],
       );
       const [found] = rows;
-      if (!found) return 'no_tenant';
+      if (!found) {
+        const asked = await pool.query(
+          'select 1 from platform.tenant_request where tenant_id = $1',
+          [tenantId],
+        );
+        return asked.rowCount ? 'being_made' : 'no_tenant';
+      }
       if (found.kind !== 'organisation') return 'not_organisation';
       if (found.request !== null && found.request !== 'done') return 'being_made';
       if (found.state !== 'active') return 'not_active';
       const tenant = named(tenantId);
-      const refused = await configureFirstProvider(
-        stewardUrl,
-        tenant,
-        provider,
-        key,
-        firstAdministrator !== undefined,
-      );
-      if (refused !== undefined || firstAdministrator === undefined) return refused;
-      const invited = await inviteFirstAdministrator(stewardUrl, tenant, {
-        email: firstAdministrator,
-        namedBy: 'steward provider',
-      });
-      return 'refused' in invited ? invited.refused : undefined;
+      const inviting = firstAdministrator !== undefined;
+      // Asked before inviting, and invited before changing, so a refusal changes nothing.
+      const refused = await firstProviderRefusal(stewardUrl, tenant, inviting);
+      if (refused !== undefined) return refused;
+      if (firstAdministrator !== undefined) {
+        const invited = await inviteFirstAdministrator(stewardUrl, tenant, {
+          email: firstAdministrator,
+          namedBy: 'steward provider',
+        });
+        if ('refused' in invited) return invited.refused;
+      }
+      return configureFirstProvider(stewardUrl, tenant, provider, key, inviting);
     },
 
     async organisationOf(tenantId) {

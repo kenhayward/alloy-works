@@ -128,6 +128,8 @@ under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS` as in section 3, and give the prov
 docker compose -f deploy/compose.yaml run --rm steward provider --tenant <new tenant id> --issuer <url> --client-id <id> --name <shown> < client-secret.txt
 ```
 
+`<` is Command Prompt's and Git Bash's. PowerShell has none, so wrap the line there: `cmd /c "docker compose ... < client-secret.txt"`.
+
 Name the same compose files you brought the stack up with, and delete the file afterwards. The first administrator
 then signs in with a verified address, which claims the invitation. If that address was not verified, they have
 signed in as nobody and no invitation reaches them: invite another with `--first-administrator <address>`.

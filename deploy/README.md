@@ -234,6 +234,8 @@ argument or history, and nothing without one is given a provider:
 docker compose -f deploy/compose.yaml run --rm steward provider --tenant <new tenant id> --issuer <url> --client-id <id> --name <shown> < client-secret.txt
 ```
 
+`<` is Command Prompt's and Git Bash's. PowerShell has none, so wrap the line there: `cmd /c "docker compose ... < client-secret.txt"`.
+
 It works until somebody who signed in holds access there, so a mistake can be corrected by running it again, and
 never replaces the sign-in of a tenant in use. A lapsed invitation is renewed by adding `--first-administrator <address>`.
 Add the tenant's callback to that provider first, and under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS`.
