@@ -57,6 +57,8 @@ const PERSONS_ACTS = [
   'close_environment',
   'suspend_environment',
   'suspend_tenant',
+  'create_tenant',
+  'share_provider',
 ] as const;
 
 export const tokenScopes: readonly Exclude<Permission, (typeof PERSONS_ACTS)[number]>[] =

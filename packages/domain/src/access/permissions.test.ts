@@ -49,6 +49,8 @@ describe('the permission set', () => {
         'suggest',
         'suspend_environment',
         'suspend_tenant',
+        'create_tenant',
+        'share_provider',
         'use_connection',
         'write_sql',
       ].sort(),

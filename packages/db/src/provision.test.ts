@@ -65,7 +65,8 @@ describe('provisionTenant', () => {
     expect(grouped.rows).toEqual(
       environments.map((each) => ({ name: each.name, schema_name: `t_${each.id}` })),
     );
-    // The organisation is its identity and its name, and nothing but its tenants points at it: no
+    // The organisation is its identity, its name and what its addresses end in, and nothing but its
+    // tenants and what they asked for point at it: no
     // content is kept at the organisation, and none of a tenant's own tables refers to it.
     const columns = await queryAs(
       db.adminUrl,
@@ -76,6 +77,7 @@ describe('provisionTenant', () => {
       'id',
       'name',
       'created_at',
+      'hostname_suffix',
     ]);
     const referring = await queryAs(
       db.adminUrl,
@@ -86,7 +88,13 @@ describe('provisionTenant', () => {
         where tc.constraint_type = 'FOREIGN KEY'
           and ccu.table_schema = 'platform' and ccu.table_name = 'organisation'`,
     );
-    expect(referring.rows).toEqual([{ table_schema: 'platform', table_name: 'tenant' }]);
+    expect(referring.rows).toEqual(
+      expect.arrayContaining([{ table_schema: 'platform', table_name: 'tenant' }]),
+    );
+    expect(referring.rows.map((row: { table_name: string }) => row.table_name).sort()).toEqual([
+      'tenant',
+      'tenant_request',
+    ]);
   });
 
   it('lets the login roles assume the tenant role but never inherit it', async () => {

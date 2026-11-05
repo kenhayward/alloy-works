@@ -1,5 +1,5 @@
 import { allRoutes } from '@alloy-works/api-contract';
-import { createTenant, findRole, grant, type Tenant } from '@alloy-works/db';
+import { createTenant, findRole, grant, sealSecret, type Tenant } from '@alloy-works/db';
 import { queryAs } from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HOST, startHarness, type Harness } from './test/bindings-harness.js';
@@ -276,20 +276,7 @@ describe("an organisation's tenant through the service (the TL plan, TLd)", () =
     });
 
     it('IAM-085 refuses to change a copy, and offers its closure', async () => {
-      const copy = await h.tenantDb.withTenant(h.tenant, (trx) =>
-        trx
-          .insertInto('identity_provider')
-          .values({
-            name: 'Copy',
-            issuer: 'https://copy.example',
-            client_id: 'x',
-            sealed_secret: 'sealed',
-            secret_name: null,
-            managed_by_organisation: true,
-          })
-          .returning('id')
-          .executeTakeFirstOrThrow(),
-      );
+      await configureStandIn(h.db.adminUrl, h.tenant, { issuer: h.issuer, clientId: 'alloy' });
       const content = await signIn(h.app, HOST, 'ada', h.issuer);
       const me = await h.app.inject({ url: '/v1/me', headers: { host: HOST, cookie: content } });
       const id = me.json<{ id: string }>().id;
@@ -302,8 +289,22 @@ describe("an organisation's tenant through the service (the TL plan, TLd)", () =
           grantedBy: id,
         });
       });
+      const copy = await h.tenantDb.withTenant(h.tenant, (trx) =>
+        trx
+          .insertInto('identity_provider')
+          .values({
+            name: 'Copy',
+            issuer: 'https://copy.example',
+            client_id: 'x',
+            sealed_secret: sealSecret(Buffer.alloc(32, 1), 'sign-in', h.tenant.id, 'kept'),
+            secret_name: null,
+            managed_by_organisation: true,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow(),
+      );
       const changed = await h.app.inject({
-        method: 'PATCH',
+        method: 'PUT',
         url: `/v1/sign-in-settings/providers/${copy.id}`,
         headers: { host: HOST, cookie: content },
         payload: { name: 'Mine' },

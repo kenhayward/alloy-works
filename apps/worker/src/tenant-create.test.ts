@@ -1,5 +1,6 @@
 import {
   addProvider,
+  advanceClosure,
   bootstrapCluster,
   createJobQueue,
   createStewardDatabase,
@@ -8,6 +9,8 @@ import {
   createTenantMaker,
   markProviderShared,
   migrate,
+  PURGE_WAIT_MS,
+  startClosing,
   openSecret,
   requestTenant,
   sealSecret,
@@ -24,7 +27,12 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
-import { createObjectStores, setUpTenantStore, type ObjectStores } from '@alloy-works/objects';
+import {
+  createObjectStores,
+  setUpTenantStore,
+  storeForPurging,
+  type ObjectStores,
+} from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -32,6 +40,7 @@ import {
   processNextRequest,
   type MakingDeps,
 } from './jobs/tenant-create.js';
+import { processNextPurge } from './jobs/tenant-purge.js';
 import { runSteward } from './steward-commands.js';
 
 const errors: { details: object; message: string }[] = [];
@@ -194,5 +203,55 @@ describe("the steward's making of tenants (the TL plan, TLe)", () => {
     });
     expect(await run(asking)).toBe(1);
     expect(await run(['organisation', '--id', 'x'])).toBe(2);
+  }, 120_000);
+
+  it('IAM-086 a tenant made from the console, written to, closed and purged leaves only its record, and the next is made', async () => {
+    await service.withTenant(organisation, (trx) =>
+      requestTenant(trx, { name: 'Brief', label: 'brief', firstAdministrator: 'ada@example.test' }),
+    );
+    expect(await processNextRequest(deps)).toBe('done');
+    const made = (await service.resolveHostname('brief.acme.alloy.test'))!;
+    const own = await service.withTenant(made, (trx) => stores.forTenant(trx, made));
+    const stored = await own.put(Buffer.from('written'), 'text/plain');
+    expect(stored.key).toBeTruthy();
+
+    await tenants.withTenant(made, (trx) => startClosing(trx, made, { declined: true }), {
+      actorKind: 'vendor',
+    });
+    await queryAs(
+      db.adminUrl,
+      `update platform.tenant set grace_ends_at = now() - interval '1 minute' where id = $1`,
+      [made.id],
+    );
+    const worker = testTenantDatabase(db.workerUrl);
+    await worker.withTenant(made, (trx) => advanceClosure(trx, made), { actorKind: 'system' });
+    await worker.close();
+    const purging = {
+      queue,
+      steward,
+      store: storeForPurging(store.settings, store.admin),
+      workerId: 'steward-test',
+      leaseMs: 60_000,
+      log,
+      now: () => Date.now() + PURGE_WAIT_MS + 1000,
+    };
+    expect(await processNextPurge(purging)).toBe('done');
+    expect(await steward.record(made.id)).toMatchObject({
+      state: 'deleted',
+      report: { schemaPresent: false, roles: 0, objects: 0, credentialPresent: false },
+    });
+    const { rows } = await queryAs(
+      db.adminUrl,
+      'select 1 from platform.tenant_request where tenant_id = $1',
+      [made.id],
+    );
+    expect(rows).toEqual([]);
+    await migrate(db.migratorUrl);
+
+    await service.withTenant(organisation, (trx) =>
+      requestTenant(trx, { name: 'Next', label: 'brief', firstAdministrator: 'ada@example.test' }),
+    );
+    expect(await processNextRequest(deps)).toBe('done');
+    expect((await service.resolveHostname('brief.acme.alloy.test'))?.id).not.toBe(made.id);
   }, 120_000);
 });

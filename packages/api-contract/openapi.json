@@ -90769,9 +90769,7 @@
                                   "hold",
                                   "rotate_secrets",
                                   "configure_services",
-                                  "configure_webhooks",
-                                  "create_tenant",
-                                  "share_provider"
+                                  "configure_webhooks"
                                 ]
                               },
                               "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -91953,9 +91951,7 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks",
-                              "create_tenant",
-                              "share_provider"
+                              "configure_webhooks"
                             ]
                           },
                           "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -258869,9 +258865,7 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks",
-                                "create_tenant",
-                                "share_provider"
+                                "configure_webhooks"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -303298,7 +303292,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 20,
+                    "maxItems": 18,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -303320,9 +303314,7 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks",
-                        "create_tenant",
-                        "share_provider"
+                        "configure_webhooks"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -303386,9 +303378,7 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks",
-                          "create_tenant",
-                          "share_provider"
+                          "configure_webhooks"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -311034,9 +311024,7 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks",
-                          "create_tenant",
-                          "share_provider"
+                          "configure_webhooks"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -374432,9 +374420,7 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks",
-                                "create_tenant",
-                                "share_provider"
+                                "configure_webhooks"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -374697,7 +374683,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 20,
+                    "maxItems": 18,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -374719,9 +374705,7 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks",
-                        "create_tenant",
-                        "share_provider"
+                        "configure_webhooks"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -374785,9 +374769,7 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks",
-                          "create_tenant",
-                          "share_provider"
+                          "configure_webhooks"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"

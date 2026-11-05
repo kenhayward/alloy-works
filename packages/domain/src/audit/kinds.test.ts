@@ -145,6 +145,7 @@ describe('the audit kinds', () => {
       'import.refused',
       'import.restored',
       'import.review_ended',
+      'tenant.created',
       'tenant.closing',
       'tenant.closure_cancelled',
       'tenant.retained',

@@ -37400,7 +37400,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -37873,7 +37873,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -90838,7 +90838,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -105990,7 +105990,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -106024,7 +106024,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -109311,7 +109311,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -130049,7 +130049,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -130166,7 +130166,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -130200,7 +130200,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "create_tenant" | "share_provider")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
