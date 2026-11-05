@@ -150,6 +150,20 @@ export {
   type WebhookEventType,
   type WebhookSealRequest,
 } from './webhooks/index.js';
+// A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
+export {
+  mailAddressSchema,
+  mailCredentialContext,
+  mailDisplayNameSchema,
+  mailHostSchema,
+  mailPasswordSchema,
+  mailPortSchema,
+  mailRelaySchema,
+  mailSealRequestSchema,
+  mailUsernameSchema,
+  type MailRelay,
+  type MailSealRequest,
+} from './mail/index.js';
 
 // Extensions: a manifest, read strictly, and its fetch through the connector (docs/design/extensions.md).
 export {

@@ -9,7 +9,13 @@ export type ExportIdentity = 'kept' | 'natural' | 'singleton' | 'renumbered';
 
 /** A secret's holder: `secrets.jsonl` names `<kind>:<holder>`, and the value never leaves (EI-G). */
 export interface ExportSecret {
-  readonly kind: 'connection' | 'model_endpoint' | 'webhook' | 'extension' | 'identity_provider';
+  readonly kind:
+    | 'connection'
+    | 'model_endpoint'
+    | 'webhook'
+    | 'extension'
+    | 'identity_provider'
+    | 'mail_channel';
   /** The column holding the holder's id. */
   readonly holder: string;
   /** The columns left out of the row, the sealed value among them. */
@@ -169,6 +175,9 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   line_closed: kept(),
   line_return: kept(),
   machine_draft: kept(),
+  mail_channel: singleton({
+    secrets: { kind: 'mail_channel', holder: 'id', columns: ['sealed_password'] },
+  }),
   model_credential: kept({
     secrets: { kind: 'model_endpoint', holder: 'endpoint_id', columns: ['sealed', 'sealed_for'] },
   }),

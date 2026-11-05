@@ -385,6 +385,7 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
     const done = await applied(target, id);
     expect(done.state, JSON.stringify(done.refusal)).toBe('restored');
     expect(done.report!.settingsLeft).toContain('access_policy');
+    expect(done.report!.settingsLeft).toContain('mail_channel');
     await service.withTenant(target, async (trx) => {
       const endpoints = await sql<{ name: string }>`select name from model_endpoint`.execute(trx);
       expect(endpoints.rows.map((each) => each.name)).toEqual(['Marked']);

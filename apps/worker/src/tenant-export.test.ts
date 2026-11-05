@@ -327,6 +327,11 @@ describe("the tenant's export, from the queue to the store (the R21 plan, R21-B)
           (service_identity, url, event_types, sealed, sealed_previous, previous_until, created_by)
         values (${identity[0]!.id}, 'https://hook.example/', '{content.version_cut}', ${MARKER}, ${MARKER},
                 now() + interval '1 day', ${ada})`.execute(trx);
+      await sql`insert into mail_channel
+          (relay, host, port, username, sealed_password, from_address, enabled)
+        values ('own', 'mail.example.test', 587, 'alloy', ${MARKER}, 'documents@example.test', true)`.execute(
+        trx,
+      );
       await sql`insert into extension (id, url, installed_by)
         values (gen_random_uuid(), 'https://ext.example/', ${ada})`.execute(trx);
       await sql`insert into extension_credential (id, extension_id, sealed, endpoint, set_by)
@@ -371,6 +376,7 @@ describe("the tenant's export, from the queue to the store (the R21 plan, R21-B)
         'webhook',
         'extension',
         'model_endpoint',
+        'mail_channel',
       ]),
     );
     expect(archive.secrets.map((each) => each['reference'])).toContain(
@@ -385,6 +391,7 @@ describe("the tenant's export, from the queue to the store (the R21 plan, R21-B)
       expect(JSON.stringify(archive.rows(table)), table).not.toContain('SEALEDMARKER');
     }
     expect(archive.rows('webhook_subscription')[0]).not.toHaveProperty('sealed');
+    expect(archive.rows('mail_channel')[0]).not.toHaveProperty('sealed_password');
   });
 
   it('takes one cut: what is written while it runs is wholly out, and no row names one it lacks', async () => {

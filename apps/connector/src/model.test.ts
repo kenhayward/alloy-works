@@ -10,8 +10,9 @@ import {
   type ModelEvent,
   type ModelProtocol,
   type ModelRequest,
+  mailCredentialContext,
 } from '@alloy-works/domain';
-import { sealSecret } from '@alloy-works/sealing';
+import { openSecret, sealSecret } from '@alloy-works/sealing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { builtInDenied, loadConnectorConfig } from './config.js';
@@ -419,6 +420,34 @@ describe("the connector's model paths", () => {
         )
       ).status,
     ).toBe(401);
+  });
+
+  it('will not open a password for a host, port or username it was not sealed to', async () => {
+    const request = {
+      tenant: TENANT,
+      host: 'mail.example.test',
+      port: 587,
+      username: 'alloy',
+      password: 'not-a-real-password-1234',
+    };
+    const sealing = await post('/v1/mail/seal', request);
+    expect(sealing.status).toBe(200);
+    const { sealed } = (await sealing.json()) as { sealed: string };
+    expect(sealed).not.toContain(request.password);
+    const opened = (host: string, port: number, username: string) =>
+      openSecret(
+        SEALING_KEY,
+        'mail-credential',
+        TENANT,
+        sealed,
+        mailCredentialContext(host, port, username),
+      );
+    expect(opened(request.host, request.port, request.username)).toBe(request.password);
+    expect(() => opened('elsewhere.example.test', request.port, request.username)).toThrow();
+    expect(() => opened(request.host, 465, request.username)).toThrow();
+    expect(() => opened(request.host, request.port, 'grace')).toThrow();
+    expect((await post('/v1/mail/seal', { ...request, port: 25 })).status).toBe(400);
+    expect((await post('/v1/mail/seal', request, EMBED_KEY)).status).toBe(401);
   });
 
   it('seals a webhook signing secret to its subscription and URL, and to the service key alone', async () => {

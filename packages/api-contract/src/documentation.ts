@@ -219,6 +219,10 @@ export const documentationGroups = [
           'Subscribe a service identity’s endpoint to events, signed, and manage its secret.',
       },
       {
+        name: 'Mail',
+        description: 'Turn an environment’s mail on or off, and choose the relay it leaves by.',
+      },
+      {
         name: 'CT Studio bridge',
         description:
           'Set up a space to take deliveries from CT Studio: the component type and template it uses, which template field each property fills, and whether data tables are delivered to it.',
@@ -668,6 +672,7 @@ const operationTags = {
     'removeExtension',
     'setExtensionSecret',
   ],
+  Mail: ['getMailChannel', 'setMailChannel', 'setMailPassword'],
   Webhooks: [
     'listWebhooks',
     'createWebhook',
@@ -1512,6 +1517,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Removes an extension once no connection uses it but a retired one, and a reference extension once it is switched off as a reference source; kept, so what used it still names it, and the bibliography entries obtained from it untouched, though no longer re-checked. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
   setExtensionSecret:
     'Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+  getMailChannel:
+    'Returns whether this environment sends mail, by whose relay and from what address, and whether the operator offers a relay. A relay’s password is never answered, only whether one is held. Needs configure_services, with a session.',
+  setMailChannel:
+    'Turns this environment’s mail on or off and chooses its relay: the operator’s, or its own on port 465 or 587, always over verified TLS. Moving its own relay to another host, port or username drops the password, which must be set again before it can be turned on. Needs configure_services, with a session.',
+  setMailPassword:
+    'Sets the password of this environment’s own relay. It is sealed to that host, port and username, opens for no other, and is never answered. Needs rotate_secrets, with a session.',
   listWebhooks:
     'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs configure_webhooks at the environment, with a signed-in session.',
   createWebhook:

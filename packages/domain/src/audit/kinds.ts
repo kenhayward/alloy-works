@@ -915,6 +915,16 @@ export const auditKindSpecs = {
   ),
   // A subscription made, changed, its secret rotated, removed or disabled (the WB plan, WB-H): never
   // its URL, which names a host (LIF-030).
+  // A change to the mail channel (the EM plan): never a host, address or password (LIF-030).
+  'mail_channel.changed': kind(
+    ['LIF-072'],
+    z.strictObject({
+      change: z.enum(['made', 'changed', 'password_set', 'enabled', 'disabled']),
+      relay: z.enum(['platform', 'own']).optional(),
+      moved: z.boolean().optional(),
+    }),
+    'packages/db/src/mail.ts',
+  ),
   'webhook.changed': kind(
     ['API-055', 'LIF-071'],
     z.strictObject({

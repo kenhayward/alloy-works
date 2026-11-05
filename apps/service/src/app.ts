@@ -95,6 +95,7 @@ import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { serviceIdentityHandlers } from './service-identities.js';
+import { mailChannelHandlers, type MailPlatform } from './mail-channel.js';
 import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
@@ -216,6 +217,8 @@ export type Credential =
 
 export interface AppOptions extends HttpOptions {
   readonly db: TenantDatabase;
+  /** The operator's mail relay, where one is offered (the EM plan, EM-B). */
+  readonly mailPlatform?: MailPlatform;
   readonly oidc: OidcClient;
   readonly secrets: SecretStore;
   /**
@@ -868,6 +871,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...administeredTokenHandlers(),
     ...serviceIdentityHandlers(),
     ...webhookHandlers(tenantOf, options.connector),
+    ...mailChannelHandlers(tenantOf, options.connector, options.mailPlatform),
     ...extensionHandlers(tenantOf, options.connector),
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),

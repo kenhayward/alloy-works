@@ -51,6 +51,8 @@ describe("the connector's one caller", () => {
       'generation/prompt-runs.ts',
       // The loop both runs share, which a route hands the client (the G5 plan, G5-A).
       'generation/run-loop.ts',
+      // A mail relay's password sealed as an administrator sets it (the EM plan, EM-I).
+      'mail-channel.ts',
       // A webhook's signing secret sealed as an administrator makes or rotates it (the WB plan, WB-G).
       'webhooks.ts',
     ]);

@@ -3883,6 +3883,8 @@
   "admin.translation-job-returned": "Translation job returned",
   "admin.held-translation-decided": "Held translation decided",
   "admin.machine-draft-accepted": "Machine draft accepted",
+  "admin.mail-channel": "Mail channel",
+  "admin.mail-channel-changed": "Mail channel changed",
   "admin.webhook-changed": "Webhook changed",
   "admin.delivery-from-ct-studio-written": "Delivery from CT Studio written",
   "admin.delivery-from-ct-studio-refused": "Delivery from CT Studio refused",
