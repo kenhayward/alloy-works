@@ -22,7 +22,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "dev:setup": "tsx src/dev-setup.ts"
+    "dev:setup": "tsx src/dev-setup.ts",
+    "environment:setup": "tsx src/environment-setup-cli.ts"
   },
   "dependencies": {
     "@alloy-works/db": "workspace:^",

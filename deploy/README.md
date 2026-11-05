@@ -198,6 +198,32 @@ Keycloak's own session lasts 15 seconds, since signing out of Alloy Works does n
 refuses anybody else while it runs (`deploy/keycloak/configure.sh`, which also sets where a sign-in may
 return, at every start).
 
+### An installation's own setup: `pnpm environment:setup`
+
+`pnpm dev:setup` is development's: published passwords, a seeded customer and the stand-in. An installation runs
+this instead, on every deploy, in the `tools` image. It sets the database logins' passwords, migrates, makes one
+content environment at one address, invites its first administrator and opens one sign-in provider. Every value comes
+from the environment, with no defaults. It refuses a missing one, a password this repository publishes, and a
+provider or address that is not https at a public name, naming the setting and never its value.
+
+| Setting                                                                       | What it is                                                   |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_ADMIN_URL`, `DATABASE_NAME`                                         | The server, as its superuser, and the database to make there |
+| `DATABASE_PASSWORD_` + `SERVICE`, `WORKER`, `MIGRATOR`, `RESTORER`, `STEWARD` | Each login's password, at least 16 characters                |
+| `ORGANISATION_ID`, `ORGANISATION_NAME`                                        | Who it belongs to                                            |
+| `ENVIRONMENT_ID`, `ENVIRONMENT_NAME`                                          | The environment                                              |
+| `ENVIRONMENT_HOSTNAME`                                                        | The public name it answers at                                |
+| `FIRST_ADMINISTRATOR_EMAIL`                                                   | Who is invited to administer it                              |
+| `SIGN_IN_ISSUER`, `SIGN_IN_CLIENT_ID`, `SECRET_SIGN_IN_CLIENT`                | The provider                                                 |
+| `SECRET_OBJECT_STORE_KEY`                                                     | 32 bytes of base64, sealing every secret it keeps            |
+| `OBJECT_STORE_` + `ENDPOINT`, `REGION`, `BUCKET`, `ADMIN_KEY`, `ADMIN_SECRET` | The store                                                    |
+
+Sign-in is configured once. After that it is Administration's: a deploy changes nothing an administrator decided, and
+the invitation lapses as any other does. The environment's store credential is likewise issued once. A changed
+`ENVIRONMENT_HOSTNAME` is added, and the old address goes on answering. To change a password, change its setting.
+
+`steward organisation` is the other way to make a tenant, but its first way in is Google, and it needs this run first.
+
 ### A source to connect to: the `sources` profile
 
 `source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on
@@ -441,5 +467,5 @@ product, stays a variable, `SECRET_GOOGLE`.
 - **No release process.** Images are built on every pull request and thrown away; the desktop
   installer is built locally and is unsigned.
   [`docs/ci-and-releases.md`](../docs/ci-and-releases.md) is where that will be written down.
-- **No migration story for an installation that already has data.** The migration runner is real and
-  tested; running it against something that matters is not yet a procedure anyone has written.
+- **No backup or rollback for an installation that has data.** `pnpm environment:setup` migrates it,
+  and migrations only go forward.

@@ -258,7 +258,19 @@ export {
   type JobKind,
   type JobQueue,
 } from './queue.js';
-export { recordStoreCredential, type SealedStoreCredential } from './object-store.js';
+export {
+  hasStoreCredential,
+  recordStoreCredential,
+  type SealedStoreCredential,
+} from './object-store.js';
+export {
+  environmentDatabaseUrl,
+  EnvironmentSettingsRefused,
+  readEnvironmentSettings,
+  setUpEnvironment,
+  type EnvironmentSettings,
+  type EnvironmentSetUp,
+} from './environment-setup.js';
 export {
   openSecret,
   sealingKey,
