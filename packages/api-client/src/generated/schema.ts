@@ -77272,7 +77272,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description grant_last_holder, grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -78197,7 +78197,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description group_from_provider, group_member_missing, group_member_erased, group_last_holder, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

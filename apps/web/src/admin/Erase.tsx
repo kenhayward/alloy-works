@@ -125,9 +125,14 @@ export function EraseDialog({
       onErased();
       return;
     }
-    const refusals = (answer?.error as { refusals?: ErasureRefusal[] } | undefined)?.refusals;
+    const refused = answer?.error as
+      { refusals?: ErasureRefusal[]; code?: string; message?: string } | undefined;
+    const refusals = refused?.refusals;
     if (refusals && shown.state === 'read') {
       setShown({ state: 'read', erasure: { ...shown.erasure, refusals } });
+    } else if (refused?.code === 'grant_beyond_held' && refused.message) {
+      // Trying again cannot help, and what would is holding it, which the service names.
+      setSaid(refused.message);
     } else {
       setSaid(words('admin.could-not-be-erased-try', { name }));
     }

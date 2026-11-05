@@ -50,6 +50,7 @@ export type GrantRefusal =
   | 'grant.subject_erased'
   | 'grant.duplicate'
   | 'grant.allow_without_read'
+  | 'grant.last_holder'
   | 'grant.administer_denied_at_tenant'
   | 'grant.expiry_past';
 
@@ -169,6 +170,14 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
     (role.permissions.includes('administer') || role.permissions.includes('configure_services'))
   ) {
     return { refused: 'grant.administer_denied_at_tenant' };
+  }
+  // Nor one taking the last holder of what it denies, which nobody could then lift (GL-H).
+  if (
+    input.effect === 'deny' &&
+    input.level.kind === 'tenant' &&
+    !(await lastHolderRemains(trx, { denying: role.permissions, subject: input.subject }))
+  ) {
+    return { refused: 'grant.last_holder' };
   }
 
   let expiresAt = input.expiresAt ?? null;

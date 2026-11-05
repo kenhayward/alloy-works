@@ -99,6 +99,7 @@ describe('the rule behind a refusal', () => {
       'group.provider_unknown',
       'group.from_provider',
       'group.member_missing',
+      'group.last_holder',
       // A value written that does not fit, or that nothing can be checked against because the
       // document's template no longer resolves: the design's own guards (templates.md, "Values"). A
       // missing required value is TPL-055's, refused at publication and not here.

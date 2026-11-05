@@ -282,8 +282,16 @@ describe('where the walk starts', () => {
 });
 
 describe('what somebody cannot give', () => {
-  const narrow = { id: 'role-narrow', name: 'Narrow', permissions: ['read', 'administer'] };
-  const closer = { id: 'role-closer', name: 'Closer', permissions: ['read', 'close_environment'] };
+  const narrow: AccessGrant['role'] = {
+    id: 'role-narrow',
+    name: 'Narrow',
+    permissions: ['read', 'administer'],
+  };
+  const closer: AccessGrant['role'] = {
+    id: 'role-closer',
+    name: 'Closer',
+    permissions: ['read', 'close_environment'],
+  };
   const names = (decisions: readonly { permission: string }[]) =>
     decisions.map((each) => each.permission);
 

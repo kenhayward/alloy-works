@@ -17,7 +17,20 @@ import { configureStandIn, STAND_IN_SECRET, TEST_SEALING_KEY } from './test/sign
 
 const HOST = 'limits.acme.alloy.test';
 const CALLBACK = `http://${HOST}/v1/sign-in/organisation/callback`;
-const NAMES = ['ada', 'bob', 'carol', 'dan', 'erin', 'fay', 'gil', 'hal', 'ida', 'jon', 'kim'];
+const NAMES = [
+  'ada',
+  'bob',
+  'carol',
+  'dan',
+  'erin',
+  'fay',
+  'gil',
+  'hal',
+  'ida',
+  'jon',
+  'kim',
+  'lee',
+];
 const USERS = NAMES.map((id) => ({ id, name: id, email: `${id}@acme.example` }));
 const BEYOND = { code: 'grant_beyond_held' };
 
@@ -292,6 +305,24 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     expect(removed.statusCode).toBe(403);
     expect(removed.json()).toMatchObject(BEYOND);
     expect((await send('DELETE', `/v1/grants/${denial}`, ada.cookie)).statusCode).toBe(200);
+
+    // One that has ended denies nothing, so removing it gives nothing back.
+    const ended = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('access_grant')
+        .values({
+          principal_id: bob.id,
+          role_id: roles['Administrator']!,
+          level: 'space',
+          space_id: space,
+          effect: 'deny',
+          expires_at: new Date(Date.now() - 86_400_000),
+          granted_by: ada.id,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow(),
+    );
+    expect((await send('DELETE', `/v1/grants/${ended.id}`, bob.cookie)).statusCode).toBe(200);
   });
 
   it('refuses re-enabling somebody holding what he does not, but not somebody holding less', async () => {
@@ -405,5 +436,80 @@ describe('grant limits: nobody gives an administrative permission they do not ho
     // With somebody else holding it, nothing is stranded.
     const kim = await holding('kim', 'Administrator');
     expect((await send('DELETE', `/v1/grants/${kim.grant}`, bob.cookie)).statusCode).toBe(200);
+
+    // Somebody invited, who has never signed in, holds nothing yet.
+    const invited = await send('POST', '/v1/invitations', fay.cookie, {
+      email: 'nobody@acme.example',
+      external: false,
+    });
+    expect(invited.statusCode).toBe(200);
+    const nobody = { id: invited.json<{ invitation: { person: string } }>().invitation.person };
+    const invitedGrant = await send(
+      'POST',
+      '/v1/grants',
+      fay.cookie,
+      giving('Administrator', { principal: nobody.id }),
+    );
+    expect(invitedGrant.statusCode).toBe(200);
+    expect((await send('DELETE', `/v1/grants/${fay.grant}`, bob.cookie)).json()).toMatchObject({
+      code: 'grant_last_holder',
+    });
+
+    // Somebody denied it at the environment does not hold it either.
+    const closer = await send('POST', '/v1/roles', fay.cookie, {
+      name: 'Closer',
+      permissions: ['read', 'close_environment'],
+    });
+    const closerRole = closer.json<{ role: { id: string } }>().role.id;
+    const lee = await holding('lee', 'Administrator');
+    const denied = await send('POST', '/v1/grants', fay.cookie, {
+      role: closerRole,
+      subject: { principal: lee.id },
+      level: 'tenant',
+      effect: 'deny',
+    });
+    expect(denied.statusCode).toBe(200);
+    expect((await send('DELETE', `/v1/grants/${fay.grant}`, bob.cookie)).json()).toMatchObject({
+      code: 'grant_last_holder',
+    });
+    await send(
+      'DELETE',
+      `/v1/grants/${denied.json<{ grant: { id: string } }>().grant.id}`,
+      fay.cookie,
+    );
+    expect((await send('DELETE', `/v1/grants/${lee.grant}`, fay.cookie)).statusCode).toBe(200);
+
+    // Nor may the last holder be denied it, which nobody could then lift.
+    const self = await send('POST', '/v1/grants', fay.cookie, {
+      role: closerRole,
+      subject: { principal: fay.id },
+      level: 'tenant',
+      effect: 'deny',
+    });
+    expect(self.statusCode).toBe(409);
+    expect(self.json()).toMatchObject({ code: 'grant_last_holder' });
+
+    // Holding it only through a group, they keep it: the group cannot lose them, nor go.
+    const held = (await send('POST', '/v1/groups', fay.cookie, { name: 'The last holders' })).json<{
+      group: { id: string };
+    }>().group.id;
+    const heldGrant = await send(
+      'POST',
+      '/v1/grants',
+      fay.cookie,
+      giving('Administrator', { group: held }),
+    );
+    expect((await members(held, fay.cookie, [fay.id])).statusCode).toBe(200);
+    expect((await send('DELETE', `/v1/grants/${fay.grant}`, bob.cookie)).statusCode).toBe(200);
+    const leaving = await members(held, fay.cookie, []);
+    expect(leaving.statusCode).toBe(409);
+    expect(leaving.json()).toMatchObject({ code: 'group_last_holder' });
+    expect((await send('DELETE', `/v1/groups/${held}`, fay.cookie)).json()).toMatchObject({
+      code: 'group_last_holder',
+    });
+    const groupGrant = heldGrant.json<{ grant: { id: string } }>().grant.id;
+    expect((await send('DELETE', `/v1/grants/${groupGrant}`, fay.cookie)).json()).toMatchObject({
+      code: 'grant_last_holder',
+    });
   });
 });

@@ -60,6 +60,7 @@ const WIRE_CODES = {
   'group.from_provider': 'group_from_provider',
   'group.member_missing': 'group_member_missing',
   'group.member_erased': 'group_member_erased',
+  'group.last_holder': 'group_last_holder',
   'format.unsupported': 'format_unsupported',
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',

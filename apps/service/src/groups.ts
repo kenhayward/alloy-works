@@ -58,6 +58,10 @@ const REFUSALS = new Map<GroupRefusal, string>([
     "This group's members are whoever the organisation's sign-in says are in it, so they cannot be named here.",
   ],
   ['group.member_missing', 'There is no such person in this environment.'],
+  [
+    'group.last_holder',
+    'Nobody would hold an administrative permission this group gives then, and nobody could give it again, so this cannot be done.',
+  ],
   ['group.member_erased', 'Somebody chosen was erased, and joins no group again.'],
   [
     'grant.external_at_tenant',
@@ -150,6 +154,9 @@ export function groupHandlers() {
       const answer = await deleteGroup(trx, id);
       if ('refused' in answer && answer.refused === 'group.in_scope') {
         throw refused(409, 'group.in_scope', 'A scope names this group to accept a revision.');
+      }
+      if ('refused' in answer && answer.refused === 'group.last_holder') {
+        throw refuse(answer.refused);
       }
       if ('refused' in answer) throw notFound();
       return answer;

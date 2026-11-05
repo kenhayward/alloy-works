@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { lastHolderRemains } from './grant-limits.js';
 import { lockAccessForChange } from './access-facts.js';
 import { labelled, labels, principalLabel, recordEvent } from './audit.js';
 import {
@@ -362,7 +363,8 @@ export type SetMembersAnswer =
         | 'group.missing'
         | 'group.from_provider'
         | 'group.member_missing'
-        | 'group.member_erased';
+        | 'group.member_erased'
+        | 'group.last_holder';
     };
 
 /**
@@ -420,6 +422,13 @@ export async function setGroupMembers(
     if (refusal) return { refused: refusal };
   }
 
+  if (
+    leaving.length > 0 &&
+    !(await lastHolderRemains(trx, { leavingGroup: groupId, principals: leaving }))
+  ) {
+    return { refused: 'group.last_holder' };
+  }
+
   for (const principal of leaving) {
     await recordMembershipEvent(
       trx,
@@ -459,7 +468,8 @@ export async function setGroupMembers(
 }
 
 export type DeletionAnswer =
-  { readonly deleted: string } | { readonly refused: 'group.missing' | 'group.in_scope' };
+  | { readonly deleted: string }
+  | { readonly refused: 'group.missing' | 'group.in_scope' | 'group.last_holder' };
 
 /**
  * Deletes a group, of either source, with its memberships and every grant it holds, which go by their
@@ -489,6 +499,9 @@ export async function deleteGroup(
                 where latest.scope @> ${JSON.stringify([{ party: { kind: 'group', id: groupId } }])}::jsonb)
              as named`.execute(trx);
     if (rows[0]?.named === true) return { refused: 'group.in_scope' };
+  }
+  if (!(await lastHolderRemains(trx, { deletingGroup: groupId }))) {
+    return { refused: 'group.last_holder' };
   }
   // One event for each row the cascade removes, then the group's own, all before the delete
   // (the AU1 plan, AU1-H).

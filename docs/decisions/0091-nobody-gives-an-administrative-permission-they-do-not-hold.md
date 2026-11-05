@@ -18,12 +18,14 @@ stakes, since closing a tenant now ends in deleting it. Ken chose to limit grant
 2. **"Holds" is `administerOrAbove`,** the rule those permissions are decided by, token scopes included.
 3. **Adding is limited, allow or deny:** a grant, a role made, a service identity's token scopes.
 4. **A group holding more than its maker is not theirs to change,** in any way: joining, leaving or deleting it.
-5. **Removing a direct allow stays open.** Removing a denial gives back what it denied, so it is limited.
+5. **Removing an allow stays open.** Removing a denial that has not ended gives back what it denied, so it is
+   limited.
 6. **Enabling a person, and erasing one, are limited** by the allows they hold, directly or through a group.
    Disabling stays open, so that a narrower administrator can stop a compromised account.
 7. **The last holder of an administrative permission stays:** with giving limited, nobody could ever give it
-   again, and the operator's way back refuses while anybody administers. `grant_last_holder` and
-   `principal_last_holder` count direct and group holders who can sign in, with no expiry.
+   again, and the operator's way back refuses while anybody administers. `grant_last_holder`, `group_last_holder` and
+   `principal_last_holder` count direct and group holders who can sign in through an open way in, with no expiry,
+   and not denied it at the environment. Somebody invited, who has never signed in, is not one.
 8. **A token cannot grant Administrator,** since three permissions it holds are never token scopes. That takes a
    session.
 

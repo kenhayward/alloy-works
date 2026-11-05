@@ -14,7 +14,7 @@ As [ADR-0091](../decisions/0091-nobody-gives-an-administrative-permission-they-d
 - **GL-E** extending is not limited: only an external allow is extended, and `externalCap` holds every administrative permission.
 - **GL-F** out: provider groups and SCIM, a share's fixed role and CT Studio's Author (neither holds one), restoring (`import_environment`'s own).
 - **GL-G** 403 `grant_beyond_held`, naming the permissions in the message, the first recorded as the refusal.
-- **GL-H** the last holder stays: `grant_last_holder`, `principal_last_holder`. With giving limited, a stranded permission could never come back.
+- **GL-H** the last holder stays: `grant_last_holder`, `group_last_holder`, `principal_last_holder`. With giving limited, a stranded permission could never come back.
 - **GL-I** enabling and erasing are limited by what the person holds. Disabling stays open.
 - **GL-J** a token cannot grant Administrator, since three of its permissions are never token scopes.
 
