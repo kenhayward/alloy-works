@@ -23,7 +23,7 @@ function serviceBlocks(file: string): Map<string, string> {
   const end = services.slice(1).search(/\n[a-z]/);
   const body = end === -1 ? services : services.slice(0, end + 1);
   const blocks = new Map<string, string>();
-  for (const part of body.split(/\n(?=  [a-z-]+:\n)/).slice(1)) {
+  for (const part of body.split(/\n(?= {2}[a-z-]+:\n)/).slice(1)) {
     blocks.set(/^ {2}([a-z-]+):/.exec(part)![1]!, part);
   }
   return blocks;
