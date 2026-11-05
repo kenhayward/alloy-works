@@ -1,0 +1,64 @@
+/* A part's language, chosen from the declared list: long, so it scrolls under its field. */
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.dialog h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.dialog p {
+  margin: 0;
+}
+
+.find {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: min(50vh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: 34px;
+  padding-inline: var(--space-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  text-align: start;
+}
+
+.row:hover {
+  background: var(--sunken);
+}
+
+.row[aria-current='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.tag {
+  flex: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}

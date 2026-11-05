@@ -23,6 +23,15 @@ const PATHS: Record<string, readonly string[]> = {
     'M8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z',
     'M2.7 8h10.6M8 2.6c1.7 1.9 1.7 9 0 10.8M8 2.6c-1.7 1.9-1.7 9 0 10.8',
   ],
+  // A pilcrow and the way its line runs: a part's base direction.
+  'Left to right': [
+    'M7 2.5v6.5M10 2.5v6.5M11.5 2.5H6.3a2.1 2.1 0 0 0 0 4.2H7',
+    'M3 12.5h10M11 10.7l2 1.8-2 1.8',
+  ],
+  'Right to left': [
+    'M7 2.5v6.5M10 2.5v6.5M11.5 2.5H6.3a2.1 2.1 0 0 0 0 4.2H7',
+    'M13 12.5H3M5 10.7l-2 1.8 2 1.8',
+  ],
   // A tag tied to words: a governed term (the TM plan, TMc).
   Term: ['M2.5 4.5h7l4 3.5-4 3.5h-7z', 'M5.2 8h.01'],
   'Bulleted list': ['M6 4.5h7.5M6 8h7.5M6 11.5h7.5', 'M3 4.5h.01M3 8h.01M3 11.5h.01'],

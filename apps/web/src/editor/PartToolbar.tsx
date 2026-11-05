@@ -1,13 +1,5 @@
 import { tableCursor, type EditorView, type TableAt } from '@alloy-works/editor';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
 import { IconButton } from '../parts/IconButton.js';
@@ -214,12 +206,20 @@ export interface PartActs {
     readonly disabled: boolean;
     readonly onPress: () => void;
   }[];
-  readonly menu: {
-    readonly label: string;
-    readonly open: boolean;
-    readonly onToggle: () => void;
-    readonly strip: ReactNode;
-  };
+  /** The values it says and changes, each an icon and its value: its language and its direction. */
+  readonly values: readonly {
+    /** Which it is, kept as its icon and words change, so a press leaves the focus on it. */
+    readonly id: string;
+    readonly icon: string;
+    readonly text: string;
+    /** Its name, saying the value in full; what a press does, where the name does not. */
+    readonly name: string;
+    readonly hint?: string;
+    /** Whether a press opens a dialog, rather than changing it there and then. */
+    readonly asks?: boolean;
+    readonly disabled: boolean;
+    readonly onPress: () => void;
+  }[];
 }
 
 export interface PartToolbarProps {
@@ -259,8 +259,6 @@ export function PartToolbar({
   const element = useFollow(view, table, part?.element);
   const nameButton = useRef<HTMLButtonElement | null>(null);
   const popover = useRef<HTMLDivElement | null>(null);
-  const menuButton = useRef<HTMLButtonElement | null>(null);
-  const strip = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stop, setStop] = useState(0);
   const cursor = view === null ? null : tableCursor(view.state);
@@ -283,16 +281,12 @@ export function PartToolbar({
       if (open) {
         setOpen(false);
         nameButton.current?.focus();
-      } else if (part?.menu.open) {
-        part.menu.onToggle();
-        menuButton.current?.focus();
       } else {
         view?.focus();
       }
       return;
     }
     if (popover.current?.contains(event.target as Node)) return;
-    if (strip.current?.contains(event.target as Node)) return;
     const buttons = [...event.currentTarget.querySelectorAll<HTMLElement>('[data-stop]')];
     const at = buttons.indexOf(event.target as HTMLElement);
     if (at < 0) return;
@@ -422,20 +416,31 @@ export function PartToolbar({
                 </NameTip>
               );
             })}
-            <button
-              ref={menuButton}
-              type="button"
-              data-stop
-              tabIndex={stopNext()}
-              className={styles['menu']}
-              aria-expanded={part.menu.open}
-              onClick={part.menu.onToggle}
-            >
-              {part.menu.label}
-            </button>
-            <div ref={strip} className={styles['strip']} hidden={!part.menu.open}>
-              {part.menu.strip}
-            </div>
+            {part.values.length > 0 && <span className={styles['rule']} aria-hidden="true" />}
+            {part.values.map((value) => {
+              const tabIndex = stopNext();
+              return (
+                <NameTip key={value.id} name={value.name} hint={value.hint} below>
+                  <button
+                    type="button"
+                    data-stop
+                    tabIndex={tabIndex}
+                    className={styles['value']}
+                    aria-label={value.name}
+                    {...(value.hint === undefined ? {} : { 'aria-description': value.hint })}
+                    {...(value.asks === true ? { 'aria-haspopup': 'dialog' as const } : {})}
+                    aria-disabled={value.disabled}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!value.disabled) value.onPress();
+                    }}
+                  >
+                    <Icon name={value.icon} size={16} />
+                    <span data-content>{value.text}</span>
+                  </button>
+                </NameTip>
+              );
+            })}
           </span>
         )}
       </div>

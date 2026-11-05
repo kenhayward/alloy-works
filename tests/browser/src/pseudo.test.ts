@@ -475,6 +475,27 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     },
   },
   {
+    // A part's language, from the one floating toolbar with the part open in place.
+    name: 'The Choose a language dialog',
+    dialog: 'editor/LanguageDialog.tsx',
+    address: `#/documents/${grace.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      // Its text drawn first: chosen sooner, Authoring is drawn over again as the text arrives.
+      await page.getByText('The pond survey found newts.').waitFor();
+      await documentDrawn(page, language).check();
+      await page.getByText('The pond survey found newts.').first().click();
+      await page
+        .getByRole('button', {
+          name: say(language, 'editor.base-language', { tag: 'en-GB' }),
+          exact: true,
+        })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'editor.choose-a-language') });
+    },
+  },
+  {
     name: 'The Place from a document dialog',
     dialog: 'structure/PlaceSection.tsx',
     address: `#/documents/${grace.document}`,
