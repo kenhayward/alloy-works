@@ -358,6 +358,7 @@ function personRefused(
         409,
         'principal_last_holder',
         'Nobody would hold an administrative permission they hold then, and nobody could give it again, so they cannot be disabled.',
+        'IAM-088',
       );
   }
 }

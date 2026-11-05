@@ -262,6 +262,8 @@ export const DOTTED_CODES = Object.keys(WIRE_CODES) as DottedCode[];
  * `refusals.test.ts` holds every code to one side or the other.
  */
 const RULES: Partial<Record<DottedCode, string>> = {
+  'grant.last_holder': 'IAM-088',
+  'group.last_holder': 'IAM-088',
   'lock.held': 'API-039',
   'lock.required': 'COL-005',
   'lock.taken': 'COL-045',
