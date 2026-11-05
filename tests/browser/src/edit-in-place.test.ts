@@ -124,6 +124,129 @@ const edgesOf = (page: Page) =>
     };
   });
 
+/** The line boxes of the words that start with `text`, from the sheet's corner, to the tenth of a pixel. */
+const linesOf = (page: Page, text: string) =>
+  page.evaluate((words) => {
+    const sheet = document.querySelector('.aw-sheet')!.getBoundingClientRect();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      if (node.textContent?.startsWith(words)) {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return [...range.getClientRects()].map((box) =>
+          [
+            box.left - sheet.left,
+            box.right - sheet.left,
+            box.top - sheet.top,
+            box.bottom - sheet.top,
+          ].map((each) => Math.round(each * 10) / 10),
+        );
+      }
+    }
+    return [];
+  }, text);
+
+/** The zoom the sheet sets, and the zoom the open editor's text is set at. */
+const zooms = (page: Page) =>
+  page.evaluate(() => {
+    const of = (element: Element | null) =>
+      element === null ? null : getComputedStyle(element).getPropertyValue('--aw-zoom');
+    return {
+      sheet: of(document.querySelector('.aw-canvas.aw-sheet')),
+      open: of(document.querySelector("[data-in-place='true'] .aw-canvas")),
+    };
+  });
+
+const expectWithin = (found: number[][], wanted: number[][], by: number) => {
+  expect(found.length).toBe(wanted.length);
+  found.forEach((line, row) =>
+    line.forEach((value, at) =>
+      expect(Math.abs(value - wanted[row]![at]!)).toBeLessThanOrEqual(by),
+    ),
+  );
+};
+
+describe('a component open in place stands still (the in-place-steadiness handoff)', () => {
+  const FIRST = 'First words.';
+
+  const holdsOpen = async (page: Page) => {
+    await page.getByRole('toolbar', { name: 'Part toolbar' }).waitFor();
+    await page.getByRole('textbox', { name: /^Content of / }).waitFor();
+  };
+
+  it('CNT-075 sets its text where the sheet set it, and a press moves nothing, at Fit and at each zoom', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1500, height: 1000 });
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      for (const zoom of ['fit', '0.75', '1', '1.5']) {
+        await page.getByRole('combobox', { name: 'Zoom', exact: true }).selectOption(zoom);
+        await page.getByText(FIRST).first().waitFor();
+        await page.waitForTimeout(100);
+        const read = await linesOf(page, FIRST);
+        expect(read.length).toBeGreaterThan(0);
+        await page.getByText(FIRST).first().click();
+        await holdsOpen(page);
+        const said = await zooms(page);
+        expect(said.open, zoom).toBe(said.sheet);
+        const open = await linesOf(page, FIRST);
+        expectWithin(open, read, 0.5);
+        // A press and its release, in the text: nothing moves, and it stays open.
+        const box = await page.getByText(FIRST).first().boundingBox();
+        await page.mouse.move(box!.x + 40, box!.y + 8);
+        await page.mouse.down();
+        expect(await linesOf(page, FIRST)).toEqual(open);
+        expect((await zooms(page)).open).toBe(said.sheet);
+        await page.mouse.up();
+        await holdsOpen(page);
+        expect(await linesOf(page, FIRST)).toEqual(open);
+        // A slow press, then a click in a list inside it: still open, and nothing has moved.
+        await page.mouse.down();
+        await page.waitForTimeout(600);
+        await page.mouse.up();
+        await page.getByText('Another thing to do.').first().click();
+        await page.waitForTimeout(300);
+        await holdsOpen(page);
+        expect(await linesOf(page, FIRST)).toEqual(open);
+        await page.getByRole('button', { name: 'Done editing' }).first().click();
+        await page.getByRole('textbox', { name: /^Content of / }).waitFor({ state: 'detached' });
+      }
+    });
+  });
+
+  it('CNT-075 keeps the rule to its own part, over its editor, and under the gutter', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText(FIRST).first().click();
+      await holdsOpen(page);
+      const rule = await page.evaluate((first) => {
+        const part = [...document.querySelectorAll('[data-component]')].find((each) =>
+          each.textContent?.includes(first),
+        )!;
+        const drawn = getComputedStyle(part, '::before');
+        return {
+          z: drawn.zIndex,
+          height: parseFloat(drawn.height),
+          part: part.getBoundingClientRect().height,
+          top: drawn.top,
+          pointer: drawn.pointerEvents,
+          gutter: [...document.querySelectorAll('[class*=gutter]')].map(
+            (each) => getComputedStyle(each).zIndex,
+          )[0],
+        };
+      }, FIRST);
+      expect(rule.z).toBe('1');
+      expect(rule.top).toBe('0px');
+      expect(rule.height).toBeCloseTo(rule.part, 0);
+      expect(rule.pointer).toBe('none');
+      if (rule.gutter !== undefined) expect(Number(rule.gutter)).toBeGreaterThan(1);
+    });
+  });
+});
+
 describe('clicking into a document, in Chromium', () => {
   it('moves nothing on opening, keeps the words on the page, and marks the part with one rule', async () => {
     const { document: id } = await twoParts();

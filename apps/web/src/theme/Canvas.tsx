@@ -36,7 +36,11 @@ export function fitZoom(room: number, measure: number, sheet: boolean): number {
  * Nothing until a presentation is ready, so the text is set as it was rather than in half a theme. At
  * Fit, the zoom is whatever sets the measure across the room `room` measures, and the printed size
  * where it cannot be measured. A `sheet` is the paper as a page on a desk (ADR-0056): `.aw-sheet`
- * too, its margins scaling with the zoom, and at Fit the room is its desk's, the element's parent.
+ * too, its margins scaling with the zoom, and at Fit the room is its desk's, the element's parent. It
+ * refits as its desk changes width: a height is no reason to, and a text's height changes on a press.
+ *
+ * Not a sheet, it is open in place on one. In place, the sheet's zoom: never its own (ADR-0089). It sets
+ * neither variable and watches nothing, and inherits both, so its text is set where the sheet set it.
  */
 export function useCanvas(
   room: (element: HTMLElement) => number,
@@ -59,23 +63,28 @@ export function useCanvas(
 
   useLayoutEffect(() => {
     const element = ref.current;
-    if (!fit || measure === undefined || !element) return undefined;
-    const refit = () => setFitted(fitZoom(room(element), measure, sheet));
+    if (!sheet || !fit || measure === undefined || !element) return undefined;
+    const refit = () => setFitted(fitZoom(room(element), measure, true));
     refit();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(refit);
+    let width: number | undefined;
+    const observer = new ResizeObserver((entries) => {
+      const now = entries[0]?.contentRect.width;
+      if (now === width) return;
+      width = now;
+      refit();
+    });
     // A sheet is as wide as its zoom makes it: its desk is what the window resizes.
-    observer.observe(sheet ? (element.parentElement ?? element) : element);
+    observer.observe(element.parentElement ?? element);
     return () => observer.disconnect();
   }, [fit, measure, room, ref, sheet]);
 
   if (!ready || !zooming) return { ref, className: undefined, style: undefined };
+  if (!sheet) return { ref, className: 'aw-canvas', style: undefined };
   const zoom = zooming.zoom === 'fit' ? fitted : zooming.zoom;
   return {
     ref,
-    className: sheet
-      ? `aw-canvas aw-sheet${labelsOn && zoom >= LABELS_FROM ? ' aw-labels' : ''}`
-      : 'aw-canvas',
+    className: `aw-canvas aw-sheet${labelsOn && zoom >= LABELS_FROM ? ' aw-labels' : ''}`,
     style: {
       '--aw-measure': `${ready.frame.measure}pt`,
       '--aw-zoom': String(Number(zoom.toFixed(4))),
@@ -96,12 +105,6 @@ export function innerWidth(element: HTMLElement): number {
 /** The room a text that is its own canvas has: its parent's, inside the parent's padding. */
 export const parentRoom = (element: HTMLElement): number =>
   element.parentElement ? innerWidth(element.parentElement) : 0;
-
-// The room the surface's own padding leaves, inside the canvas that holds it.
-const surfaceRoom = (canvas: HTMLElement) => {
-  const surface = canvas.firstElementChild;
-  return surface instanceof HTMLElement ? innerWidth(surface) : innerWidth(canvas);
-};
 
 /**
  * A desk scrolls sideways where it is narrower than its sheet, and a region that scrolls must take the
@@ -137,7 +140,7 @@ export const deskRoom = (element: HTMLElement): number => Math.max(0, parentRoom
  * ProseMirror is mounted in is never remounted when it does.
  */
 export function Canvas({ children, sheet = false }: { children: ReactNode; sheet?: boolean }) {
-  const { ref, className, style } = useCanvas(sheet ? deskRoom : surfaceRoom, undefined, sheet);
+  const { ref, className, style } = useCanvas(deskRoom, undefined, sheet);
   const desk = useRef<HTMLDivElement>(null);
   useReachableDesk(desk);
   useStyledImages(ref);
