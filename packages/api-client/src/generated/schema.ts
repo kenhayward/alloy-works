@@ -4551,6 +4551,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/mail-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How this environment’s mail leaves, never its password
+         * @description Returns whether this environment sends mail, by whose relay and from what address, and whether the operator offers a relay. A relay’s password is never answered, only whether one is held. Needs configure_services, with a session.
+         */
+        get: operations["getMailChannel"];
+        /**
+         * Turn this environment’s mail on or off, and choose its relay
+         * @description Turns this environment’s mail on or off and chooses its relay: the operator’s, or its own on port 465 or 587, always over verified TLS. Moving its own relay to another host, port or username drops the password, which must be set again before it can be turned on. Needs configure_services, with a session.
+         */
+        put: operations["setMailChannel"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mail-channel/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the password of this environment’s own relay, sealed to that relay
+         * @description Sets the password of this environment’s own relay. It is sealed to that host, port and username, opens for no other, and is never answered. Needs rotate_secrets, with a session.
+         */
+        put: operations["setMailPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -84387,6 +84431,539 @@ export interface operations {
             };
             /** @description No such licence in this environment */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getMailChannel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The channel, and what the operator offers */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "channel": {
+                     *         "enabled": false,
+                     *         "relay": "platform",
+                     *         "host": "example",
+                     *         "port": -9007199254740991,
+                     *         "username": "example",
+                     *         "fromAddress": "example",
+                     *         "fromName": "example",
+                     *         "hasPassword": false
+                     *       },
+                     *       "platform": {
+                     *         "offered": false
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        channel: {
+                            /** @description Whether this environment sends mail at all */
+                            enabled: boolean;
+                            /**
+                             * @description The operator’s relay, or one this environment names
+                             * @enum {string}
+                             */
+                            relay: "platform" | "own";
+                            /** @description Its own relay’s host */
+                            host: string | null;
+                            /** @description Its own relay’s port: 465 or 587 */
+                            port: number | null;
+                            /** @description Its own relay’s username, null for none */
+                            username: string | null;
+                            /** @description The address its own relay sends from */
+                            fromAddress: string | null;
+                            /** @description The name shown as the sender */
+                            fromName: string | null;
+                            /** @description Whether a password is held; it is never answered */
+                            hasPassword: boolean;
+                        };
+                        platform: {
+                            /** @description Whether the operator offers a relay here */
+                            offered: boolean;
+                            /** @description The address the operator’s relay sends from */
+                            fromAddress?: string;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setMailChannel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "enabled": false,
+                 *       "relay": "platform"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Whether this environment sends mail at all */
+                    enabled: boolean;
+                    /**
+                     * @description The operator’s relay, or one this environment names
+                     * @enum {string}
+                     */
+                    relay: "platform" | "own";
+                    /** @description Its own relay’s host */
+                    host?: string;
+                    /** @description Its own relay’s port: 465 or 587 */
+                    port?: 465 | 587;
+                    /** @description Its own relay’s, if it asks */
+                    username?: string | null;
+                    /**
+                     * Format: email
+                     * @description The address its own relay sends from
+                     */
+                    fromAddress?: string;
+                    /** @description The name shown as the sender */
+                    fromName?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The channel as it now stands */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "channel": {
+                     *         "enabled": false,
+                     *         "relay": "platform",
+                     *         "host": "example",
+                     *         "port": -9007199254740991,
+                     *         "username": "example",
+                     *         "fromAddress": "example",
+                     *         "fromName": "example",
+                     *         "hasPassword": false
+                     *       },
+                     *       "platform": {
+                     *         "offered": false
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        channel: {
+                            /** @description Whether this environment sends mail at all */
+                            enabled: boolean;
+                            /**
+                             * @description The operator’s relay, or one this environment names
+                             * @enum {string}
+                             */
+                            relay: "platform" | "own";
+                            /** @description Its own relay’s host */
+                            host: string | null;
+                            /** @description Its own relay’s port: 465 or 587 */
+                            port: number | null;
+                            /** @description Its own relay’s username, null for none */
+                            username: string | null;
+                            /** @description The address its own relay sends from */
+                            fromAddress: string | null;
+                            /** @description The name shown as the sender */
+                            fromName: string | null;
+                            /** @description Whether a password is held; it is never answered */
+                            hasPassword: boolean;
+                        };
+                        platform: {
+                            /** @description Whether the operator offers a relay here */
+                            offered: boolean;
+                            /** @description The address the operator’s relay sends from */
+                            fromAddress?: string;
+                        };
+                    };
+                };
+            };
+            /** @description A setting that is not valid */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description mail_relay_unavailable: the operator offers no relay here; or mail_no_password: its own relay needs a password set for this host, port and username */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setMailPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "password": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The relay’s password, write-only */
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Kept sealed; the channel as it now stands */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "channel": {
+                     *         "enabled": false,
+                     *         "relay": "platform",
+                     *         "host": "example",
+                     *         "port": -9007199254740991,
+                     *         "username": "example",
+                     *         "fromAddress": "example",
+                     *         "fromName": "example",
+                     *         "hasPassword": false
+                     *       },
+                     *       "platform": {
+                     *         "offered": false
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        channel: {
+                            /** @description Whether this environment sends mail at all */
+                            enabled: boolean;
+                            /**
+                             * @description The operator’s relay, or one this environment names
+                             * @enum {string}
+                             */
+                            relay: "platform" | "own";
+                            /** @description Its own relay’s host */
+                            host: string | null;
+                            /** @description Its own relay’s port: 465 or 587 */
+                            port: number | null;
+                            /** @description Its own relay’s username, null for none */
+                            username: string | null;
+                            /** @description The address its own relay sends from */
+                            fromAddress: string | null;
+                            /** @description The name shown as the sender */
+                            fromName: string | null;
+                            /** @description Whether a password is held; it is never answered */
+                            hasPassword: boolean;
+                        };
+                        platform: {
+                            /** @description Whether the operator offers a relay here */
+                            offered: boolean;
+                            /** @description The address the operator’s relay sends from */
+                            fromAddress?: string;
+                        };
+                    };
+                };
+            };
+            /** @description A password that is not valid */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description mail_no_password_needed: there is no relay of its own with a username to hold a password for */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description connector_unavailable: it cannot be sealed now */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

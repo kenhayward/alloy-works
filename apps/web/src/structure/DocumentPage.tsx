@@ -35,7 +35,7 @@ import {
 } from '@alloy-works/domain';
 import { TEXT_CLASS } from '@alloy-works/editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 
 import { ArchiveButton } from '../lifecycle/Archive.js';
 import { readStanding, standingIn, RevisionChip, type Standing } from '../lifecycle/Workflow.js';
@@ -66,6 +66,7 @@ import {
   type ActiveEditorHandle,
 } from '../editor/ActiveEditor.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
+import { ToolbarRow, useToolbarHost } from '../editor/ToolbarRow.js';
 import { NameTip } from '../parts/NameTip.js';
 import { OPEN_SEARCH } from '../shell/CommandPalette.js';
 import type { CommandState } from '../shell/commands/menus.js';
@@ -900,8 +901,8 @@ export function DocumentPage({
       { readonly pinned: VersionNamed; readonly newer: VersionNamed; readonly said?: string }
     >
   >(new Map());
-  // The band a component open in place keeps its toolbar in (ADR-0056).
-  const [band, setBand] = useState<HTMLElement | null>(null);
+  // Where a component open in place keeps its toolbar: the row under the menus (ADR-0092).
+  const band = useToolbarHost();
   // What the menus open and read (ADR-0075).
   const datesAct = useRef<() => void>(null);
   const scopeAct = useRef<() => void>(null);
@@ -2583,8 +2584,14 @@ export function DocumentPage({
             onComment: comment,
           }}
         >
-          <InPlaceBand.Provider value={band}>
+          <InPlaceBand.Provider value={authoring && principalId !== undefined ? band : null}>
             <ShellPage labelledBy="document-title document-mode">
+              {authoring && principalId !== undefined && (
+                <>
+                  <ToolbarRow host={band} />
+                  {editing === null && createPortal(<IdleBand onComment={comment} />, band)}
+                </>
+              )}
               <span id="document-mode" hidden>
                 {say('document.in', { name: MODES.find(({ mode }) => mode === modeNow)!.name })}
               </span>
@@ -2818,7 +2825,7 @@ export function DocumentPage({
                   (heldTable.holds && shownDock === 'table' ? tablePane : dockPane).width
                 }
               >
-                {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
+                {/* The side dock (ADR-0075): the outline pane's toggles. */}
                 <ShellSideDock>
                   <div role="group" aria-label={say('document.outline-pane')}>
                     {tabs.map((each) => (
@@ -2836,14 +2843,6 @@ export function DocumentPage({
                       </NameTip>
                     ))}
                   </div>
-                  {authoring && principalId !== undefined && (
-                    <>
-                      <span className={shellClass.dockRule} />
-                      <div ref={setBand} data-inplace-band="">
-                        {editing === null && <IdleBand onComment={comment} />}
-                      </div>
-                    </>
-                  )}
                 </ShellSideDock>
                 <OutlinePanel
                   outline={document.outline}

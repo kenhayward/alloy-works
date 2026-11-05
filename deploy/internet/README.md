@@ -2,7 +2,7 @@
 
 `compose.internet.yaml`, over `compose.yaml`: one environment on one Linux machine, behind a reverse proxy
 you run, signing people in through its own Keycloak and following published releases.
-[ADR-0092](../../docs/decisions/0092-an-installation-sits-behind-a-proxy-it-does-not-run.md) has the reasoning.
+[ADR-0093](../../docs/decisions/0093-an-installation-sits-behind-a-proxy-it-does-not-run.md) has the reasoning.
 
 ```
 internet → your proxy (TLS, a public certificate) → this machine :443 → Caddy → service | Keycloak | store

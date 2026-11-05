@@ -105,6 +105,7 @@ import {
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
 import { HeadingTitle } from './HeadingTitle.js';
+import { IdleBand } from './IdleBand.js';
 import { InPlaceBand } from './InPlaceBand.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
@@ -2340,7 +2341,23 @@ export function ComponentEditor({
     }
     typedEarly.current = '';
   });
-  if (loaded.state === 'loading') return whileOpening ?? <Waiting>{say('editor.opening')}</Waiting>;
+  if (loaded.state === 'loading') {
+    return (
+      <>
+        {/* The same tools, none yet to be pressed, while the text is read: none blinks as it opens. */}
+        {bandHost !== null &&
+          createPortal(
+            <IdleBand
+              {...(inPlaceSettings?.onComment === undefined
+                ? {}
+                : { onComment: inPlaceSettings.onComment })}
+            />,
+            bandHost,
+          )}
+        {whileOpening ?? <Waiting>{say('editor.opening')}</Waiting>}
+      </>
+    );
+  }
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
     <button type="button" onClick={() => onDone()}>
@@ -3340,7 +3357,7 @@ export function ComponentEditor({
       <EditorToolbar
         {...(inBand
           ? {
-              layout: 'dock' as const,
+              layout: 'band' as const,
               styleEntries,
               ...(inPlaceSettings?.onComment === undefined
                 ? {}
@@ -3492,8 +3509,8 @@ export function ComponentEditor({
         inert={behindDialog}
         onKeyDown={moveRegion}
       >
-        {/* Open in place on a document's sheet, the strip, the toolbar and its second line stand in
-            the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
+        {/* The toolbar stands in the row the page keeps under the menus (ADR-0092); here otherwise.
+            Its keys still reach this element, by React's tree. */}
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
         {/* What the strip held besides its chips, out of sight as it was: the heading naming the article,

@@ -28,6 +28,7 @@ import {
   type SealAnswer,
   type TestAnswer,
   type TestRequest,
+  type MailSealRequest,
   type WebhookSealRequest,
   manifestAnswerSchema,
   type ManifestAnswer,
@@ -86,6 +87,8 @@ export interface ConnectorClient {
   sealModel(request: ModelSealRequest): Promise<Answered<SealAnswer>>;
   /** Seals a webhook's signing secret to its subscription and URL (the WB plan, WB-G). */
   sealWebhook(request: WebhookSealRequest): Promise<Answered<SealAnswer>>;
+  /** Seals a mail relay's password to it (the EM plan, EM-I). */
+  sealMail(request: MailSealRequest): Promise<Answered<SealAnswer>>;
   /** Fetches an extension's manifest by its URL (the EX plan, EX-B). */
   manifest(request: ManifestRequest): Promise<Answered<ManifestAnswer>>;
   /** Fetches a vocabulary's SKOS address by its URL (the VO plan, VO-J). */
@@ -204,6 +207,7 @@ export function createConnectorClient(options: {
       ask('/v1/revision', request, revisionAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
+    sealMail: (request) => ask('/v1/mail/seal', request, sealAnswerSchema, SEAL_MS),
     manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),
     vocabularySource: (request) =>
       ask('/v1/vocabulary-source', request, vocabularySourceAnswerSchema, VOCABULARY_SOURCE_MS),

@@ -78,8 +78,10 @@ exist.
 | [0088](0088-moving-on-counts-as-done-editing.md)                                  | Moving on counts as Done editing                                                | Accepted           |
 | [0089](0089-in-place-the-editor-takes-the-sheets-zoom.md)                         | In place, the editor takes the sheet's zoom, and computes none of its own       | Accepted           |
 | [0090](0090-a-parts-version-is-a-row-and-overrides-an-icon.md)                    | A part's version is a row, its overrides an icon, and panel headers tip at once | Accepted           |
+| [0092](0092-mail-leaves-by-smtp-through-the-connector.md)                         | Mail leaves by SMTP through the connector                                       | Accepted           |
 | [0091](0091-nobody-gives-an-administrative-permission-they-do-not-hold.md)        | Nobody gives an administrative permission they do not hold                      | Accepted           |
-| [0092](0092-an-installation-sits-behind-a-proxy-it-does-not-run.md)               | An installation sits behind a proxy it does not run                             | Accepted           |
+| [0092](0092-the-toolbar-stands-under-the-menus.md)                                | The formatting toolbar stands under the menus                                   | Accepted           |
+| [0093](0093-an-installation-sits-behind-a-proxy-it-does-not-run.md)               | An installation sits behind a proxy it does not run                             | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
 | [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                       | Accepted           |
 | [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can           | Accepted           |

@@ -152,7 +152,6 @@ export function useDockRoom(): (area: HTMLDivElement | null) => void {
 /** A side dock's own: a toggle, a rule, and a preview's place beside the text. */
 export const shellClass = {
   dockToggle: styles['dockToggle'],
-  dockRule: styles['dockRule'],
   preview: styles['preview'],
   dockHeading: styles['dockHeading'],
   dockBody: styles['dockBody'],

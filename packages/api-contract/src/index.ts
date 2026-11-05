@@ -881,3 +881,11 @@ export {
   organisationRoutes,
   SuspensionBody,
 } from './organisation.js';
+
+export {
+  MailChannelRead,
+  MailChannelView,
+  mailChannelRoutes,
+  SetMailChannelBody,
+  SetMailPasswordBody,
+} from './mail.js';

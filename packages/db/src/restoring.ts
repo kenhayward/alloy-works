@@ -223,6 +223,7 @@ export async function tenantIsEmpty(
         select from role where name <> all(${[...starterRoles.map((each) => each.name), 'Connection user', 'Shared reader']}::text[]))
       union all select 'a token' where exists (select from api_token)
       union all select 'a webhook' where exists (select from webhook_subscription)
+      union all select 'a mail channel' where exists (select from mail_channel)
       union all select 'an extension' where exists (select from extension)
       union all select 'an act by someone else' where exists (
         select from audit_event
@@ -488,6 +489,8 @@ export async function applyWholeRestore(
       if (others.some((each) => each.name === row['name'])) {
         row['name'] = `${String(row['name'])} (restored)`;
       }
+    } else if (table === 'mail_channel') {
+      row['enabled'] = false;
     } else if (table === 'webhook_subscription') {
       row['disabled_at'] = new Date().toISOString();
       row['disabled_reason'] = 'restored';

@@ -2046,6 +2046,17 @@ describe('routes that check a permission', () => {
       payload: { description: 'Mine' },
     }),
     rotateWebhookSecret: () => ({ url: `/v1/webhooks/${MISSING}/secret`, status: 403 }),
+    getMailChannel: () => ({ url: '/v1/mail-channel', status: 403 }),
+    setMailChannel: () => ({
+      url: '/v1/mail-channel',
+      status: 403,
+      payload: { enabled: false, relay: 'platform' },
+    }),
+    setMailPassword: () => ({
+      url: '/v1/mail-channel/password',
+      status: 403,
+      payload: { password: 'not-a-real-password' },
+    }),
     removeWebhook: () => ({ url: `/v1/webhooks/${MISSING}`, status: 403 }),
     listWebhookDeliveries: () => ({ url: `/v1/webhooks/${MISSING}/deliveries`, status: 403 }),
     getWebhookDelivery: () => ({

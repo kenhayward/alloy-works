@@ -310,14 +310,6 @@
   color: var(--accent-text);
 }
 
-.dockRule {
-  flex: none;
-  width: 24px;
-  height: 1px;
-  margin-block: 4px;
-  background: var(--divider-strong);
-}
-
 /* The panel, 1px of rule from the dock: the same surface. */
 .layout > [data-panel] > [data-part='outline'] {
   height: calc(100vh - var(--header-height) - var(--status-height, 0px) - 2 * var(--space-12));

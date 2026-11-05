@@ -11,6 +11,37 @@
   display: none;
 }
 
+/* The first line stands as tall with a row under it as without, so nothing on it moves. */
+.lead:not(:empty) {
+  min-height: calc(var(--header-size) - 1px);
+}
+
+/*
+ * A page's toolbar under the menus, across the band, its first icon level with their first word. Its
+ * height is kept as the toolbar comes, so a page's text does not move as it loads. It wraps where the
+ * window is narrow, and the band tells the page how tall it now stands.
+ */
+.toolbarRow {
+  flex-basis: 100%;
+  /* Its tools' 36px and its 1px rule. */
+  min-height: 37px;
+  margin-block-start: calc(-1 * var(--space-4));
+  margin-inline: calc(-1 * var(--space-16));
+  padding-inline: 10px;
+  border-block-start: 1px solid var(--border);
+}
+
+.toolbarRow:empty {
+  display: none;
+}
+
+/* Too short a window to keep it stuck, as the panes beside the text are not (issue #336). */
+@media (max-height: 480px) {
+  .band:has(.toolbarRow:not(:empty)) {
+    position: static;
+  }
+}
+
 .lead:not(:empty) ~ .spacer {
   display: none;
 }

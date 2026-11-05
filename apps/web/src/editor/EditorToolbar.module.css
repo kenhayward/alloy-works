@@ -81,21 +81,23 @@
   background: var(--border);
 }
 
-/* The side dock's tools (ADR-0075): 34px buttons on a 36px pitch, dividers 9px. */
-.dockTools {
+/* The row under the menus (ADR-0092): 28px buttons, wrapping where the window is narrow. */
+.bandTools {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
+  padding-block: var(--space-4);
 }
 
-.dockButton {
+.bandButton {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: var(--radius-8);
@@ -103,21 +105,21 @@
   color: var(--text);
 }
 
-.dockButton:hover:not([aria-disabled='true']) {
+.bandButton:hover:not([aria-disabled='true']) {
   background: var(--hover);
 }
 
-.dockButton[aria-pressed='true'] {
+.bandButton[aria-pressed='true'] {
   background: var(--accent-weak);
   color: var(--accent-text);
 }
 
-.dockButton[aria-disabled='true'] {
+.bandButton[aria-disabled='true'] {
   color: var(--muted);
 }
 
 /* A flyout's mark, in the button's corner. */
-.dockButton[data-corner]::after {
+.bandButton[data-corner]::after {
   content: '';
   position: absolute;
   inset-block-end: 4px;
@@ -128,14 +130,15 @@
   border-inline-start: 4px solid transparent;
 }
 
-.dockLetters {
+.bandLetters {
   font-size: var(--size-14);
   font-weight: 500;
 }
 
-.dockDivider {
-  width: 24px;
-  height: 1px;
-  margin-block: 4px;
+.bandDivider {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin-inline: var(--space-4);
   background: var(--border);
 }

@@ -18,7 +18,8 @@ export type SealPurpose =
   | 'source-credential'
   | 'model-credential'
   | 'webhook-signing'
-  | 'reference-credential';
+  | 'reference-credential'
+  | 'mail-credential';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;

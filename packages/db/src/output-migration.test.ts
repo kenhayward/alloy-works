@@ -354,6 +354,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0201_closing',
       '0202_organisation',
       '0203_creating_tenants',
+      '0204_mail_channel',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

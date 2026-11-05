@@ -194,14 +194,14 @@ inviting and disabling as the path without SCIM.
 
 Six permissions join the closed set; every route below loses `administer` for its own:
 
-| Permission           | Routes                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------- |
-| `export_environment` | `/v1/exports`                                                                                 |
-| `export_audit`       | `requestAuditExport`, `getAuditExport`, `downloadAuditExport`                                 |
-| `hold`               | `/v1/holds` apply and release                                                                 |
-| `rotate_secrets`     | a connection's credential, a model endpoint's key, a webhook's secret, a provider's secret    |
-| `configure_services` | connections, model endpoints and routes, reference sources, CT Studio and the bridge, Sign-in |
-| `configure_webhooks` | `/v1/webhooks` but its secret, which is `rotate_secrets`                                      |
+| Permission           | Routes                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `export_environment` | `/v1/exports`                                                                                                       |
+| `export_audit`       | `requestAuditExport`, `getAuditExport`, `downloadAuditExport`                                                       |
+| `hold`               | `/v1/holds` apply and release                                                                                       |
+| `rotate_secrets`     | a connection's credential, a model endpoint's key, a webhook's secret, a provider's secret, a mail relay's password |
+| `configure_services` | connections, model endpoints and routes, reference sources, CT Studio and the bridge, Sign-in, the mail channel     |
+| `configure_webhooks` | `/v1/webhooks` but its secret, which is `rotate_secrets`                                                            |
 
 The Administrator starter role, every role holding `administer`, and every token scoped `administer`
 gain all six by migration, so nobody and no automation loses an act on upgrade; a tenant then makes a
