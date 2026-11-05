@@ -1,0 +1,53 @@
+# The stack's one door (compose.internet.yaml), behind the reverse proxy at PROXY_ADDRESS, on TLS of its
+# own. The proxy may not send a server name, so the certificate is whichever name is first here. What the
+# service, Keycloak and the store are told is decided here, not taken from the caller.
+{
+	admin off
+	auto_https disable_redirects
+	skip_install_trust
+	default_sni {$ALLOY_APP_HOST}
+	servers {
+		trusted_proxies static {$PROXY_ADDRESS}
+		trusted_proxies_strict
+		client_ip_headers X-Forwarded-For
+	}
+}
+
+(upstream) {
+	reverse_proxy {args[0]} {
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Forwarded-Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port 443
+	}
+}
+
+https://{$ALLOY_APP_HOST} {
+	tls internal
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	import upstream service:{$SERVICE_PORT}
+}
+
+# Keycloak's administration stays off the internet: its console is reached through ssh.
+https://{$ALLOY_IDP_HOST} {
+	tls internal
+	header -Server
+	@administration path /admin /admin/* /realms/master /realms/master/*
+	respond @administration 404
+	import upstream keycloak:9090
+}
+
+# Objects in the bucket, by signed link or a tenant's own credential. No listing of buckets, no IAM.
+https://{$ALLOY_STORE_HOST} {
+	tls internal
+	header -Server
+	@elsewhere not path /{$OBJECT_STORE_BUCKET}/*
+	respond @elsewhere 404
+	import upstream seaweedfs:{$STORE_PORT}
+}
