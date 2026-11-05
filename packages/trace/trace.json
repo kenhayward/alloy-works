@@ -28712,6 +28712,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-075",
+      "file": "apps/web/src/theme/Canvas.fit.test.tsx",
+      "line": 84,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-115",
+      "file": "apps/web/src/theme/Canvas.fit.test.tsx",
+      "line": 96,
+      "kind": "title"
+    },
+    {
       "id": "STY-033",
       "file": "apps/web/src/theme/StyleChoice.test.ts",
       "line": 16,
@@ -36880,13 +36892,19 @@
     {
       "id": "CNT-074",
       "file": "tests/browser/src/edit-in-place.test.ts",
-      "line": 301,
+      "line": 424,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-075",
+      "file": "tests/browser/src/edit-in-place.test.ts",
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "tests/browser/src/edit-in-place.test.ts",
-      "line": 378,
+      "line": 501,
       "kind": "title"
     },
     {

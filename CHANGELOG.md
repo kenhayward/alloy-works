@@ -15,6 +15,11 @@ The whole life of a tenant: an organisation makes one, can suspend it, closes it
 - **An organisation's own tenant.** An organisation can administer from a tenant of its own, holding no content: it sees its tenants' names, addresses and states, can suspend one and lift that, and can give up a closure someone began. Each act is in both logs, and the tenant's own says only that the organisation did it. An administrator can also suspend their own environment in an incident, where an organisation can lift it.
 - **Making a tenant and sharing a provider.** An organisation can make a tenant from its console, naming its address and who is invited to administer it, and can share an identity provider with its tenants: each gets a copy kept current, which it can close and not edit.
 
+### Fixed
+
+- A component open in place no longer shifts its text when you press in it: its text is set at the sheet's own zoom, exactly where the read text stood.
+- The rule beside an open component now runs its whole height, with no gap beside its text and no stubs over its neighbours.
+
 ## 0.236.0 - 2026-11-04 (PR #981)
 
 Editing a part of a document now feels like a word processor: clicking moves nothing, one line marks the part, one toolbar holds what applies, the panel follows, titles can be typed where they stand, and what you typed stays on the page when you move on.
