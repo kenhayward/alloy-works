@@ -73,7 +73,8 @@ export function LanguageDialog({
                   {...(each.tag === current ? { 'aria-current': 'true' as const } : {})}
                   onClick={() => onChoose(each.tag)}
                 >
-                  <span>{each.name}</span>
+                  {/* The locale data's name, not the catalogue's words; "Not set" alone is ours. */}
+                  <span {...(each.tag === 'und' ? {} : { 'data-content': '' })}>{each.name}</span>
                   <span className={styles['tag']} data-content>
                     {each.tag}
                   </span>
