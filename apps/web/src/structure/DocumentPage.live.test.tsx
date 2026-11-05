@@ -1,5 +1,5 @@
 import type { FollowOptions } from '@alloy-works/api-client';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
@@ -21,6 +21,8 @@ shimRangeMeasurement();
 const ADA = 'ffffffff-0000-4000-8000-000000000001';
 const GRACE = 'ffffffff-0000-4000-8000-000000000002';
 const NODE = 'rrrrrrrrrrrrrrrrrrrrrrrrrr';
+/** A lock's end, in an hour: a lock already past it is not drawn. */
+const AN_HOUR_ON = () => new Date(Date.now() + 3_600_000).toISOString();
 
 /** The document's stream, which the test speaks for. */
 function fakeStream() {
@@ -76,25 +78,100 @@ describe('the contents, as others change the document', () => {
         {
           component: PRINTER,
           holder: { id: GRACE, name: 'Grace' },
-          expectedRelease: '2026-10-11T12:15:00.000Z',
+          expectedRelease: AN_HOUR_ON(),
           taking: null,
         },
       ],
       presence: [],
     });
-    await waitFor(() => expect(row).toHaveAccessibleDescription(/Held by Grace/));
+    await waitFor(() => expect(row).toHaveAccessibleDescription(/Grace is editing this component/));
     stream.say('lock', {
       component: PRINTER,
       holder: null,
       expectedRelease: null,
       taking: null,
     });
-    await waitFor(() => expect(row).not.toHaveAccessibleDescription(/Held by/));
+    await waitFor(() => expect(row).not.toHaveAccessibleDescription(/editing/));
   });
 
-  it('STR-038 says each mark in words: who holds it, how many references are broken and values failed', () => {
-    expect(marksWords({ heldBy: 'Grace', brokenReferences: 1, failedValues: 2 })).toEqual([
-      'Held by Grace',
+  it('draws somebody else’s lock in the contents just before the text, and says whose at once on hover', async () => {
+    const fake = service(outline([{ ...reference(NODE, 'latest') }]));
+    const stream = fakeStream();
+    openLive(fake.fetch, stream.follow);
+    const row = await screen.findByRole('treeitem', { name: /./ });
+    stream.say('snapshot', {
+      locks: [
+        {
+          component: PRINTER,
+          holder: { id: GRACE, name: 'Grace' },
+          expectedRelease: AN_HOUR_ON(),
+          taking: null,
+        },
+      ],
+      presence: [],
+    });
+    const icon = await waitFor(() => {
+      const found = row.querySelector('[data-lock] svg');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(icon.getAttribute('data-icon')).toBe('Lock held');
+    const mark = icon.closest<HTMLElement>('[data-lock]')!;
+    expect(mark.dataset.lock).toBe('theirs');
+    const label = row.querySelector(`[id="${row.getAttribute('aria-labelledby')}"]`)!;
+    expect(mark.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.mouseEnter(icon);
+    expect(mark.querySelector('[data-name-tip]')).toHaveTextContent(
+      /^Grace is editing this component/,
+    );
+  });
+
+  it('draws your own lock in the contents in its own shape', async () => {
+    const fake = service(outline([{ ...reference(NODE, 'latest') }]));
+    const stream = fakeStream();
+    openLive(fake.fetch, stream.follow);
+    const row = await screen.findByRole('treeitem', { name: /./ });
+    stream.say('snapshot', {
+      locks: [
+        {
+          component: PRINTER,
+          holder: { id: ADA, name: 'Ada' },
+          expectedRelease: AN_HOUR_ON(),
+          taking: null,
+        },
+      ],
+      presence: [],
+    });
+    await waitFor(() =>
+      expect(row.querySelector('[data-lock="yours"] svg')?.getAttribute('data-icon')).toBe(
+        'Lock yours',
+      ),
+    );
+    expect(row).toHaveAccessibleDescription(/You are editing this component/);
+  });
+
+  it('draws no lock in the contents once it has lapsed', async () => {
+    const fake = service(outline([{ ...reference(NODE, 'latest') }]));
+    const stream = fakeStream();
+    openLive(fake.fetch, stream.follow);
+    const row = await screen.findByRole('treeitem', { name: /./ });
+    stream.say('snapshot', {
+      locks: [
+        {
+          component: PRINTER,
+          holder: { id: GRACE, name: 'Grace' },
+          expectedRelease: new Date(Date.now() - 60_000).toISOString(),
+          taking: null,
+        },
+      ],
+      presence: [],
+    });
+    expect(row.querySelector('[data-lock]')).toBeNull();
+    expect(row).not.toHaveAccessibleDescription(/editing/);
+  });
+
+  it('STR-038 says each mark in words: how many references are broken and values failed', () => {
+    expect(marksWords({ brokenReferences: 1, failedValues: 2 })).toEqual([
       '1 broken reference',
       '2 failed values',
     ]);
