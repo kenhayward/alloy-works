@@ -90563,7 +90563,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names */
+            /** @description The caller may not administer this environment; or token_not_allowed: a token never erases; or grant_beyond_held: they hold an administrative permission the caller does not, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
