@@ -1505,10 +1505,11 @@ describe('the address of every node', () => {
     const text = await screen.findByRole('region', { name: "The document's text" });
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
     const reads = textsAsked;
-    // The band a component open in place keeps its tools in, on the side dock (ADR-0075): there in
-    // Authoring before one opens, so the sheet does not move when it does.
+    // The band a component open in place keeps its tools in, under the menus and not on the side dock:
+    // there in Authoring before one opens, so the sheet does not move when it does.
     const band = document.querySelector<HTMLElement>('[data-inplace-band]')!;
     expect(band).not.toBeNull();
+    expect(band.closest('[data-side-dock]')).toBeNull();
     expect(band.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // The toolbar is there, disabled, before one opens, so nothing in the band changes as one does.
     const idle = within(band).getByRole('toolbar', { name: 'Formatting' });

@@ -226,6 +226,7 @@ export function Header({
   const leadHost = useHeaderHost('lead');
   const lifecycleHost = useHeaderHost('lifecycle');
   const toolsHost = useHeaderHost('tools');
+  const toolbarHost = useHeaderHost('toolbar');
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
   // The ways in the environment offers, and the page to come back to once signed in: a shared
   // publication's, so the person it was shared with lands on it (the R17 plan, R17-A).
@@ -470,6 +471,8 @@ export function Header({
           }}
         />
       )}
+      {/* The row under the menus, where a page draws one. */}
+      <div ref={toolbarHost} className={styles['toolbarRow']} />
     </header>
   );
 }

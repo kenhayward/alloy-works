@@ -26249,19 +26249,19 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 99,
+      "line": 131,
       "kind": "title"
     },
     {
       "id": "CNT-191",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 201,
+      "line": 233,
       "kind": "title"
     },
     {
       "id": "LOC-044",
       "file": "apps/web/src/editor/ComponentEditor.band.test.tsx",
-      "line": 48,
+      "line": 80,
       "kind": "title"
     },
     {
@@ -26687,13 +26687,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 222,
+      "line": 273,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 668,
+      "line": 719,
       "kind": "title"
     },
     {
@@ -28079,13 +28079,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1561,
+      "line": 1562,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1718,
+      "line": 1719,
       "kind": "title"
     },
     {
@@ -28097,7 +28097,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2658,
+      "line": 2659,
       "kind": "title"
     },
     {
@@ -28127,13 +28127,13 @@
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2424,
+      "line": 2425,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2121,
+      "line": 2122,
       "kind": "title"
     },
     {
@@ -28157,13 +28157,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2326,
+      "line": 2327,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2161,
+      "line": 2162,
       "kind": "title"
     },
     {
@@ -28187,7 +28187,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1852,
+      "line": 1853,
       "kind": "title"
     },
     {

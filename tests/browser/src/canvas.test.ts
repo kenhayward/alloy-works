@@ -307,10 +307,10 @@ describe('the canvas as a person uses it', () => {
           const toolbar = document.querySelector(
             '[data-inplace-band] [role="toolbar"][aria-label="Formatting"]',
           )!;
-          const lefts = new Set(
+          const tops = new Set(
             [...toolbar.querySelectorAll('button')]
               .filter((each) => each.getBoundingClientRect().width > 0)
-              .map((each) => Math.round(each.getBoundingClientRect().left)),
+              .map((each) => Math.round(each.getBoundingClientRect().top)),
           );
           const box = element.getBoundingClientRect();
           const first = [...element.querySelectorAll('p')].find((each) =>
@@ -324,7 +324,7 @@ describe('the canvas as a person uses it', () => {
             inCard: element.querySelector('[role="toolbar"][aria-label="Formatting"]') !== null,
             text: first.getBoundingClientRect().left,
             viewport: window.innerWidth,
-            columns: lefts.size,
+            rows: tops.size,
           };
         });
         const said = JSON.stringify({ ...shown, read });
@@ -343,9 +343,9 @@ describe('the canvas as a person uses it', () => {
         // toolbar stands in is there before the component opens.
         expect(Math.abs(shown.sheetTop - read.sheetTop), said).toBeLessThan(1);
         expect(Math.abs(shown.textTop - read.textTop), said).toBeLessThan(1);
-        // The Formatting toolbar in the side dock, not on the sheet, and a column there at any zoom.
+        // The Formatting toolbar under the menus, not on the sheet, and one row there at any zoom.
         expect(shown.inCard, said).toBe(false);
-        expect(shown.columns, said).toBe(1);
+        expect(shown.rows, said).toBe(1);
       });
     });
   }
