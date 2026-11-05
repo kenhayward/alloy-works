@@ -15,8 +15,19 @@ import {
  * organisation has a tenant of its own (TLd). It changes a tenant's state and reads no content, and each
  * act is an event in that tenant's log, naming the vendor (IAM-087).
  */
+export interface StewardDeps {
+  readonly db: TenantDatabase;
+  readonly steward: StewardDatabase;
+  readonly maker: TenantMaker;
+  readonly out: (line: string) => void;
+  /** A client secret, from standard input and nowhere else; empty from a terminal. */
+  readonly readSecret: () => Promise<string>;
+  /** The sealing key, which only a first way in needs. */
+  readonly key: () => Buffer;
+}
+
 const USAGE =
-  'steward organisation --id <id> --name <name> --tenant <new id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> [--google] | steward retry --tenant <id> [--first-administrator <address>] | steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id> | steward report --tenant <id>';
+  'steward organisation --id <id> --name <name> --tenant <new id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> [--google] | steward provider --tenant <id> --issuer <url> --client-id <id> [--name <shown>] [--first-administrator <address>], its client secret piped in | steward retry --tenant <id> [--first-administrator <address>] | steward suspend --tenant <id> --reason <why> | steward resume --tenant <id> | steward close --tenant <id> --notice <reference> | steward cancel --tenant <id> | steward report --tenant <id>';
 const DONE: Readonly<Record<string, string>> = {
   suspend: 'suspended',
   resume: 'resumed',
@@ -30,9 +41,83 @@ const option = (argv: readonly string[], name: string): string | undefined => {
   return at < 0 ? undefined : argv[at + 1];
 };
 
+/** What each refusal of a first way in says, for an operator rather than for somebody reading the code. */
+const FIRST_PROVIDER: Readonly<Record<string, string>> = {
+  no_tenant: 'There is no such tenant.',
+  not_organisation: "Only an organisation's own tenant is given its first way in here.",
+  being_made: 'That tenant is still being made, or could not be: see `steward retry`.',
+  not_active: 'That tenant is not active.',
+  in_use: 'Somebody has signed in there and holds access, so its sign-in is theirs to change.',
+  no_invitation:
+    'Nobody is invited there, so nobody could use it: give --first-administrator as well.',
+  several_providers: 'That tenant has several providers already, which this does not choose among.',
+  'first_administrator.signed_in':
+    'That address has signed in already, and an invitation cannot reach them: use another.',
+  'first_administrator.administrator_exists': 'That tenant has an administrator already.',
+  'first_administrator.external': 'That address is somebody from outside the organisation.',
+};
+
+const HTTP_URL = (value: string): boolean => {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+};
+
+const giveFirstProvider = async (
+  argv: readonly string[],
+  id: string | undefined,
+  deps: StewardDeps,
+): Promise<number> => {
+  const issuer = option(argv, 'issuer');
+  const clientId = option(argv, 'client-id')?.trim();
+  const name = option(argv, 'name');
+  const address = option(argv, 'first-administrator');
+  if (
+    !id ||
+    !issuer ||
+    issuer.length > 2000 ||
+    !HTTP_URL(issuer) ||
+    !clientId ||
+    clientId.length > 500 ||
+    (name !== undefined && (name === '' || name !== name.trim() || name.length > 80)) ||
+    (address !== undefined && !address.includes('@'))
+  ) {
+    deps.out(USAGE);
+    return 2;
+  }
+  const key = deps.key();
+  // Only line endings: a secret's own characters are its own.
+  const clientSecret = (await deps.readSecret()).replace(/[\r\n]+$/, '');
+  if (clientSecret === '') {
+    deps.out('No client secret came on standard input: pipe it in.');
+    return 1;
+  }
+  let refused: string | undefined;
+  try {
+    refused = await deps.maker.firstProvider(
+      id,
+      { issuer, clientId, clientSecret, ...(name === undefined ? {} : { name }) },
+      key,
+      address,
+    );
+  } catch (error) {
+    // Its code alone: a driver's detail can quote the row, and the row holds what was sealed.
+    deps.out(`It could not be done: ${(error as { code?: string }).code ?? 'unexpected'}.`);
+    return 1;
+  }
+  if (refused !== undefined) {
+    deps.out(FIRST_PROVIDER[refused] ?? `Refused: ${refused}.`);
+    return 1;
+  }
+  deps.out(`${id}: its first way in is ${issuer}. Add its address to that provider's callbacks.`);
+  return 0;
+};
+
 const askForOrganisation = async (
   argv: readonly string[],
-  deps: { readonly maker: TenantMaker; readonly out: (line: string) => void },
+  deps: Pick<StewardDeps, 'maker' | 'out'>,
 ): Promise<number> => {
   const [organisationId, name, tenantId, hostname, suffix, address] = [
     'id',
@@ -69,25 +154,21 @@ const askForOrganisation = async (
   deps.out(
     `${tenantId}: asked for. The steward's process makes it, and invites its first administrator.`,
   );
+  if (!argv.includes('--google')) {
+    deps.out(`Nobody can sign in there until you run: steward provider --tenant ${tenantId} ...`);
+  }
   return 0;
 };
 
 /** 0 done, 1 refused, 2 not understood. */
-export async function runSteward(
-  argv: readonly string[],
-  deps: {
-    readonly db: TenantDatabase;
-    readonly steward: StewardDatabase;
-    readonly maker: TenantMaker;
-    readonly out: (line: string) => void;
-  },
-): Promise<number> {
+export async function runSteward(argv: readonly string[], deps: StewardDeps): Promise<number> {
   const [command] = argv;
   const id = option(argv, 'tenant');
   const reason = option(argv, 'reason');
   const notice = option(argv, 'notice');
   // An organisation's own tenant, before it has anybody to ask (TL-P): the steward's process makes it.
   if (command === 'organisation') return askForOrganisation(argv, deps);
+  if (command === 'provider') return giveFirstProvider(argv, id, deps);
   // One that could not be made, after what stopped it is put right; its address went when it failed.
   if (command === 'retry' && id !== undefined) {
     if (await deps.maker.retry(id, option(argv, 'first-administrator'))) {

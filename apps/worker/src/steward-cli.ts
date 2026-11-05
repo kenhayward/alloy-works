@@ -1,4 +1,5 @@
 import { createStewardDatabase, createTenantDatabase, createTenantMaker } from '@alloy-works/db';
+import { sealingKey } from '@alloy-works/objects';
 import { runSteward } from './steward-commands.js';
 
 /** The steward's command line: holds `STEWARD_DATABASE_URL`, which nothing else in the image reads. */
@@ -13,6 +14,18 @@ try {
     steward,
     maker,
     out: (line) => process.stdout.write(`${line}\n`),
+    readSecret: async () => {
+      // Typed at a terminal it would show, and stay on the screen.
+      if (process.stdin.isTTY) return '';
+      const chunks: Buffer[] = [];
+      for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Uint8Array));
+      return Buffer.concat(chunks).toString('utf8');
+    },
+    key: () => {
+      const held = process.env['SECRET_OBJECT_STORE_KEY'];
+      if (!held) throw new Error('SECRET_OBJECT_STORE_KEY is not set');
+      return sealingKey(held);
+    },
   });
 } finally {
   await maker.close();

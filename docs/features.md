@@ -223,7 +223,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   invited to administer it; the address is forgotten once the invitation exists, and it arrives a little later with its
   own store. A holder of `share_provider` shares a sign-in provider from **Sign-in**: each tenant has a copy, kept
   current, which it can close and not edit, and once it is no longer shared each tenant keeps it as its own. The operator
-  makes an organisation's own tenant with `steward organisation`.
+  makes an organisation's own tenant with `steward organisation`, and gives it a first way in through any provider with `steward provider`, or Google.
 - **Closing an environment.** Someone holding `close_environment` and both export permissions closes one
   from Administration's **Export**: a recent sign-in, its name typed, and a whole export from the last 24
   hours or that one is declined, recorded. For 30 days only those holding `close_environment` or `hold`, or

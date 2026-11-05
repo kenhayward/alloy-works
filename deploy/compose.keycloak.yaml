@@ -62,10 +62,11 @@ services:
 
   service:
     environment:
-      GOOGLE_ISSUER: !reset null
-      GOOGLE_CLIENT_ID: !reset null
-      SECRET_GOOGLE: !reset null
-      SIGN_IN_HOST: !reset null
+      # Empty, which the service takes as none: `!reset` loses once compose.lan.yaml is in the chain.
+      GOOGLE_ISSUER: ''
+      GOOGLE_CLIENT_ID: ''
+      SECRET_GOOGLE: ''
+      SIGN_IN_HOST: ''
     depends_on:
       stand-in-idp: !reset null
       keycloak-configure:

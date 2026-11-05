@@ -121,7 +121,20 @@ Acme is the only organisation setup makes. The operator makes another with its o
 docker compose -f deploy/compose.yaml run --rm steward organisation --id <id> --name <name> --tenant <new tenant id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> --google
 ```
 
-`--google` is its first way in: it opens Google for that address's domain, so the first administrator can sign in
-and add the organisation's own provider under **Sign-in**. A provider's secret never goes on a command line.
+It cannot be signed in to until it has a first way in. Wait for it to be made, then add its callback to your provider,
+under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS` as in section 3, and give the provider's client secret on standard input:
 
-Under Keycloak Google is not offered, so this first way in does not work there. Use the stand-in to try it.
+```bash
+docker compose -f deploy/compose.yaml run --rm steward provider --tenant <new tenant id> --issuer <url> --client-id <id> --name <shown> < client-secret.txt
+```
+
+Name the same compose files you brought the stack up with, and delete the file afterwards. The first administrator
+then signs in with a verified address, which claims the invitation. If that address was not verified, they have
+signed in as nobody and no invitation reaches them: invite another with `--first-administrator <address>`.
+
+The command works until somebody who signed in holds access there, so run it again to correct a mistake. It renews a
+lapsed invitation with `--first-administrator <address>`. Once the tenant is in use, its sign-in is its own to change,
+under **Sign-in**.
+
+Or `--google` on `steward organisation`, which opens Google for that address's domain, so the first administrator can
+sign in and add the organisation's own provider. Under Keycloak Google is not offered.

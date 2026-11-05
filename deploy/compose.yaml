@@ -231,6 +231,8 @@ services:
     entrypoint: ['node', 'dist/steward-cli.js']
     environment:
       STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
+      # Read only by `steward provider`, which seals a tenant's first way in.
+      SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
 
   # The one process that deletes a tenant (ADR-0083): it alone holds what can drop a tenant's roles and
   # the store's administrative credential. Claims `tenant_purge` and `provider_share`, and makes tenants.

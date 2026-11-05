@@ -227,8 +227,19 @@ address is added to `STAND_IN_REDIRECT_URIS`, or under Keycloak to `ALLOY_EXTRA_
 docker compose -f deploy/compose.yaml run --rm steward organisation --id <id> --name <name> --tenant <new tenant id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> --google
 ```
 
-`--google` opens Google for that address's domain, so its first administrator can sign in and add the organisation's
-own provider. A request that could not be made says so in the console, keeping its half-made tenant without an address: put
+For any other provider, once it is made, give it a first way in. The client secret is piped in, so it reaches no
+argument or history, and nothing without one is given a provider:
+
+```bash
+docker compose -f deploy/compose.yaml run --rm steward provider --tenant <new tenant id> --issuer <url> --client-id <id> --name <shown> < client-secret.txt
+```
+
+It works until somebody who signed in holds access there, so a mistake can be corrected by running it again, and
+never replaces the sign-in of a tenant in use. A lapsed invitation is renewed by adding `--first-administrator <address>`.
+Add the tenant's callback to that provider first, and under Keycloak to `ALLOY_EXTRA_REDIRECT_URIS`.
+
+Or `--google` on `steward organisation`, which opens Google for that address's domain, so its first administrator can
+sign in and add the organisation's own provider. Under Keycloak Google is not offered. A request that could not be made says so in the console, keeping its half-made tenant without an address: put
 right what stopped it, then `steward retry --tenant <id> --first-administrator <address>`, or give it up with `steward close`. Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers
 at `http://127.0.0.1:8088`, which is what the end-to-end suite uses and what to reach for when
@@ -402,7 +413,7 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `SECRET_DELIVERED_URL`                                | service, worker, steward-process | The delivery store's owner URL, `delivered-postgres` in the stack, TLS required; without it data delivery answers `delivery_store_unavailable` or `not_configured`                                                           |
 | `STEWARD_DATABASE_URL`                                | steward, steward-process         | The `aw_steward` login. After upgrading to this version, run setup once: bootstrapping gives it its rights over existing tenants                                                                                             |
 | `OBJECT_STORE_ADMIN_KEY`, `OBJECT_STORE_ADMIN_SECRET` | setup, steward-process           | The store's administrative credential, which a purge removes a tenant's objects and credential with                                                                                                                          |
-| `SECRET_OBJECT_STORE_KEY` (steward-process)           | steward-process                  | Seals a new tenant's store credential and reseals a shared provider's secret for each tenant: the same key the service holds                                                                                                 |
+| `SECRET_OBJECT_STORE_KEY` (steward)                   | steward-process, steward         | Seals a new tenant's store credential and reseals a shared provider's secret for each tenant, and `steward provider` seals a first way in: the same key the service holds                                                    |
 | `CONNECTOR_KEY`                                       | connector                        | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |
 | `CONNECTOR_SEALING_KEY`                               | connector                        | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                                                                                                                    |
 | `CONNECTOR_DENY`                                      | connector                        | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart; the connector refuses its networks' gateways and its own addresses whatever this says         |
