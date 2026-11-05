@@ -89,7 +89,7 @@ export interface EditorToolbarProps {
    */
   readonly ref?: Ref<HTMLDivElement>;
   /**
-   * A row above the surface, or the row under the menus (ADR-0092): the frequent tools as buttons,
+   * A row above the surface, or the row under the menus (ADR-0093): the frequent tools as buttons,
    * naming themselves at once, and the rest in flyouts.
    */
   readonly layout?: 'row' | 'band';
@@ -378,7 +378,7 @@ export function EditorToolbar({
             </NameTip>
           </>
         )}
-        {/* A part's own acts last, so the tools before them never move as they come (ADR-0092). */}
+        {/* A part's own acts last, so the tools before them never move as they come (ADR-0093). */}
         {leading && leading.length > 0 && (
           <>
             <Toolbar.Divider className={styles['bandDivider']} />

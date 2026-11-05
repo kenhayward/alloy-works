@@ -81,7 +81,7 @@
   background: var(--border);
 }
 
-/* The row under the menus (ADR-0092): 28px buttons, wrapping where the window is narrow. */
+/* The row under the menus (ADR-0093): 28px buttons, wrapping where the window is narrow. */
 .bandTools {
   display: flex;
   flex-wrap: wrap;
