@@ -17,8 +17,8 @@ The whole life of a tenant: an organisation makes one, can suspend it, closes it
 
 ### Fixed
 
-- A component open in place no longer shifts its text when you press in it: its text is set at the sheet's own zoom, exactly where the read text stood.
-- The rule beside an open component now runs its whole height, with no gap beside its text and no stubs over its neighbours.
+- **Holding still.** A component open in place no longer shifts its text when you press in it: its text is set at the sheet's own zoom, exactly where the read text stood.
+- **The whole rule.** The rule beside an open component now runs its whole height, with no gap beside its text and no stubs over its neighbours.
 
 ## 0.236.0 - 2026-11-04 (PR #981)
 
