@@ -3509,7 +3509,7 @@ export function ComponentEditor({
         inert={behindDialog}
         onKeyDown={moveRegion}
       >
-        {/* The toolbar stands in the row the page keeps under the menus (ADR-0092); here otherwise.
+        {/* The toolbar stands in the row the page keeps under the menus (ADR-0093); here otherwise.
             Its keys still reach this element, by React's tree. */}
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
