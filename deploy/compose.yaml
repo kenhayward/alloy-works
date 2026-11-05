@@ -233,7 +233,7 @@ services:
       STEWARD_DATABASE_URL: postgres://aw_steward:aw_steward_dev@postgres:5432/alloy_dev
 
   # The one process that deletes a tenant (ADR-0083): it alone holds what can drop a tenant's roles and
-  # the store's administrative credential. Claims `tenant_purge` and nothing else.
+  # the store's administrative credential. Claims `tenant_purge` and `provider_share`, and makes tenants.
   steward-process:
     build:
       context: ..
@@ -249,6 +249,8 @@ services:
       OBJECT_STORE_BUCKET: alloy-dev
       OBJECT_STORE_ADMIN_KEY: alloy-store-admin
       OBJECT_STORE_ADMIN_SECRET: alloy-store-admin-dev-secret
+      # Seals a new tenant's store credential, and reseals a shared provider's secret for each tenant.
+      SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
       SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:
       - default

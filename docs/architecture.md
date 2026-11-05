@@ -4408,6 +4408,29 @@ Two layout facts the shell depends on:
   listed in `asarUnpack` and read from `app.asar.unpacked` via `assetRoot()`. The renderer is
   deliberately **not** unpacked: `loadFile` goes through the asar-aware path.
 
+## A tenant's life
+
+Designed in [tenant-lifecycle.md](design/tenant-lifecycle.md). `platform.tenant.state` is `active`, `suspended`,
+`closing`, `retained`, `deleting` or `deleted`, changed only by `platform.change_tenant_state`, which reads the login and
+role asking; a tenant's own role cannot undo its suspension. `tenantGate` in `apps/service/src/app.ts` refuses every route
+by state, with a census from `onRoute`, `TENANT_STATE_EFFECTS` (`packages/domain`) saying what each state stops, and
+`queue.claim` and `SWEEPS_BY_STATE` holding jobs and sweeps to it. `apps/worker/src/sweep.ts` `sweepClosures` moves a
+closing tenant on once its 30 days are over, to `retained` under a legal hold and otherwise `deleting`.
+
+**The steward** ([ADR-0083](decisions/0083-deleting-a-tenant-is-the-stewards.md)) is `apps/worker`'s image with another
+command, `steward.js`, under the login `aw_steward`: `createrole`, `create` on the database, admin on `aw_tenant` and on
+each tenant's two roles, and no other tenant-wide reach. `jobs/tenant-purge.ts` deletes a tenant in repeatable stages and
+writes a report by checking. `jobs/tenant-create.ts` carries out `platform.tenant_request`: provision, `migrateTenant` that
+tenant alone, seed, its store, copies of shared providers, the invitation, then its address, forgetting the first
+administrator's address; `provider_share` jobs keep copies current, resealing each secret
+(`packages/db/src/provider-sharing.ts`). `steward-cli.js` is the operator's command line, `steward-commands.ts`.
+
+**An organisation's tenant** has `kind = 'organisation'` and holds no content: a contract route carries
+`organisationTenant: true` or `kindRefusal` answers `environment_not_here`. It reaches siblings only through definer
+functions returning metadata (`organisation_tenants`, `organisation_tenant_requests`, `request_tenant`), and `within` in
+`packages/db/src/tenant-lifecycle.ts` writes both logs in one transaction. `apps/web/src/organisation/Console.tsx` is what
+its people see in place of the shell.
+
 ## Icons
 
 The vector masters live in `assets/brand/`; everything else is rendered from them. An icon path is

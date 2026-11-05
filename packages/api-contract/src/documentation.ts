@@ -620,6 +620,8 @@ const operationTags = {
   Restoring: [
     'suspendEnvironment',
     'listOrganisationTenants',
+    'createOrganisationTenant',
+    'shareProvider',
     'suspendOrganisationTenant',
     'liftOrganisationSuspension',
     'cancelOrganisationClosure',
@@ -1420,6 +1422,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Stops this environment for everyone, the caller included: nothing is lost, and only its organisation or the operator can start it again, so it is refused with `no_organisation_to_lift` where it has no organisation administering it. Needs `suspend_environment` and a sign-in in the last ten minutes. Session only.',
   listOrganisationTenants:
     "Lists this organisation's tenants: name, addresses, state and dates, and nothing of what is in them. Answers only at an organisation's own tenant, for a holder of `suspend_tenant`, by session.",
+  createOrganisationTenant:
+    "Asks for another tenant under this organisation's addresses, and invites its first administrator by address, through the provider the organisation shares. It is made a little later, and its address is forgotten here once the invitation exists. Recorded in this tenant's log, and in the new tenant's when it is made. Needs `create_tenant`.",
+  shareProvider:
+    "Marks one of the organisation's identity providers as shared, so each of its tenants has a copy, its secret resealed for that tenant and kept current. A tenant can close its copy and cannot edit it. Stopping leaves each tenant the provider as its own. Needs `share_provider`.",
   suspendOrganisationTenant:
     "Stops one of this organisation's tenants. Recorded in both logs: this tenant's names the person and the reason, and the target's says the organisation did it and gives the reason. Needs `suspend_tenant`.",
   liftOrganisationSuspension:

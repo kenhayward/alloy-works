@@ -90,6 +90,8 @@ describe('what each route checks', () => {
         'cancelClosure',
         'suspendEnvironment',
         'listOrganisationTenants',
+        'createOrganisationTenant',
+        'shareProvider',
         'suspendOrganisationTenant',
         'liftOrganisationSuspension',
         'cancelOrganisationClosure',

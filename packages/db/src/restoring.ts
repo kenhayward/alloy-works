@@ -401,7 +401,8 @@ export async function applyWholeRestore(
   const { rows: me } = await sql<{ issuer: string | null; subject: string | null }>`
     select issuer, subject from principal where id = ${restorer}`.execute(trx);
   const { rows: providers } = await sql<LocalProvider>`
-    select issuer, name, client_id, secret_name, sealed_secret, groups_claim, scim_claim, closed_at
+    select issuer, name, client_id, secret_name, sealed_secret, groups_claim, scim_claim, closed_at,
+           managed_by_organisation
       from identity_provider`.execute(trx);
 
   const wipe = Object.entries(EXPORT_TABLES)
@@ -478,6 +479,10 @@ export async function applyWholeRestore(
     } else if (table === 'identity_provider') {
       // Who signs in here is this tenant's to say: never what an archive's row says (ADM-054).
       row['scim_identity'] = null;
+      // A copy arrives an ordinary closed provider (TL-M), and a mark means nothing away from its tenants.
+      if (row['managed_by_organisation'] === true) row['closed_at'] = new Date().toISOString();
+      row['shared'] = false;
+      row['managed_by_organisation'] = false;
       row['closed_at'] ??= new Date().toISOString();
       const others = providers.filter((each) => each.issuer !== row['issuer']);
       if (others.some((each) => each.name === row['name'])) {
@@ -647,6 +652,7 @@ interface LocalProvider {
   readonly groups_claim: string;
   readonly scim_claim: string;
   readonly closed_at: Date | null;
+  readonly managed_by_organisation: boolean;
 }
 
 /** An extension may call out with no secret at all, so its switch goes off too (ADM-054). */
@@ -704,7 +710,8 @@ async function restoreIdentities(
       await sql`update identity_provider
            set name = ${here.name}, client_id = ${here.client_id}, secret_name = ${here.secret_name},
                sealed_secret = ${here.sealed_secret}, groups_claim = ${here.groups_claim},
-               scim_claim = ${here.scim_claim}, closed_at = ${here.closed_at}
+               scim_claim = ${here.scim_claim}, closed_at = ${here.closed_at},
+               managed_by_organisation = ${here.managed_by_organisation}
          where issuer = ${issuer}`.execute(trx);
     } else {
       await sql`update identity_provider set closed_at = now() where issuer = ${issuer}`.execute(

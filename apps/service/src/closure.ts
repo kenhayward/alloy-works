@@ -1,6 +1,7 @@
 import type { ClosureBody, ClosureView } from '@alloy-works/api-contract';
 import {
   organisationTenants,
+  tenantRequests,
   cancelClosing,
   closureFacts,
   isRecentWholeExport,
@@ -116,7 +117,11 @@ export function closureHandlers(db: TenantDatabase, tenantOf: (request: FastifyR
         throw needsExport();
       }
       // Its log has to outlast them (TL-E), so said before anything is typed for nothing.
-      if ((await organisationTenants(trx)).some((each) => each.state !== 'deleted')) {
+      if (
+        (await organisationTenants(trx)).some((each) => each.state !== 'deleted') ||
+        // A tenant being made, or that could not be, is its organisation's still (TL-N).
+        (await tenantRequests(trx)).length > 0
+      ) {
         throw organisationHasTenants();
       }
       const { name } = await viewOf(trx, false);

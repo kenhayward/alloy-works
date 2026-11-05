@@ -86,6 +86,11 @@ for (const environment of environments) {
     await addHostnames(adminUrl, environment.tenant.id, environment.hostnames);
   }
 }
+// What an organisation's new tenants' addresses end in (TL-N).
+await check.query(`update platform.organisation set hostname_suffix = $1 where id = $2`, [
+  '.acme.localhost',
+  organisation.id,
+]);
 await check.end();
 for (const environment of environments.filter((each) => !gone.has(each.tenant.id))) {
   const tenant = tenantNames(environment.tenant.id);

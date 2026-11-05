@@ -21,6 +21,8 @@ export interface ShownProvider {
   readonly clientId: string;
   readonly groupsClaim: string;
   readonly closed: boolean;
+  readonly shared?: boolean;
+  readonly managed?: boolean;
   readonly scim: {
     readonly on: boolean;
     readonly claim: 'sub' | 'oid';
@@ -29,6 +31,7 @@ export interface ShownProvider {
 }
 
 export interface ShownSignIn {
+  readonly sharing?: boolean;
   readonly providers: readonly ShownProvider[];
   readonly google: {
     readonly available: boolean;
@@ -443,6 +446,21 @@ export function SignIn({ client }: { client: Client }) {
     }
   };
 
+  const share = async (provider: ShownProvider) => {
+    setSaid('');
+    const failed = words('admin.signin-could-not-share');
+    const refusedWith = await attempt(
+      () =>
+        client.PUT('/v1/organisation/providers/{id}/shared', {
+          params: { path: { id: provider.id } },
+          body: { shared: !provider.shared },
+        }) as Promise<Answer>,
+      failed,
+      words(provider.shared ? 'admin.signin-unshared-done' : 'admin.signin-shared-done'),
+    );
+    if (refusedWith !== null) setSaid(refusedWith);
+  };
+
   if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'refused') {
     return (
@@ -547,46 +565,70 @@ export function SignIn({ client }: { client: Client }) {
                   {provider.scim.on && !provider.closed && (
                     <Chip tone="info">{words('admin.signin-scim')}</Chip>
                   )}
+                  {provider.shared && <Chip tone="info">{words('admin.signin-shared')}</Chip>}
+                  {provider.managed && <Chip tone="info">{words('admin.signin-managed')}</Chip>}
                 </span>
               </td>
               <td>
                 {!provider.closed && (
                   <RowActions
                     subject={provider.name}
-                    shown={[
-                      {
-                        label: words('admin.rename-2'),
-                        name: words('admin.rename', { name: provider.name }),
-                        icon: 'Rename',
-                        onSelect: () => setRenaming(provider),
-                        ...(fresh ? {} : { unavailable: words('admin.signin-needs-recent') }),
-                      },
-                    ]}
+                    shown={
+                      provider.managed
+                        ? []
+                        : [
+                            {
+                              label: words('admin.rename-2'),
+                              name: words('admin.rename', { name: provider.name }),
+                              icon: 'Rename',
+                              onSelect: () => setRenaming(provider),
+                              ...(fresh ? {} : { unavailable: words('admin.signin-needs-recent') }),
+                            },
+                          ]
+                    }
                     more={
                       fresh
                         ? [
-                            {
-                              label: words('admin.signin-replace-secret'),
-                              onSelect: () => setReplacing(provider),
-                            },
-                            ...(provider.scim.on
+                            ...(read.sharing
                               ? [
                                   {
-                                    label: words('admin.signin-scim-new-token'),
-                                    onSelect: () => setRenewing(provider),
-                                  },
-                                  {
-                                    label: words('admin.signin-scim-turn-off'),
-                                    danger: true,
-                                    onSelect: () => setTurningOff(provider),
+                                    label: words(
+                                      provider.shared
+                                        ? 'admin.signin-unshare'
+                                        : 'admin.signin-share',
+                                    ),
+                                    onSelect: () => void share(provider),
                                   },
                                 ]
+                              : []),
+                            ...(provider.managed
+                              ? []
                               : [
                                   {
-                                    label: words('admin.signin-scim-turn-on'),
-                                    onSelect: () => setTurningOn(provider),
+                                    label: words('admin.signin-replace-secret'),
+                                    onSelect: () => setReplacing(provider),
                                   },
                                 ]),
+                            ...(provider.managed
+                              ? []
+                              : provider.scim.on
+                                ? [
+                                    {
+                                      label: words('admin.signin-scim-new-token'),
+                                      onSelect: () => setRenewing(provider),
+                                    },
+                                    {
+                                      label: words('admin.signin-scim-turn-off'),
+                                      danger: true,
+                                      onSelect: () => setTurningOff(provider),
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      label: words('admin.signin-scim-turn-on'),
+                                      onSelect: () => setTurningOn(provider),
+                                    },
+                                  ]),
                             ...(own?.provider === provider.id
                               ? []
                               : [

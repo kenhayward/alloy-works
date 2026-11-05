@@ -147,6 +147,10 @@ export interface IdentityProviderTable {
   secret_name: string | null;
   /** The client secret, sealed to this tenant and to sign-in (0042); null only beside a name. */
   sealed_secret: string | null;
+  /** Marked by an organisation, for the steward to copy into its tenants (0203; TL-M). */
+  shared: Generated<boolean>;
+  /** A copy of the organisation's: a tenant may close it, not edit it (0203; TL-M). */
+  managed_by_organisation: Generated<boolean>;
   /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
   groups_claim: Generated<string>;
   /** The claim equal to SCIM's `externalId` (0189; IN-E), and its service identity where it provisions. */

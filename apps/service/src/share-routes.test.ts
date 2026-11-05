@@ -3,10 +3,13 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
+  createTenantDatabase,
   findRole,
   grant,
   migrate,
   recordPublication,
+  resumeTenant,
+  suspendTenant,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
@@ -176,6 +179,7 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
       objects: stores,
+      tenantCacheMs: 0,
     });
     for (const user of ['ada', 'grace', 'alice']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
@@ -251,6 +255,27 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
     expect(bytes.body).toBe(PDF);
     expect(bytes.headers['content-disposition']).toBe(`attachment; filename="${shared}.pdf"`);
     expect(bytes.headers['cache-control']).toBe('private, no-store');
+  });
+
+  it('PUB-081 a share stops resolving when its tenant does, and resolves again when it is back', async () => {
+    const shared = await publish(await document('The stopped manual'));
+    expect(
+      (
+        await call('grace', 'POST', `/v1/publications/${shared}/shares`, {
+          email: 'iris@example.net',
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect((await call('iris', 'GET', `/v1/publications/${shared}`)).statusCode).toBe(200);
+    const operator = createTenantDatabase(db.stewardUrl);
+    await operator.withTenant(tenant, (trx) => suspendTenant(trx, tenant, 'An incident'), {
+      actorKind: 'vendor',
+    });
+    const stopped = await call('iris', 'GET', `/v1/publications/${shared}`);
+    expect(stopped.json()).toMatchObject({ code: 'environment_suspended' });
+    await operator.withTenant(tenant, (trx) => resumeTenant(trx, tenant), { actorKind: 'vendor' });
+    await operator.close();
+    expect((await call('iris', 'GET', `/v1/publications/${shared}`)).statusCode).toBe(200);
   });
 
   it('saves the HTML for somebody shared it, never shows it in place (ADR-0070)', async () => {

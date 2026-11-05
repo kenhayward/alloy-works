@@ -51,6 +51,8 @@ export interface StewardDatabase {
    * up silently would break the promise. Answers those past the day, for an alarm.
    */
   requeueStuckPurges(): Promise<{ readonly requeued: number; readonly overdue: readonly string[] }>;
+  /** Fails a shared provider's copy out of attempts and queues another, naming the organisations. */
+  requeueStuckCopies(): Promise<readonly string[]>;
   record(id: string): Promise<TenantRecord | undefined>;
   close(): Promise<void>;
 }
@@ -151,7 +153,24 @@ export function createStewardDatabase(url: string): StewardDatabase {
           trx,
         );
         await sql`delete from platform.job where tenant_id = ${tenant.id}`.execute(trx);
+        await sql`delete from platform.tenant_request where tenant_id = ${tenant.id}`.execute(trx);
       });
+    },
+
+    async requeueStuckCopies() {
+      const { rows } = await sql<{ tenant_id: string }>`
+        with spent as (
+          update platform.job
+             set failed_at = now(), locked_until = null, last_error = 'abandoned'
+           where kind = 'provider_share' and finished_at is null and failed_at is null
+             and attempts >= max_attempts
+             and (locked_until is null or locked_until < now())
+           returning tenant_id
+        )
+        insert into platform.job (tenant_id, kind)
+        select distinct tenant_id, 'provider_share' from spent
+        returning tenant_id`.execute(db);
+      return rows.map((row) => row.tenant_id);
     },
 
     async requeueStuckPurges() {

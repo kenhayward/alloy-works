@@ -56,19 +56,19 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 
 ## What it starts
 
-| Service              | Image or target            | Where                 | For                                                                                                                                                                |
-| -------------------- | -------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `postgres`           | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue; pgvector 0.8.6, pinned by digest                                                                                    |
-| `seaweedfs`          | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment                                                                                                          |
-| `stand-in-idp`       | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google                                                                                                            |
-| `setup`              | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                                                                                                     |
-| `service`            | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                                                                                                                |
-| `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                                                              |
-| `restorer`           | `worker`                   | no port               | Restores environments from their archives, the one process holding the login that may become a tenant's owner                                                      |
-| `steward`            | `worker`                   | runs when asked       | The operator's command line: suspends an environment and lifts that, with its own login. It is under the `operator` profile, so an ordinary `up` does not start it |
-| `steward-process`    | `worker`                   | no port               | Deletes a closed environment, once its 30 days are over (ADR-0083); holds the store's administrative credential                                                    |
-| `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                                                              |
-| `delivered-postgres` | `pgvector/pgvector:pg17`   | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered`                                |
+| Service              | Image or target            | Where                 | For                                                                                                                                                                                          |
+| -------------------- | -------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`           | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue; pgvector 0.8.6, pinned by digest                                                                                                              |
+| `seaweedfs`          | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment                                                                                                                                    |
+| `stand-in-idp`       | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google                                                                                                                                      |
+| `setup`              | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                                                                                                                               |
+| `service`            | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                                                                                                                                          |
+| `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                                                                                        |
+| `restorer`           | `worker`                   | no port               | Restores environments from their archives, the one process holding the login that may become a tenant's owner                                                                                |
+| `steward`            | `worker`                   | runs when asked       | The operator's command line: suspends an environment and lifts that, with its own login. It is under the `operator` profile, so an ordinary `up` does not start it                           |
+| `steward-process`    | `worker`                   | no port               | Makes the environments an organisation asks for, copies shared providers, and deletes a closed environment once its 30 days are over (ADR-0083); holds the store's administrative credential |
+| `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                                                                                        |
+| `delivered-postgres` | `pgvector/pgvector:pg17`   | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered`                                                          |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
@@ -216,7 +216,16 @@ without writing SQL. It also gives Ada **Full access (development)**, every perm
 whole environment, so every part of the product can be tried as her.
 
 An organisation's own tenant, holding no content, is at `http://org.acme.localhost:8088`, where Ada administers
-too. Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
+too. A tenant made from its console answers under `.acme.localhost`; the stand-in signs nobody in there until its
+address is added to `STAND_IN_REDIRECT_URIS`. To make an organisation elsewhere:
+
+```bash
+docker compose -f deploy/compose.yaml run --rm steward organisation --id <id> --name <name> --tenant <new tenant id> --hostname <its address> --suffix <.what its tenants end in> --first-administrator <address> --google
+```
+
+`--google` opens Google for that address's domain, so its first administrator can sign in and add the organisation's
+own provider. A request that could not be made says so in the console, keeping its half-made tenant without an address: put
+right what stopped it, then `steward retry --tenant <id> --first-administrator <address>`, or give it up with `steward close`. Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers
 at `http://127.0.0.1:8088`, which is what the end-to-end suite uses and what to reach for when
 `*.localhost` does not resolve on your machine.
@@ -389,6 +398,7 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `SECRET_DELIVERED_URL`                                | service, worker, steward-process | The delivery store's owner URL, `delivered-postgres` in the stack, TLS required; without it data delivery answers `delivery_store_unavailable` or `not_configured`                                                           |
 | `STEWARD_DATABASE_URL`                                | steward, steward-process         | The `aw_steward` login. After upgrading to this version, run setup once: bootstrapping gives it its rights over existing tenants                                                                                             |
 | `OBJECT_STORE_ADMIN_KEY`, `OBJECT_STORE_ADMIN_SECRET` | setup, steward-process           | The store's administrative credential, which a purge removes a tenant's objects and credential with                                                                                                                          |
+| `SECRET_OBJECT_STORE_KEY` (steward-process)           | steward-process                  | Seals a new tenant's store credential and reseals a shared provider's secret for each tenant: the same key the service holds                                                                                                 |
 | `CONNECTOR_KEY`                                       | connector                        | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |
 | `CONNECTOR_SEALING_KEY`                               | connector                        | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                                                                                                                    |
 | `CONNECTOR_DENY`                                      | connector                        | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart; the connector refuses its networks' gateways and its own addresses whatever this says         |

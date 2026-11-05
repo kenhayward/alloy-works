@@ -7,6 +7,7 @@ import type {
   ProviderChangeBody,
   ProviderParams,
   ProviderSecretBody,
+  SharedBody,
   SessionSettingsBody,
   SignInSettings,
 } from '@alloy-works/api-contract';
@@ -18,6 +19,7 @@ import {
   enablePrincipal,
   googleRoute,
   listProviders,
+  markProviderShared,
   revokeApiToken,
   turnScimOff,
   turnScimOn,
@@ -81,6 +83,13 @@ function refused(refusal: ProviderRefusal): AppError {
       );
     case 'provider.last_way_in':
       return lastWayIn();
+    case 'provider.managed':
+      return new AppError(
+        409,
+        'provider_managed_by_organisation',
+        'Your organisation keeps this provider current. It can be closed here, not changed.',
+        'IAM-085',
+      );
     case 'provider.missing':
     case 'provider.closed':
       return new AppError(404, 'provider_not_found', 'There is no such provider here.');
@@ -125,6 +134,7 @@ export function signInSettingsHandlers(options: {
     const session = credential?.kind === 'session' ? credential : null;
     const route = await googleRoute(trx);
     return {
+      sharing: tenantOf(request).kind === 'organisation',
       providers: (await listProviders(trx)).map((provider) => ({
         id: provider.id,
         name: provider.name,
@@ -132,6 +142,8 @@ export function signInSettingsHandlers(options: {
         clientId: provider.clientId,
         groupsClaim: provider.groupsClaim,
         closed: provider.closedAt !== null,
+        shared: provider.shared,
+        managed: provider.managedByOrganisation,
         scim: {
           on: provider.scimIdentity !== null,
           claim: provider.scimClaim,
@@ -170,6 +182,13 @@ export function signInSettingsHandlers(options: {
         ...(body.scimClaim === undefined ? {} : { scimClaim: body.scimClaim }),
       });
       if ('refused' in added) throw refused(added.refused);
+      return read(request, trx);
+    },
+
+    shareProvider: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as ProviderParams;
+      const { shared } = request.body as SharedBody;
+      if (!(await markProviderShared(trx, id, shared))) throw refused('provider.missing');
       return read(request, trx);
     },
 
@@ -230,7 +249,7 @@ export function signInSettingsHandlers(options: {
       const { id } = request.params as ProviderParams;
       const { claim } = request.body as ScimOnBody;
       const answer = await turnScimOn(trx, id, claim, principalId);
-      if (answer === 'provider.missing') throw refused(answer);
+      if (answer === 'provider.missing' || answer === 'provider.managed') throw refused(answer);
       return read(request, trx);
     },
 

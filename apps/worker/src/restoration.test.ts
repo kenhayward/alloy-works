@@ -559,8 +559,11 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
     const target = await newTenant();
     const grace = await signInAs(target);
     await service.withTenant(target, async (trx) => {
-      await sql`insert into identity_provider (issuer, name, client_id, secret_name)
-        values ('https://here.example', 'Your organisation', 'mine', 'here_secret')`.execute(trx);
+      await sql`insert into identity_provider
+          (issuer, name, client_id, secret_name, managed_by_organisation)
+        values ('https://here.example', 'Your organisation', 'mine', 'here_secret', true)`.execute(
+        trx,
+      );
     });
     const bad = forged((name, content) => {
       if (name === 'manifest.json') {
@@ -593,6 +596,8 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
           groups_claim: 'groups',
           scim_claim: 'sub',
           closed_at: null,
+          managed_by_organisation: true,
+          shared: true,
         },
       ]);
     });
@@ -610,19 +615,23 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
         client_id: string;
         closed_at: Date | null;
         groups_claim: string;
-      }>`select issuer, name, client_id, closed_at, groups_claim from identity_provider`.execute(
-        trx,
-      );
+        managed_by_organisation: boolean;
+        shared: boolean;
+      }>`select issuer, name, client_id, closed_at, groups_claim, managed_by_organisation, shared
+           from identity_provider`.execute(trx);
       const here = rows.find((each) => each.issuer === 'https://here.example')!;
       expect(here).toMatchObject({
         name: 'Your organisation',
         client_id: 'mine',
         groups_claim: 'groups',
         closed_at: null,
+        // Still the organisation's copy here, so what it rotates goes on arriving (TL-M).
+        managed_by_organisation: true,
       });
       const arrived = rows.find((each) => each.issuer === 'https://arrives.example')!;
       expect(arrived.name).toBe('Your organisation (restored)');
       expect(arrived.closed_at).not.toBeNull();
+      expect(arrived).toMatchObject({ managed_by_organisation: false, shared: false });
     });
   });
 

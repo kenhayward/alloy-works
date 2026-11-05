@@ -1,9 +1,11 @@
-import type { StoreCredentials, StoreSettings } from '@alloy-works/objects';
+import { sealingKey, type StoreCredentials, type StoreSettings } from '@alloy-works/objects';
 
 export interface StewardConfig {
   readonly databaseUrl: string;
   readonly objectStore: StoreSettings;
   readonly objectStoreAdmin: StoreCredentials;
+  /** Seals a new tenant's store credential, and reseals a shared provider's secret for each tenant. */
+  readonly sealingKey: Buffer;
   /** The delivery store's owner, where this deployment has one. */
   readonly deliveredUrl?: string;
 }
@@ -28,6 +30,7 @@ export function loadStewardConfig(
       accessKeyId: needed('OBJECT_STORE_ADMIN_KEY'),
       secretAccessKey: needed('OBJECT_STORE_ADMIN_SECRET'),
     },
+    sealingKey: sealingKey(needed('SECRET_OBJECT_STORE_KEY')),
     ...(env['SECRET_DELIVERED_URL'] ? { deliveredUrl: env['SECRET_DELIVERED_URL'] } : {}),
   };
 }

@@ -165,6 +165,8 @@ export async function applyPartialImport(
         } else if (table === 'identity_provider') {
           row['closed_at'] = new Date().toISOString();
           row['scim_identity'] = null;
+          row['shared'] = false;
+          row['managed_by_organisation'] = false;
         }
 
         let drop = false;

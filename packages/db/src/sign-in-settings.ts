@@ -1,3 +1,4 @@
+import { queueProviderCopy } from './provider-sharing.js';
 import { sql } from 'kysely';
 import { labelled, labels, principalLabel, recordEvent } from './audit.js';
 import type { TenantTransaction } from './tables.js';
@@ -76,6 +77,9 @@ export interface ListedProvider {
   readonly clientId: string;
   readonly groupsClaim: string;
   readonly closedAt: Date | null;
+  /** The organisation's mark on its own, and that this is its copy, in a tenant (TL-M). */
+  readonly shared: boolean;
+  readonly managedByOrganisation: boolean;
   readonly scimClaim: 'sub' | 'oid';
   /** Its service identity where it provisions, and when that last used a token. */
   readonly scimIdentity: string | null;
@@ -87,7 +91,7 @@ export async function listProviders(trx: TenantTransaction): Promise<ListedProvi
   const rows = await trx
     .selectFrom('identity_provider')
     .select(['id', 'name', 'issuer', 'client_id', 'groups_claim', 'closed_at'])
-    .select(['scim_claim', 'scim_identity'])
+    .select(['scim_claim', 'scim_identity', 'shared', 'managed_by_organisation'])
     .select((eb) =>
       eb
         .selectFrom('api_token as t')
@@ -105,6 +109,8 @@ export async function listProviders(trx: TenantTransaction): Promise<ListedProvi
     clientId: row.client_id,
     groupsClaim: row.groups_claim,
     closedAt: row.closed_at,
+    shared: row.shared,
+    managedByOrganisation: row.managed_by_organisation,
     scimClaim: row.scim_claim,
     scimIdentity: row.scim_identity,
     scimLastUsedAt: row.scim_last_used_at,
@@ -112,11 +118,31 @@ export async function listProviders(trx: TenantTransaction): Promise<ListedProvi
 }
 
 export type ProviderRefusal =
+  | 'provider.managed'
   | 'provider.name_taken'
   | 'provider.issuer_taken'
   | 'provider.missing'
   | 'provider.closed'
   | 'provider.last_way_in';
+
+const isManaged = async (trx: TenantTransaction, id: string) =>
+  (await trx
+    .selectFrom('identity_provider')
+    .select('id')
+    .where('id', '=', id)
+    .where('managed_by_organisation', '=', true)
+    .executeTakeFirst()) !== undefined;
+
+/** What the organisation changed of a shared provider reaches its tenants' copies (TL-M). */
+const copiedOnward = async (trx: TenantTransaction, id: string) => {
+  const row = await trx
+    .selectFrom('identity_provider')
+    .select('id')
+    .where('id', '=', id)
+    .where('shared', '=', true)
+    .executeTakeFirst();
+  if (row) await queueProviderCopy(trx);
+};
 
 const nameTaken = async (trx: TenantTransaction, name: string, other?: string) =>
   (await trx
@@ -157,6 +183,8 @@ export async function addProvider(
     sealed_secret: provider.sealedSecret,
     secret_name: null,
     closed_at: null,
+    // Added here, it is this tenant's, even where it was once the organisation's copy.
+    managed_by_organisation: false,
     ...(provider.groupsClaim === undefined ? {} : { groups_claim: provider.groupsClaim }),
     ...(provider.scimClaim === undefined ? {} : { scim_claim: provider.scimClaim }),
   };
@@ -187,6 +215,7 @@ export async function changeProvider(
   id: string,
   change: { readonly name: string; readonly groupsClaim?: string },
 ): Promise<'changed' | ProviderRefusal> {
+  if (await isManaged(trx, id)) return 'provider.managed';
   if (await nameTaken(trx, change.name, id)) return 'provider.name_taken';
   const row = await trx
     .updateTable('identity_provider')
@@ -199,6 +228,7 @@ export async function changeProvider(
     .executeTakeFirst();
   if (!row) return 'provider.missing';
   await configured(trx, 'provider_renamed', id);
+  await copiedOnward(trx, id);
   return 'changed';
 }
 
@@ -208,6 +238,7 @@ export async function sealProviderSecret(
   id: string,
   sealedSecret: string,
 ): Promise<'replaced' | ProviderRefusal> {
+  if (await isManaged(trx, id)) return 'provider.managed';
   const row = await trx
     .updateTable('identity_provider')
     .set({ sealed_secret: sealedSecret, secret_name: null })
@@ -217,6 +248,7 @@ export async function sealProviderSecret(
     .executeTakeFirst();
   if (!row) return 'provider.missing';
   await configured(trx, 'provider_secret_replaced', id);
+  await copiedOnward(trx, id);
   return 'replaced';
 }
 
@@ -281,7 +313,7 @@ export async function closeProviderAsked(
 ): Promise<Ended | { readonly refused: ProviderRefusal }> {
   const provider = await trx
     .selectFrom('identity_provider')
-    .select(['issuer', 'closed_at', 'scim_identity'])
+    .select(['issuer', 'closed_at', 'scim_identity', 'shared'])
     .where('id', '=', id)
     .forUpdate()
     .executeTakeFirst();
@@ -292,9 +324,11 @@ export async function closeProviderAsked(
   }
   await trx
     .updateTable('identity_provider')
-    .set({ closed_at: sql<Date>`now()` })
+    .set({ closed_at: sql<Date>`now()`, shared: false })
     .where('id', '=', id)
     .execute();
+  // Closed at the organisation, it is shared no more; each tenant's copy stays each tenant's to close.
+  if (provider.shared) await queueProviderCopy(trx);
   const sessions = await endSessions(
     trx,
     await trx

@@ -100,7 +100,9 @@ describe('api_token, where a personal token is kept as its hash (service-foundat
         permission === 'import_environment' ||
         permission === 'close_environment' ||
         permission === 'suspend_environment' ||
-        permission === 'suspend_tenant'
+        permission === 'suspend_tenant' ||
+        permission === 'create_tenant' ||
+        permission === 'share_provider'
       ) {
         await expect(answer, permission).rejects.toThrow();
       } else expect(await answer, permission).toBeDefined();

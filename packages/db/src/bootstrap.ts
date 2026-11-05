@@ -60,6 +60,8 @@ export async function bootstrapLoginRoles(
       // schema - today, putting its own work on the queue - so the queue grants one role, not each.
       const group = await client.query('select 1 from pg_roles where rolname = $1', ['aw_tenant']);
       if (group.rowCount === 0) await client.query('create role aw_tenant nologin');
+      // A tenant the steward makes joins that role, which is all this admin option is for (TL-N).
+      await client.query('grant aw_tenant to aw_steward with admin true, inherit false, set false');
     }),
   );
 }
@@ -100,6 +102,12 @@ export async function prepareDatabase(adminUrl: string): Promise<void> {
         }
       }
       await client.query('revoke create on schema public from public');
+      // For a new tenant's schema: `aw_steward` has no other right to make one (TL-N).
+      await client.query(
+        `grant create on database ${client.escapeIdentifier(
+          (await client.query<{ name: string }>('select current_database() as name')).rows[0]!.name,
+        )} to aw_steward`,
+      );
     }),
   );
 }
