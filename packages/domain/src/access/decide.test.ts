@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { decide, type AccessFacts, type AccessGrant } from './decide.js';
+import { beyondHolding, decide, type AccessFacts, type AccessGrant } from './decide.js';
 import type { Level } from './level.js';
 import { permissions } from './permissions.js';
 
@@ -278,5 +278,40 @@ describe('where the walk starts', () => {
     expect(() => decide('read', facts([], [space]))).toThrow(/ends at the tenant/);
     expect(() => decide('read', facts([], [space, artifact, tenant]))).toThrow(/nearest first/);
     expect(() => decide('read', facts([], [tenant, tenant]))).toThrow(/nearest first/);
+  });
+});
+
+describe('what somebody cannot give', () => {
+  const narrow = { id: 'role-narrow', name: 'Narrow', permissions: ['read', 'administer'] };
+  const closer = { id: 'role-closer', name: 'Closer', permissions: ['read', 'close_environment'] };
+  const names = (decisions: readonly { permission: string }[]) =>
+    decisions.map((each) => each.permission);
+
+  it('ignores a content permission they do not hold', () => {
+    const held = facts([grant(narrow, tenant)]);
+    expect(beyondHolding(['read', 'create', 'edit', 'write_sql'], held)).toEqual([]);
+  });
+
+  it('answers each administrative permission they do not hold, and not one they do', () => {
+    const held = facts([grant(narrow, tenant)]);
+    expect(names(beyondHolding(['administer', 'hold', 'close_environment'], held))).toEqual([
+      'hold',
+      'close_environment',
+    ]);
+  });
+
+  it('counts a holder above a denial below as holding it', () => {
+    const held = facts([grant(closer, tenant), grant(closer, space, 'deny')]);
+    expect(beyondHolding(['close_environment'], held)).toEqual([]);
+  });
+
+  it('does not count a holder at a level below', () => {
+    const held = facts([grant(closer, space)], [tenant]);
+    expect(names(beyondHolding(['close_environment'], held))).toEqual(['close_environment']);
+  });
+
+  it("masks it by a token's scopes", () => {
+    const held = { ...facts([grant(closer, tenant)]), scopes: ['administer' as const] };
+    expect(names(beyondHolding(['close_environment'], held))).toEqual(['close_environment']);
   });
 });

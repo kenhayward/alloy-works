@@ -19,6 +19,7 @@ import {
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { refuseBeyondHolding } from './grant-limits.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import { AppError } from './errors.js';
 import { issueChecked, newTokenSecret, tokenView } from './tokens.js';
@@ -98,10 +99,12 @@ export function serviceIdentityHandlers() {
 
     issueServiceIdentityToken: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, facts, target }: Authorised,
     ): Promise<TokenIssued> => {
       const { id } = request.params as ServiceIdentityParams;
       const body = request.body as CreateTokenBody;
+      // A scope is what the token may do of what its identity holds, so it is what is given (the GL plan).
+      refuseBeyondHolding(body.scopes, facts, target);
       const held = await serviceIdentity(trx, id, { lock: true });
       if (!held) throw notFound();
       if (held.disabledAt !== null) {

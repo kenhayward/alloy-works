@@ -458,6 +458,24 @@ describe('access to a component', () => {
     expect(within(section('This component')).getByText('Nothing is granted here.')).toBeTruthy();
   });
 
+  it('says which permissions the caller could not give, rather than that they may not manage access', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/grants': () =>
+          refused(403, 'grant_beyond_held', 'You cannot give access you do not hold: hold.'),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'You cannot give access you do not hold: hold.',
+    );
+  });
+
   it('removes a grant, and says so when it is the last keeping the environment administered or already gone', async () => {
     let lastAdministrator = true;
     const { fetching } = service({

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { labelled, labels, principalLabel, recordEvent } from './audit.js';
 import { erasedIn } from './erasure.js';
+import { lastHolderRemains } from './grant-limits.js';
 import { wayInRemains } from './sign-in-settings.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -13,7 +14,8 @@ export type DisablementAnswer =
       readonly tokens: readonly string[];
     }
   | { readonly refused: 'principal.missing' | 'principal.service' | 'principal.erased' }
-  | { readonly refused: 'principal.last_way_in' };
+  | { readonly refused: 'principal.last_way_in' }
+  | { readonly refused: 'principal.last_holder' };
 
 /**
  * **Disables a person** (identity.md, "Disabled people"): their sessions and tokens end in this
@@ -54,6 +56,9 @@ export async function disablePrincipal(
   }
   if (by === 'person' && !(await wayInRemains(trx, { disabling: id }))) {
     return { refused: 'principal.last_way_in' };
+  }
+  if (by === 'person' && !(await lastHolderRemains(trx, { disabling: id }))) {
+    return { refused: 'principal.last_holder' };
   }
   const subject = labels(await principalLabel(trx, 'subject', id));
   const sessions = await trx

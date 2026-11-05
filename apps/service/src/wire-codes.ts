@@ -44,6 +44,7 @@ const WIRE_CODES = {
   'grant.expiry_past': 'grant_expiry_past',
   'grant.last_administrator': 'grant_last_administrator',
   'grant.last_way_in': 'last_way_in',
+  'grant.last_holder': 'grant_last_holder',
   'invitation.way_unknown': 'invitation_way_unknown',
   'invitation.signed_in': 'invitation_signed_in',
   'invitation.kind_differs': 'invitation_kind_differs',

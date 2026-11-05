@@ -1,5 +1,10 @@
 import { sameLevel, type Level } from './level.js';
-import { externalCap, type Permission, type PrincipalKind } from './permissions.js';
+import {
+  administrativePermissions,
+  externalCap,
+  type Permission,
+  type PrincipalKind,
+} from './permissions.js';
 
 /** A grant as a decision reads it: a role, one subject, one level, an effect and an expiry. */
 export interface AccessGrant {
@@ -173,4 +178,19 @@ export function administerOrAbove(
     if (decision.allowed) return decision;
   }
   return decide(permission, facts);
+}
+
+/**
+ * The refusal of each administrative permission among `permissions` the caller does not hold, by the rule
+ * those are decided by, so a denial below does not stand against a holder above and a token's scopes mask
+ * it (the GL plan). Content permissions are not limited: an Administrator holds none, and must give them.
+ */
+export function beyondHolding(
+  permissions: readonly Permission[],
+  facts: AccessFacts,
+): readonly Decision[] {
+  return permissions
+    .filter((permission) => administrativePermissions.includes(permission))
+    .map((permission) => administerOrAbove(facts, permission))
+    .filter((decision) => !decision.allowed);
 }

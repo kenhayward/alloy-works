@@ -3922,7 +3922,7 @@ export interface paths {
         put?: never;
         /**
          * Grant a role to a person or a group at one level, as an allow or a denial
-         * @description Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.
+         * @description Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request. Refused `grant_beyond_held` where it would give an administrative permission the caller does not hold. A token is held to its scopes, so granting Administrator takes a session.
          */
         post: operations["makeGrant"];
         delete?: never;
@@ -3943,7 +3943,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a grant, unless it is the last that keeps this environment administered
-         * @description Removes a grant unless it is needed to keep the environment administered.
+         * @description Removes a grant unless it is needed to keep the environment administered, or `grant_last_holder` where nobody would then hold one of its administrative permissions. Removing a denial of an administrative permission the caller does not hold is refused `grant_beyond_held`.
          */
         delete: operations["removeGrant"];
         options?: never;
@@ -4007,7 +4007,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a group, with its memberships and every grant it holds
-         * @description Deletes a group together with its memberships and grants. This changes access immediately.
+         * @description Deletes a group together with its memberships and grants. This changes access immediately. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.
          */
         delete: operations["deleteGroup"];
         options?: never;
@@ -4025,7 +4025,7 @@ export interface paths {
         get?: never;
         /**
          * Set the members of one of the environment's own groups
-         * @description Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead.
+         * @description Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.
          */
         put: operations["setGroupMembers"];
         post?: never;
@@ -5179,7 +5179,7 @@ export interface paths {
         post: operations["disablePerson"];
         /**
          * Enable a person disabled; what ended stays ended
-         * @description Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.
+         * @description Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment, and is refused `grant_beyond_held` where they hold an administrative permission the caller does not. Audited.
          */
         delete: operations["enablePerson"];
         options?: never;
@@ -6018,7 +6018,7 @@ export interface paths {
         put?: never;
         /**
          * Make a role: a named set of permissions, which does nothing until it is granted
-         * @description Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Audited, with what it holds.
+         * @description Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Refused `grant_beyond_held` where it holds an administrative permission the caller does not. Audited, with what it holds.
          */
         post: operations["createRole"];
         delete?: never;
@@ -77232,7 +77232,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the level but may not administer it, or anything above it */
+            /** @description The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -77371,6 +77371,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description grant_beyond_held: a denial of an administrative permission they do not hold */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
@@ -77391,7 +77411,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_last_administrator */
+            /** @description grant_last_administrator, last_way_in or grant_last_holder */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -77966,7 +77986,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -78137,7 +78157,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -90301,7 +90321,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description last_way_in, principal_own_account, principal_service or principal_erased */
+            /** @description last_way_in, principal_last_holder, principal_own_account, principal_service or principal_erased */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -90401,7 +90421,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The permission this needs is not held at the environment */
+            /** @description The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -90543,7 +90563,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment; or token_not_allowed: a token never erases */
+            /** @description The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -103525,7 +103545,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the level but may not administer it, or anything above it */
+            /** @description The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -106075,7 +106095,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            /** @description The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

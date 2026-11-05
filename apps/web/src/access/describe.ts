@@ -321,6 +321,11 @@ export function refusalMessage(error: unknown): string | null {
   return isRecord(error) && typeof error.message === 'string' ? error.message : null;
 }
 
+/** A refusal body's code, when the service sent one. */
+export function refusalCode(error: unknown): string | null {
+  return isRecord(error) && typeof error.code === 'string' ? error.code : null;
+}
+
 /** One grant as a line in a listing: "Allowed Author to Grace", and when it ends if it does. */
 export function describeGrant(grant: ShownGrant): string {
   return words('access.grant-line', {

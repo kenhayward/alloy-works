@@ -122,7 +122,11 @@ export const erasureRoutes = {
     responses: {
       200: { description: 'Erased, or erased already', schema: Erased },
       401: unauthenticated,
-      403: forbiddenOrToken,
+      403: {
+        description:
+          'The caller may not do this, or grant_beyond_held: it gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: missing,
       409: {
         description: 'erasure_refused: a grant names them, they are the caller, or a service',

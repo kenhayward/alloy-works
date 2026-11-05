@@ -270,7 +270,11 @@ export const managingAccessRoutes = {
       200: { description: 'Made', schema: RoleMade },
       400: { description: 'No name, no permissions, or one the product lacks', schema: ErrorBody },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       409: {
         description: 'role_name_taken or role_repeated_permission',
         schema: ErrorBody,
@@ -295,7 +299,11 @@ export const managingAccessRoutes = {
     responses: {
       200: { description: 'Granted', schema: GrantMade },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: notFound,
       409: {
         description:
@@ -364,11 +372,18 @@ export const managingAccessRoutes = {
     responses: {
       200: { description: 'Removed', schema: GrantRemoved },
       401: unauthenticated,
-      // No 403: a grant is an administrator's to see (access.md, "Refusing"), so one the caller may
-      // not manage is always answered as absent, whether or not they may read the level it was made
-      // at - the caller's own targetOf/authorise never produces a 403 for a `{ grant }` target.
+      // A grant is an administrator's to see (access.md, "Refusing"), so one the caller may not manage
+      // is always answered as absent, whether or not they may read the level it was made at. The only
+      // 403 is a denial, whose removal would give back what it denied (the GL plan).
+      403: {
+        description: 'grant_beyond_held: a denial of an administrative permission they do not hold',
+        schema: ErrorBody,
+      },
       404: notFound,
-      409: { description: 'grant_last_administrator', schema: ErrorBody },
+      409: {
+        description: 'grant_last_administrator, last_way_in or grant_last_holder',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

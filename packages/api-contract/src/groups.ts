@@ -151,7 +151,11 @@ export const groupRoutes = {
     responses: {
       200: { description: 'Set: the group as it now is', schema: GroupMade },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: missing,
       409: {
         description:
@@ -177,7 +181,11 @@ export const groupRoutes = {
     responses: {
       200: { description: 'Deleted', schema: GroupDeleted },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may not administer here, or grant_beyond_held: this gives an administrative permission they do not hold, which the message names',
+        schema: ErrorBody,
+      },
       404: missing,
       409: {
         description:

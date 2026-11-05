@@ -77,6 +77,7 @@ describe('the rule behind a refusal', () => {
       'grant.role_missing',
       'grant.subject_missing',
       'grant.last_administrator',
+      'grant.last_holder',
       // Refuses more than IAM-057 names, which access.md therefore does not claim.
       'grant.external_capped',
       'invitation.signed_in',
