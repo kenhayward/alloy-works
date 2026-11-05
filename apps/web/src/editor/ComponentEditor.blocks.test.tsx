@@ -13,7 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rowsWindow } from './TableMap.js';
-import { placeToolbar } from './TableToolbar.js';
+import { placeOverPart, placeToolbar } from './PartToolbar.js';
 import { RegionKeys } from '../shell/regions.js';
 import { PageShown } from '../shell/Status.js';
 import { shimRangeMeasurement } from '../test/range.js';
@@ -1013,6 +1013,28 @@ describe('the table panel (tables 1)', () => {
     map.focus();
     await userEvent.keyboard('{Enter}');
     expect(view.dom).toHaveFocus();
+  });
+});
+
+describe('where the one toolbar stands over a part (the EP plan, ruling 4)', () => {
+  const part = { top: 300, bottom: 600, left: 100, right: 700 };
+  const desk = { top: 56, left: 80, right: 900 };
+  const own = { width: 200, height: 44 };
+
+  it('stands above the part at its end, and sticks at the desk top until the part has gone', () => {
+    expect(placeOverPart(part, desk, own)).toEqual({ top: 248, left: 500, hidden: false });
+    expect(placeOverPart({ ...part, top: 50 }, desk, own)).toEqual({
+      top: 64,
+      left: 500,
+      hidden: false,
+    });
+    expect(placeOverPart({ ...part, top: -500, bottom: 100 }, desk, own).hidden).toBe(true);
+  });
+
+  it('keeps to the desk the part overhangs, and to the other end in right to left', () => {
+    expect(placeOverPart({ ...part, right: 2000 }, desk, own).left).toBe(692);
+    expect(placeOverPart({ ...part, right: 150 }, desk, own).left).toBe(88);
+    expect(placeOverPart(part, desk, own, 'rtl').left).toBe(100);
   });
 });
 

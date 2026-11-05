@@ -357,6 +357,9 @@ function PartGroup({
 }
 
 /** Everything the panel says of the part chosen, whoever is reading. */
+/** Which sections' title fields stand open, and how many on each: a retitle lost while none is, says so. */
+export type OpenTitleFields = MutableRefObject<Map<string, number>>;
+
 export interface PartFacts {
   readonly node: OutlineViewNode;
   readonly names: Names;
@@ -379,6 +382,10 @@ export interface PartFacts {
   readonly fieldCount: number;
   /** The version a reference resolves to, by its number, once the page has read it. */
   readonly version?: string | undefined;
+  /** Who holds it now, in words (CNT-074), where anyone does. */
+  readonly heldSaid?: string | undefined;
+  /** What is true of it and what may be done from here, from the page (the EP plan, EP4). */
+  readonly standing?: ReactNode;
 }
 
 const MODE_WORDS = {
@@ -412,7 +419,7 @@ function PartIdentity({
   /** The address the clipboard would not take, to be copied by hand (the plan, R7). */
   uncopied: string | null;
 }) {
-  const { node, names, state, number, fieldCount, version } = facts;
+  const { node, names, state, number, fieldCount, version, heldSaid, standing } = facts;
   const unreadable = node.type === 'reference' && node.component === null;
   const count = node.type === 'section' ? componentsBeneath(node) : 0;
   const name = nodeName(node, names);
@@ -473,12 +480,14 @@ function PartIdentity({
               {say('document.count-fields', { count: fieldCount })}
             </Chip>
           )}
-          {node.type === 'reference' && !unreadable && (
+          {node.type === 'reference' && !unreadable && standing === undefined && (
             <Chip className={part['chip']}>{version ?? MODE_WORDS[node.mode.kind]()}</Chip>
           )}
         </div>
       </div>
       {unreadable && <p className={part['note']}>{say('document.may-not-read-this-component')}</p>}
+      {heldSaid !== undefined && <p className={part['note']}>{heldSaid}</p>}
+      {standing}
       {uncopied !== null && (
         <input
           readOnly
@@ -706,7 +715,7 @@ export function PartPanel({
   unnumberedAbove: OutlineViewNode | undefined;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
-  openField: MutableRefObject<string | null>;
+  openField: OpenTitleFields;
   onNotice: (message: string | null) => void;
   onRemove: () => void;
   onGoTo: () => void;
@@ -1003,7 +1012,7 @@ function withoutFirst(sent: readonly string[], key: string): readonly string[] {
  * Why a title is not changed here, in the words of what it holds that the field cannot keep: a
  * cross-reference, a footnote, formatting, or - an image, a variable - anything else.
  */
-function heldBack(title: Title): string {
+export function heldBack(title: Title): string {
   if (title.some((run) => run.type === 'crossReference')) {
     return say('document.this-title-holds-a-cross');
   }
@@ -1032,7 +1041,7 @@ const wordsOf = (title: Title) =>
  * equation included. **Equation** beside it, and `Mod-Shift-E` or `Enter` on an equation in it, open
  * the Equation dialog for the title; placing one commits the title as it then stands.
  */
-function TitleField({
+export function TitleField({
   node,
   onRetitle,
   openField,
@@ -1041,10 +1050,13 @@ function TitleField({
   direction,
   onEquation,
   onWithdrawEquation,
+  inHeading,
 }: {
   node: SectionViewNode;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
-  openField: MutableRefObject<string | null>;
+  openField: OpenTitleFields;
+  /** Typed in the section's heading (the EP plan, EP6): set as the heading is, gone once done with. */
+  inHeading?: { readonly className: string; readonly onClosed: () => void };
   onNotice: (message: string | null) => void;
   language: string;
   direction: 'ltr' | 'rtl';
@@ -1052,10 +1064,14 @@ function TitleField({
   onWithdrawEquation: () => void;
 }) {
   // Says which section's field is open, for as long as it is: written in an effect, never in render.
+  // Counted, as the heading's and the panel's can stand open on one section together.
   useEffect(() => {
-    openField.current = node.id;
+    const open = openField.current;
+    open.set(node.id, (open.get(node.id) ?? 0) + 1);
     return () => {
-      if (openField.current === node.id) openField.current = null;
+      const left = (open.get(node.id) ?? 1) - 1;
+      if (left === 0) open.delete(node.id);
+      else open.set(node.id, left);
     };
   }, [openField, node.id]);
 
@@ -1081,6 +1097,11 @@ function TitleField({
 
   const place = useRef<HTMLDivElement | null>(null);
   const editor = useRef<TitleEditor | null>(null);
+  // An equation alone, kept for words to be written beside it, keeps the heading's field open.
+  const staysOpen = useRef(false);
+  const cancelled = useRef(false);
+  const closedNow = useRef(inHeading?.onClosed);
+  closedNow.current = inHeading?.onClosed;
   // The field is asking for its dialog: the focus leaving it for the dialog is not the author leaving
   // the title, so it commits nothing until the dialog places an equation or is closed.
   const asking = useRef(false);
@@ -1103,10 +1124,14 @@ function TitleField({
       language,
       direction,
       onChange: (title) => setField((previous) => ({ ...previous, typed: title })),
-      onCommit: () => commitNow.current(),
+      onCommit: () => {
+        commitNow.current();
+        if (!staysOpen.current) closedNow.current?.();
+      },
       onPromptEquation: () => promptNow.current(),
     });
     editor.current = mounted;
+    if (closedNow.current !== undefined) mounted.focus();
     return () => {
       editor.current = null;
       mounted.destroy();
@@ -1151,6 +1176,7 @@ function TitleField({
   // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon. Read
   // from the editor rather than from `typed`, which an equation placed a moment ago has not reached.
   const commit = () => {
+    staysOpen.current = false;
     const title = trimTitle(editor.current?.read() ?? field.typed);
     // The store's own rule (`hasText`), asked here so the field refuses exactly what the store would.
     if (!hasText(wordsOf(title))) {
@@ -1158,6 +1184,7 @@ function TitleField({
         // An equation is not a title on its own - a title also names its section wherever a name
         // must be words - but it is the author's, so it is kept for them to write words beside.
         onNotice(say('document.a-section-s-title-needs'));
+        staysOpen.current = true;
         return;
       }
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
@@ -1228,6 +1255,31 @@ function TitleField({
     });
   };
   promptNow.current = openEquation;
+
+  if (inHeading !== undefined) {
+    return (
+      <span
+        onFocus={() => {
+          asking.current = false;
+        }}
+        onBlur={(event) => {
+          if (asking.current || cancelled.current) return;
+          if (event.currentTarget.contains(event.relatedTarget)) return;
+          commit();
+          if (!staysOpen.current) inHeading.onClosed();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          event.preventDefault();
+          event.stopPropagation();
+          cancelled.current = true;
+          inHeading.onClosed();
+        }}
+      >
+        <span ref={place} className={inHeading.className} />
+      </span>
+    );
+  }
 
   // The field and its button are one place to the author: the focus moving between them is not
   // leaving the title, and leaving both is, as leaving a text input was. The focus leaving for the

@@ -2,8 +2,7 @@
 
 > **Draft for Ken's agreement. Nothing is built.** Full tier: several PRs, and requirements change in EP4 and EP6. No
 > migration, stored shape or route is expected; any that appears stops the work for a ruling. Pre-flight ran, driving the
-> app, and found sixteen defects, answered in each PR below. Rulings 1 to 11 are Ken's, 2026-11-04. **Ruling 12's colour
-> awaits him; EP7 has not been through pre-flight.**
+> app, and found sixteen defects, answered in each PR below. Rulings 1 to 11 are Ken's, 2026-11-04. EP7 did not go through pre-flight.
 
 **Goal:** clicking into a document's text feels like Word or Google Docs: nothing moves, one marker says what is being
 edited, one toolbar holds what applies there, the panel follows, titles can be typed where they stand, and what was
@@ -48,8 +47,8 @@ The close and the baseline ride in EP6 unless the slice stops sooner.
     **Leaving the page does not cut:** the words come back on return (driven), and it is not a deliberate release.
 11. **CNT-074 stands:** the tooltip says who holds the part and when it is expected back, in place of "Click to edit", as well
     as the panel. **Show boundaries keeps a status mark in the outline's rows**, since it loses the labels.
-12. **A lock symbol in the left gutter, stacked with the comment symbol** (Ken's idea): green when you hold the lock, and for
-    someone else's, **amber recommended over the grey Ken suggested**, awaiting him. See EP7.
+12. **A lock symbol in the left gutter, stacked with the comment symbol** (Ken's idea): green when you hold the lock, **amber**
+    for someone else's (Ken chose it over grey). See EP7.
 
 ## Assumed unless Ken says otherwise
 
@@ -59,7 +58,7 @@ The close and the baseline ride in EP6 unless the slice stops sooner.
   target checked: a drag and a portalled toolbar both look like a sheet click otherwise.
 - **Enter** in a component heading moves into its text; in a section title it commits. **Esc** cancels.
 - **Hover** shows the left line in grey and the "Click to edit" tooltip. **Show boundaries** shows lines and no labels.
-- **Too narrow for the toolbar:** the overflow goes behind a "More" button.
+- **Too narrow for the toolbar:** it wraps (built so: no button goes out of sight, where the draft said "More").
 
 ## EP1: the panel follows
 
@@ -100,7 +99,7 @@ next component jumping 163px up and back. Longer over a real network.
 clipped where the desk is narrower than the sheet. The table's are portalled to the body.
 
 - One toolbar, portalled to the body; `placeToolbar` follows the component rather than the table.
-- Groups declare when they apply, the `applies` pattern of ADR-0085. Component first, so its buttons never move; Table after.
+- Groups declare when they apply. **Built:** Table first and Component last, since the toolbar is aligned to the part's end: that is what keeps Component's buttons still.
 - The Component group shows only in a document; a component's own page keeps its header.
 - Keep: the caret never under it (WCAG 2.4.11), the guards of #961 and #964, one `F6` stop, `Esc` back to the text.
 - **Copying `placeToolbar` is not enough:** clamp to the desk (at zoom 2, scrolled, it landed over the outline's buttons), add

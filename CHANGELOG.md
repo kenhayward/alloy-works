@@ -3,6 +3,29 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.236.0 - 2026-11-04 (PR #981)
+
+Editing a part of a document now feels like a word processor: clicking moves nothing, one line marks the part, one toolbar holds what applies, the panel follows, titles can be typed where they stand, and what you typed stays on the page when you move on.
+
+### Added
+
+- **Titles are typed where they stand.** Click a section title or a component's heading in a document to type it where it stands, in Authoring. Enter finishes a section title, or moves from a component's heading into its text; Esc puts it back.
+- **A padlock says who holds a part.** A padlock in a part's left margin shows who holds it, without hovering: green with a tick when you do, amber with a keyhole when someone else does. It names them and when they are expected back, and a click opens the Part panel, which now says so too.
+
+### Changed
+
+- **Clicking into a part moves nothing.** Clicking into a part of a document no longer moves anything. The text stays on the page while the editor opens and when it closes, and keys typed while it opens are kept.
+- **One line marks the part.** A single line down the left edge now says which part is open, blue while editing and grey on hover and under Show boundaries, replacing the boxes. It holds up in forced colours.
+- **No shift with a table.** Opening a part that holds a table no longer shifts the sheet sideways.
+- **One toolbar.** A part open in a document now has one floating toolbar, in your light or dark theme, above the part and locked in view as you scroll until the part has gone. It shows the part's acts always, and the table's while the cursor is in a table.
+- **The hover label has gone.** The floating label that appeared when you hovered over a part has gone. What it said and offered is in the Part panel: the version and the choice of version, Overrides, translations, review, and who is here. Suggest changes is in the Review menu and the Part panel, and Overrides now works while a part is open.
+
+### Fixed
+
+- **The Part panel follows you.** The Part panel now follows what you click. Clicking a part's text or a section's heading chooses it in the outline and the panel, in every mode, without scrolling or moving the focus.
+- **The panel says the version.** The Part panel says which version a part stands at, by its number.
+- **Moving on keeps your words.** Clicking another part, a heading or Reading after typing in a part no longer takes your words off the page. It now counts as Done editing: the words stay, a version is cut and the lock is released. A click on empty paper closes a part with nothing changed, and leaves one with changes open.
+
 ## 0.235.0 - 2026-11-04 (PR #966)
 
 A component's own page now shares the document's header, menus, modes, side dock and panels, so a control added for one reaches the other.

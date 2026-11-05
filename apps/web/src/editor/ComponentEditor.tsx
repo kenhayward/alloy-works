@@ -104,13 +104,12 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
+import { HeadingTitle } from './HeadingTitle.js';
 import { InPlaceBand } from './InPlaceBand.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
 import type { MenuEntry } from '../parts/MenuBar.js';
-import { NameTip } from '../parts/NameTip.js';
 import { paragraphStyleItems } from '../theme/StyleChoice.js';
-import { Icon } from './Icon.js';
 import { MarginStyleButton } from './MarginStyleButton.js';
 import {
   lazy,
@@ -173,7 +172,7 @@ import {
 } from './recovery.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
-import { TableToolbar } from './TableToolbar.js';
+import { PartToolbar } from './PartToolbar.js';
 import { ValuePanel } from './ValuePanel.js';
 import type { BindingState } from '../structure/bindingContexts.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
@@ -314,7 +313,18 @@ export interface ComponentEditorProps {
    * Given where it is open in place (interface slice 13): Done then closes it, releasing the lock
    * first when this author holds one, and is offered to a reader as the way out.
    */
-  readonly onDone?: (last?: ContentDocument) => void;
+  readonly onDone?: (last?: ContentDocument, cut?: string) => void;
+  /**
+   * The page asks it to close as Done would (the EP plan, EP5): the reader moved on. Each new `arrival`
+   * is one request, kept waiting while a claim or a save is on the wire; `onlyIfUnchanged` asks nothing
+   * of a part with changes, as a click on empty sheet does not.
+   */
+  readonly leaving?: { readonly arrival: number; readonly onlyIfUnchanged: boolean } | null;
+  /** It stays open after all: the reach question cancelled, or changes it cannot yet save (`blocked`). */
+  readonly onStay?: (blocked: boolean) => void;
+  /** Where its title is typed in its heading, and whether the heading was what was clicked (EP6). */
+  readonly titleHost?: HTMLElement | null | undefined;
+  readonly titleFirst?: boolean | undefined;
   /** What stands in its place while it opens, so that nothing moves (the EP plan, EP2). */
   readonly whileOpening?: ReactNode;
   /**
@@ -582,6 +592,10 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  titleHost,
+  titleFirst,
+  leaving,
+  onStay,
   whileOpening,
   ownPage,
   hostDocument,
@@ -699,6 +713,28 @@ export function ComponentEditor({
       },
     );
   };
+  // The version the session has cut since it opened, which the page moves a pin to (ruling 8).
+  const openedVersion = useRef<string | null>(null);
+  if (openedVersion.current === null && loaded.state === 'open') {
+    openedVersion.current = loaded.component.version.id;
+  }
+  // Moved on from (the EP plan, EP5): as Done, reach question and all; but what cannot be saved keeps
+  // the part open, where it says why and offers the text, rather than destroy it by closing. Before
+  // this page draws anything of a component, there is nothing to keep.
+  const closeForLeaving = useRef<() => void>(() => undefined);
+  closeForLeaving.current = () => onDone?.();
+  /** Whether Shift-F6 has just walked back to the text, so that the next one leaves it. */
+  const backAtText = useRef(false);
+  const leavingAnswered = useRef(0);
+  useEffect(() => {
+    if (!leaving || leavingAnswered.current === leaving.arrival) return;
+    const waiting = session?.phase;
+    if (waiting === 'claiming' || waiting === 'cutting' || waiting === 'releasing') return;
+    leavingAnswered.current = leaving.arrival;
+    closeForLeaving.current();
+    // Asked once for each arrival, and again only as the phase it waited on moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaving?.arrival, session?.phase]);
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
@@ -708,6 +744,9 @@ export function ComponentEditor({
   const inPlaceSettings = useContext(InPlaceSettings);
   const presentationNow = usePresentation();
   const [componentMenuOpen, setComponentMenuOpen] = useState(false);
+  const toggleComponentMenu = useCallback(() => setComponentMenuOpen((was) => !was), []);
+  /** The part of the document this is open in, which the one toolbar stands over. */
+  const partOfSurface = useCallback(() => place.current?.closest('[data-component]') ?? null, []);
   useEffect(() => {
     if (notice !== null) status?.say(notice);
   }, [status, notice]);
@@ -751,7 +790,6 @@ export function ComponentEditor({
   const layer = usePageLayer();
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
-  const frameRegion = useRef<HTMLDivElement | null>(null);
   const valueRegion = useRef<HTMLElement | null>(null);
   // The Bound table panel's, while the cursor stands in a bound table (TB2-F).
   const boundTableRegion = useRef<HTMLDivElement | null>(null);
@@ -2168,9 +2206,14 @@ export function ComponentEditor({
    * forwards and at the last going backwards, rather than guessing which region the author meant.
    */
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) {
+      if (event.key !== 'Shift') backAtText.current = false;
+      return;
+    }
     const ring = [
-      frameRegion.current,
+      // In a document the application enters at the text, so the text comes first and F6 goes on from
+      // it to the toolbars and the panels; last, it would leave at once and they could not be reached.
+      ...(inFrame ? [place.current] : []),
       headerRegion.current,
       toolbarRegion.current,
       tableToolbarRegion.current,
@@ -2182,7 +2225,7 @@ export function ComponentEditor({
       valueRegion.current,
       pasteRegion.current,
       recoveryRegion.current,
-      place.current,
+      ...(inFrame ? [] : [place.current]),
       metadataRegion.current,
       // A region in a panel that is not shown, such as the fields in Attributes while Versions is,
       // is no stop: the focus cannot land in what is hidden.
@@ -2196,10 +2239,23 @@ export function ComponentEditor({
       -1,
     );
     const back = event.shiftKey;
+    // In a document Shift-F6 from the text goes to the last stop and walks back to the text, and only
+    // then leaves: the text is first in the ring, but the panels are still to be reached backwards.
+    if (inFrame && back && ring.length > 1 && ring[at] === place.current && !backAtText.current) {
+      event.preventDefault();
+      land(ring[ring.length - 1]!);
+      return;
+    }
+    backAtText.current = inFrame && back && at === 1;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
     const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);
-    if (past && event.currentTarget.closest('[data-app-region]') !== null) return;
+    if (past && event.currentTarget.closest('[data-app-region]') !== null) {
+      // The toolbar stands on the page's layer, in none of the application's regions, so the key goes
+      // on from the text, whose region it is, or it would be held in this ring for good.
+      if (ring[at] === tableToolbarRegion.current) place.current?.focus();
+      return;
+    }
     event.preventDefault();
     const next =
       at < 0 ? (back ? ring.length - 1 : 0) : (at + (back ? -1 : 1) + ring.length) % ring.length;
@@ -2707,12 +2763,31 @@ export function ComponentEditor({
     keepDismissed(componentId, savedAt);
     setDismissedAt(savedAt);
   };
-  const done = async () => {
+  const done = async (): Promise<boolean> => {
     if (phase === 'editing') {
       await controls.current?.doneEditing();
-      if (controls.current?.view().phase !== 'reading') return;
+      if (controls.current?.view().phase !== 'reading') return false;
     }
-    onDone?.(surface === null ? undefined : fromEditor(surface.state.doc));
+    const now = controls.current?.view().version.id;
+    onDone?.(
+      surface === null ? undefined : fromEditor(surface.state.doc),
+      now !== undefined && now !== openedVersion.current ? now : undefined,
+    );
+    return true;
+  };
+  closeForLeaving.current = () => {
+    const changed = session !== null && (session.dirty || session.savedAt !== null);
+    if (leaving?.onlyIfUnchanged === true && changed) {
+      onStay?.(false);
+      return;
+    }
+    if ((phase !== 'editing' && phase !== 'reading') || session?.save === 'stopped') {
+      onStay?.(true);
+      return;
+    }
+    const go = () => void done().then((closed) => closed || onStay?.(true));
+    if (changed) askFirst(say('editor.done-editing'), go);
+    else go();
   };
 
   // The band a page keeps above the desk (ADR-0056), and whether this is in one. The frame's line and
@@ -2721,22 +2796,28 @@ export function ComponentEditor({
   const inFrame = inBand && onDone !== undefined;
   const headerEditable =
     shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase) && !readingRef.current;
+  // Over the whole page in a document, where the strip it would stand in is hidden with the Component
+  // menu, and a question there would never be seen (Done would seem to do nothing).
+  const reachQuestion = reach && (
+    <ReachDialog
+      uses={reach.uses}
+      related={reach.related}
+      title={header?.title ?? ''}
+      act={reach.act}
+      onConfirm={() => {
+        setReach(null);
+        reach.go();
+      }}
+      onCancel={() => {
+        setReach(null);
+        if (leaving) onStay?.(false);
+      }}
+    />
+  );
   // What stands whatever else the page draws: the question before a save, what one does, the save state.
   const stripTail = (
     <>
-      {reach && (
-        <ReachDialog
-          uses={reach.uses}
-          related={reach.related}
-          title={header?.title ?? ''}
-          act={reach.act}
-          onConfirm={() => {
-            setReach(null);
-            reach.go();
-          }}
-          onCancel={() => setReach(null)}
-        />
-      )}
+      {!inFrame && reachQuestion}
       {/* Before the first save of an approved one, what a save does (WF-F). */}
       {standing?.state.approved && shown.mayEdit && !drafting && (
         <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
@@ -3361,6 +3442,23 @@ export function ComponentEditor({
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
         {inBand && createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost)}
         {!inFrame && (ownPage === undefined || !header) && stripPart}
+        {inFrame && reachQuestion && createPortal(reachQuestion, document.body)}
+        {inFrame &&
+          titleHost != null &&
+          header &&
+          headerEditable &&
+          createPortal(
+            <HeadingTitle
+              title={header.title}
+              label={say('editor.title')}
+              focusFirst={titleFirst === true}
+              onChange={(title) => {
+                changeHeader('title', title);
+              }}
+              onLeave={() => surface?.focus()}
+            />,
+            titleHost,
+          )}
         {ownPage !== undefined && header && stripTail}
         {ownPage !== undefined && header && chrome}
         {inBand &&
@@ -3374,46 +3472,6 @@ export function ComponentEditor({
           )}
         {/* The component's own acts, on its frame's line and taking no height of the sheet's, so the
             sheet does not move as one opens (ADR-0075, CNT-075). */}
-        {inFrame && (
-          <div
-            ref={frameRegion}
-            className={styles['frameBar']}
-            role="group"
-            aria-label={say('document.component-menu')}
-            tabIndex={-1}
-            data-region-entry
-          >
-            <div className={styles['frameActs']}>
-              {leadingActs.map((act) => (
-                <NameTip key={act.label} name={act.label} below>
-                  <button
-                    type="button"
-                    className={styles['frameButton']}
-                    aria-label={act.label}
-                    aria-disabled={act.disabled}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      if (!act.disabled) act.onPress();
-                    }}
-                  >
-                    <Icon name={act.icon} />
-                  </button>
-                </NameTip>
-              ))}
-              <button
-                type="button"
-                className={styles['frameMenu']}
-                aria-expanded={componentMenuOpen}
-                onClick={() => setComponentMenuOpen((was) => !was)}
-              >
-                {say('document.component-menu')}
-              </button>
-              <div className={styles['frameStrip']} hidden={!componentMenuOpen}>
-                {stripPart}
-              </div>
-            </div>
-          </div>
-        )}
         {inBand && editing !== null && styleEntries.length > 0 && (
           <MarginStyleButton
             view={editing}
@@ -3576,20 +3634,42 @@ export function ComponentEditor({
             {/* On the table, in the reader's theme, whichever tab the panel shows (ADR-0079). Not
                 while a footnote is open over it, nor a dialog, nor while the workspace keeps this page
                 hidden: on the body's layer, the page's own `hidden` does not reach it. */}
-            {surface !== null &&
-              table !== null &&
-              mayFormat &&
-              !behindDialog &&
-              pageShown &&
-              openFootnote(surface) === null && (
-                <TableToolbar
+            {(() => {
+              const inTable =
+                surface !== null &&
+                table !== null &&
+                mayFormat &&
+                !behindDialog &&
+                pageShown &&
+                openFootnote(surface) === null;
+              if (!inFrame && !inTable) return null;
+              return (
+                <PartToolbar
                   ref={tableToolbarRegion}
                   view={surface}
-                  table={table}
+                  table={inTable ? table : null}
                   enabled={mayFormat}
                   number={tableNumber}
+                  away={!pageShown}
+                  behind={behindDialog}
+                  {...(inFrame
+                    ? {
+                        part: {
+                          element: partOfSurface,
+                          name: say('document.component-menu'),
+                          acts: leadingActs,
+                          menu: {
+                            label: say('document.component-menu'),
+                            open: componentMenuOpen,
+                            onToggle: toggleComponentMenu,
+                            strip: stripPart,
+                          },
+                        },
+                      }
+                    : {})}
                 />
-              )}
+              );
+            })()}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (
@@ -3619,7 +3699,17 @@ export function ComponentEditor({
             <UnheldFaces />
             {/* On its own, a sheet on a desk; in place, the document's sheet is the paper (ADR-0056). */}
             <Canvas sheet={onDone === undefined}>
-              <div ref={place} className={styles['surface']} tabIndex={-1} data-content />
+              <div
+                ref={place}
+                className={styles['surface']}
+                tabIndex={-1}
+                data-content
+                // Where the application's F6 enters this editor in a document: its text.
+                {...(inFrame ? { 'data-region-entry': '' } : {})}
+                onFocus={(event) => {
+                  if (event.target === event.currentTarget) surface?.focus();
+                }}
+              />
             </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they

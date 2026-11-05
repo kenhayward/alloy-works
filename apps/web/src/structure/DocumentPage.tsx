@@ -31,6 +31,7 @@ import {
   type TemplateParameter,
   type ThreadAnchor,
   type StoredProfile,
+  type SectionViewNode,
 } from '@alloy-works/domain';
 import { TEXT_CLASS } from '@alloy-works/editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -56,6 +57,7 @@ import { AssistantPanel, type AcceptedInDocument } from './AssistantPanel.js';
 import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
+import { lockSentence } from '../editor/held.js';
 import { IconButton } from '../parts/IconButton.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import {
@@ -88,9 +90,11 @@ import { boundTablesByKey, type TableRows } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
-import { DocumentText, type Editable, type Place } from './DocumentText.js';
+import textStyles from './DocumentText.module.css';
+import { DocumentText, PartStanding, type Editable, type Place } from './DocumentText.js';
 import { dataState } from './dataStates.js';
-import type { NodeMarks } from './OutlinePanel.js';
+import type { NodeMarks, Titling } from './OutlinePanel.js';
+import { heldBack, TitleField } from './PartPanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
 import { OverrideDialog } from './OverrideDialog.js';
 import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
@@ -822,6 +826,23 @@ export function DocumentPage({
   const [textsKnown, setTextsKnown] = useState<'checking' | 'known' | 'unknown'>('checking');
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
+  // **Moving on** (the EP plan, EP5): the open editor is asked to close as Done would, and stays mounted
+  // until it has, so its release and its version are not dropped. What comes next is held here, the
+  // latest asked for, and taken up as it closes.
+  const [leaving, setLeaving] = useState<{
+    readonly arrival: number;
+    readonly onlyIfUnchanged: boolean;
+  } | null>(null);
+  const leavingArrival = useRef(0);
+  const afterLeaving = useRef<{ node: string | null; mode?: Mode } | null>(null);
+  const leaveFor = (next: { node: string | null; mode?: Mode }, onlyIfUnchanged = false) => {
+    afterLeaving.current = next;
+    setLeaving((was) => {
+      if (was !== null && !was.onlyIfUnchanged) return was;
+      leavingArrival.current += 1;
+      return { arrival: leavingArrival.current, onlyIfUnchanged };
+    });
+  };
   // Reading, Review or Authoring (document-view.md, "Modes"; CNT-154, CNT-155): the reader's choice,
   // kept in the browser, Authoring the first time; which of them is on offer is decided below, from
   // what they may do.
@@ -928,6 +949,19 @@ export function DocumentPage({
     }
     return merged;
   }, [editable, componentOfNode, live.locks, principalId]);
+  // Who holds each part, in the Part panel's words: in Reading too, where the gutter stays clean.
+  const heldSaid = useMemo(() => {
+    const open = editing === null ? undefined : componentOfNode.get(editing);
+    const said = new Map<string, string>();
+    for (const [node, state] of editableNow) {
+      if (state.lock === null) continue;
+      const here = open !== undefined && componentOfNode.get(node) === open;
+      if (!(state.lock.yours && here) && new Date(state.lock.expectedRelease) <= new Date())
+        continue;
+      said.set(node, lockSentence(state.lock, here));
+    }
+    return said;
+  }, [editableNow, editing, componentOfNode]);
   // How many broken references each occurrence's text drew (STR-038), as its card reports.
   const [brokenByNode, setBrokenByNode] = useState<ReadonlyMap<string, number>>(new Map());
   const onBroken = useCallback((node: string, count: number) => {
@@ -1478,13 +1512,18 @@ export function DocumentPage({
     };
   }, [client, id, heldVersion, knownAttempt]);
 
+  // A title changed in a part just closed stands until the listing is next read (the EP plan, EP6).
+  const [retitled, setRetitled] = useState<ReadonlyMap<string, string>>(new Map());
   const names: Names = useMemo(
     () =>
       components.state === 'loaded'
-        ? new Map(components.items.map((each) => [each.id, each.title]))
+        ? new Map(components.items.map((each) => [each.id, retitled.get(each.id) ?? each.title]))
         : null,
-    [components],
+    [components, retitled],
   );
+  // Which section's title is being typed in its heading, and what it needs from the panel's queue.
+  const [titleOpen, setTitleOpen] = useState<string | null>(null);
+  const titling = useRef<Titling | null>(null);
 
   const opened = loaded.state === 'open' ? loaded.document : null;
   // A preview of the version the page holds, asked for beside Publish and shown in a pane beside the
@@ -2098,6 +2137,15 @@ export function DocumentPage({
     });
   });
   const chooseMode = (mode: Mode) => {
+    // With a part open, as moving on: the page drops to the mode once it has closed (the EP plan,
+    // ruling 10). Authoring is what it is in, and needs nothing closed.
+    if (mode !== 'authoring' && editing !== null) {
+      leaveFor({ node: null, mode });
+      return;
+    }
+    modeChosen(mode);
+  };
+  const modeChosen = (mode: Mode) => {
     setChosenMode(mode);
     // Reading and Review offer no editor, so one open in place closes as the page drops to either.
     if (mode !== 'authoring') setEditing(null);
@@ -2230,6 +2278,11 @@ export function DocumentPage({
   // An author updating a document reads what was said of it: the threads stand beside the text in
   // Authoring too, marked where they stand. A thread is started from Review, on what is selected there.
   const threadsShown = reviewing || authoring;
+  // Suggest changes: from the Part panel on its part, and from the Review menu on the part chosen.
+  const suggestIn = (node: string) => {
+    setDrafting(node);
+    setDock('suggestions');
+  };
   const modeNow: Mode = authoring ? 'authoring' : reviewing ? 'review' : 'reading';
   const offered = MODES.filter(
     ({ mode }) =>
@@ -2455,6 +2508,15 @@ export function DocumentPage({
         return panelState('data');
       case 'assistant':
         return { enabled: assistantOffered, checked: assistantOpen, run: toggleAssistant };
+      case 'suggest':
+        return {
+          enabled: reviewing,
+          run: () => {
+            const chosen = pointed?.node ?? marked;
+            if (chosen !== null && editableNow.get(chosen)?.maySuggest === true) suggestIn(chosen);
+            else setNotice(say('document.choose-a-part-to-suggest'));
+          },
+        };
       case 'boundaries':
         return { enabled: true, checked: boundaries, run: () => showBoundaries(!boundaries) };
       case 'pages':
@@ -2761,6 +2823,44 @@ export function DocumentPage({
                   conditionAxes={axes}
                   {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
                   marks={outlineMarks}
+                  heldSaid={heldSaid}
+                  titling={titling}
+                  standing={(node) =>
+                    node.type === 'reference' ? (
+                      <div className={textStyles['standing']}>
+                        <PartStanding
+                          node={node}
+                          standing={{
+                            names,
+                            changed: changedNodes,
+                            movedParts: document.movedParts,
+                            resolved,
+                            revisions: revisionByNode,
+                            lines: lineByNode,
+                            diverged: divergedByNode,
+                            translated: translatedByNode,
+                            pastReview: pastReviewNodes,
+                            overridesOf: overridesByNode,
+                            editable: editableNow,
+                            openComponent:
+                              editing === null ? null : (componentOfNode.get(editing) ?? null),
+                            present: presentIn,
+                            ...(threadsShown ? { threadCounts } : {}),
+                            acts: {
+                              hasText: texts.has(node.id),
+                              drafting,
+                              ...(document.mayEdit && authoring
+                                ? { choosing, onOverride: setOverriding }
+                                : {}),
+                              ...(reviewing && principalId !== undefined
+                                ? { onSuggest: suggestIn }
+                                : {}),
+                            },
+                          }}
+                        />
+                      </div>
+                    ) : null
+                  }
                   {...(referencesTo === undefined ? {} : { referencesTo })}
                   head={
                     // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
@@ -3466,15 +3566,15 @@ export function DocumentPage({
                     pastReview={pastReviewNodes}
                     changed={changedNodes}
                     overridesOf={overridesByNode}
-                    {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}
                     newer={{ client, byNode: newerByNode }}
-                    // The version is chosen from the label in Authoring, by whoever may restructure the
-                    // document (DV-F); anywhere else the label says it and offers nothing.
-                    {...(document.mayEdit && authoring ? { choosing } : {})}
                     bindingStates={bindingStates}
                     boundTables={boundTables}
                     {...(threadsShown
                       ? {
+                          onLock: () => {
+                            setDock('part');
+                            setDockCollapsed(false);
+                          },
                           threadMarks,
                           threadCounts,
                           openComments: {
@@ -3492,10 +3592,6 @@ export function DocumentPage({
                       : {})}
                     {...(reviewing && principalId !== undefined
                       ? {
-                          onSuggest: (node: string) => {
-                            setDrafting(node);
-                            setDock('suggestions');
-                          },
                           editor: (component: string, place: Place) => (
                             <ComponentEditor
                               key={`draft:${component}`}
@@ -3576,7 +3672,39 @@ export function DocumentPage({
                     {...(principalId === undefined || !authoring
                       ? {}
                       : {
-                          onEdit: (node: string | null, last?: unknown) => {
+                          ...(document.mayEdit
+                            ? {
+                                titleField: {
+                                  open: titleOpen,
+                                  onOpen: setTitleOpen,
+                                  heldBack: (node: SectionViewNode) => heldBack(node.title),
+                                  field: (node: SectionViewNode, className: string) =>
+                                    titling.current === null ? null : (
+                                      <TitleField
+                                        node={node}
+                                        onNotice={setNotice}
+                                        {...titling.current}
+                                        inHeading={{
+                                          className,
+                                          onClosed: () => setTitleOpen(null),
+                                        }}
+                                      />
+                                    ),
+                                },
+                              }
+                            : {}),
+                          onLeave: () => {
+                            // A click on another part's text has already said where to.
+                            if (afterLeaving.current === null) leaveFor({ node: null });
+                          },
+                          onEmptySheet: () => {
+                            if (afterLeaving.current === null) leaveFor({ node: null }, true);
+                          },
+                          onEdit: (node: string | null, last?: unknown, cut?: string) => {
+                            if (node !== null && editing !== null) {
+                              if (node !== editing) leaveFor({ node });
+                              return;
+                            }
                             // What it closed on stands until the read below answers, so that the
                             // words never leave the page: only where that is what the page will
                             // show, a part at the latest with nothing overridden (EP2).
@@ -3588,16 +3716,46 @@ export function DocumentPage({
                               node === null &&
                               last !== undefined &&
                               closing?.type === 'reference' &&
-                              closing.mode.kind === 'latest' &&
+                              (closing.mode.kind === 'latest' ||
+                                (closing.mode.kind === 'pinned' &&
+                                  cut !== undefined &&
+                                  document.mayEdit)) &&
                               (overridesByNode.get(closing.id)?.length ?? 0) === 0
                             ) {
                               setTexts((was) => new Map(was).set(closing.id, last));
                             }
-                            setEditing(node);
+                            const titleNow = (last as { title?: unknown } | undefined)?.title;
+                            if (
+                              typeof titleNow === 'string' &&
+                              closing?.type === 'reference' &&
+                              closing.component !== null
+                            ) {
+                              const component = closing.component;
+                              setRetitled((was) => new Map(was).set(component, titleNow));
+                            }
+                            // Taken up as it closes: where the reader went, and any mode they chose.
+                            const next = afterLeaving.current;
+                            afterLeaving.current = null;
+                            setLeaving(null);
+                            setEditing(node ?? next?.node ?? null);
+                            if (next?.mode !== undefined) modeChosen(next.mode);
                             // Closing reads the text again, so the card shows what was saved, and its
                             // bindings from the version it cut.
                             if (node === null) {
-                              setTextsAttempt((count) => count + 1);
+                              // A pinned part's pin moves to the version cut, as an accepted edit's
+                              // does (ruling 8), before the text is read at it.
+                              if (
+                                cut !== undefined &&
+                                closing?.type === 'reference' &&
+                                closing.mode.kind === 'pinned' &&
+                                closing.component !== null
+                              ) {
+                                void movePins(closing.component, cut).then(() =>
+                                  setTextsAttempt((count) => count + 1),
+                                );
+                              } else {
+                                setTextsAttempt((count) => count + 1);
+                              }
                               setBindingSession(null);
                               setEditingTables(null);
                               setEditorSaved(null);
@@ -3612,6 +3770,20 @@ export function DocumentPage({
                               client={client}
                               principalId={principalId}
                               {...place}
+                              leaving={leaving}
+                              onStay={(blocked) => {
+                                afterLeaving.current = null;
+                                setLeaving(null);
+                                // The panel goes back to the part still open.
+                                if (editing !== null) {
+                                  chosenNow.current = editing;
+                                  setPointed((was) => ({
+                                    node: editing,
+                                    arrival: (was?.arrival ?? 0) + 1,
+                                  }));
+                                }
+                                if (blocked) setNotice(say('document.part-stays-open'));
+                              }}
                               documentParameters={documentParameters}
                               tableHost={tableHost}
                               onTable={setHeldTable}

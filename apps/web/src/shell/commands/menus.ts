@@ -195,7 +195,13 @@ export function buildMenus(
       rows(ed('Term'), ed('Language')),
     ]),
     ...(aDocument
-      ? [menu('review', 'menu.review', 'R', [rows('comment'), rows('history'), rows('assistant')])]
+      ? [
+          menu('review', 'menu.review', 'R', [
+            rows('comment', 'suggest'),
+            rows('history'),
+            rows('assistant'),
+          ]),
+        ]
       : []),
     menu('help', 'menu.help', 'H', [rows('shortcuts', 'whats-new')]),
   ];

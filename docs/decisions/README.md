@@ -73,6 +73,9 @@ exist.
 | [0077](0077-the-threads-panel-reads-as-cards.md)                                  | The threads panel reads as cards, found in the browser                        | Accepted           |
 | [0078](0078-a-drafted-comment-stays-its-persons.md)                               | A comment the assistant drafted stays its person's                            | Accepted           |
 | [0085](0085-a-components-page-shares-the-documents-shell.md)                      | A component's page shares the document's shell                                | Accepted           |
+| [0086](0086-one-floating-toolbar-over-the-part.md)                                | One floating toolbar stands over the part                                     | Accepted           |
+| [0087](0087-a-parts-standing-is-in-the-part-panel.md)                             | A part's standing is in the Part panel                                        | Accepted           |
+| [0088](0088-moving-on-counts-as-done-editing.md)                                  | Moving on counts as Done editing                                              | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation      | Accepted           |
 | [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                     | Accepted           |
 | [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can         | Accepted           |

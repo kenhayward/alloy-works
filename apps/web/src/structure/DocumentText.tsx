@@ -26,6 +26,7 @@ import {
   TEXT_CLASS,
   type BindingContext,
   type ReferenceContext,
+  titleToEditor,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import {
@@ -39,7 +40,7 @@ import {
   type RefObject,
 } from 'react';
 
-import { heldSentence } from '../editor/held.js';
+import { heldSentence, lockSentence } from '../editor/held.js';
 import type { Freshness, LivePresence } from './live.js';
 import { presenceWords } from './PeopleHere.js';
 import type { BindingActs } from '../editor/ComponentEditor.js';
@@ -68,91 +69,6 @@ import { words as say } from '../words/words.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 
-/** The room a component's label keeps from the text it stands beside. */
-const LABEL_GAP = 48;
-
-/**
- * Whether a component's label stands beside its text (CNT-073): only where the column leaves it the
- * room - the text, from the component's start, then the gap, then the label. Zoomed in, the text
- * fills the column and the label stands above it instead, never on it.
- */
-export function labelFits({
-  column,
-  text,
-  label,
-}: {
-  readonly column: number;
-  readonly text: number;
-  readonly label: number;
-}): boolean {
-  return column - text >= label + LABEL_GAP;
-}
-
-/**
- * How far a component's words reach from its inline start (UI-G; LOC-004): from its left edge left to
- * right, from its right edge right to left, where its label stands at the other end.
- */
-export function textExtent(
-  component: { readonly left: number; readonly right: number },
-  words: { readonly left: number; readonly right: number },
-  direction: 'ltr' | 'rtl',
-): number {
-  return direction === 'rtl' ? component.right - words.left : words.right - component.left;
-}
-
-/**
- * Each component's label placed beside its text or above it (`labelFits`), again as the column or
- * the text's measure changes size. Decided from widths that placing the label does not change, so it
- * never flips back and forth, and never on hover, so showing a label moves no text.
- */
-function useLabelsPlaced(column: RefObject<HTMLElement | null>) {
-  useLayoutEffect(() => {
-    const root = column.current;
-    if (root === null) return;
-    const place = () => {
-      // On a sheet (ADR-0056) a component is the measure wide, so its label stands beside its
-      // heading's words, where they leave it room, rather than beside its text; where they leave it
-      // none, raised over the space above the component rather than a line of its own, since the
-      // sheet sets the text where the PDF does (STY-080).
-      const sheet = root.classList.contains('aw-sheet');
-      for (const component of root.querySelectorAll<HTMLElement>('[data-component]')) {
-        const label = component.querySelector<HTMLElement>(':scope > [data-label]');
-        const text = sheet
-          ? component.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6')
-          : component.querySelector<HTMLElement>('.aw-text');
-        let words = text?.getBoundingClientRect();
-        if (sheet && text) {
-          const range = document.createRange();
-          range.selectNodeContents(text);
-          words = range.getBoundingClientRect();
-        }
-        const above =
-          label !== null &&
-          text !== null &&
-          words !== undefined &&
-          !labelFits({
-            column: component.clientWidth,
-            text: textExtent(
-              component.getBoundingClientRect(),
-              words,
-              getComputedStyle(component).direction === 'rtl' ? 'rtl' : 'ltr',
-            ),
-            label: label.offsetWidth,
-          });
-        // Both, every time: a label placed before the sheet arrived must not keep the line it took.
-        component.toggleAttribute('data-label-above', above && !sheet);
-        component.toggleAttribute('data-label-raised', above && sheet);
-      }
-    };
-    place();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(place);
-    observer.observe(root);
-    for (const each of root.querySelectorAll('.aw-text')) observer.observe(each);
-    return () => observer.disconnect();
-  });
-}
-
 /** No bound tables, one object, so the rows the page wants are not asked again for nothing. */
 const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
 
@@ -169,7 +85,10 @@ export interface Place {
   /** How many characters into the text it was opened, for the caret; absent if not by the text. */
   readonly openAt?: number;
   /** Closes it, as Done does, with what it last held. */
-  readonly onDone: (last?: ContentDocument) => void;
+  readonly onDone: (last?: ContentDocument, cut?: string) => void;
+  /** Where its title is typed in its heading, and whether the heading was what was clicked (EP6). */
+  readonly titleHost?: HTMLElement | null;
+  readonly titleFirst?: boolean;
   /** What stands in its place while it opens: the text as it was read (the EP plan, EP2). */
   readonly whileOpening?: React.ReactNode;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
@@ -253,6 +172,157 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
   return null;
 }
 
+/** What hovering over a part says where it cannot simply be edited; null where it can. */
+function editableTip(state: Editable | undefined): string | null {
+  if (state === undefined) return null;
+  const lock =
+    state.lock !== null && new Date(state.lock.expectedRelease).getTime() > Date.now()
+      ? state.lock
+      : null;
+  if (lock !== null && !lock.yours) {
+    return heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease });
+  }
+  return state.mayEdit ? null : say('document.you-may-read-this-component');
+}
+
+/** What a part's standing is told from, as the page knows it. */
+export interface Standing {
+  readonly names: Names;
+  readonly changed?: ReadonlySet<string> | undefined;
+  readonly movedParts?: readonly string[] | undefined;
+  readonly resolved?: ReadonlyMap<string, Parameters<typeof versionSaid>[1]> | undefined;
+  readonly revisions?: ReadonlyMap<string, Parameters<typeof versionSaid>[2]> | undefined;
+  readonly lines?: ReadonlyMap<string, string> | undefined;
+  readonly diverged?: ReadonlyMap<string, readonly string[]> | undefined;
+  readonly translated?: Parameters<typeof DocumentText>[0]['translated'];
+  readonly pastReview?: ReadonlySet<string> | undefined;
+  readonly overridesOf?: Parameters<typeof DocumentText>[0]['overridesOf'];
+  readonly editable?: ReadonlyMap<string, Editable> | undefined;
+  readonly openComponent?: string | null | undefined;
+  readonly present?: Parameters<typeof DocumentText>[0]['present'];
+  readonly threadCounts?: ReadonlyMap<string, number> | undefined;
+  /** The acts on it, in the Part panel only: left out, it says and offers nothing. */
+  readonly acts?: {
+    readonly choosing?: Choosing | undefined;
+    readonly onOverride?: ((node: string) => void) | undefined;
+    readonly onSuggest?: ((node: string) => void) | undefined;
+    /** The part a suggestion is being drafted in: none is offered there again. */
+    readonly drafting?: string | null | undefined;
+    readonly hasText?: boolean | undefined;
+  };
+}
+
+/**
+ * **What is true of a part** (the EP plan, EP4; CNT-162, LIF-018, LIF-046, LOC-016, REU-015): its version
+ * and how it is placed, its lines, translations, review and overrides, who may edit it and who is here.
+ * In the Part panel, with its acts; beside the text, in words for a screen reader, without them.
+ */
+export function PartStanding({ node, standing }: { node: OutlineViewNode; standing: Standing }) {
+  const { names, changed, movedParts, resolved, revisions, lines, diverged, translated } = standing;
+  const { pastReview, overridesOf, editable, openComponent, present, threadCounts, acts } =
+    standing;
+  if (node.type !== 'reference') return null;
+  const name = nodeName(node, names);
+  return (
+    <>
+      {acts === undefined && <span className={styles['labelName']}>{name}</span>}
+      {changed?.has(node.id) === true && (
+        <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
+      )}
+      {node.component === null ? (
+        <>
+          {acts === undefined && <Lozenge kind="notYoursToRead" size="small" />}
+          {movedParts?.includes(node.id) === true && (
+            <span>{say('moving.part-moved-with-threads')}</span>
+          )}
+        </>
+      ) : (
+        <>
+          {acts?.choosing ? (
+            <VersionChoice
+              node={node}
+              component={node.component}
+              name={name}
+              said={versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
+              choosing={acts.choosing}
+            />
+          ) : (
+            <span className={styles['versionSaid']}>
+              {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
+            </span>
+          )}
+          {lines?.has(node.id) === true && (
+            <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
+          )}
+          {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
+            <Lozenge kind="diverged" size="small">
+              {say('document.main-line-also', { value1: diverged!.get(node.id)!.join(', ') })}
+            </Lozenge>
+          )}
+          {(translated?.get(node.id) ?? []).map((each) => (
+            <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
+              {`${each.language}: ${statusWords(each)}`}
+            </Lozenge>
+          ))}
+          {pastReview?.has(node.id) === true && <Lozenge kind="pastReview" size="small" />}
+          {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
+            <Chip>{say('document.overridden-here')}</Chip>
+          )}
+          {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
+            <Chip tone="warn">{say('document.override-no-longer-applies')}</Chip>
+          )}
+          <EditableState
+            state={editable?.get(node.id)}
+            openHere={
+              openComponent !== null &&
+              openComponent !== undefined &&
+              openComponent === node.component
+            }
+          />
+          {(present?.get(node.component) ?? []).length > 0 && (
+            <span className={styles['here']}>
+              {present!
+                .get(node.component)!
+                .map((person) => presenceWords(person))
+                .join('; ')}
+            </span>
+          )}
+          <ThreadsSaid count={threadCounts?.get(node.id)} />
+          {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
+            <span className={styles['threads']}>
+              {say('document.suggestions-2', {
+                count: editable!.get(node.id)!.pendingSuggestions,
+              })}
+            </span>
+          )}
+          {acts?.onOverride && acts.hasText === true && (
+            <button
+              type="button"
+              className={styles['open']}
+              onClick={() => acts.onOverride!(node.id)}
+              aria-label={say('document.overrides-of', { value1: name })}
+            >
+              {say('document.overrides')}
+            </button>
+          )}
+          {acts?.onSuggest &&
+            editable?.get(node.id)?.maySuggest === true &&
+            acts.drafting !== node.id && (
+              <button
+                type="button"
+                className={styles['open']}
+                onClick={() => acts.onSuggest!(node.id)}
+                aria-label={say('document.suggest-changes-to', { value1: name })}
+              >
+                {say('document.suggest-changes')}
+              </button>
+            )}
+        </>
+      )}
+    </>
+  );
+}
+
 /** How many threads stand on a component or a section as a whole, said in Review. */
 function ThreadsSaid({ count }: { count: number | undefined }) {
   if (count === undefined || count === 0) return null;
@@ -288,6 +358,46 @@ function CommentGlyph({
 }
 
 /**
+ * Who holds a component, in the gutter (the EP plan, EP7; CNT-074): seen without hovering, a button so
+ * keyboard and touch get the words, and a click opens the Part panel. Not a lozenge: it says who holds
+ * a session, not a state of content (`lifecycle-states.md`). It goes when the lock lapses, which no
+ * event says; a lock the reader is using here renews itself, and goes when the stream says it has.
+ */
+export function LockGlyph({
+  lock,
+  openHere,
+  onOpen,
+}: {
+  lock: NonNullable<Editable['lock']>;
+  openHere: boolean;
+  onOpen: () => void;
+}) {
+  const release = new Date(lock.expectedRelease).getTime();
+  const inUseHere = lock.yours && openHere;
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const left = release - Date.now();
+    if (inUseHere || left <= 0) return undefined;
+    // setTimeout holds no more than this; a longer wait simply looks again.
+    const timer = setTimeout(() => setTick((was) => was + 1), Math.min(left + 1, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [release, inUseHere, tick]);
+  if (!inUseHere && release <= Date.now()) return null;
+  const said = lockSentence(lock, openHere);
+  return (
+    <IconButton
+      className={styles['lockGlyph']}
+      data-lock={lock.yours ? 'yours' : 'theirs'}
+      label={said}
+      tooltip={said}
+      onClick={onOpen}
+    >
+      <Icon name={lock.yours ? 'Lock yours' : 'Lock held'} size={14} />
+    </IconButton>
+  );
+}
+
+/**
  * A component's text, rendered once for its content and set into the card: markup, not a view.
  * Given `onOpen`, the text is the way into the component's editor (interface slice 13): a click
  * opens it with the caret where the click landed, and Enter opens it from the keyboard, the text
@@ -302,6 +412,7 @@ function RenderedText({
   onProvenance,
   onBroken,
   marks,
+  tip,
 }: {
   content: unknown;
   /** What its references print from, where it stands in a document (ruling R12). */
@@ -318,6 +429,8 @@ function RenderedText({
   onBroken?: (count: number) => void;
   /** Where each thread on it stands, marked in Review (the TH plan, Task 3). */
   marks?: readonly Placed[] | undefined;
+  /** What hovering over it says of who may edit it, in place of "Click to edit" (the EP plan, ruling 11). */
+  tip?: string | null | undefined;
 }) {
   const place = useRef<HTMLDivElement>(null);
   const onBrokenRef = useRef(onBroken);
@@ -389,7 +502,7 @@ function RenderedText({
       className={classes}
       data-opens="true"
       tabIndex={0}
-      title={say('document.click-to-edit')}
+      title={tip ?? say('document.click-to-edit')}
       onClick={(event) => {
         const host = place.current;
         if (!host) return;
@@ -476,6 +589,9 @@ export function DocumentText({
   texts,
   editing = null,
   onEdit,
+  titleField,
+  onLeave,
+  onEmptySheet,
   editor,
   editable,
   present,
@@ -491,9 +607,7 @@ export function DocumentText({
   diverged,
   translated,
   overridesOf,
-  onOverride,
   onPointedAt,
-  choosing,
   bindingStates = null,
   onProvenance,
   onBindingSettle,
@@ -506,7 +620,7 @@ export function DocumentText({
   threadMarks,
   threadCounts,
   openComments,
-  onSuggest,
+  onLock,
   newer,
   movedParts,
 }: {
@@ -528,7 +642,19 @@ export function DocumentText({
   /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
-  onEdit?: (node: string | null, last?: ContentDocument) => void;
+  onEdit?: (node: string | null, last?: ContentDocument, cut?: string) => void;
+  /** A section's title typed in its heading, in Authoring (the EP plan, EP6). */
+  titleField?: {
+    readonly open: string | null;
+    readonly onOpen: (node: string) => void;
+    readonly field: (node: SectionViewNode, className: string) => React.ReactNode;
+    /** Why a title cannot be typed in, where it holds something that cannot. */
+    readonly heldBack: (node: SectionViewNode) => string;
+  };
+  /** A click that moves on from the part open, anywhere but another part's text (the EP plan, EP5). */
+  onLeave?: () => void;
+  /** A click on empty sheet, while a part is open. */
+  onEmptySheet?: () => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
   editor?: (component: string, place: Place) => React.ReactNode;
   /**
@@ -557,15 +683,8 @@ export function DocumentText({
   translated?: ReadonlyMap<string, readonly TranslationSaid[]>;
   /** Each reference's local overrides by node, and whether each stands (REU-011; the R4 plan, R4-G). */
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
-  /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
-  onOverride?: (node: string) => void;
   /** A part clicked or opened in the text, in any mode: the page chooses it (the EP plan, EP1). */
   onPointedAt?: (node: string) => void;
-  /**
-   * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
-   * reader who may restructure the document. Without it the label says the version and offers nothing.
-   */
-  choosing?: Choosing;
   /**
    * What the bindings view says of every binding the texts hold (the B1 plan, B1-I), or null where the
    * page has not read it, or could not: then no value is shown, and no error (B1-N).
@@ -597,6 +716,8 @@ export function DocumentText({
   threadMarks?: ReadonlyMap<string, readonly Placed[]>;
   /** In Review, how many threads stand on each node as a whole: a component or a section. */
   threadCounts?: ReadonlyMap<string, number>;
+  /** Shows who holds each part in the gutter, and opens the Part panel: Authoring and Review's. */
+  onLock?: () => void;
   /** The open comments on each component, newest first, and what opens one, for its gutter glyph. */
   openComments?: {
     readonly byNode: ReadonlyMap<
@@ -605,8 +726,6 @@ export function DocumentText({
     >;
     readonly open: (thread: string) => void;
   };
-  /** In Review, opens a draft of a component to suggest a change to it (the SG plan, SG-J). */
-  onSuggest?: (node: string) => void;
   /**
    * Each reference pinned below a newer version the reader may read, by node, and where the comparison
    * between them is read from (CNT-181).
@@ -623,10 +742,13 @@ export function DocumentText({
   // sheet on the desk its parent is (ADR-0056).
   const column = useRef<HTMLElement>(null);
   const canvas = useCanvas(deskRoom, column as RefObject<HTMLDivElement | null>, true);
-  useLabelsPlaced(column);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
+  // Where a heading's title is typed while its part is open, and whether the cursor starts there.
+  const [titleHost, setTitleHost] = useState<HTMLElement | null>(null);
+  const [titleFirst, setTitleFirst] = useState(false);
   const open = (node: string) => (at: number) => {
+    setTitleFirst(false);
     setOpenAt(at);
     onPointedAt?.(node);
     onEdit?.(node);
@@ -674,6 +796,7 @@ export function DocumentText({
     [bindingStates],
   );
 
+  const pressedOn = useRef<EventTarget | null>(null);
   // The component open in place on this page, whichever occurrence it was opened from.
   const openComponent = useMemo(() => {
     const find = (nodes: readonly OutlineViewNode[]): string | null => {
@@ -687,6 +810,55 @@ export function DocumentText({
     return editing === null ? null : find(outline.nodes);
   }, [editing, outline]);
 
+  // A title that may be typed in: seen as text until it is clicked, or Enter pressed on it.
+  const opensTitle = (go: () => void) => ({
+    className: styles['titleOpens'],
+    'data-opens-title': true,
+    tabIndex: 0,
+    title: say('document.click-to-edit'),
+    onClick: go,
+    onKeyDown: (event: React.KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.target !== event.currentTarget) return;
+      event.preventDefault();
+      go();
+    },
+  });
+  const sectionTitleOf = (node: SectionViewNode) => {
+    if (titleField === undefined) return <SectionTitle title={node.title} />;
+    if (titleField.open === node.id) return titleField.field(node, styles['headingField']!);
+    if (titleToEditor(node.title) === null) {
+      return (
+        <span title={titleField.heldBack(node)}>
+          <SectionTitle title={node.title} />
+        </span>
+      );
+    }
+    return (
+      <span {...opensTitle(() => titleField.onOpen(node.id))}>
+        <SectionTitle title={node.title} />
+      </span>
+    );
+  };
+  const componentTitleOf = (node: OutlineViewNode) => {
+    const name = nodeName(node, names);
+    if (node.type !== 'reference' || node.component === null) return name;
+    const mayOpen = onEdit && editor && editable?.get(node.id)?.mayEdit === true;
+    if (!mayOpen) return <span className={styles['shownName']}>{name}</span>;
+    return (
+      <span
+        {...opensTitle(() => {
+          if (editing === node.id) return;
+          setTitleFirst(true);
+          setOpenAt(undefined);
+          onPointedAt?.(node.id);
+          onEdit?.(node.id);
+        })}
+        className={`${styles['titleOpens']} ${styles['shownName']}`}
+      >
+        {name}
+      </span>
+    );
+  };
   const titled = (node: OutlineViewNode, depth: number) => {
     const at = numbers.get(node.id);
     // In a holder the measure wide on the canvas, so the heading's indents and alignment stand inside
@@ -695,7 +867,9 @@ export function DocumentText({
       <div
         className={styles['measured']}
         // A component's heading is within its box, which answers for the whole of it.
-        {...(node.type === 'section' && onPointedAt ? { onClick: () => onPointedAt(node.id) } : {})}
+        {...(node.type === 'section' && onPointedAt
+          ? { onClick: (event: React.MouseEvent) => pointedAt(node.id, event.target) }
+          : {})}
       >
         <Heading depth={depth}>
           {at !== undefined && (
@@ -703,12 +877,27 @@ export function DocumentText({
               <span className={styles['number']}>{at}</span>{' '}
             </>
           )}
-          {node.type === 'section' ? <SectionTitle title={node.title} /> : nodeName(node, names)}
+          {node.type === 'section' ? (
+            sectionTitleOf(node)
+          ) : (
+            <>
+              {editing === node.id && <span ref={setTitleHost} className={styles['titleHost']} />}
+              {componentTitleOf(node)}
+            </>
+          )}
         </Heading>
       </div>
     );
   };
 
+  // A click on another part or a section's heading moves on from the one open, but not one on what
+  // stands there to be pressed, such as a part's comment symbol.
+  const pointedAt = (node: string, target: EventTarget) => {
+    onPointedAt?.(node);
+    if (editing === null || editing === node) return;
+    if (target instanceof Element && target.closest('button, a, input') !== null) return;
+    onLeave?.();
+  };
   const render = (nodes: readonly OutlineViewNode[], depth: number): React.ReactNode =>
     nodes.map((node) =>
       node.type === 'section' ? (
@@ -734,127 +923,51 @@ export function DocumentText({
             className={styles['component']}
             data-component=""
             data-editing={editing === node.id}
-            onClick={onPointedAt ? () => onPointedAt(node.id) : undefined}
+            onClick={onPointedAt ? (event) => pointedAt(node.id, event.target) : undefined}
           >
-            {openComments?.byNode.has(node.id) === true && (
-              <CommentGlyph
-                comments={openComments.byNode.get(node.id)!}
-                onOpen={openComments.open}
-              />
+            {/* One stack in the gutter, which moves no text, and wraps sideways on a short part. */}
+            {(openComments?.byNode.has(node.id) === true ||
+              (onLock !== undefined && editable?.get(node.id)?.lock)) && (
+              <div className={styles['gutter']}>
+                {onLock !== undefined && editable?.get(node.id)?.lock && (
+                  <LockGlyph
+                    lock={editable.get(node.id)!.lock!}
+                    openHere={openComponent !== null && openComponent === node.component}
+                    onOpen={onLock}
+                  />
+                )}
+                {openComments?.byNode.has(node.id) === true && (
+                  <CommentGlyph
+                    comments={openComments.byNode.get(node.id)!}
+                    onOpen={openComments.open}
+                  />
+                )}
+              </div>
             )}
-            {/* The component's label (CNT-073): what it is, which version and how it is placed
-                (CNT-162), whether the reader may edit it and who holds it, and Open - seen on hover, on
-                focus and under Show boundaries, and always there for a screen reader. While it is
-                being edited the editor's own strip says it. */}
+            {/* What a part's standing says, for a screen reader reaching it: never seen, since the Part
+                panel shows it to everyone else, with its acts (the EP plan, EP4). While it is being
+                edited the editor says it. */}
             {!(editing === node.id && editor && node.component !== null) && (
               <div className={styles['label']} data-label="">
-                <span className={styles['labelName']}>{nodeName(node, names)}</span>
-                {changed?.has(node.id) === true && (
-                  <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
-                )}
-                {node.component === null ? (
-                  <>
-                    <Lozenge kind="notYoursToRead" size="small" />
-                    {movedParts?.includes(node.id) === true && (
-                      <span>{say('moving.part-moved-with-threads')}</span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {choosing ? (
-                      <VersionChoice
-                        node={node}
-                        component={node.component}
-                        name={nodeName(node, names)}
-                        said={versionSaid(
-                          node.mode,
-                          resolved?.get(node.id),
-                          revisions?.get(node.id),
-                        )}
-                        choosing={choosing}
-                      />
-                    ) : (
-                      <span className={styles['versionSaid']}>
-                        {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
-                      </span>
-                    )}
-                    {lines?.has(node.id) === true && (
-                      <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
-                    )}
-                    {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
-                      <Lozenge kind="diverged" size="small">
-                        {say('document.main-line-also', {
-                          value1: diverged!.get(node.id)!.join(', '),
-                        })}
-                      </Lozenge>
-                    )}
-                    {(translated?.get(node.id) ?? []).map((each) => (
-                      <Lozenge key={each.language} kind={translationKind(each.status)} size="small">
-                        {`${each.language}: ${statusWords(each)}`}
-                      </Lozenge>
-                    ))}
-                    {pastReview?.has(node.id) === true && (
-                      <Lozenge kind="pastReview" size="small" />
-                    )}
-                    {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
-                      <Chip>{say('document.overridden-here')}</Chip>
-                    )}
-                    {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
-                      <Chip tone="warn">{say('document.override-no-longer-applies')}</Chip>
-                    )}
-                    {onOverride && texts?.has(node.id) && editing !== node.id && (
-                      <button
-                        type="button"
-                        className={styles['open']}
-                        onClick={() => onOverride(node.id)}
-                        aria-label={say('document.overrides-of', { value1: nodeName(node, names) })}
-                      >
-                        {say('document.overrides')}
-                      </button>
-                    )}
-                    <EditableState
-                      state={editable?.get(node.id)}
-                      openHere={openComponent !== null && openComponent === node.component}
-                    />
-                    {(present?.get(node.component) ?? []).length > 0 && (
-                      <span className={styles['here']}>
-                        {present!
-                          .get(node.component)!
-                          .map((person) => presenceWords(person))
-                          .join('; ')}
-                      </span>
-                    )}
-                    <a
-                      className={styles['open']}
-                      href={`#/components/${node.component}`}
-                      aria-label={say('document.open', { value1: nodeName(node, names) })}
-                    >
-                      {say('document.open-2')}
-                    </a>
-                    <ThreadsSaid count={threadCounts?.get(node.id)} />
-                    {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
-                      <span className={styles['threads']}>
-                        {say('document.suggestions-2', {
-                          count: editable!.get(node.id)!.pendingSuggestions,
-                        })}
-                      </span>
-                    )}
-                    {onSuggest &&
-                      editable?.get(node.id)?.maySuggest === true &&
-                      editing !== node.id && (
-                        <button
-                          type="button"
-                          className={styles['open']}
-                          onClick={() => onSuggest(node.id)}
-                          aria-label={say('document.suggest-changes-to', {
-                            value1: nodeName(node, names),
-                          })}
-                        >
-                          {say('document.suggest-changes')}
-                        </button>
-                      )}
-                  </>
-                )}
+                <PartStanding
+                  node={node}
+                  standing={{
+                    names,
+                    changed,
+                    movedParts,
+                    resolved,
+                    revisions,
+                    lines,
+                    diverged,
+                    translated,
+                    pastReview,
+                    overridesOf,
+                    editable,
+                    openComponent,
+                    present,
+                    threadCounts,
+                  }}
+                />
               </div>
             )}
             {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
@@ -889,6 +1002,8 @@ export function DocumentText({
                       ? {}
                       : { number: numbers.get(node.id)! }),
                     ...(openAt === undefined ? {} : { openAt }),
+                    titleHost,
+                    titleFirst,
                     referenceContext: contexts.get(node.id) ?? null,
                     bindingContext: bindingContextsByNode?.get(node.id) ?? null,
                     ...(bindingStatesByNode?.has(node.id)
@@ -923,7 +1038,7 @@ export function DocumentText({
                         }
                       : {}),
                     ...(onSaved ? { onSaved } : {}),
-                    onDone: (last) => onEdit?.(null, last),
+                    onDone: (last, cut) => onEdit?.(null, last, cut),
                     ...(texts?.has(node.id)
                       ? {
                           whileOpening: (
@@ -943,6 +1058,7 @@ export function DocumentText({
                       context={contexts.get(node.id) ?? null}
                       bindings={bindingContextsByNode?.get(node.id) ?? null}
                       marks={threadMarks?.get(node.id)}
+                      tip={onEdit && editor ? editableTip(editable?.get(node.id)) : null}
                       {...(onBroken
                         ? { onBroken: (count: number) => onBroken(node.id, count) }
                         : {})}
@@ -968,6 +1084,23 @@ export function DocumentText({
       style={canvas.style}
       data-boundaries={boundaries ? 'shown' : undefined}
       aria-label={say('document.the-document-s-text')}
+      onMouseDown={(event) => {
+        pressedOn.current = event.target;
+      }}
+      onClick={(event) => {
+        // Empty sheet by the native target, both ends of the press, with nothing selected: a drag
+        // and a portalled toolbar or dialog look like a click here otherwise.
+        const { target, currentTarget } = event;
+        const empty = (at: EventTarget | null) =>
+          at instanceof Element &&
+          currentTarget.contains(at) &&
+          at.closest(
+            '[data-component], [data-node] h1, [data-node] h2, [data-node] h3, [data-node] h4, [data-node] h5, [data-node] h6',
+          ) === null;
+        if (editing === null || !empty(target) || !empty(pressedOn.current)) return;
+        if (window.getSelection()?.isCollapsed === false) return;
+        onEmptySheet?.();
+      }}
     >
       {render(outline.nodes, 1)}
     </section>

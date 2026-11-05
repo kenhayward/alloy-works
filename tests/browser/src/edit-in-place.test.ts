@@ -230,6 +230,216 @@ describe('clicking into a document, in Chromium', () => {
     });
   });
 
+  it("stands one toolbar over the part, in the reader's theme, its acts still as a table is entered", async () => {
+    const client = api();
+    const image = await uploadImage(client, 'A small mark');
+    const figure = await uploadImage(client, 'A blue rectangle');
+    const every = await makeComponent(client, `Every block ${Date.now()}`, [
+      para('e0', 'First words.'),
+      ...everyBlock(figure, image),
+    ] as never);
+    const made = await edit(client, await makeDocument(client, `One toolbar ${Date.now()}`, []), {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'reference', component: every.id, mode: { kind: 'latest' } },
+    });
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 700 });
+      await page.goto(`${SERVICE}/#/documents/${made.id}`);
+      await page.evaluate(() => {
+        document.documentElement.dataset['theme'] = 'dark';
+      });
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const target = page.getByText('First words.').first();
+      await target.waitFor();
+      await target.click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+
+      // Not the paper's light, whatever the sheet takes.
+      const ground = await bar.evaluate((own) => getComputedStyle(own).backgroundColor);
+      const paper = await page
+        .locator('.aw-sheet')
+        .first()
+        .evaluate((own) => getComputedStyle(own).backgroundColor);
+      expect(ground).not.toBe(paper);
+
+      // Above the part, heading and all, at its end.
+      const part = (await page.locator('[data-component]').first().boundingBox())!;
+      const box = (await bar.boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(part.y);
+      expect(box.x + box.width).toBeCloseTo(part.x + part.width, 0);
+
+      const done = bar.getByRole('button', { name: 'Done editing' });
+      const before = (await done.boundingBox())!;
+      await page.locator('[data-component] figure.aw-table td').first().click();
+      const table = bar.getByRole('button', { name: /settings/ });
+      await table.waitFor();
+      const after = (await done.boundingBox())!;
+      expect(after.x).toBeCloseTo(before.x, 0);
+      expect(after.y).toBeCloseTo(before.y, 0);
+
+      // Scrolled down the part it stays in view.
+      await page.evaluate(() => {
+        const scrolled = [document.scrollingElement, ...document.querySelectorAll('*')].find(
+          (each) =>
+            each !== null &&
+            each.scrollHeight > each.clientHeight + 200 &&
+            ['auto', 'scroll'].includes(getComputedStyle(each).overflowY) &&
+            each.querySelector('[data-component]') !== null,
+        );
+        scrolled?.scrollBy(0, 400);
+      });
+      await page.waitForTimeout(200);
+      const stuck = (await bar.boundingBox())!;
+      expect(stuck.y).toBeGreaterThanOrEqual(0);
+      expect(stuck.y).toBeLessThan(120);
+    });
+  });
+
+  it('CNT-074 shows who holds a part in the gutter, moving no text, and in Authoring only', async () => {
+    const { document: id } = await twoParts();
+    const back = new Date(Date.now() + 45 * 60_000).toISOString();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      // Someone else's, as the service would say it: one signed-in user has no one else to hold it.
+      await page.addInitScript(
+        ({ texts, expectedRelease }) => {
+          const real = window.fetch.bind(window);
+          window.fetch = async (input, init) => {
+            const response = await real(input, init);
+            const url = input instanceof Request ? input.url : String(input);
+            if (!url.endsWith(texts)) return response;
+            const body = (await response.json()) as { occurrences: { lock: unknown }[] };
+            body.occurrences[0]!.lock = {
+              holder: { id: 'grace', name: 'Grace' },
+              expectedRelease,
+              yours: false,
+              session: null,
+            };
+            return new Response(JSON.stringify(body), {
+              status: response.status,
+              headers: response.headers,
+            });
+          };
+        },
+        { texts: `/v1/documents/${id}/texts`, expectedRelease: back },
+      );
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const theirs = page.getByRole('button', { name: /^Grace is editing this component/ });
+      await theirs.waitFor();
+      const amber = await theirs.evaluate((own) => getComputedStyle(own).color);
+
+      // A short part's stack wraps sideways, and never runs into the next part's.
+      const stack = await theirs.evaluate((own) => {
+        const gutter = own.parentElement!;
+        gutter.style.insetBlockEnd = 'auto';
+        gutter.style.height = '20px';
+        const copy = own.cloneNode(true) as HTMLElement;
+        gutter.appendChild(copy);
+        const [a, b] = [own.getBoundingClientRect(), copy.getBoundingClientRect()];
+        copy.remove();
+        gutter.style.removeProperty('inset-block-end');
+        gutter.style.removeProperty('height');
+        return { sameRow: a.top === b.top, apart: b.left >= a.right };
+      });
+      expect(stack).toEqual({ sameRow: true, apart: true });
+
+      await theirs.click();
+      await expect
+        .poll(() => page.getByText(/^Grace is editing this component/).count())
+        .toBeGreaterThan(0);
+
+      // Yours appears at the first change, in the other colour, and moves nothing.
+      const words = page.getByText('Following words.').first();
+      await words.click();
+      await page.getByRole('toolbar', { name: 'Part toolbar' }).waitFor();
+      const before = (await words.boundingBox())!;
+      expect(
+        await page.getByRole('button', { name: 'You are editing this component.' }).count(),
+      ).toBe(0);
+      await page.keyboard.type('x');
+      const mine = page.getByRole('button', { name: 'You are editing this component.' });
+      await mine.waitFor();
+      expect(await mine.evaluate((own) => getComputedStyle(own).color)).not.toBe(amber);
+      expect((await words.boundingBox())!.y).toBeCloseTo(before.y, 0);
+
+      // Reading stays clean.
+      await page.getByRole('button', { name: 'Done editing' }).click();
+      const reading = page.getByRole('radio', { name: 'Reading' });
+      await reading.click();
+      await expect.poll(() => reading.isChecked()).toBe(true);
+      await expect.poll(() => theirs.count()).toBe(0);
+    });
+  });
+
+  it('CNT-077 goes back from the text through the toolbar to the text, then out, by Shift-F6', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText('First words.').first().click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+      const surface = page.getByRole('textbox', { name: /^Content of / });
+      const holds = (locator: typeof bar) =>
+        locator.evaluate((own) => own.contains(document.activeElement));
+      // On from the text to a toolbar, and straight back.
+      await page.keyboard.press('F6');
+      await page.keyboard.press('Shift+F6');
+      await expect.poll(() => holds(surface)).toBe(true);
+      await page.keyboard.press('ArrowRight');
+      // Backwards from the text, the panels and the toolbar come before the application.
+      for (let pressed = 0; pressed < 12 && !(await holds(bar)); pressed++) {
+        await page.keyboard.press('Shift+F6');
+      }
+      expect(await holds(bar)).toBe(true);
+      // The formatting toolbar, the text, then out of the page.
+      await page.keyboard.press('Shift+F6');
+      await page.keyboard.press('Shift+F6');
+      await expect.poll(() => holds(surface)).toBe(true);
+      await page.keyboard.press('Shift+F6');
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('section.aw-canvas') === null),
+        )
+        .toBe(true);
+    });
+  });
+
+  it('CNT-077 goes from the text to the toolbar and on to the application by F6', async () => {
+    const { document: id } = await twoParts();
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await page.goto(`${SERVICE}/#/documents/${id}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText('First words.').first().click();
+      const bar = page.getByRole('toolbar', { name: 'Part toolbar' });
+      await bar.waitFor();
+      // The formatting toolbar, then this one.
+      await page.keyboard.press('F6');
+      await page.keyboard.press('F6');
+      await expect
+        .poll(() => bar.evaluate((own) => own.contains(document.activeElement)))
+        .toBe(true);
+      await page.keyboard.press('F6');
+      // Out of the editor's ring, not held in it.
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('[data-app-region]') !== null),
+        )
+        .toBe(true);
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.activeElement?.closest('section.aw-canvas') === null),
+        )
+        .toBe(true);
+    });
+  });
+
   it('shows the rule alone on hover, in forced colours too', async () => {
     const { document: id } = await twoParts();
     await withPage(async (page) => {
