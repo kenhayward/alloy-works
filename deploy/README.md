@@ -225,6 +225,11 @@ the invitation lapses as any other does. The environment's store credential is l
 
 `steward organisation` is the other way to make a tenant, but its first way in is Google, and it needs this run first.
 
+### On the internet: `compose.internet.yaml`
+
+One environment on one Linux machine behind a reverse proxy you run, with its own Keycloak, only 443 open and
+deploys that follow releases: [`internet/README.md`](internet/README.md).
+
 ### A source to connect to: the `sources` profile
 
 `source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on
@@ -481,8 +486,8 @@ product, stays a variable, `SECRET_GOOGLE`.
 
 ## What is not here yet
 
-- **No hosted deployment of any kind**, and so no registry, no TLS termination, no secret store, no
-  backups and no monitoring. Everything above runs on one machine over plain HTTP.
+- **No hosted deployment**, and so no registry, no secret store and no monitoring. Everything above runs on
+  one machine; [`internet/`](internet/README.md) puts one behind a reverse proxy, with backups kept on it alone.
 - **No release process.** Images are built on every pull request and thrown away; the desktop
   installer is built locally and is unsigned.
   [`docs/ci-and-releases.md`](../docs/ci-and-releases.md) is where that will be written down.

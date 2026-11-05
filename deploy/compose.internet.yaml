@@ -1,0 +1,300 @@
+# An installation reachable from the internet, behind a reverse proxy on another machine, on top of
+# compose.yaml. Not compose.keycloak.yaml or compose.lan.yaml. deploy/internet/README.md says how to run
+# it and what it does not yet make safe.
+#
+# Every published port and value of compose.yaml is taken back here, and every setting has no default.
+# One door: Caddy, on 443. It alone is on `public`, and reaches the service, Keycloak and the store over
+# `edge` from one fixed address, the only one any of them believes about who is calling.
+services:
+  public-proxy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    environment:
+      ALLOY_APP_HOST: ${ALLOY_APP_HOST:?}
+      ALLOY_IDP_HOST: ${ALLOY_IDP_HOST:?}
+      ALLOY_STORE_HOST: ${ALLOY_STORE_HOST:?}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      PROXY_ADDRESS: ${PROXY_ADDRESS:?}
+      SERVICE_PORT: ${SERVICE_PORT:-8088}
+      STORE_PORT: ${STORE_PORT:-8333}
+    volumes:
+      - ./internet/Caddyfile:/etc/caddy/Caddyfile:ro
+      - public-proxy-data:/data
+    ports:
+      - '443:443'
+    networks:
+      public: {}
+      edge:
+        ipv4_address: 10.213.72.2
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 512m
+    cpus: 1
+    restart: unless-stopped
+
+  # Production mode, on a database of its own. Its console answers on this machine alone, by ssh.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    command:
+      - start
+      - --db=postgres
+      - --http-enabled=true
+      - --http-port=9090
+      - --hostname=https://${ALLOY_IDP_HOST:?}
+      - --hostname-admin=http://localhost:${KEYCLOAK_CONSOLE_PORT:-9090}
+      - --proxy-headers=xforwarded
+      - --proxy-trusted-addresses=10.213.72.2
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+    ports:
+      - '127.0.0.1:${KEYCLOAK_CONSOLE_PORT:-9090}:9090'
+    volumes:
+      - ./internet/alloy-realm.json:/opt/keycloak/data/import/alloy-realm.json:ro
+    networks:
+      - default
+      - edge
+      - keycloak
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 2g
+    cpus: 2
+    restart: unless-stopped
+
+  keycloak-postgres:
+    image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    networks:
+      - keycloak
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U keycloak -d keycloak']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 1g
+    cpus: 1
+    restart: unless-stopped
+
+  # Runs at every start: what a realm file must not hold, and the first administrator once.
+  keycloak-configure:
+    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    entrypoint: ['bash', '/configure.sh']
+    environment:
+      KEYCLOAK_URL: http://keycloak:9090
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+      KEYCLOAK_FIRST_ADMIN_PASSWORD: ${KEYCLOAK_FIRST_ADMIN_PASSWORD:?}
+      FIRST_ADMINISTRATOR_EMAIL: ${FIRST_ADMINISTRATOR_EMAIL:?}
+      SIGN_IN_CLIENT_ID: ${SIGN_IN_CLIENT_ID:?}
+      SECRET_SIGN_IN_CLIENT: ${SECRET_SIGN_IN_CLIENT:?}
+      ALLOY_REDIRECT_URI: https://${ALLOY_APP_HOST:?}/v1/sign-in/organisation/callback
+      SMTP_HOST: ${SMTP_HOST:?}
+      SMTP_PORT: ${SMTP_PORT:?}
+      SMTP_USER: ${SMTP_USER:?}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?}
+      SMTP_FROM: ${SMTP_FROM:?}
+    volumes:
+      - ./internet/configure.sh:/configure.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_started
+    restart: 'no'
+
+  # None of it: this stack has no stand-in.
+  stand-in-idp:
+    scale: 0
+    ports: !reset []
+
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
+    ports: !reset []
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 4g
+    cpus: 4
+    restart: unless-stopped
+
+  seaweedfs:
+    # As compose.yaml's, and answering on `edge` too: it binds only its first network otherwise.
+    command:
+      [
+        'server',
+        '-dir=/data',
+        '-volume.max=200',
+        '-master.volumeSizeLimitMB=64',
+        '-s3',
+        '-s3.port=${STORE_PORT:-8333}',
+        '-s3.iam.readOnly=false',
+        '-s3.ip.bind=0.0.0.0',
+      ]
+    environment:
+      AWS_ACCESS_KEY_ID: ${OBJECT_STORE_ADMIN_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${OBJECT_STORE_ADMIN_SECRET:?}
+    ports: !reset []
+    networks:
+      edge: {}
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 3g
+    cpus: 2
+    restart: unless-stopped
+
+  setup:
+    command: ['pnpm', 'environment:setup']
+    environment:
+      DATABASE_ADMIN_URL: postgres://postgres:${POSTGRES_SUPERUSER_PASSWORD:?}@postgres:5432/postgres
+      DATABASE_NAME: alloy
+      DATABASE_PASSWORD_SERVICE: ${DATABASE_PASSWORD_SERVICE:?}
+      DATABASE_PASSWORD_WORKER: ${DATABASE_PASSWORD_WORKER:?}
+      DATABASE_PASSWORD_MIGRATOR: ${DATABASE_PASSWORD_MIGRATOR:?}
+      DATABASE_PASSWORD_RESTORER: ${DATABASE_PASSWORD_RESTORER:?}
+      DATABASE_PASSWORD_STEWARD: ${DATABASE_PASSWORD_STEWARD:?}
+      ORGANISATION_ID: ${ORGANISATION_ID:?}
+      ORGANISATION_NAME: ${ORGANISATION_NAME:?}
+      ENVIRONMENT_ID: ${ENVIRONMENT_ID:?}
+      ENVIRONMENT_NAME: ${ENVIRONMENT_NAME:?}
+      ENVIRONMENT_HOSTNAME: ${ALLOY_APP_HOST:?}
+      FIRST_ADMINISTRATOR_EMAIL: ${FIRST_ADMINISTRATOR_EMAIL:?}
+      SIGN_IN_ISSUER: https://${ALLOY_IDP_HOST:?}/realms/alloy
+      SIGN_IN_CLIENT_ID: ${SIGN_IN_CLIENT_ID:?}
+      SECRET_SIGN_IN_CLIENT: ${SECRET_SIGN_IN_CLIENT:?}
+      SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
+      # Inside: the store's administrative credential never crosses the proxy.
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
+      OBJECT_STORE_REGION: us-east-1
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      OBJECT_STORE_ADMIN_KEY: ${OBJECT_STORE_ADMIN_KEY:?}
+      OBJECT_STORE_ADMIN_SECRET: ${OBJECT_STORE_ADMIN_SECRET:?}
+      DEV_DATABASE_URL: !reset null
+      STAND_IN_ISSUER: !reset null
+      DEV_EXTRA_HOSTNAME: !reset null
+
+  service:
+    environment:
+      DATABASE_URL: postgres://aw_service:${DATABASE_PASSWORD_SERVICE:?}@postgres:5432/alloy
+      ALLOW_INSECURE_ISSUERS: 'false'
+      TRUST_PROXY: 10.213.72.2
+      # A signed link carries the address that signed it, so this is the public one, reached back
+      # through the proxy as the browser reaches it.
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
+      SECRET_SIGN_IN_STATE: ${SECRET_SIGN_IN_STATE:?}
+      SECRET_CONNECTOR_KEY: ${SECRET_CONNECTOR_KEY:?}
+      SECRET_DELIVERED_URL: postgres://postgres:${DELIVERED_PASSWORD:?}@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
+      GOOGLE_ISSUER: !reset null
+      GOOGLE_CLIENT_ID: !reset null
+      SECRET_GOOGLE: !reset null
+      SIGN_IN_HOST: !reset null
+    ports: !reset []
+    networks:
+      - edge
+    depends_on:
+      stand-in-idp: !reset null
+      keycloak-configure:
+        condition: service_completed_successfully
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 3g
+    cpus: 4
+    restart: unless-stopped
+
+  worker:
+    environment:
+      DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
+      SECRET_CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
+      SECRET_CONNECTOR_DELIVER_KEY: ${SECRET_CONNECTOR_DELIVER_KEY:?}
+      SECRET_CONNECTOR_REFERENCE_KEY: ${SECRET_CONNECTOR_REFERENCE_KEY:?}
+      SECRET_DELIVERED_URL: postgres://postgres:${DELIVERED_PASSWORD:?}@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 6g
+    cpus: 4
+    restart: unless-stopped
+
+  restorer:
+    environment:
+      DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
+      RESTORER_DATABASE_URL: postgres://aw_restorer:${DATABASE_PASSWORD_RESTORER:?}@postgres:5432/alloy
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 2g
+    cpus: 2
+    restart: unless-stopped
+
+  steward:
+    environment:
+      STEWARD_DATABASE_URL: postgres://aw_steward:${DATABASE_PASSWORD_STEWARD:?}@postgres:5432/alloy
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 1g
+
+  steward-process:
+    environment:
+      STEWARD_DATABASE_URL: postgres://aw_steward:${DATABASE_PASSWORD_STEWARD:?}@postgres:5432/alloy
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
+      OBJECT_STORE_ADMIN_KEY: ${OBJECT_STORE_ADMIN_KEY:?}
+      OBJECT_STORE_ADMIN_SECRET: ${OBJECT_STORE_ADMIN_SECRET:?}
+      SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
+      SECRET_DELIVERED_URL: postgres://postgres:${DELIVERED_PASSWORD:?}@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 1g
+    cpus: 1
+    restart: unless-stopped
+
+  # Still no route out: no webhooks, no re-checks of cited entries, no outside source.
+  connector:
+    environment:
+      CONNECTOR_KEY: ${SECRET_CONNECTOR_KEY:?}
+      CONNECTOR_SEALING_KEY: ${CONNECTOR_SEALING_KEY:?}
+      CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
+      CONNECTOR_DELIVER_KEY: ${SECRET_CONNECTOR_DELIVER_KEY:?}
+      CONNECTOR_REFERENCE_KEY: ${SECRET_CONNECTOR_REFERENCE_KEY:?}
+      CONNECTOR_CA_FILE: !reset null
+    volumes: !reset []
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 3g
+    restart: unless-stopped
+
+  delivered-postgres:
+    environment:
+      POSTGRES_PASSWORD: ${DELIVERED_PASSWORD:?}
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 1g
+    cpus: 1
+    restart: unless-stopped
+
+networks:
+  # Caddy's alone, carrying the published port and nothing else.
+  public: {}
+  # Between Caddy and what it serves; internal, so nothing reaches anywhere over it.
+  edge:
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.213.72.0/24
+  keycloak:
+    internal: true
+
+volumes:
+  public-proxy-data:
+  keycloak-postgres-data:

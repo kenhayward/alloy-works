@@ -230,7 +230,8 @@ docker compose -f deploy/compose.yaml up -d --build --wait
 ```
 
 That stack is for development. A real installation prepares its database and store with
-`pnpm environment:setup`: [the settings](deploy/README.md).
+`pnpm environment:setup`: [the settings](deploy/README.md). One on the internet, behind a reverse proxy:
+[`deploy/internet`](deploy/internet/README.md).
 
 Build a desktop installer for your platform (unsigned, output in `release/`):
 
