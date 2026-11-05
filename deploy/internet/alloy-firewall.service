@@ -1,0 +1,12 @@
+[Unit]
+Description=The firewall in front of Alloy Works's containers
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/alloy-works/firewall.sh
+
+[Install]
+WantedBy=multi-user.target
