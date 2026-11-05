@@ -146,6 +146,9 @@ services:
       # tables"). TLS is required; `uselibpqcompat` makes `sslmode=require` mean what libpq means (encrypt,
       # do not verify), which the snakeoil certificate needs.
       SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
+      # The operator's mail relay, offered here: the address it sends from, which an administrator is
+      # shown. Its host and password are the connector's alone (the EM plan, EM-B).
+      MAIL_PLATFORM_FROM: notifications@alloy.test
     ports:
       - '127.0.0.1:${SERVICE_PORT:-8088}:${SERVICE_PORT:-8088}'
     networks:
@@ -185,6 +188,8 @@ services:
       # And the key that opens its re-checks of cited entries alone, the connector's
       # CONNECTOR_REFERENCE_KEY (the XR plan, XR-E).
       SECRET_CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
+      # And the key that opens its mail alone, the connector's CONNECTOR_MAIL_KEY (the EM plan, EM-I).
+      SECRET_CONNECTOR_MAIL_KEY: ZGV2ZWxvcG1lbnQtb25seS1tYWlsLWtleS0wMDAwMDE=
       # The delivery store, as the service has it: a data package is written there by the worker.
       SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:
@@ -286,6 +291,15 @@ services:
       CONNECTOR_DELIVER_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZWxpdmVyLWtleS0wMDE=
       # The worker's, which opens `/v1/reference`'s checks alone (the XR plan, XR-E).
       CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
+      # The worker's, which opens `/v1/mail` alone (the EM plan, EM-I).
+      CONNECTOR_MAIL_KEY: ZGV2ZWxvcG1lbnQtb25seS1tYWlsLWtleS0wMDAwMDE=
+      # The operator's mail relay: development's is Mailpit, over STARTTLS with the development mail
+      # CA's certificate, taking any invented username and password. Production names its own.
+      ALLOY_SMTP_HOST: mailpit
+      ALLOY_SMTP_PORT: '587'
+      ALLOY_SMTP_USERNAME: alloy
+      ALLOY_SMTP_PASSWORD: mailpit-dev-password
+      ALLOY_SMTP_FROM: notifications@alloy.test
       # A webhook's receiver is public in production; the suites' is on a private network, so a stack
       # running them says `allow` (deploy/README.md).
       CONNECTOR_WEBHOOK_PRIVATE: ${CONNECTOR_WEBHOOK_PRIVATE:-deny}
@@ -295,8 +309,8 @@ services:
       CONNECTOR_REFERENCE_CONTACT: ${CONNECTOR_REFERENCE_CONTACT:-}
       CONNECTOR_DENY: none
       LOG_LEVEL: info
-      # The development CAs `source-http` and `source-s3` are signed by, trusted beside the system's:
-      # never in production.
+      # The development CAs `source-http`, `source-s3` and `mailpit` are signed by, trusted beside the
+      # system's: never in production.
       CONNECTOR_CA_FILE: /run/alloy/source-ca.pem
     # Root with three capabilities and no others: to run each child as a user of its own, and to kill
     # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes a file another
@@ -464,6 +478,33 @@ services:
       timeout: 5s
       retries: 45
 
+  # Development's mail relay (the EM plan): Mailpit, catching every mail and sending none on. SMTP
+  # on 587 over STARTTLS, required, with the development mail CA's certificate for `mailpit`, which
+  # the connector here trusts; any username and password are taken. On `connector-egress`, so only the
+  # connector reaches its SMTP, and on `mail-api` alone besides, publishing its web page and API to
+  # this host at http://127.0.0.1:8025 to read what was sent. Pinned by digest.
+  mailpit:
+    image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+    environment:
+      MP_SMTP_BIND_ADDR: 0.0.0.0:587
+      MP_SMTP_TLS_CERT: /srv/mail/server.pem
+      MP_SMTP_TLS_KEY: /srv/mail/server-key.pem
+      MP_SMTP_REQUIRE_STARTTLS: 'true'
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_UI_BIND_ADDR: 0.0.0.0:8025
+    volumes:
+      - ./sources/mail:/srv/mail:ro
+    ports:
+      - '127.0.0.1:${MAILPIT_PORT:-8025}:8025'
+    networks:
+      - connector-egress
+      - mail-api
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
 # The connector's two networks (the D1 plan, D1-I): internal, so nothing on them is routed anywhere
 # else, and with no address for the host on their bridge, so no process the host runs - and no port
 # it publishes - answers there. Docker Engine 28.0.0 or later; 27.x refuses the option.
@@ -476,6 +517,9 @@ networks:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
+  # Mailpit's web page and API, published to the host for development and the suites to read what was
+  # sent: nothing else is on it, so it carries nothing of the platform's or the connector's.
+  mail-api:
   # Between the delivery store and the service and worker that write it, and no one else. Its
   # subnet is fixed because the store's pg_hba admits the owner only from it; set DELIVERED_SUBNET
   # where the default collides with a network the host already has.

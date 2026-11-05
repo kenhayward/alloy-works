@@ -29,6 +29,7 @@ const app = buildApp({
   ...(config.rendererRoot ? { rendererRoot: config.rendererRoot } : {}),
   ...(connector ? { connector } : {}),
   ...(config.trustProxy ? { trustProxy: config.trustProxy } : {}),
+  ...(config.mailPlatform ? { mailPlatform: config.mailPlatform } : {}),
 });
 
 const stop = async (signal: string) => {

@@ -725,6 +725,27 @@
   width: 120px;
 }
 
+/* A choice keeps its own size: only a field to type in is given the width. */
+.setting input[type='radio'],
+.setting input[type='checkbox'] {
+  width: auto;
+}
+
+/* Email: its settings at their width, and what was sent beneath at the section's (the EM plan). */
+.mailPage {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.mailPage > :not(section:last-child) {
+  max-width: 560px;
+}
+
+/* A setting that holds a host or an address, as wide as the column allows. */
+.settingWide input {
+  width: 100%;
+}
+
 /* Workflows: each kind's states and transitions, edited in place and saved as its next version. */
 .workflow + .workflow {
   margin-top: var(--space-32);

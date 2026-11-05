@@ -13,6 +13,7 @@ import { AuditLog } from './AuditLog.js';
 import { Guardrails } from './Guardrails.js';
 import { ModelSpending } from './ModelSpending.js';
 import { Webhooks } from './Webhooks.js';
+import { Mail } from './Mail.js';
 import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
 import { CloseEnvironment } from './Closure.js';
@@ -170,6 +171,14 @@ const SECTIONS = [
     slug: 'webhooks',
     get title() {
       return words('admin.webhooks');
+    },
+    group: 'environment',
+  },
+  // Whether the environment sends mail, by whose relay, a test, and what was sent (the EM plan).
+  {
+    slug: 'email',
+    get title() {
+      return words('admin.email');
     },
     group: 'environment',
   },
@@ -607,6 +616,7 @@ export function Administration({
         )}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}
+        {shown === 'email' && <Mail client={client} mayChange={configures} />}
         {shown === 'ctstudio' && <CtStudio client={client} />}
         {shown === 'extensions' && <Extensions client={client} />}
         {shown === 'connections' && <Connections client={client} embedded />}
