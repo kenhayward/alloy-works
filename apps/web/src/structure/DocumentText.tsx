@@ -40,7 +40,7 @@ import {
   type RefObject,
 } from 'react';
 
-import { heldSentence, lockSentence } from '../editor/held.js';
+import { heldSentence, lockSentence, useLockStands } from '../editor/held.js';
 import type { Freshness, LivePresence } from './live.js';
 import { presenceWords } from './PeopleHere.js';
 import type { BindingActs } from '../editor/ComponentEditor.js';
@@ -311,8 +311,7 @@ function CommentGlyph({
 /**
  * Who holds a component, in the gutter (the EP plan, EP7; CNT-074): seen without hovering, a button so
  * keyboard and touch get the words, and a click opens the Part panel. Not a lozenge: it says who holds
- * a session, not a state of content (`lifecycle-states.md`). It goes when the lock lapses, which no
- * event says; a lock the reader is using here renews itself, and goes when the stream says it has.
+ * a session, not a state of content (`lifecycle-states.md`).
  */
 export function LockGlyph({
   lock,
@@ -323,17 +322,8 @@ export function LockGlyph({
   openHere: boolean;
   onOpen: () => void;
 }) {
-  const release = new Date(lock.expectedRelease).getTime();
-  const inUseHere = lock.yours && openHere;
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const left = release - Date.now();
-    if (inUseHere || left <= 0) return undefined;
-    // setTimeout holds no more than this; a longer wait simply looks again.
-    const timer = setTimeout(() => setTick((was) => was + 1), Math.min(left + 1, 2 ** 31 - 1));
-    return () => clearTimeout(timer);
-  }, [release, inUseHere, tick]);
-  if (!inUseHere && release <= Date.now()) return null;
+  const stands = useLockStands(lock, openHere);
+  if (!stands) return null;
   const said = lockSentence(lock, openHere);
   return (
     <IconButton

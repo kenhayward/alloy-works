@@ -1653,7 +1653,6 @@
   "document.left-out-by-this-document": "left out by this document’s profile",
   "document.needs-a-value-for-in": "needs a value for {value1} in this document’s profile",
   "document.kept-for": "Kept for {said}{value2}",
-  "document.held-by": "Held by {value1}",
   "document.broken-references": "{count, plural, one {# broken reference} other {# broken references}}",
   "document.failed-values": "{count, plural, one {# failed value} other {# failed values}}",
   "document.wherever-it-falls": "Wherever it falls",

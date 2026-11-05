@@ -39,6 +39,8 @@ import { usePageLayer } from '../shell/Status.js';
 import '@alloy-works/editor/style.css';
 
 import { Icon } from '../editor/Icon.js';
+import { lockSentence, useLockStands, type Lock } from '../editor/held.js';
+import { NameTip } from '../parts/NameTip.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import styles from './OutlinePanel.module.css';
 import { revealInPane } from './reveal.js';
@@ -171,8 +173,6 @@ function lostTitles(lost: readonly LostTitle[]): string {
 
 /** What a node's row says beside its title (STR-038). */
 export interface NodeMarks {
-  /** Somebody else holds its component, by name. */
-  readonly heldBy?: string | null;
   readonly brokenReferences?: number;
   readonly failedValues?: number;
 }
@@ -261,13 +261,37 @@ function standingsBy(
 export function marksWords(marks: NodeMarks | undefined): string[] {
   if (marks === undefined) return [];
   const words: string[] = [];
-  if (marks.heldBy !== undefined)
-    words.push(say('document.held-by', { value1: marks.heldBy ?? 'somebody else' }));
   const broken = marks.brokenReferences ?? 0;
   if (broken > 0) words.push(say('document.broken-references', { count: broken }));
   const failed = marks.failedValues ?? 0;
   if (failed > 0) words.push(say('document.failed-values', { count: failed }));
   return words;
+}
+
+/** A part's lock in the contents, and whether it is the editor open on this page that holds it. */
+export interface NodeLock {
+  readonly lock: Lock;
+  readonly openHere: boolean;
+}
+
+/**
+ * Who holds a part (STR-038; CNT-074), just before its text, in the colours and shapes of the symbol in
+ * the document's gutter. Not a button: a tree item's row holds nothing else that takes the focus, so its
+ * words describe the item, and choosing the item shows them in the Part panel.
+ */
+function LockMark({ id, lock, openHere }: NodeLock & { readonly id: string }) {
+  if (!useLockStands(lock, openHere)) return null;
+  const said = lockSentence(lock, openHere);
+  return (
+    <span className={styles['lock']} data-lock={lock.yours ? 'yours' : 'theirs'}>
+      <span id={id} className={styles['hidden']}>
+        {said}
+      </span>
+      <NameTip name={said}>
+        <Icon name={lock.yours ? 'Lock yours' : 'Lock held'} size={13} />
+      </NameTip>
+    </span>
+  );
 }
 
 /** What a title field needs from the panel, whichever of the panel and the heading it stands in. */
@@ -385,10 +409,12 @@ export interface OutlinePanelProps {
    */
   readonly inView?: string | null;
   /**
-   * What matters about each node to an author (STR-038): who else holds its component, and how many
-   * broken references and failed values its text holds. None where nothing does.
+   * What matters about each node to an author (STR-038): how many broken references and failed values
+   * its text holds. None where nothing does.
    */
   readonly marks?: ReadonlyMap<string, NodeMarks>;
+  /** Who holds each part, drawn just before its text (STR-038). */
+  readonly locks?: ReadonlyMap<string, NodeLock>;
   /** Who holds each part, in words, for the Part panel. */
   readonly heldSaid?: ReadonlyMap<string, string>;
   /** Handed what a section's heading needs to retitle it through this panel's one queue (EP6). */
@@ -502,6 +528,7 @@ export function OutlinePanel({
   pointed = null,
   overridesFor,
   marks,
+  locks,
   heldSaid,
   standing,
   titling,
@@ -1119,6 +1146,7 @@ export function OutlinePanel({
           aria-describedby={
             [
               shown === undefined ? null : numberId,
+              locks?.has(node.id) === true ? `${labelId}-lock` : null,
               marksWords(marks?.get(node.id)).length > 0 ? `${labelId}-marks` : null,
               conditionsWords(node.conditions, conditionAxes, standings.get(node.id)) === null
                 ? null
@@ -1173,6 +1201,9 @@ export function OutlinePanel({
                 </span>{' '}
               </>
             )}
+            {locks?.has(node.id) === true && (
+              <LockMark id={`${labelId}-lock`} {...locks.get(node.id)!} />
+            )}
             <span id={labelId} className={styles['label']} data-drop={`into:${node.id}`}>
               {node.id === highlighted ? (
                 <mark>{nodeLabel(node, names)}</mark>
@@ -1182,7 +1213,6 @@ export function OutlinePanel({
             </span>
             {marksWords(marks?.get(node.id)).length > 0 && (
               <span id={`${labelId}-marks`} className={styles['nodeMarks']}>
-                {marks?.get(node.id)?.heldBy !== undefined && <Icon name="Lock held" size={11} />}{' '}
                 {marksWords(marks?.get(node.id)).join('; ')}
               </span>
             )}

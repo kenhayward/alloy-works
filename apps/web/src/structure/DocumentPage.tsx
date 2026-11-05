@@ -93,12 +93,12 @@ import { useOwnViewAsk } from './OwnViewAsk.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { PartRows } from './PartRows.js';
 import { dataState } from './dataStates.js';
-import type { NodeMarks, Titling } from './OutlinePanel.js';
+import type { NodeLock, NodeMarks, Titling } from './OutlinePanel.js';
 import { heldBack, TitleField } from './PartPanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
 import { OverrideDialog } from './OverrideDialog.js';
 import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
-import { useLiveDocument, type LiveDocument } from './live.js';
+import { useLiveDocument, type LiveDocument, type LiveLock } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions, StreamPostOptions, streamPost } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
@@ -244,6 +244,17 @@ type Read = Opened | 'unreadable' | undefined;
 /** A view's list of fields, as the service draws them: trusted in shape, as `FieldsForm` reads it. */
 const fieldsIn = (value: unknown): readonly FieldView[] =>
   Array.isArray(value) ? (value.filter(isRecord) as unknown as FieldView[]) : [];
+
+/** A lock as the stream says it, as the page draws it: none where nobody holds it. */
+function heardLock(heard: LiveLock, principalId: string | undefined): Editable['lock'] {
+  return heard.holder === null || heard.expectedRelease === null
+    ? null
+    : {
+        holder: { name: heard.holder.name },
+        expectedRelease: heard.expectedRelease,
+        yours: heard.holder.id === principalId,
+      };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -937,18 +948,23 @@ export function DocumentPage({
       if (heard === undefined) continue;
       merged.set(node, {
         ...state,
-        lock:
-          heard.holder === null || heard.expectedRelease === null
-            ? null
-            : {
-                holder: { name: heard.holder.name },
-                expectedRelease: heard.expectedRelease,
-                yours: heard.holder.id === principalId,
-              },
+        lock: heardLock(heard, principalId),
       });
     }
     return merged;
   }, [editable, componentOfNode, live.locks, principalId]);
+  // Who holds each part, for the contents: what the page read, overtaken by what the stream has said.
+  // By the components placed, so a lock is drawn for a part the page's read did not answer for.
+  const locksByNode = useMemo(() => {
+    const open = editing === null ? undefined : componentOfNode.get(editing);
+    const found = new Map<string, NodeLock>();
+    for (const [node, component] of componentOfNode) {
+      const heard = live.locks.get(component);
+      const lock = heard === undefined ? editable.get(node)?.lock : heardLock(heard, principalId);
+      if (lock) found.set(node, { lock, openHere: component === open });
+    }
+    return found;
+  }, [editable, editing, componentOfNode, live.locks, principalId]);
   // Who holds each part, in the Part panel's words: in Reading too, where the gutter stays clean.
   const heldSaid = useMemo(() => {
     const open = editing === null ? undefined : componentOfNode.get(editing);
@@ -1165,16 +1181,12 @@ export function DocumentPage({
           : incomingReferences({ outline: outlineShown, occurrences: parsedTexts }),
     [outlineShown, parsedTexts, textsKnown],
   );
-  // What matters about each node to an author (STR-038): who else holds its component, as the stream
-  // says; the broken references its text drew; the values its bindings failed to hold.
+  // What matters about each node to an author (STR-038): the broken references its text drew; the
+  // values its bindings failed to hold.
   const outlineMarks = useMemo(() => {
     const marks = new Map<string, NodeMarks>();
     const mark = (node: string, more: NodeMarks) =>
       marks.set(node, { ...(marks.get(node) ?? {}), ...more });
-    for (const [node, component] of componentOfNode) {
-      const lock = live.locks.get(component);
-      if (lock?.holder && lock.holder.id !== principalId) mark(node, { heldBy: lock.holder.name });
-    }
     for (const [node, count] of brokenByNode)
       if (count > 0) mark(node, { brokenReferences: count });
     const failed = new Map<string, number>();
@@ -1184,7 +1196,7 @@ export function DocumentPage({
     }
     for (const [node, count] of failed) mark(node, { failedValues: count });
     return marks;
-  }, [componentOfNode, live.locks, principalId, brokenByNode, bindingStates]);
+  }, [brokenByNode, bindingStates]);
   const holdsBindings = useMemo(() => [...texts.values()].some(holdsBinding), [texts]);
   // The editing session of the editor open in place once it has placed or changed a binding, whose
   // bindings the view is read with until it closes (B2-C), and a count read again by.
@@ -2839,6 +2851,7 @@ export function DocumentPage({
                   conditionAxes={axes}
                   {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
                   marks={outlineMarks}
+                  locks={locksByNode}
                   heldSaid={heldSaid}
                   titling={titling}
                   standing={(node) =>

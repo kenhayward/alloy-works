@@ -28246,13 +28246,13 @@
     {
       "id": "STR-038",
       "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
-      "line": 69,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "STR-066",
       "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
-      "line": 51,
+      "line": 53,
       "kind": "title"
     },
     {
@@ -36934,7 +36934,7 @@
     {
       "id": "CNT-077",
       "file": "tests/browser/src/edit-in-place.test.ts",
-      "line": 501,
+      "line": 537,
       "kind": "title"
     },
     {
