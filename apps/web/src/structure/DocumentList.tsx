@@ -359,8 +359,12 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
           )}
         </div>
         {creating && (
-          <Modal labelledBy="new-document-heading" onClose={() => setCreating(false)}>
-            <NewDocument client={client} onCreated={onOpen} />
+          <Modal
+            labelledBy="new-document-heading"
+            size="gallery"
+            onClose={() => setCreating(false)}
+          >
+            <NewDocument client={client} onCreated={onOpen} onCancel={() => setCreating(false)} />
           </Modal>
         )}
         {importing && (

@@ -101,6 +101,13 @@ export function Spaces({
         onSelect: () => setAct({ kind: 'hold', space }),
       });
     }
+    // A space's administrator chooses where its documents start (TPL-074).
+    if (administers(space.id) && !space.archived) {
+      more.unshift({
+        label: say('admin.default-template'),
+        onSelect: () => setAct({ kind: 'template', space }),
+      });
+    }
     return { shown, more };
   };
 

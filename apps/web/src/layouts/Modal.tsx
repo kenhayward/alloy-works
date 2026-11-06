@@ -31,9 +31,9 @@ export function Modal({
   labelledBy: string;
   /**
    * 600px; 760px for a form whose fields hold long values or choices; 440px for a few settings, such
-   * as a figure's; 480px for a confirmation.
+   * as a figure's; 480px for a confirmation; New document's two panes, 920 x 684 at most.
    */
-  size?: 'standard' | 'wide' | 'narrow' | 'dialog';
+  size?: 'standard' | 'wide' | 'narrow' | 'dialog' | 'gallery';
   onClose: () => void;
   children: React.ReactNode;
 }) {
