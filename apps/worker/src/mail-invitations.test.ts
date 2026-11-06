@@ -133,7 +133,7 @@ describe('invitations and closure notices from the mail loop (the EM plan, EM-T,
     await sendMail(worker, mailer, quiet);
     expect(sent.map((mail) => mail.subject)).toEqual([
       'An environment you use is closing',
-      'An environment you use closes in 7 days',
+      'An environment you use is deleted within a week',
     ]);
     const waiting = await as((trx) =>
       trx.selectFrom('email_delivery').select('state').where('purpose', '=', 'test').execute(),

@@ -59,6 +59,11 @@ begin
     values ('invitation', waiting, invited,
             case when reason is null then 'pending' else 'dropped' end, reason);
   elsif new.kind in ('tenant.closing', 'tenant.closure_cancelled') then
+    -- A closing given up is no longer closing: what still waits to say it is is never sent.
+    if new.kind = 'tenant.closure_cancelled' then
+      update email_delivery set state = 'dropped', dropped_reason = 'closure_cancelled', locked_until = null
+       where state = 'pending' and notice in ('closing', 'seven_days');
+    end if;
     -- Everybody who signs in in the ordinary way; whom it may reach is decided again at sending,
     -- so the unverified are counted among what was dropped (EM-V).
     insert into email_delivery (purpose, principal_id, notice, grace_ends_at)

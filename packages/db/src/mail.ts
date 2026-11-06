@@ -218,6 +218,32 @@ const AGE: Readonly<Record<Exclude<MailPurpose, 'closure'>, string>> = {
   invitation: '14 days',
 };
 
+const PURPOSES: readonly MailPurpose[] = ['test', 'notification', 'invitation', 'closure'];
+
+/**
+ * Whether a purpose leaves by the environment's own relay (EM-U, EM-V): a notice of closing never
+ * does, an invitation only while the environment's mail is on. Mails by different relays never hold
+ * each other back, nor does one relay's failing or succeeding stand for the other's.
+ */
+function byOwnRelay(
+  purpose: MailPurpose,
+  channel: { readonly relay: string; readonly enabled: boolean } | undefined,
+): boolean {
+  if (channel?.relay !== 'own') return false;
+  return (
+    purpose === 'test' ||
+    purpose === 'notification' ||
+    (purpose === 'invitation' && channel.enabled)
+  );
+}
+
+/** The purposes that leave by the same relay as `purpose`. */
+const sameRelay = (
+  purpose: MailPurpose,
+  channel: { readonly relay: string; readonly enabled: boolean } | undefined,
+): readonly MailPurpose[] =>
+  PURPOSES.filter((each) => byOwnRelay(each, channel) === byOwnRelay(purpose, channel));
+
 /** Whether a person may be mailed at all: a person, not erased or disabled, at a verified address (EM-G). */
 export async function mailableAddress(
   trx: TenantTransaction,
@@ -341,13 +367,12 @@ export async function claimMail(
   /** Those purposes alone: a closing environment sends its notices and nothing else (EM-T). */
   options: { readonly purposes?: readonly MailPurpose[] } = {},
 ): Promise<{ readonly claimed: readonly ClaimedMail[]; readonly dropped: number }> {
-  const purposes: readonly MailPurpose[] = options.purposes ?? [
-    'test',
-    'notification',
-    'invitation',
-    'closure',
-  ];
-  const among = sql.join(purposes.map((each) => sql.lit(each)));
+  const channel = await trx
+    .selectFrom('mail_channel')
+    .select(['relay', 'host', 'port', 'username', 'sealed_password', 'from_address', 'from_name'])
+    .select(['enabled', 'kinds_off'])
+    .executeTakeFirst();
+  const asked = options.purposes ?? PURPOSES;
   for (const [purpose, age] of Object.entries(AGE)) {
     // Never one another worker holds while it is sent: its send would go unrecorded.
     await sql`update email_delivery set state = 'given_up', locked_until = null
@@ -359,13 +384,16 @@ export async function claimMail(
      where state = 'pending' and purpose = 'closure'
        and (locked_until is null or locked_until < now())
        and coalesce(grace_ends_at, first_attempt_at + interval '7 days') <= now()`.execute(trx);
-  // A relay that failed holds the environment's mail back as a whole until it is due again, so a
-  // black-holed relay takes no lane meanwhile, whatever is queued after it (the final review).
-  const { rows: waiting } = await sql<{ held: boolean }>`
-    select exists (select from email_delivery
-                    where state = 'pending' and attempts > 0 and next_at > now()
-                      and purpose in (${among})) as held`.execute(trx);
-  if (waiting[0]?.held) return { claimed: [], dropped: 0 };
+  // A relay that failed holds back what leaves by it until it is due again, so a black-holed relay
+  // takes no lane meanwhile, whatever is queued after it (the final review); what leaves by the other
+  // relay goes on (the EM final review).
+  const { rows: failing } = await sql<{ purpose: MailPurpose }>`
+    select distinct purpose from email_delivery
+     where state = 'pending' and attempts > 0 and next_at > now()`.execute(trx);
+  const held = new Set(failing.flatMap(({ purpose }) => sameRelay(purpose, channel)));
+  const purposes = asked.filter((each) => !held.has(each));
+  if (purposes.length === 0) return { claimed: [], dropped: 0 };
+  const among = sql.join(purposes.map((each) => sql.lit(each)));
   const { rows } = await sql<DueRow>`
     with due as (
       select d.id from email_delivery d
@@ -391,11 +419,6 @@ export async function claimMail(
               p.disabled_at is not null as disabled,
               to_jsonb(p) ->> 'interface_language' as language`.execute(trx);
   if (rows.length === 0) return { claimed: [], dropped: 0 };
-  const channel = await trx
-    .selectFrom('mail_channel')
-    .select(['relay', 'host', 'port', 'username', 'sealed_password', 'from_address', 'from_name'])
-    .select(['enabled', 'kinds_off'])
-    .executeTakeFirst();
   let dropped = 0;
   const sendable: { readonly row: DueRow; readonly told: ClaimedMail['notification'] }[] = [];
   for (const row of rows) {
@@ -432,11 +455,7 @@ export async function claimMail(
   // A notice of closing leaves by the operator's relay always, an invitation by it where the
   // environment's mail is off (EM-U, EM-V): neither waits on a relay the environment chose.
   const relayOf = (purpose: MailPurpose): ClaimedRelay =>
-    own === undefined ||
-    purpose === 'closure' ||
-    (purpose === 'invitation' && channel?.enabled !== true)
-      ? { kind: 'platform' }
-      : own;
+    own !== undefined && byOwnRelay(purpose, channel) ? own : { kind: 'platform' };
   return {
     claimed: sendable.map(({ row, told }) => ({
       id: row.id,
@@ -594,8 +613,13 @@ export async function recordMailAttempt(
   /** The claim's lease: a worker whose lease ran out, and was claimed past, records nothing. */
   lease: string,
 ): Promise<{ readonly relayFailed: boolean }> {
-  const { rows: held } = await sql<{ state: string; lease: string | null; attempts: number }>`
-    select state, locked_until::text as lease, attempts from email_delivery
+  const { rows: held } = await sql<{
+    state: string;
+    lease: string | null;
+    attempts: number;
+    purpose: MailPurpose;
+  }>`
+    select state, locked_until::text as lease, attempts, purpose from email_delivery
      where id = ${deliveryId} for update`.execute(trx);
   const now = held[0];
   if (!now || now.state !== 'pending' || now.lease !== lease) return { relayFailed: false };
@@ -645,24 +669,37 @@ export async function recordMailAttempt(
     })
     .where('id', '=', deliveryId)
     .execute();
+  // Whether it left by the relay the channel names: the operator's carrying a notice of closing past
+  // an environment's own relay says nothing of that relay (the EM final review).
+  const channel = await trx
+    .selectFrom('mail_channel')
+    .select(['relay', 'enabled'])
+    .executeTakeFirst();
+  const channels =
+    channel === undefined || channel.relay !== 'own' || byOwnRelay(now.purpose, channel);
   if (state === 'sent') {
-    await trx
-      .updateTable('mail_channel')
-      .set({ failing_since: null, told_at: null, last_success_at: sql<Date>`now()` })
-      .execute();
+    if (channels) {
+      await trx
+        .updateTable('mail_channel')
+        .set({ failing_since: null, told_at: null, last_success_at: sql<Date>`now()` })
+        .execute();
+    }
     return { relayFailed: false };
   }
   // A recipient refused for good is that mail's; no relay offered is the operator's, not the channel's.
   if (state !== 'pending') return { relayFailed: false };
-  await trx
-    .updateTable('mail_channel')
-    .set({ failing_since: sql<Date>`coalesce(failing_since, now())` })
-    .execute();
-  // The rest wait as long as this one does: the relay is failing, not this mail.
+  if (channels) {
+    await trx
+      .updateTable('mail_channel')
+      .set({ failing_since: sql<Date>`coalesce(failing_since, now())` })
+      .execute();
+  }
+  // The rest by the same relay wait as long as this one does: the relay is failing, not this mail.
+  const among = sql.join(sameRelay(now.purpose, channel).map((each) => sql.lit(each)));
   await sql`update email_delivery set next_at = (select next_at from email_delivery where id = ${deliveryId})
-     where state = 'pending' and id <> ${deliveryId}
+     where state = 'pending' and id <> ${deliveryId} and purpose in (${among})
        and next_at < (select next_at from email_delivery where id = ${deliveryId})`.execute(trx);
-  await tellFailing(trx);
+  if (channels) await tellFailing(trx);
   return { relayFailed: true };
 }
 

@@ -31670,13 +31670,13 @@
     {
       "id": "ADM-055",
       "file": "packages/db/src/mail-invitations.test.ts",
-      "line": 166,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "IAM-089",
       "file": "packages/db/src/mail-invitations.test.ts",
-      "line": 105,
+      "line": 112,
       "kind": "title"
     },
     {
@@ -37274,13 +37274,13 @@
     {
       "id": "COL-064",
       "file": "tests/e2e/src/mail.test.ts",
-      "line": 122,
+      "line": 126,
       "kind": "title"
     },
     {
       "id": "IAM-089",
       "file": "tests/e2e/src/mail.test.ts",
-      "line": 151,
+      "line": 156,
       "kind": "title"
     },
     {

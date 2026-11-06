@@ -4431,6 +4431,34 @@ functions returning metadata (`organisation_tenants`, `organisation_tenant_reque
 `packages/db/src/tenant-lifecycle.ts` writes both logs in one transaction. `apps/web/src/organisation/Console.tsx` is what
 its people see in place of the shell.
 
+## Mail
+
+Designed in [mail.md](design/mail.md) ([ADR-0092](decisions/0092-mail-leaves-by-smtp-through-the-connector.md)). A
+tenant's `mail_channel` (one row, off until turned on) names the operator's relay or its own; its password is sealed by the
+connector to host, port and username. `email_delivery` is the queue, holding whom and why but no address or words:
+`notification_id`, `invitation_id` or a closure's `notice`, each cascading. Triggers queue it: on `notification`
+(`0206`), and on `audit_event` for `invitation.sent`, `tenant.administrator_named`, `tenant.closing` and
+`tenant.closure_cancelled` (`0207`); restores disable both. `claimMail` (`packages/db/src/mail.ts`) decides each again
+at sending, and picks the relay by purpose: a notice of closing always the operator's, an invitation the operator's
+while mail is off. `apps/worker/src/mail.ts` sends through the connector's `POST /v1/mail` (`apps/connector`, nodemailer
+over verified TLS), live tenants for every purpose and closing ones for notices alone; `sweepClosures` queues the 7-day
+notice. The words are `packages/domain/src/mail/words.ts`. Administration's Email is `apps/web/src/admin/Mail.tsx`;
+each person's choice is in the inbox. Development's operator relay is Mailpit.
+
+## Grant limits
+
+`packages/db/src/grant-limits.ts` (the GL plan, IAM-088): every change that could give an administrative permission
+(a grant or denial, a role made, a group's membership, a token's scopes, enabling or erasing somebody) is held to what
+its maker holds where it stands, and `lastHolderRemains` refuses a change leaving nobody able to sign in who holds one.
+Permissions over content are not limited.
+
+## An installation of its own
+
+`pnpm environment:setup` (`packages/db/src/environment-setup.ts`, `packages/objects`) prepares one real environment's
+database and store from settings with no defaults, seeding nothing and refusing any secret this repository publishes.
+`deploy/compose.internet.yaml` runs it behind its owner's reverse proxy with its own Keycloak, and `deploy/internet`
+holds the deploy timer. The steward's `provider` command gives a new organisation's tenant its first way in.
+
 ## Icons
 
 The vector masters live in `assets/brand/`; everything else is rendered from them. An icon path is

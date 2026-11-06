@@ -3,6 +3,37 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.239.0 - 2026-11-06 (PR #PRNUMBER)
+
+Email: an environment chooses how its mail leaves, and people are told by email of notifications, of being invited, and of an environment closing. An installation can also run on the internet, and nobody can give an administrative permission they do not hold.
+
+### Added
+
+- **A mail channel for each tenant.** An administrator can choose how a tenant's mail leaves: the operator's relay or the tenant's own, over verified TLS. It starts off, a relay's password is sealed to that relay and never shown, and a restored tenant's channel arrives off.
+- **Mail leaves.** Administration's Email sets how an environment's mail leaves, by the operator's relay or its own over verified TLS, and sends a test to your own address. What was sent, waits or was not sent in the last 30 days is listed by code alone. Development catches every mail in Mailpit.
+- **Notifications by email.** Where an environment sends mail, a mention, a reply, a resolved thread, being named a reviewer and the daily digest are emailed too, with a link to your inbox and none of the content. You choose which in your inbox, and Administration's Email chooses which the environment sends.
+- **Invitations and notices of closing by email.** An invitation is emailed to the address invited, with a link to sign in. When an environment starts to close, everybody who can sign in to it is told by email, again 7 days before it is deleted, and if the closing is cancelled.
+- **Setting up an installation.** `pnpm environment:setup` prepares a database and object store for one real environment, from settings with no defaults. It seeds nothing, refuses any secret this repository publishes, and runs on every deploy without undoing what an administrator changed.
+- **An installation on the internet.** `compose.internet.yaml` runs one environment behind a reverse proxy its owner runs, with its own Keycloak, only port 443 open, and a timer that deploys each new release after dumping the databases.
+- **A first way in through any provider.** The operator's `steward provider` gives a new organisation's tenant its first sign-in through Keycloak or any OpenID Connect provider, with the client secret piped in. It works only until somebody who signed in holds access there.
+
+### Changed
+
+- **Locks in the contents.** A part being edited shows the same coloured lock in the contents as on the document page, just before its text: one shape and colour for your own lock, another for somebody else's. Hovering says who holds it and when it is expected back, at once. This replaces the words Held by after the text.
+- **Language and direction on the part's toolbar.** The Component button and its strip are gone. Two buttons show the part's language and direction: the language opens a list of the declared languages to search and choose from, and the direction switches between LTR and RTL.
+- **Versions panel tips show at once.** Every icon in the Versions panel says what it does as soon as the pointer reaches it.
+- **The toolbar is back under the menus.** The formatting tools of a document and a component now stand in a row under the menus, starting level with them, and stay where they are as a part opens. Contents and Baselines stay on the left, with the panels they open. The row shows in Authoring only.
+- **The grant limits' requirement.** Refusing to give an administrative permission somebody does not hold now names IAM-088.
+
+### Fixed
+
+- **Grant limits.** Nobody can give an administrative permission they do not hold: a role keeping administer but not, say, closing the environment can no longer grant itself Administrator, join a group holding it, make a role holding it, issue a service identity a token for it, or enable or erase someone holding it. The last person holding such a permission cannot be removed, denied it, disabled or taken out of a group giving it.
+- **Dialogs stand over the whole page.** Where it is used, opened from the Part panel, could appear under the header, the document's text and the part's toolbar. Every dialog of this kind now stands over all of them.
+- **A menu opened by a click takes the keys.** The focus now goes into a menu as it opens, so the arrow keys move along it and Escape closes it, rather than reaching the text behind it.
+- **Google under Keycloak.** A stack on Keycloak with `compose.lan.yaml` no longer keeps Google's settings.
+- **Keycloak and new tenants.** On a development stack, `ALLOY_EXTRA_REDIRECT_URIS` in `deploy/.env` lets a sign-in return to a tenant made from an organisation's console, and survives a restart.
+- **Decision records numbered once each.** The toolbar decision is now 0093, since the mail decision also took 0092.
+
 ## 0.238.0 - 2026-11-05 (PR #984)
 
 The whole life of a tenant: an organisation makes one, can suspend it, closes it with 30 days to give that up and its export offered first, and it provably no longer exists a day after that.

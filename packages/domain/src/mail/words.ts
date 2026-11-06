@@ -118,8 +118,8 @@ const CLOSING: Readonly<
     said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}.',
   },
   seven_days: {
-    subject: 'An environment you use closes in 7 days',
-    said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}, 7 days from now.',
+    subject: 'An environment you use is deleted within a week',
+    said: 'An environment you use in Alloy Works is still closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}.',
   },
   cancelled: {
     subject: 'An environment you use is no longer closing',

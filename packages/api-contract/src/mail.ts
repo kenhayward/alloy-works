@@ -95,7 +95,7 @@ export const MailSummary = z.strictObject({
     .string()
     .nullable()
     .describe(
-      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`; for an invitation, `accepted`, `expired`, `no_hostname`, `invitation_repeated` within a day of the last to its address, or `invitation_quota` past 100 in a day',
+      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`; for an invitation, `accepted`, `expired`, `no_hostname`, `invitation_repeated` within a day of the last to its address, or `invitation_quota` past 100 in a day; for a notice of closing, `closure_cancelled`',
     ),
   attempts: z.number().int(),
   createdAt: z.string(),
