@@ -60,12 +60,24 @@ export interface StandInOptions {
    * makes a token naming a key the provider does not publish at all.
    */
   readonly publishedKeyId?: string;
+  /**
+   * Answers `PUT` and `DELETE /stand-in/people/<id>/disabled`, disabling and enabling a person as
+   * `disable` and `enable` do, for a suite reaching it over HTTP. Off unless asked for.
+   */
+  readonly controls?: boolean;
 }
 
 export interface StandInProvider {
   readonly issuer: string;
   /** Where it is actually listening, which is not the issuer when it was given one. */
   readonly boundTo: string;
+  /**
+   * Plays a person disabled or deleted at their provider: nobody can sign in as them, and their
+   * refresh token is refused with `invalid_grant`, as Keycloak, Entra ID and Okta refuse a leaver's
+   * (the PC plan). Enabled again, both work as before.
+   */
+  disable(id: string): void;
+  enable(id: string): void;
   close(): Promise<void>;
 }
 
@@ -149,6 +161,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   const { port } = server.address() as AddressInfo;
   const boundTo = `http://${host}:${port}`;
   const issuer = options.issuer ?? boundTo;
+  const disabled = new Set<string>();
 
   // Keys and lifetimes of its own, so oidc-provider has nothing to warn about on the console.
   const { privateKey } = await generateKeyPair('RS256', { extractable: true });
@@ -179,14 +192,14 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
       client_secret: client.clientSecret,
       redirect_uris: [...client.redirectUris],
       response_types: ['code'],
-      grant_types: ['authorization_code'],
+      grant_types: ['authorization_code', 'refresh_token'],
     })),
     adapter: memoryAdapter(),
     jwks: { keys: [signingKey] },
     pkce: { required: () => true },
     // `hd` rides on the openid scope, as Google sends it: present only for a Workspace account. So do
     // `groups`, as an organisation's provider is configured to send them without a scope of their own
-    // (GP-A): the service never asks for one (IAM-044).
+    // (GP-A): the service never asks for one (IAM-090).
     claims: {
       openid: ['sub', 'hd', 'groups'],
       email: ['email', 'email_verified'],
@@ -201,11 +214,14 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
       IdToken: 600,
       Interaction: 600,
       Session: 600,
+      // An offline grant outlives the sign-in session, as Keycloak's offline tokens do.
+      RefreshToken: 24 * 60 * 60,
     },
     features: { devInteractions: { enabled: false } },
     interactions: { policy, url: (_ctx, interaction) => `/interaction/${interaction.uid}` },
+    // A disabled person is nobody: a refresh grant naming them is invalid_grant.
     findAccount: async (_ctx, sub) => {
-      const user = users.find((candidate) => candidate.id === sub);
+      const user = disabled.has(sub) ? undefined : users.find((candidate) => candidate.id === sub);
       return (
         user && {
           accountId: user.id,
@@ -228,11 +244,41 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
         clientId: ctx.oidc.client!.clientId,
         accountId: ctx.oidc.session!.accountId!,
       });
-      grant.addOIDCScope('openid email profile');
+      grant.addOIDCScope(ctx.oidc.params?.scope ? String(ctx.oidc.params.scope) : 'openid');
       await grant.save();
       return grant;
     },
   });
+
+  // offline_access is kept only when the request asks for consent (OpenID Connect Core 11), which
+  // oidc-provider holds to; Keycloak, Entra ID and Okta grant it without. So the consent is taken as
+  // asked, and answered at once, and offline access is granted as theirs is.
+  policy.get('consent')!.checks.remove('consent_prompt');
+  provider.use(async (ctx, next) => {
+    if (ctx.path === '/auth' && typeof ctx.query.scope === 'string') {
+      const scopes = ctx.query.scope.split(' ');
+      const prompts = typeof ctx.query.prompt === 'string' ? ctx.query.prompt.split(' ') : [];
+      if (scopes.includes('offline_access') && !prompts.includes('consent')) {
+        ctx.query = { ...ctx.query, prompt: [...prompts, 'consent'].join(' ') };
+      }
+    }
+    return next();
+  });
+
+  if (options.controls) {
+    provider.use(async (ctx, next) => {
+      const match = /^\/stand-in\/people\/([^/]+)\/disabled$/.exec(ctx.path);
+      if (!match || (ctx.method !== 'PUT' && ctx.method !== 'DELETE')) return next();
+      const id = decodeURIComponent(match[1]!);
+      if (!users.some((user) => user.id === id)) {
+        ctx.status = 404;
+        return;
+      }
+      if (ctx.method === 'PUT') disabled.add(id);
+      else disabled.delete(id);
+      ctx.status = 204;
+    });
+  }
 
   if (published) {
     provider.use(async (ctx, next) => {
@@ -267,6 +313,8 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   return {
     issuer,
     boundTo,
+    disable: (id) => void disabled.add(id),
+    enable: (id) => void disabled.delete(id),
     close: () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),

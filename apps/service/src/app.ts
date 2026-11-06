@@ -141,6 +141,7 @@ import {
   type Identity,
   type OidcClient,
   type ProviderSettings,
+  type ProviderToken,
   type SignInStart,
 } from './oidc.js';
 import { baselineHandlers } from './baselines.js';
@@ -167,11 +168,14 @@ import { comparisonHandlers } from './comparison.js';
 import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
 import type { SecretStore } from './secrets.js';
 import {
+  checkAtProvider,
   createSession,
   endSession,
   hashToken,
   sessionHeld,
   markReauthenticated,
+  providerCheckDue,
+  type KeptRefresh,
   type SessionPrincipal,
 } from './sessions.js';
 import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.js';
@@ -275,6 +279,16 @@ const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
 /** How long a hand-off code lives: one redirect's worth. */
 const HANDOFF_MS = 60 * 1000;
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
+
+/**
+ * What an organisation's sign-in brings with it: the provider it came through, the group values it
+ * asserted (null where it provisions), and the refresh token, where it granted offline access (PC-A).
+ */
+interface Asserted {
+  readonly providerId: string;
+  readonly groups: readonly string[] | null;
+  readonly refreshToken?: ProviderToken | null;
+}
 
 type Success<R extends RouteContract> = R['responses'] extends {
   200: { schema: infer S extends z.ZodType };
@@ -606,6 +620,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       groupsClaim: row.groups_claim,
       scimClaim: row.scim_claim,
       provisions: row.scim_identity !== null,
+      offlineAccess: true,
     };
   }
 
@@ -721,6 +736,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
   }
 
+  /** A token kept with a session, sealed to this environment (PC-A). */
+  function keeping(tenant: Tenant, token: ProviderToken): KeptRefresh {
+    return { token, sealingKey: options.sealingKey, tenantId: tenant.id };
+  }
+
   /**
    * Starts a session for the principal, and sends the browser on into the application. `groups` are
    * the values the organisation's provider asserted, which the principal's provider memberships are
@@ -741,7 +761,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
      * The provider an organisation's sign-in came through, and the group values it asserted; null
      * where it provisions, its memberships coming from SCIM alone (identity.md, "Groups").
      */
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
+    asserted?: Asserted,
   ): Promise<FastifyReply> {
     let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
     const started = await db
@@ -768,6 +788,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
             route,
             undefined,
             asserted?.providerId ?? null,
+            asserted?.refreshToken ? keeping(tenant, asserted.refreshToken) : undefined,
           ),
           lifetimes: await sessionSettings(trx),
         };
@@ -850,7 +871,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     tenant: Tenant,
     session: { readonly id: string; readonly principalId: string },
     route: SignInRoute,
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
+    asserted?: Asserted,
   ): Promise<FastifyReply> {
     const token = request.cookies[SESSION_COOKIE];
     await db
@@ -871,7 +892,17 @@ export function buildApp(options: AppOptions): FastifyInstance {
             asserted.providerId,
           );
         }
-        await markReauthenticated(trx, { ...session, route });
+        // An organisation's answer replaces the token kept, none included (PC-A).
+        await markReauthenticated(
+          trx,
+          { ...session, route },
+          undefined,
+          asserted === undefined
+            ? undefined
+            : asserted.refreshToken
+              ? keeping(tenant, asserted.refreshToken)
+              : null,
+        );
       })
       .catch((error: unknown) => {
         if (error instanceof SignInUnheld) throw signInFailed();
@@ -1103,6 +1134,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         return reauthenticated(request, reply, tenant, session, 'organisation', {
           providerId: provider.id,
           groups: provider.provisions ? null : identity.groups,
+          refreshToken: identity.refreshToken,
         });
       }
       // Found by issuer and subject, never by email address, which can be reassigned. Only somebody
@@ -1169,6 +1201,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return signInAs(request, reply, tenant, principal.id, 'organisation', {
         providerId: provider.id,
         groups: provider.provisions ? null : identity.groups,
+        refreshToken: identity.refreshToken,
       });
     },
 
@@ -1736,6 +1769,26 @@ export function buildApp(options: AppOptions): FastifyInstance {
           ? await db.withTenant(tenantOf(request), (trx) => sessionHeld(trx, token))
           : undefined;
         if (!held) throw unauthenticated();
+        // Asked again at its provider once an interval, outside any transaction (IAM-010; PC-C).
+        if (providerCheckDue(held)) {
+          const tenant = tenantOf(request);
+          const checked = await checkAtProvider(
+            {
+              db,
+              sealingKey: options.sealingKey,
+              provider: (id) => organisationProvider(request, tenant, id),
+              oidc,
+            },
+            tenant,
+            held,
+            new Date(),
+            request.id,
+          );
+          if (checked === 'ended') throw unauthenticated();
+          if (checked === 'not_asked') {
+            request.log.warn("a session's identity provider could not be asked; it goes on");
+          }
+        }
         request.principal = held.principal;
         request.credential = {
           kind: 'session',

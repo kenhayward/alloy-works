@@ -254,6 +254,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0210_new_document',
       '0211_background_work',
       '0212_component_groups',
+      '0213_session_provider_check',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

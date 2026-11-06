@@ -218,8 +218,9 @@ describe('the real corpus', () => {
     // 1627 (2026-11-01): AST-052 and AST-053, superseding AST-025 and AST-043 (AL).
     // 1628 (2026-11-01): STY-086, superseding STY-066 (SY).
     // 1654 (2026-11-06): SCH-075, REU-056 to REU-058 and LIF-079 (RM).
+    // 1668 (2026-11-06): IAM-090, superseding IAM-044 (PC).
     // 1667 (2026-11-06): REU-064 to REU-067 (what CG deferred). 1663: REU-060 to REU-063 (CG). 1659: TPL-074 to TPL-077 and REU-059 (ND).
-    expect(total((document) => document.requirements)).toBe(1667);
+    expect(total((document) => document.requirements)).toBe(1668);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

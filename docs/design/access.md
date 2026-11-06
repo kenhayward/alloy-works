@@ -82,7 +82,7 @@ enforcing it cannot disagree.
 | IAM-070                   | The named high-risk acts are T7's. Each arrives as a new permission in the closed set, which is a code change with a migration of the check constraint and nothing more                                                                                                                                                                                        |
 | IAM-083, IAM-084          | IAM-020, a data connection's results separately grantable, is superseded by these two, both T7's: a dataset's own read grant, and publishing only by one who sees every value. In T2 a stored result is read on the document's permission ([data.md](data.md), ADR-0035)                                                                                       |
 | IAM-032                   | Evaluating as another user is T7. `explain` already takes the principal as a parameter, so it is a route and a permission, not a new model                                                                                                                                                                                                                     |
-| IAM-005, IAM-010          | Tenant-scoping of derived data is each derived store's; a disabled user losing access is the session check's. Service identities (IAM-033) are [service-foundations.md](service-foundations.md)'s                                                                                                                                                              |
+| IAM-005, IAM-010          | Tenant-scoping of derived data is each derived store's; a disabled user losing access is [identity.md](identity.md)'s, by SCIM or the provider asked again. Service identities (IAM-033) are [service-foundations.md](service-foundations.md)'s                                                                                                                |
 
 ## Spaces
 
@@ -424,7 +424,7 @@ A **group** is `id`, a `name`, and its source:
   (IAM-009).
 
 **The Google route asserts no groups.** Reading a Workspace user's groups needs a directory scope,
-which IAM-044 forbids requesting. A principal who signs in with Google is placed in groups by an
+which IAM-090 forbids requesting. A principal who signs in with Google is placed in groups by an
 administrator or not at all, and a tenant that wants its directory to drive access is a tenant that
 configures its own provider.
 
@@ -438,7 +438,7 @@ them ([W12](../plans/2026-09-28-w12-identity.md)).
 carries group values, `groups` by default.
 
 - The claim is read from the ID token alone, under the basic scopes. No groups scope is ever asked for
-  (IAM-044).
+  (IAM-090).
 - A provider that puts groups in the ID token only under a scope of its own must be configured to put
   them there under `openid` or `profile`. Microsoft Entra's group membership claims and Okta's groups
   claim can both be.
@@ -479,7 +479,7 @@ review.
 
 | #    | Decision                                                                                                             | Instead of                                                                                                      |
 | ---- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| GP-A | **Groups come from the ID token under the basic scopes**, the provider configured to put them there                  | Asking for a groups scope or reading a directory API, which IAM-044 forbids                                     |
+| GP-A | **Groups come from the ID token under the basic scopes**, the provider configured to put them there                  | Asking for a groups scope or reading a directory API, which IAM-090 forbids                                     |
 | GP-B | **A missing or malformed claim is no groups**, so memberships are removed                                            | Leaving memberships as they were, which keeps access a directory has taken away whenever the claim goes missing |
 | GP-C | **An administrator makes each provider group for one value**, and a value with no group means nothing here           | A group made for every value a claim carries, which fills the environment with a directory's every group        |
 | GP-D | **Memberships follow the claim at sign-in only**; the bound IAM-056 asks for, and a push from the provider, are T7's | Re-reading the directory on a timer, which needs a scope and a credential the product does not hold             |

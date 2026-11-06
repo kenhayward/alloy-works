@@ -191,6 +191,13 @@ export interface SessionTable {
   last_seen_at: Generated<Date>;
   idle_expires_at: Date;
   expires_at: Date;
+  /**
+   * The provider's refresh token, sealed to the tenant and the session's id (0213; the PC plan,
+   * PC-A): only for a session that came through a provider granting offline access. Never sent or logged.
+   */
+  sealed_refresh: Generated<string | null>;
+  /** When the provider was last asked whether the person may still sign in (0213; PC-C). */
+  provider_checked_at: Generated<Date | null>;
 }
 
 /** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */

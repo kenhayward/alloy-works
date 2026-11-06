@@ -213,6 +213,8 @@ export const auditKindSpecs = {
         'ended_by_holder',
         'erased',
         'disabled',
+        // Its organisation's provider refused the session's refresh token, as a leaver's (PC-E).
+        'provider_refused',
       ]),
       session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),

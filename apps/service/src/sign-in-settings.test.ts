@@ -67,6 +67,7 @@ describe('administration of sign-in', () => {
     const real = createOidcClient({ allowInsecureIssuers: true });
     const oidc: OidcClient = {
       start: real.start,
+      refresh: real.refresh,
       finish: async (...args) => {
         const identity = await real.finish(...args);
         return authTimeOverride === undefined
