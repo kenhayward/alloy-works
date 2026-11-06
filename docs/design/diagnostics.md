@@ -48,9 +48,29 @@ environment's role. Codes and counts, never content.
   connection's runs** in the last day (down when its latest failed, time-outs counted) and **budgets** (the month's
   model spend against its limit, query runs at once).
 
+## Administration's Diagnostics
+
+`apps/web/src/admin/Diagnostics.tsx`, in the System group, read once as it opens. **Needs attention** comes first
+(`needsAttention`): a capability failing or degraded, work failing or late, jobs failed, webhooks failing or turned
+off, mail failing, a data source down, each in a sentence with its code. Then health by capability, the index,
+deliveries, background work, jobs, data sources and budgets. Health is a `Chip` with an icon and its word, never
+colour alone, and not `Lozenge`, which is for content's states.
+
+**Who else is told** of a silent failure (ADM-037's second half), kind by kind:
+
+| Kind               | The person waiting                                                              |
+| ------------------ | ------------------------------------------------------------------------------- |
+| A query timing out | The person running it, at once (`timeout`, 504)                                 |
+| A data source down | The person running a query on it, at once, by its failure code                  |
+| A job failed       | Its submitter, on their job (Jobs)                                              |
+| A webhook failing  | Its maker, in their inbox when it is turned off (WB)                            |
+| Mail failing       | Those who configure services, in their inbox, once until it clears (EM-N)       |
+| The index lagging  | **Nobody**: an author whose new version is not yet found by meaning is not told |
+| Background work    | Nobody waits on a sweep; Diagnostics alone                                      |
+
 ## Not yet built
 
-Administration's Diagnostics and silent failures surfaced (DGc); usage over time (DGd);
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging; usage over time (DGd);
 budgets, objectives, availability, backups and integrity (DGe).
 
 ## Requirements owned
@@ -59,6 +79,9 @@ budgets, objectives, availability, backups and integrity (DGe).
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`) |
 | **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up      |
+| **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets  |
+| **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                    |
+| **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff              |
 
-The rest are claimed as each is answered in full: ADM-036, ADM-037, ADM-021 and COL-061 once Administration shows them
-(DGc2).
+**ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
+nobody waiting (above). The rest are claimed as each is answered in full.
