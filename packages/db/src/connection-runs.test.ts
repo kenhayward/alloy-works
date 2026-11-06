@@ -65,6 +65,8 @@ describe("each connection's recent runs, for Diagnostics (the DG plan, pre-fligh
     expect(runs).toEqual([
       expect.objectContaining({
         connection: UP,
+        // A run on a connection since gone, or never made, has no name.
+        name: null,
         runs: 2,
         failed: 1,
         timedOut: 1,

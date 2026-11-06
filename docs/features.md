@@ -212,6 +212,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
+- **Diagnostics.** An administrator of the environment reads how it is doing in Administration's
+  **Diagnostics**, or through the API (`GET /v1/diagnostics`): what failed with nobody told first, then
+  each capability's health over the last 15 minutes (healthy, degraded, failing or idle, in icon and
+  words), its requests, server error rate and 95th percentile; the search index's model and lag;
+  webhook and mail delivery; each sweep and loop's last run, its last failure and when it is next due;
+  the last day's jobs by kind and state; each data source's runs, down when its latest failed; and the
+  month's model spend against its budget. Codes and counts only, never content. Measured by the minute,
+  kept by the hour after a week and by the day after 90 days, for 13 months.
 - **Suspending an environment.** The operator suspends one with a reason, from the `steward` command line, and lifts that the same way. Every route refuses within 30 seconds, an open stream ends, jobs and sweeps wait, and a person is told it is suspended, never why, though a download link already signed lives out its 5 minutes. Lifting loses nothing, and a webhook still being tried loses no time. An administrator cannot suspend from inside yet.
 - **An organisation's own tenant.** An organisation administers from a tenant holding no content: sign-in, people,
   roles, sessions, audit and export are the ones every tenant has, and everything else there answers as not there. Its

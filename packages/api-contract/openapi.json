@@ -136092,6 +136092,13 @@
                           "connection": {
                             "type": "string"
                           },
+                          "name": {
+                            "description": "Its name at its latest version; null where it has gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "runs": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -136124,6 +136131,7 @@
                         },
                         "required": [
                           "connection",
+                          "name",
                           "runs",
                           "failed",
                           "timedOut",
