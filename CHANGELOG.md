@@ -23,6 +23,11 @@ Component groups: a set of components reused as one, approved together, and offe
 ### Changed
 
 - **CT Studio lists each environment by name.** An Alloy Works environment now calls itself "Alloy Works" followed by the environment's name in brackets, so two connected to one CT Studio read apart.
+- **The template line stands above the text only when it asks something.** A document that keeps to its template, at its newest version, names the template in the Document panel instead, so the panes beside the text start and stay at one height.
+
+### Fixed
+
+- **A document made from Blank lists no departures.** Blank declares no sections, so the component it starts a document with is no longer listed as not in the template.
 
 ## 0.239.0 - 2026-11-06 (PR #1020)
 

@@ -2432,6 +2432,31 @@ export function DocumentPage({
   });
   // The panels beside the text, named in words (the LG plan, LG6c): the document's own only where it
   // holds fields or parameters, or where a condition axis is declared, for its Profile (issue #675).
+  // Above the panes only where it asks something of the reader - a departure, or a newer version to
+  // move to - so they stand still under the header (ADR-0074); otherwise named in the Document panel.
+  const templateLine = document.template && (
+    <TemplateLine
+      template={document.template}
+      className={styles['approvedNote']}
+      move={
+        document.mayEdit && !document.archived
+          ? {
+              client,
+              document: document.id,
+              onMoved: () => {
+                setNotice(say('document.moved-to-the-template-s'));
+                // Read again whole: its version, values and template are new.
+                setAttempt((count) => count + 1);
+              },
+            }
+          : undefined
+      }
+    />
+  );
+  const templateAsks =
+    document.template !== null &&
+    (document.template.departures.added.length + document.template.departures.missing.length > 0 ||
+      (document.template.newest !== null && document.mayEdit && !document.archived));
   const holdsOwn =
     document.fields.document.length > 0 || document.templated || holdsValues || axes.length > 0;
   const dockTabs = panelsFor({
@@ -2801,25 +2826,7 @@ export function DocumentPage({
                   {say('document.this-is-approved-saving-starts')}
                 </p>
               )}
-              {document.template && (
-                <TemplateLine
-                  template={document.template}
-                  className={styles['approvedNote']}
-                  move={
-                    document.mayEdit && !document.archived
-                      ? {
-                          client,
-                          document: document.id,
-                          onMoved: () => {
-                            setNotice(say('document.moved-to-the-template-s'));
-                            // Read again whole: its version, values and template are new.
-                            setAttempt((count) => count + 1);
-                          },
-                        }
-                      : undefined
-                  }
-                />
-              )}
+              {templateAsks && templateLine}
               <PreviewSaid preview={preview} />
               <UnheldFaces />
               {document.scheme === null && <p>{say('document.this-document-s-numbering-could')}</p>}
@@ -3158,6 +3165,7 @@ export function DocumentPage({
                         aria-labelledby={dockIds('document').tab}
                         hidden={shownDock !== 'document'}
                       >
+                        {!templateAsks && templateLine}
                         {/* What the document's template asks of the document itself, filled in and checked as it
                     is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
                         {document.fields.document.length > 0 && (

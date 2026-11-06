@@ -5,6 +5,7 @@ import { fieldDefinitionSchema } from '../metadata/field.js';
 import type { EffectiveField } from '../metadata/resolve.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 
+import { BLANK_WORDS, blankTemplate } from './blank.js';
 import { departures, missingSections, valueFailures } from './conformance.js';
 import { TEMPLATE_SCHEMA_VERSION, templateDefinitionSchema } from './definition.js';
 
@@ -104,6 +105,19 @@ describe("a document against its template's requirements", () => {
         { key: 'method', title: 'Method', required: false, reason: null },
       ],
     });
+  });
+
+  it('TPL-028 finds nothing added to a template that starts no section, as Blank does (TPL-074)', () => {
+    const blank = blankTemplate(
+      BLANK_WORDS,
+      'aaaaaaaa-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000002',
+    );
+    const shaped = outline([
+      section(1, 'Introduction', undefined),
+      section(2, 'Findings', undefined),
+    ]);
+    expect(departures(blank, shaped, new Map())).toEqual({ added: [], missing: [] });
   });
 
   it('TPL-029 does not hold a required section removed with a reason missing', () => {

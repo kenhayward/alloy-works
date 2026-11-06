@@ -10740,7 +10740,7 @@
     {
       "id": "REU-065",
       "area": "REU",
-      "statement": "An author must be able to make a placed group the document's own: its members become ordinary references at the versions they pin, keeping their rewordings and conditions, free to be moved, removed or repinned, and no newer group version is offered for them again. It must say first what it gives up, be the document's next version, be audited, and be refused for a group the template requires.",
+      "statement": "An author must be able to make a placed group the document's own: its members become ordinary references at the versions they pin, keeping their rewordings and conditions, free to be moved, removed or repinned, and no newer group version is offered for them again. It must say first what it gives up, be the document's next version, and be refused for a group the template requires.",
       "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
@@ -28817,25 +28817,25 @@
     {
       "id": "TPL-029",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 69,
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "TPL-033",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 128,
+      "line": 138,
       "kind": "title"
     },
     {
       "id": "TPL-034",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 128,
+      "line": 138,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 89,
+      "line": 99,
       "kind": "title"
     },
     {
@@ -36485,13 +36485,19 @@
     {
       "id": "TPL-028",
       "file": "packages/domain/src/template/conformance.test.ts",
-      "line": 88,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "packages/domain/src/template/conformance.test.ts",
-      "line": 109,
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "packages/domain/src/template/conformance.test.ts",
+      "line": 110,
       "kind": "title"
     },
     {
