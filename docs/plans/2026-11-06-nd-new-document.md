@@ -19,7 +19,7 @@ Ken's, on the handoff (2026-11-06):
   section may set the default for the components under it. Blank is a template placing one copied component.
 - **ND-D** a template gains an optional **description**, and each of its values an optional **label**, both set
   through the API until templates have a page of their own. The value's key is shown where it has no label.
-- **ND-E** no publish check for a starter's words left unchanged.
+- **ND-E** no publish check for a copied component's words left unchanged.
 
 Mine, to confirm with the second handoff:
 
@@ -35,7 +35,7 @@ Mine, to confirm with the second handoff:
 - **ND-M** **derived from** is a built-in relationship, the first not defined by a tenant, written by template
   copies and by Duplicate alike, so what changed in a source since is shown as any relationship's reach is
   (REL-024).
-- **ND-H** the gallery reads a summary on `GET /v1/templates`: sections, values, required values, starter and
+- **ND-H** the gallery reads a summary on `GET /v1/templates`: sections, values, required values, copied and referenced
   shared components, its description, its first five headings, and whether it is its space's default. No read
   for each template.
 - **ND-I** the gallery lists the templates of every space the reader may read templates in, the space chosen
