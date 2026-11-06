@@ -6188,5 +6188,12 @@
   "states.changed-since-published": "Changed since published",
   "states.holding": "Holding",
   "states.retracted": "Retracted",
-  "states.corrected": "Corrected"
+  "states.corrected": "Corrected",
+  "rows.generate-documents": "Generate documents...",
+  "rows.publish": "Publish...",
+  "rows.lifecycle": "Lifecycle",
+  "rows.duplicate": "Duplicate...",
+  "rows.deleted": "Deleted {title}.",
+  "rows.publish-title": "Publish {title}",
+  "rows.actions": "Actions"
 }

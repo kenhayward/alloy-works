@@ -245,7 +245,7 @@ const progressOf = (gate: Gate) =>
     yours: gate.approvedByCaller ? 'yes' : 'no',
   });
 
-type TransitionProps = {
+export type TransitionProps = {
   client: Client;
   kind: Movable;
   id: string;

@@ -27,33 +27,44 @@ Ken's, on the assessment:
 - **RM-H** at once, one transaction, at most `COPY_MAX` (200, as `PLACE_MAX`) components copied. The dialog
   says how many first (REU-046), then stays modal with a progress bar until answered.
 
-Mine, from the storage map:
+Mine, from the storage map, and as the pre-flight changed them:
 
 - **RM-I** the copy keeps the outline's node ids. They are unique within an outline only (STR-003), and every
   table keys a node by its document too, so `node` cross-references and section titles resolve in the copy
   unchanged. Sections are still the copy's own (STR-004).
-- **RM-J** a copied component is copied at the version the document shows (pinned, latest or approved),
-  its type and values with it, and starts the workflow's first state. A reference to it keeps `pinned` (to
-  the copy's version) or `latest`; `approved` becomes `latest`, since nothing of the copy is approved yet,
-  and the report says so. `component` cross-references between copied components are remapped.
-- **RM-K** the copy carries the template, parameters, values, language and profile; not versions, dates,
-  baselines, comments, publications, bindings' resolutions (resolved afresh) or grants. A reference the
-  caller cannot read refuses a copy of it (`copy_unreadable`, counted); reusing it is as the original was.
-- **RM-L** a component's copy is its latest version under the new title; a template's, its definition under
-  the new name.
-- **RM-M** each copy is audited as `content.copied`, from and to (LIF-063), beside the version cut.
+- **RM-J** a copied component is copied at the version the document shows, its type, values (checked with
+  the original's as `previous`) and scope with it, and starts the workflow's first state. Placed twice at
+  different versions, the newest shown wins, reported. A reference to a copy keeps `pinned` (to the copy's
+  version) or `latest`; `approved` becomes `latest`, reported. `component` cross-references between copies
+  are remapped. An override is repointed to the copy's version where its block is unchanged there, else
+  dropped and counted. Its lines and translations are not copied, and are counted.
+- **RM-K** never copied, under any choice, and reused instead: a reference the template requires (`origin`),
+  a deleted or archived component. A reference the caller cannot read refuses a copy of it
+  (`copy_unreadable`, counted); reusing it is as the original was.
+- **RM-L** the copy carries the template at its effective version (the latest move; `indexTemplateOf` after),
+  section waivers, parameters, values, language, profile and scope; each bound part's latest resolution, as a
+  `resolve` by the copier, with the revisions standing on it, never resolved afresh. Not versions, dates,
+  baselines, comments, publications or grants.
+- **RM-M** a component's copy is its latest version under the new title; a template's, its definition under the
+  new name, made through `createTemplate`'s resolution (`template_unresolved`).
+- **RM-N** audited as `artifact.copied`, beside `artifact.moved`, the copy its subject and `{from}` its detail;
+  a migration re-adds `audit_event_kind`; a LIF row adds it to LIF-067's list (LIF-063). Not a webhook type:
+  the copy's first version cut announces it.
+- **RM-O** into another space, the preview says what moving would cost there (the moving consequences).
+- **RM-P** `SpaceList` gains `mayDesign`, so a template's copy may go to any space the caller may design in.
+- **RM-Q** one menu a row, each mounting its acts' dialogs (no host a listing): cheap, and tested.
 
 ## Interfaces
 
-- `packages/domain/src/structure/copy.ts`: `copyOutline(outline, title, replaced)`, pure: the copy's
-  outline, references repointed and modes as RM-J. `COPY_MAX`.
-- `packages/db/src/copies.ts`: `previewDocumentCopy`, `copyDocument`, `copyComponent`, `copyTemplate`,
-  each through `createArtifact`; a migration adding `content.copied`.
-- Contract: `GET /v1/documents/{id}/copies?space&title&components` (counts, title in use), `POST
-/v1/documents/{id}/copies`, `POST /v1/components/{id}/copies`, `POST /v1/templates/{id}/copies`.
-  Read on the original, `create` (`design` for a template) on the space. `copy_too_large`,
-  `copy_unreadable`.
-- `apps/web/src/listing/RowMenu.tsx`: `ContentRowMenu` by kind; `DuplicateDialog`.
+- `packages/domain/src/structure/copy.ts`: `copyOutline(outline, replaced)`, pure: the copy's outline,
+  references repointed, modes and overrides as RM-J, and what it changed counted. `COPY_MAX` (200).
+- `packages/db/src/copies.ts`: `previewCopy`, `copyDocument`, `copyComponent`, `copyTemplate`, each through
+  `createArtifact`; a migration adding `artifact.copied`.
+- Contract, as moving's: `POST /v1/artifacts/{id}/copy/preview` and `POST /v1/artifacts/{id}/copy`, body
+  `{to, title, components?: 'reuse' | 'own' | 'all'}`. `read` on the artifact; `create` (`design` for a
+  template) at `to`, checked in the handler. 403, 404, 409 `space_archived`, 400 `copy_too_large`,
+  `copy_unreadable`, `template_unresolved`. The preview answers counts, the title in use and moving's costs.
+- `apps/web/src/listing/ContentRowMenu.tsx`; `apps/web/src/listing/DuplicateDialog.tsx`.
 
 ## Tests
 
@@ -65,6 +76,6 @@ menu and the dialog.
 
 ## Docs
 
-Two requirements (row acts, SCH; duplicate, STR), filed as issues; an ADR for RM-A, RM-B and RM-I;
+SCH-075 and REU-056 to REU-058 (issues #1015, #1016), and the LIF row; an ADR for RM-A, RM-B and RM-I;
 `features.md`, `README.md`, the structure design's copy paragraph; `openapi.json` and the client; one
 fragment.
