@@ -307,6 +307,9 @@ export async function listWorkflows(trx: TenantTransaction): Promise<WorkflowSum
              order by artifact_id, id desc) t
      where not coalesce((select d.act = 'deleted' from artifact_deletion d
                           where d.artifact_id = t.artifact_id order by d.id desc limit 1), false)
+       -- A group moves under the component workflow but is no component (the CG final review).
+       and not exists (select 1 from artifact a
+                        where a.id = t.artifact_id and a.kind = 'componentGroup')
      group by t.kind, t.to_state`.execute(trx);
   const summaries: WorkflowSummary[] = [];
   for (const kind of WORKFLOW_KINDS) {

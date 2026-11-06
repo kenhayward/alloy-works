@@ -23149,19 +23149,19 @@
     {
       "id": "REU-061",
       "file": "apps/service/src/component-group-routes.test.ts",
-      "line": 105,
+      "line": 129,
       "kind": "title"
     },
     {
       "id": "REU-062",
       "file": "apps/service/src/component-group-routes.test.ts",
-      "line": 105,
+      "line": 129,
       "kind": "title"
     },
     {
       "id": "REU-063",
       "file": "apps/service/src/component-group-routes.test.ts",
-      "line": 212,
+      "line": 236,
       "kind": "title"
     },
     {
@@ -31123,19 +31123,19 @@
     {
       "id": "REU-061",
       "file": "packages/db/src/component-groups.test.ts",
-      "line": 345,
+      "line": 393,
       "kind": "title"
     },
     {
       "id": "REU-062",
       "file": "packages/db/src/component-groups.test.ts",
-      "line": 345,
+      "line": 393,
       "kind": "title"
     },
     {
       "id": "REU-063",
       "file": "packages/db/src/component-groups.test.ts",
-      "line": 483,
+      "line": 531,
       "kind": "title"
     },
     {
@@ -36149,6 +36149,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-061",
+      "file": "packages/domain/src/structure/copy.test.ts",
+      "line": 182,
+      "kind": "title"
+    },
+    {
       "id": "REU-060",
       "file": "packages/domain/src/structure/groups.test.ts",
       "line": 81,
@@ -36373,13 +36379,19 @@
     {
       "id": "REU-046",
       "file": "packages/domain/src/structure/place.test.ts",
-      "line": 173,
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "REU-054",
       "file": "packages/domain/src/structure/place.test.ts",
-      "line": 82,
+      "line": 83,
+      "kind": "title"
+    },
+    {
+      "id": "REU-061",
+      "file": "packages/domain/src/structure/place.test.ts",
+      "line": 174,
       "kind": "title"
     },
     {

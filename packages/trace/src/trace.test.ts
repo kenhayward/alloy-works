@@ -1047,8 +1047,8 @@ describe('the citations in the committed model', () => {
     // 2611 (2026-11-06): RM - the row menus, Duplicate and copying cite SCH-075, REU-056 to REU-058 and LIF-079.
     // 2599 (2026-11-06): EMc - notifications by email, COL-036, COL-053, COL-060, COL-064.
     // 2619 (2026-11-06): EMd - invitations and notices of closing, IAM-089, ADM-055, COL-064 over Mailpit.
-    // 2656 (2026-11-06): CG - component groups, placing and taking them. 2635: ND.
-    expect(model.citations).toHaveLength(2656);
+    // 2658 (2026-11-06): CG - component groups, placing and taking them. 2635: ND.
+    expect(model.citations).toHaveLength(2658);
   });
 
   it('cites no identifier the corpus does not hold', () => {

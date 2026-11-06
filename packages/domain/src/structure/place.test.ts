@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { INSIDE_RUN } from './groups.js';
 import { PLACE_MAX, contentSize, placeSection, referencesUnder } from './place.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument, type OutlineDocument } from './outline.js';
 
@@ -168,6 +169,38 @@ describe('placing another document section (the R2 plan, R2-F)', () => {
         counter(),
       ),
     ).toMatchObject({ applied: false });
+  });
+
+  it('REU-061 places nothing under a placed group member or among its run', () => {
+    const marker = { id: A, version: PIN, placement: 'g'.repeat(26) };
+    const member = (id: string, component: string) => ({
+      type: 'reference',
+      id: id.repeat(26),
+      component,
+      mode: { kind: 'pinned', version: PIN },
+      group: marker,
+      ...base,
+      children: [],
+    });
+    const target = outline([
+      {
+        type: 'section',
+        id: 'h'.repeat(26),
+        title: title('References'),
+        ...base,
+        children: [member('m', A), member('n', B)],
+      },
+    ]);
+    const one = [{ component: A, mode: { kind: 'latest' as const } }];
+    const at = (parent: string, position: number) =>
+      placeSection(
+        target,
+        { parent, position, title: title('Upkeep'), references: one },
+        counter(),
+      );
+    expect(at('m'.repeat(26), 0)).toEqual({ applied: false, reason: INSIDE_RUN });
+    expect(at('h'.repeat(26), 1)).toEqual({ applied: false, reason: INSIDE_RUN });
+    expect(at('h'.repeat(26), 2)).toMatchObject({ applied: true });
   });
 
   it('REU-046 measures a component content: its blocks and the characters of its text', () => {

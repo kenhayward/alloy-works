@@ -134,6 +134,7 @@ describe('the rule behind a refusal', () => {
       // guards (CG-F).
       'group.unapproved',
       'group.version_invalid',
+      'group.members_withheld',
       // The vocabulary an import would make, refused by its shape: the VO plan's own guard (VO-I).
       'vocabulary.invalid',
       // A refresh with no source, or one that cannot be read or run: the VO plan's own guards (VO-J).

@@ -40,7 +40,7 @@ import {
 import { componentUses } from './uses.js';
 import { latestVersion, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 import { decideGate } from './workflow-gates.js';
-import { moveArtifact, workflowStanding } from './workflow.js';
+import { listWorkflows, moveArtifact, workflowStanding } from './workflow.js';
 
 const ISSUER = 'https://idp.example';
 
@@ -337,6 +337,24 @@ describe('component groups (the CG plan)', () => {
     expect(cut).toEqual({ answer: 'members.withheld' });
     const kept = await as((trx) => readComponentGroup(trx, made.group.id));
     expect(kept?.group.members).toHaveLength(2);
+  });
+
+  it('counts no group among the components in Administration, though it moves under their workflow', async () => {
+    const drafts = async () =>
+      (await as((trx) => listWorkflows(trx))).find((each) => each.definition.kind === 'component')
+        ?.counts['draft'] ?? 0;
+    const before = await drafts();
+    const only = await component('Counted');
+    const made = await as((trx) =>
+      createComponentGroup(trx, {
+        author: grace,
+        spaceId: shared,
+        title: 'Not counted',
+        members: [{ component: only.artifactId }],
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    expect(await drafts()).toBe(before + 1);
   });
 
   it('lists the groups a reader may read, by title', async () => {
