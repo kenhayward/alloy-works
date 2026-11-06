@@ -55,3 +55,28 @@ export function percentileBound(buckets: readonly number[], fraction: number): n
   }
   return Infinity;
 }
+
+/**
+ * The worker's kinds of work, each a capability beside the contract's route tags (DG-C): every kind of
+ * job is one, so Diagnostics shows publishing, indexing or importing as it shows a route.
+ */
+export const JOB_CAPABILITIES = {
+  sample_pdf: 'Publishing work',
+  publish: 'Publishing work',
+  preview: 'Preview work',
+  range: 'Preview work',
+  check_pdf: 'Checking publications',
+  ingest: 'Asset processing',
+  derive: 'Asset processing',
+  audit_export: 'Exporting',
+  tenant_export: 'Exporting',
+  impact_report: 'Reports',
+  cohort: 'Reports',
+  restoration: 'Restoring work',
+  tenant_purge: 'Closing work',
+  provider_share: 'Sharing work',
+  embed: 'Indexing',
+  import: 'Importing',
+  translation_return: 'Translation returns',
+  bridge_deliver: 'Data delivery',
+} as const;

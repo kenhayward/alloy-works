@@ -98,6 +98,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   audit_export: leftOut('An earlier export of the log, which this holds whole.'),
   audit_label: kept(),
   audit_restored: kept(),
+  background_work: leftOut('What background work last did here, recorded afresh in a copy.'),
   baseline: kept(),
   baseline_binding: kept(),
   baseline_pin: kept(),

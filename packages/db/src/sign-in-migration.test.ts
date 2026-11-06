@@ -219,6 +219,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0207_copying',
       '0208_mail_invitations_and_closures',
       '0209_capability_usage',
+      '0210_background_work',
     ]);
 
     const read = async () =>

@@ -11,6 +11,7 @@ import {
 import { entryCheck, type ReferenceSourceId, type ReferenceSourceKey } from '@alloy-works/domain';
 
 import type { Referencer } from './referencer.js';
+import { inEachTenant } from './background.js';
 import type { WorkerLog } from './worker.js';
 
 /** Each source's deployment-wide budget, calls a second (the XR plan, XR-E). */
@@ -50,13 +51,10 @@ export async function recheckEntries(
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const due = new Map<Tenant, CheckableEntry[]>();
-  for (const tenant of await db.liveTenants()) {
-    try {
-      due.set(tenant, await db.withTenant(tenant, (trx) => entriesDue(trx, PER_TENANT)));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the entries due a check were not read');
-    }
-  }
+  // Recorded as the tenant's entries are read; each entry's own check is recorded on the entry.
+  await inEachTenant(db, log, 'recheckEntries', async (tenant) => {
+    due.set(tenant, await db.withTenant(tenant, (trx) => entriesDue(trx, PER_TENANT)));
+  });
 
   let recorded = 0;
   const lane = async (source: ReferenceSourceKey) => {

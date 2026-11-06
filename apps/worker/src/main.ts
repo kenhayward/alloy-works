@@ -3,8 +3,11 @@
 import {
   createDeliveredStore,
   createJobQueue,
+  createMeasuring,
   createTenantDatabase,
+  flushEveryMinute,
   JOB_CHANNEL,
+  recordCapabilityMinute,
 } from '@alloy-works/db';
 import { createObjectStores } from '@alloy-works/objects';
 import pg from 'pg';
@@ -65,6 +68,15 @@ const fonts = await loadPinnedFonts();
 const db = createTenantDatabase(config.databaseUrl);
 const queue = createJobQueue(config.databaseUrl);
 const stores = createObjectStores(config.objectStore, config.objectStoreKey);
+// Each job counted under its kind of work, written once a minute as the service's requests are (DG-C).
+const measuring = createMeasuring(
+  (tenant, minute, counts) =>
+    db.withTenant(tenant, (trx) => recordCapabilityMinute(trx, minute, counts), {
+      actorKind: 'system',
+    }),
+  { failed: (error) => log.error({ err: error }, 'measurements could not be written') },
+);
+const stopMeasuring = flushEveryMinute(measuring);
 const typst = createTypst({ binary: config.typstBinary, fonts });
 // A preview is the publish handler's too, which reads which it is from the request (W10.1).
 const publish = publishJob({ db, stores, typst, fonts });
@@ -148,7 +160,7 @@ listener.on('notification', () => wake());
 let running = true;
 let sweepingNonces = false;
 const sweep = setInterval(() => {
-  void sweepExpiredSignIns(db)
+  void sweepExpiredSignIns(db, new Date(), log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired sign-ins'))
     .catch((error: unknown) => log.error({ err: error }, 'sweep failed'));
   // Previews an hour after they finished, in every tenant, and their PDFs (W10.2, PV-F).
@@ -281,6 +293,7 @@ const stop = async (signal: string) => {
   clearInterval(mails);
   clearInterval(rechecks);
   log.info({ signal }, 'stopping');
+  await stopMeasuring();
   await listener.end();
   await checker.close();
   await warmPool.close();
@@ -307,6 +320,7 @@ while (running) {
     workerId: config.workerId,
     leaseMs: config.leaseMs,
     log,
+    measuring,
   }).catch((error: unknown) => {
     log.error({ err: error }, 'the worker could not take a job');
     return 'idle' as const;

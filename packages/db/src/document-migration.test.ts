@@ -282,6 +282,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0207_copying',
       '0208_mail_invitations_and_closures',
       '0209_capability_usage',
+      '0210_background_work',
     ]);
 
     // The component and its version are as they were.
@@ -555,6 +556,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0207_copying',
       '0208_mail_invitations_and_closures',
       '0209_capability_usage',
+      '0210_background_work',
     ]);
 
     const { rows } = await queryAs(
