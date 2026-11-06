@@ -1,7 +1,7 @@
 # DG: Diagnostics, usage and health
 
-> T7's observability slice. **Full tier**: several PRs, migrations, new contracts, every process. A draft for Ken's
-> answers (DG-A to DG-E); pre-flight review follows them, then the build.
+> T7's observability slice. **Full tier**: several PRs, migrations, new contracts, every process. Ken took the
+> recommendations on DG-A, DG-B, DG-D and DG-E (2026-11-06); DG-C is taken by default.
 
 **Goal:** an administrator can answer "is it us or is it you" without a support ticket: how each capability is doing,
 what background work last did, what failed silently, what the environment uses over time, and whether the product is
@@ -10,7 +10,8 @@ meeting what it promises.
 **Requirements:** ADM-015, ADM-016, ADM-017, ADM-020, ADM-033, ADM-035, ADM-036, ADM-037, ADM-040, ADM-044, ADM-046;
 ADM-011; COL-061; ADM-021 (a constraint), as far as diagnostics show a data source down. **Left unclaimed, gaps named:**
 ADM-048 names malware scanning, which nothing does yet (AST-Q03): DG counts every chargeable operation that exists and
-names that one. ADM-043 and IAM-006 by DG-E's answer.
+names that one. **ADM-043** and **IAM-006** for the internet stack alone, whose backups and restore drill exist;
+elsewhere backups are the operator's own.
 
 **What exists** (the map, 2026-11-06): nothing measures latency or error rate; `/health` touches nothing; no sweep
 records when it ran; jobs are visible only to the worker. Usage exists for models (`generation_run`) and queries
@@ -25,15 +26,18 @@ embedding index, each on its own page. Nothing re-verifies a stored hash on a sc
 | DGd | Usage: storage, publications, assets and every external operation, by day, as trends of 13 months                 |
 | DGe | Budgets registered and measured in production; objectives declared and measured; integrity re-verified; close     |
 
-## For Ken
+## Ken's answers
 
-| ID   | Question                                                                                                                                                                                                                                                          | Recommendation                                                                                                                                                                                                                                                                                                                                                                             |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| DG-A | **ADM-Q02: is usage metered for pricing, or only for visibility?** ADM-035 says it must be settled before anything is measured.                                                                                                                                   | **Visibility only.** Aggregates by day, never an event a dispute could rest on, kept 13 months. Pricing later is its own requirement, raising the bar (ADM-035 allows that), and a billing record is a different store with a different retention.                                                                                                                                         |
-| DG-B | **Where measurements are kept.**                                                                                                                                                                                                                                  | **In each tenant's schema**, by minute for 7 days, by hour for 90, by day for 13 months; never exported, gone with the tenant. No metrics stack (Prometheus, OpenTelemetry): the product must show them to a tenant anyway, and one more service to run is a cost for every installation. An operator's endpoint across tenants can follow later.                                          |
-| DG-C | **What a "capability" is.** ADM-015 needs one to measure per.                                                                                                                                                                                                     | **The contract's tag** each route already carries (`documentation.ts`), plus the worker's kinds of work: publishing, webhook and mail delivery, indexing, imports, queries. One list in `packages/domain`, checked against every route and loop.                                                                                                                                           |
-| DG-D | **The objectives (ADM-020).** Numbers are yours to state.                                                                                                                                                                                                         | **Declared by the operator** as settings with stated defaults: availability 99.5% a month, recovery point 24 hours, recovery time 4 hours. Availability measured from the service's own health minutes; recovery point and time from the internet stack's restore drill, which records both.                                                                                               |
-| DG-E | **Scope.** Support access (ADM-022 to ADM-026, ADM-042), the declaration of what leaves the boundary (ADM-041) and secrets' consumers (ADM-007, ADM-047, ADM-050) sit beside DG but answer other questions. Backups (ADM-043) and IAM-006 depend on the operator. | **A plan of their own, SA, for support access, the boundary and secrets.** DG takes **ADM-043** for the internet stack, whose backups and drill exist: declared per class, the drill on a schedule, its result shown. **IAM-006** then stated as deletion plus the backups' 6 months, verifiable from the restore drill's listing, for that stack only; elsewhere it stays the operator's. |
+| ID   | Question                       | Answer                                                                                                                   |
+| ---- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| DG-A | ADM-Q02: pricing or visibility | **Visibility only**: aggregates by day, no event a dispute could rest on, 13 months. Pricing is its own requirement.     |
+| DG-B | Where measurements are kept    | **Each tenant's schema**: minute for 7 days, hour for 90, day for 13 months; never exported. No metrics stack.           |
+| DG-D | The objectives                 | **Operator settings, defaulting to 99.5% a month, a recovery point of 24 hours and a recovery time of 4 hours.**         |
+| DG-E | Scope                          | **Support access, the boundary and secrets to their own plan, SA.** DG takes ADM-043 and IAM-006 for the internet stack. |
+
+**DG-C, taken by default:** a capability is the contract's tag each route carries (`documentation.ts`), plus the
+worker's kinds of work (publishing, webhook and mail delivery, indexing, imports, queries): one list in
+`packages/domain`, checked against every route and loop.
 
 ## Taken by default, for Ken to overrule
 
