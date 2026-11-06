@@ -10684,13 +10684,22 @@
       "line": 54
     },
     {
+      "id": "REU-059",
+      "area": "REU",
+      "statement": "A component copied from another component or from a template must record what it was made from and at which version, and must say whether that source has changed since (**TPL-075**, REU-056)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 55
+    },
+    {
       "id": "REU-006",
       "area": "REU",
       "statement": "\"Where is this used\" must be a first-class query over components, assets, query definitions, styles, terms and templates",
       "tranche": "T4",
       "status": "Superseded by REU-055",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 79
+      "line": 80
     },
     {
       "id": "REU-055",
@@ -10699,7 +10708,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 80
+      "line": 81
     },
     {
       "id": "REU-007",
@@ -10708,7 +10717,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 81
+      "line": 82
     },
     {
       "id": "REU-008",
@@ -10717,7 +10726,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 82
+      "line": 83
     },
     {
       "id": "REU-009",
@@ -10726,7 +10735,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 83
+      "line": 84
     },
     {
       "id": "REU-010",
@@ -10735,7 +10744,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 84
+      "line": 85
     },
     {
       "id": "REU-052",
@@ -10744,7 +10753,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 85
+      "line": 86
     },
     {
       "id": "REU-011",
@@ -10753,7 +10762,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "REU-012",
@@ -10762,7 +10771,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "REU-013",
@@ -10771,7 +10780,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "REU-014",
@@ -10780,7 +10789,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "REU-015",
@@ -10789,7 +10798,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "REU-016",
@@ -10798,7 +10807,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 120
+      "line": 121
     },
     {
       "id": "REU-017",
@@ -10807,7 +10816,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 121
+      "line": 122
     },
     {
       "id": "REU-018",
@@ -10816,7 +10825,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 122
+      "line": 123
     },
     {
       "id": "REU-019",
@@ -10825,7 +10834,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 123
+      "line": 124
     },
     {
       "id": "REU-036",
@@ -10834,7 +10843,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 124
+      "line": 125
     },
     {
       "id": "REU-037",
@@ -10843,7 +10852,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 125
+      "line": 126
     },
     {
       "id": "REU-038",
@@ -10852,7 +10861,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 126
+      "line": 127
     },
     {
       "id": "REU-020",
@@ -10861,7 +10870,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "REU-021",
@@ -10870,7 +10879,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "REU-022",
@@ -10879,7 +10888,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "REU-023",
@@ -10888,7 +10897,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-048",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "REU-024",
@@ -10897,7 +10906,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "REU-025",
@@ -10906,7 +10915,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "REU-026",
@@ -10915,7 +10924,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "REU-027",
@@ -10924,7 +10933,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "REU-053",
@@ -10933,7 +10942,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "REU-048",
@@ -10942,7 +10951,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "REU-047",
@@ -10951,7 +10960,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "REU-028",
@@ -10960,7 +10969,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "REU-029",
@@ -10969,7 +10978,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "REU-030",
@@ -10978,7 +10987,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "REU-039",
@@ -10987,7 +10996,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "REU-040",
@@ -10996,7 +11005,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "REU-031",
@@ -11005,7 +11014,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "REU-032",
@@ -11014,7 +11023,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "REU-033",
@@ -11023,7 +11032,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "REU-034",
@@ -11032,7 +11041,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "REU-035",
@@ -11041,7 +11050,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "REU-051",
@@ -11050,7 +11059,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "REU-041",
@@ -11059,7 +11068,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-051",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "REU-049",
@@ -11068,7 +11077,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "SCH-001",
@@ -13816,13 +13825,31 @@
       "line": 56
     },
     {
+      "id": "TPL-074",
+      "area": "TPL",
+      "statement": "Every space must have a default template, **Blank** until its administrator chooses another of the space's templates, and a document created without naming a template must take its space's default (**TPL-Q01**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 57
+    },
+    {
+      "id": "TPL-076",
+      "area": "TPL",
+      "statement": "A template must be able to carry a description, and a label for each of its values, shown wherever a document is created from it",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 58
+    },
+    {
       "id": "TPL-007",
       "area": "TPL",
       "statement": "A metadata schema must declare typed fields, each with a type, whether it is required, and its validation rules",
       "tranche": "T1",
       "status": "Superseded by MET-005",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 78
+      "line": 80
     },
     {
       "id": "TPL-008",
@@ -13831,7 +13858,7 @@
       "tranche": "T7",
       "status": "Superseded by MET-003",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 79
+      "line": 81
     },
     {
       "id": "TPL-009",
@@ -13840,7 +13867,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-054",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 80
+      "line": 82
     },
     {
       "id": "TPL-010",
@@ -13849,7 +13876,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-006",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 81
+      "line": 83
     },
     {
       "id": "TPL-011",
@@ -13858,7 +13885,7 @@
       "tranche": "Constraint",
       "status": "Superseded by MET-019",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 82
+      "line": 84
     },
     {
       "id": "TPL-054",
@@ -13867,7 +13894,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 83
+      "line": 85
     },
     {
       "id": "TPL-012",
@@ -13876,7 +13903,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 89
+      "line": 91
     },
     {
       "id": "TPL-013",
@@ -13885,7 +13912,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 90
+      "line": 92
     },
     {
       "id": "TPL-014",
@@ -13894,7 +13921,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 91
+      "line": 93
     },
     {
       "id": "TPL-015",
@@ -13903,7 +13930,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 92
+      "line": 94
     },
     {
       "id": "TPL-016",
@@ -13912,7 +13939,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 93
+      "line": 95
     },
     {
       "id": "TPL-049",
@@ -13921,7 +13948,7 @@
       "tranche": "T4",
       "status": "Superseded by TPL-073",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 94
+      "line": 96
     },
     {
       "id": "TPL-073",
@@ -13930,7 +13957,16 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 95
+      "line": 97
+    },
+    {
+      "id": "TPL-075",
+      "area": "TPL",
+      "statement": "A template must place each of its components (TPL-014) either by reference or as a copy made for the new document, chosen when the template is designed and by reference unless declared; a copy may be of a component or of content the template holds, and is the document's own (**REU-059**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 98
     },
     {
       "id": "TPL-017",
@@ -13939,7 +13975,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 101
+      "line": 104
     },
     {
       "id": "TPL-018",
@@ -13948,7 +13984,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 102
+      "line": 105
     },
     {
       "id": "TPL-019",
@@ -13957,7 +13993,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-066",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 103
+      "line": 106
     },
     {
       "id": "TPL-020",
@@ -13966,7 +14002,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 104
+      "line": 107
     },
     {
       "id": "TPL-021",
@@ -13975,7 +14011,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 105
+      "line": 108
     },
     {
       "id": "TPL-041",
@@ -13984,7 +14020,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-068",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 106
+      "line": 109
     },
     {
       "id": "TPL-042",
@@ -13993,7 +14029,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 107
+      "line": 110
     },
     {
       "id": "TPL-045",
@@ -14002,7 +14038,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 108
+      "line": 111
     },
     {
       "id": "TPL-066",
@@ -14011,7 +14047,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 109
+      "line": 112
     },
     {
       "id": "TPL-067",
@@ -14020,7 +14056,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 110
+      "line": 113
     },
     {
       "id": "TPL-068",
@@ -14029,7 +14065,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 111
+      "line": 114
     },
     {
       "id": "TPL-069",
@@ -14038,7 +14074,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 112
+      "line": 115
     },
     {
       "id": "TPL-022",
@@ -14047,7 +14083,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-062",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 133
+      "line": 136
     },
     {
       "id": "TPL-062",
@@ -14056,7 +14092,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 134
+      "line": 137
     },
     {
       "id": "TPL-063",
@@ -14065,7 +14101,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 135
+      "line": 138
     },
     {
       "id": "TPL-064",
@@ -14074,7 +14110,7 @@
       "tranche": "T4",
       "status": "Superseded by TPL-072",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 136
+      "line": 139
     },
     {
       "id": "TPL-072",
@@ -14083,7 +14119,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 137
+      "line": 140
     },
     {
       "id": "TPL-051",
@@ -14092,7 +14128,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 138
+      "line": 141
     },
     {
       "id": "TPL-023",
@@ -14101,7 +14137,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-065",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 139
+      "line": 142
     },
     {
       "id": "TPL-065",
@@ -14110,7 +14146,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 140
+      "line": 143
     },
     {
       "id": "TPL-024",
@@ -14119,7 +14155,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 141
+      "line": 144
     },
     {
       "id": "TPL-025",
@@ -14128,7 +14164,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 142
+      "line": 145
     },
     {
       "id": "TPL-026",
@@ -14137,7 +14173,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 143
+      "line": 146
     },
     {
       "id": "TPL-050",
@@ -14146,7 +14182,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 144
+      "line": 147
     },
     {
       "id": "TPL-048",
@@ -14155,7 +14191,16 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 145
+      "line": 148
+    },
+    {
+      "id": "TPL-077",
+      "area": "TPL",
+      "statement": "Creating a document must show the templates the creator may use, grouped by space with a summary of each, take each value by its type, and say how many required values remain before it may be created",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 149
     },
     {
       "id": "TPL-027",
@@ -14164,7 +14209,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 155
+      "line": 159
     },
     {
       "id": "TPL-028",
@@ -14173,7 +14218,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 156
+      "line": 160
     },
     {
       "id": "TPL-029",
@@ -14182,7 +14227,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 157
+      "line": 161
     },
     {
       "id": "TPL-030",
@@ -14191,7 +14236,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 158
+      "line": 162
     },
     {
       "id": "TPL-044",
@@ -14200,7 +14245,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 159
+      "line": 163
     },
     {
       "id": "TPL-031",
@@ -14209,7 +14254,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 175
+      "line": 179
     },
     {
       "id": "TPL-032",
@@ -14218,7 +14263,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 176
+      "line": 180
     },
     {
       "id": "TPL-033",
@@ -14227,7 +14272,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 177
+      "line": 181
     },
     {
       "id": "TPL-034",
@@ -14236,7 +14281,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 178
+      "line": 182
     },
     {
       "id": "TPL-035",
@@ -14245,7 +14290,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 179
+      "line": 183
     },
     {
       "id": "TPL-058",
@@ -14254,7 +14299,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 180
+      "line": 184
     },
     {
       "id": "TPL-036",
@@ -14263,7 +14308,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 191
+      "line": 195
     },
     {
       "id": "TPL-037",
@@ -14272,7 +14317,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 192
+      "line": 196
     },
     {
       "id": "TPL-038",
@@ -14281,7 +14326,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 193
+      "line": 197
     },
     {
       "id": "TPL-043",
@@ -14290,7 +14335,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 194
+      "line": 198
     },
     {
       "id": "TPL-055",
@@ -14299,7 +14344,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 195
+      "line": 199
     },
     {
       "id": "TPL-056",
@@ -14308,7 +14353,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 196
+      "line": 200
     },
     {
       "id": "TPL-057",
@@ -14317,7 +14362,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 197
+      "line": 201
     },
     {
       "id": "TPL-039",
@@ -14326,7 +14371,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 225
     },
     {
       "id": "TPL-040",
@@ -14335,7 +14380,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 222
+      "line": 226
     },
     {
       "id": "TPL-047",
@@ -14344,7 +14389,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 223
+      "line": 227
     },
     {
       "id": "VER-001",
@@ -15414,31 +15459,31 @@
       "id": "REU-N01",
       "statement": "**No copying content to reuse it.** A reference resolves; it does not duplicate",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 227
+      "line": 228
     },
     {
       "id": "REU-N02",
       "statement": "**No overrides that live on the component.** An override belongs to one reference (REU-012)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 228
+      "line": 229
     },
     {
       "id": "REU-N03",
       "statement": "**No inferred inclusion.** A condition axis a profile does not set excludes (REU-024)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "REU-N04",
       "statement": "**No conditional content in an output, hidden.** Excluded means absent, and every publication is scanned to prove it (REU-048, which superseded REU-023)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "REU-N05",
       "statement": "**No ambient input to resolution.** What a document resolves to is a function of its components, profile, parameters and overrides, and of nothing else - no clock, no execution order, no identity of whoever pressed the button (REU-039)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "SCH-N01",
@@ -15552,25 +15597,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 229
+      "line": 233
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 230
+      "line": 234
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 231
+      "line": 235
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 232
+      "line": 236
     },
     {
       "id": "VER-N01",
@@ -16317,35 +16362,35 @@
       "question": "**Does the override mechanism actually hold (section 5)?** The spike's case 6 was never run, and it is the case where the discarded alternative is stronger",
       "settledBy": "Running case 6: one component in two documents where one needs a single word different",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "REU-Q02",
       "question": "**May a condition apply to a whole component reference, as well as to content inside one?** \"Include this section only for the regulator\" is an obvious want",
       "settledBy": "Whether it is expressible as an outline-node condition in **STR** instead, which may be cleaner",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 238
+      "line": 239
     },
     {
       "id": "REU-Q03",
       "question": "**How many profiles does one document have in practice?** Two is easy; twelve makes preview, comparison and publication counts awkward",
       "settledBy": "Real customer profiles. It affects whether publishing per profile is a routine act or a batch job",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "REU-Q04",
       "question": "**Can conditions nest or combine with logic?** \"UK and not draft\" is asked for the moment two axes exist",
       "settledBy": "Whether simple set membership survives a real house style. Boolean conditions are easy to add and very hard to review",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "REU-Q05",
       "question": "**May a parameter set be declared per profile, so that variables rather than conditions carry per-profile wording?** REU-047 makes conditional alternatives the documented path; parameters would make it a table instead",
       "settledBy": "Real house wording differences. Conditions suit a sentence that differs; parameters suit a value that differs, and customers will have both",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 241
+      "line": 242
     },
     {
       "id": "SCH-Q01",
@@ -16483,30 +16528,30 @@
     {
       "id": "TPL-Q01",
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
-      "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
+      "settledBy": "**Settled by TPL-074**: a default template for each space, Blank unless another is chosen",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 238
+      "line": 242
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 239
+      "line": 243
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 240
+      "line": 244
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 241
+      "line": 245
     },
     {
       "id": "VER-Q01",
@@ -20931,6 +20976,26 @@
         {
           "id": "SCH-065",
           "howItIsMet": "The cohort listing sorts by when asked, newest first, or by title, and filters by template and by state: complete, a row failed, or a row waiting and none failed; paged by the listing cursor (API-007)"
+        },
+        {
+          "id": "TPL-074",
+          "howItIsMet": "`space.default_template`, set by `PUT /v1/spaces/{space}/default-template` with administer at the space; a create naming no template takes it at the route, making the space's **Blank** first where it has none ([Defaults and copies](#defaults-and-copies))"
+        },
+        {
+          "id": "TPL-075",
+          "howItIsMet": "A template component's `instantiate` (or its section's) is `reference`, the default, or `copy`; a copy is made in the creation's transaction from the named component's latest version or from the `content` the template holds, and is the document's own"
+        },
+        {
+          "id": "TPL-076",
+          "howItIsMet": "`description` on the definition and `label` on each parameter, shown by New document and wherever a value is asked for; a value without a label shows its key"
+        },
+        {
+          "id": "TPL-077",
+          "howItIsMet": "New document lists `GET /v1/templates` by space with each one's summary, the Where space first and its default chosen; values are asked for by type in a region of their own, with a count of the required ones left"
+        },
+        {
+          "id": "REU-059",
+          "howItIsMet": "`artifact_origin`, insert-only, one row per copy a template or Duplicate makes: the component and version, or the template, it was made from; a component's view answers it as `origin`, with `changedSince`"
         }
       ]
     },
@@ -23083,25 +23148,25 @@
     {
       "id": "CNT-163",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 512,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "CNT-181",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 450,
+      "line": 455,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 512,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 450,
+      "line": 455,
       "kind": "title"
     },
     {
@@ -23365,31 +23430,37 @@
     {
       "id": "API-037",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 520,
+      "line": 601,
       "kind": "rule"
     },
     {
       "id": "CNT-160",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 389,
+      "line": 470,
       "kind": "title"
     },
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 245,
+      "line": 276,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 554,
+      "line": 635,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 217,
+      "line": 248,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 296,
       "kind": "title"
     },
     {
@@ -24133,7 +24204,7 @@
     {
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
-      "line": 245,
+      "line": 250,
       "kind": "title"
     },
     {
@@ -24883,7 +24954,19 @@
     {
       "id": "ADM-049",
       "file": "apps/service/src/space-routes.test.ts",
-      "line": 224,
+      "line": 225,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "apps/service/src/space-routes.test.ts",
+      "line": 413,
+      "kind": "rule"
+    },
+    {
+      "id": "TPL-074",
+      "file": "apps/service/src/space-routes.test.ts",
+      "line": 378,
       "kind": "title"
     },
     {
@@ -25015,91 +25098,91 @@
     {
       "id": "TPL-013",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 529,
+      "line": 532,
       "kind": "rule"
     },
     {
       "id": "TPL-017",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 685,
+      "line": 688,
       "kind": "title"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 844,
+      "line": 847,
       "kind": "rule"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 838,
+      "line": 841,
       "kind": "title"
     },
     {
       "id": "TPL-020",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 1000,
+      "line": 1003,
       "kind": "title"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 984,
+      "line": 987,
       "kind": "rule"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 975,
+      "line": 978,
       "kind": "title"
     },
     {
       "id": "TPL-026",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 826,
+      "line": 829,
       "kind": "title"
     },
     {
       "id": "TPL-033",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 552,
+      "line": 555,
       "kind": "title"
     },
     {
       "id": "TPL-034",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 552,
+      "line": 555,
       "kind": "title"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 867,
+      "line": 870,
       "kind": "rule"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 850,
+      "line": 853,
       "kind": "title"
     },
     {
       "id": "TPL-055",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 546,
+      "line": 549,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 703,
+      "line": 706,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 695,
+      "line": 698,
       "kind": "title"
     },
     {
@@ -25339,79 +25422,79 @@
     {
       "id": "LOC-007",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 94,
+      "line": 100,
       "kind": "title"
     },
     {
       "id": "LOC-010",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 273,
+      "line": 279,
       "kind": "title"
     },
     {
       "id": "LOC-012",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 712,
+      "line": 721,
       "kind": "title"
     },
     {
       "id": "LOC-013",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 94,
+      "line": 100,
       "kind": "title"
     },
     {
       "id": "LOC-015",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 168,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 273,
+      "line": 279,
       "kind": "title"
     },
     {
       "id": "LOC-018",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 502,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 168,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 502,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "LOC-035",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 597,
+      "line": 605,
       "kind": "title"
     },
     {
       "id": "LOC-036",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 459,
+      "line": 466,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 273,
+      "line": 279,
       "kind": "title"
     },
     {
       "id": "LOC-040",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 168,
+      "line": 174,
       "kind": "title"
     },
     {
@@ -25802,6 +25885,12 @@
       "id": "API-076",
       "file": "apps/web/src/admin/CtStudioSettings.test.tsx",
       "line": 99,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "apps/web/src/admin/DefaultTemplate.test.tsx",
+      "line": 56,
       "kind": "title"
     },
     {
@@ -26372,6 +26461,12 @@
       "id": "LIB-036",
       "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
       "line": 195,
+      "kind": "title"
+    },
+    {
+      "id": "REU-059",
+      "file": "apps/web/src/editor/ComponentDetail.test.tsx",
+      "line": 55,
       "kind": "title"
     },
     {
@@ -28225,127 +28320,127 @@
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 517,
+      "line": 525,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 577,
+      "line": 585,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1562,
+      "line": 1570,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1719,
+      "line": 1727,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 664,
+      "line": 672,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2659,
+      "line": 2667,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 664,
+      "line": 672,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 695,
+      "line": 703,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 880,
+      "line": 888,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 933,
+      "line": 941,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2425,
+      "line": 2433,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2122,
+      "line": 2130,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 680,
+      "line": 688,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 960,
+      "line": 968,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1092,
+      "line": 1100,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2327,
+      "line": 2335,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2162,
+      "line": 2170,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 344,
+      "line": 352,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1141,
+      "line": 1149,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 390,
+      "line": 398,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1853,
+      "line": 1861,
       "kind": "title"
     },
     {
@@ -28631,15 +28726,33 @@
       "kind": "title"
     },
     {
+      "id": "TPL-074",
+      "file": "apps/web/src/structure/NewDocument.gallery.test.tsx",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-076",
+      "file": "apps/web/src/structure/NewDocument.gallery.test.tsx",
+      "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-077",
+      "file": "apps/web/src/structure/NewDocument.gallery.test.tsx",
+      "line": 114,
+      "kind": "title"
+    },
+    {
       "id": "TPL-026",
       "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
-      "line": 173,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "TPL-045",
       "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
-      "line": 210,
+      "line": 218,
       "kind": "title"
     },
     {
@@ -31853,6 +31966,24 @@
       "kind": "title"
     },
     {
+      "id": "REU-059",
+      "file": "packages/db/src/new-document.test.ts",
+      "line": 183,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "packages/db/src/new-document.test.ts",
+      "line": 142,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-075",
+      "file": "packages/db/src/new-document.test.ts",
+      "line": 183,
+      "kind": "title"
+    },
+    {
       "id": "STR-036",
       "file": "packages/db/src/numbering.test.ts",
       "line": 245,
@@ -34603,7 +34734,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1232,
+      "line": 1237,
       "kind": "title"
     },
     {
@@ -35833,7 +35964,7 @@
     {
       "id": "REU-057",
       "file": "packages/domain/src/structure/copy.test.ts",
-      "line": 199,
+      "line": 103,
       "kind": "title"
     },
     {
@@ -36104,6 +36235,24 @@
       "id": "TPL-029",
       "file": "packages/domain/src/template/conformance.test.ts",
       "line": 109,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-074",
+      "file": "packages/domain/src/template/copies.test.ts",
+      "line": 254,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-075",
+      "file": "packages/domain/src/template/copies.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-076",
+      "file": "packages/domain/src/template/copies.test.ts",
+      "line": 228,
       "kind": "title"
     },
     {
