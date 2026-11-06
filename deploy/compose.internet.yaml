@@ -27,7 +27,7 @@ services:
       - ./internet/Caddyfile:/etc/caddy/Caddyfile:ro
       - public-proxy-data:/data
     ports:
-      - '443:443'
+      - '0.0.0.0:443:443'
     networks:
       public: {}
       edge:
@@ -145,17 +145,23 @@ services:
     logging: *logs
 
   seaweedfs:
-    # As compose.yaml's, and answering on `edge` too: it binds only its first network otherwise.
+    image: chrislusf/seaweedfs:4.46@sha256:08d516132314207d10c8e37cbffc1f32b147d870169688734cc61c6231625b62
+    # As compose.yaml's, with S3 answering on `edge` too, since it binds only its first network otherwise. Its
+    # master, volume server and filer take no credential, so they answer inside the container alone.
     command:
       [
         'server',
         '-dir=/data',
         '-volume.max=200',
         '-master.volumeSizeLimitMB=64',
+        '-ip=127.0.0.1',
+        '-ip.bind=127.0.0.1',
         '-s3',
         '-s3.port=${STORE_PORT:-8333}',
         '-s3.iam.readOnly=false',
         '-s3.ip.bind=0.0.0.0',
+        '-s3.port.iceberg=0',
+        '-s3.port.lance=0',
       ]
     environment:
       AWS_ACCESS_KEY_ID: ${OBJECT_STORE_ADMIN_KEY:?}

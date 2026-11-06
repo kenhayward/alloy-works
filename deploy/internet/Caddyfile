@@ -60,8 +60,12 @@ https://{$ALLOY_IDP_HOST} {
 	import access
 	tls internal
 	header -Server
-	@administration path /admin /admin/* /realms/master /realms/master/*
-	respond @administration 404
+	# The one realm and its pages' resources, nothing else: Keycloak drops what follows a ';' in a segment, so
+	# a list of what to block let /admin;x/ through. A ';' anywhere, or %3B, is refused outright.
+	@matrix path_regexp ;
+	respond @matrix 404
+	@elsewhere not path /realms/alloy/* /resources/*
+	respond @elsewhere 404
 	import upstream keycloak:9090
 }
 

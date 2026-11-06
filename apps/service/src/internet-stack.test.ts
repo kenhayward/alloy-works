@@ -60,7 +60,8 @@ describe('the internet stack', () => {
       .filter(([, block]) => /\n {4}ports:\n/.test(block))
       .map(([name, block]) => [name, [...block.matchAll(/^ {6}- '(.+)'$/gm)].map((m) => m[1])]);
     expect(published).toEqual([
-      ['public-proxy', ['443:443']],
+      // IPv4 alone: an IPv6 caller would reach the door without the proxy, and the firewall is iptables.
+      ['public-proxy', ['0.0.0.0:443:443']],
       ['keycloak', ['127.0.0.1:${KEYCLOAK_CONSOLE_PORT:-9090}:9090']],
     ]);
   });
@@ -136,12 +137,17 @@ describe('the internet stack', () => {
     }
   });
 
-  it('keeps administration off the internet at the door', () => {
-    expect(caddy).toMatch(
-      /@administration path \/admin \/admin\/\* \/realms\/master \/realms\/master\/\*/,
-    );
-    expect(caddy).toMatch(/respond @administration 404/);
+  it('keeps administration off the internet at the door, letting through the one realm alone', () => {
+    // An allowlist, since Keycloak drops what follows a ';' in a segment: /admin;x/ reached a denylist's
+    // Keycloak (the step 5 review).
+    expect(caddy).toMatch(/@elsewhere not path \/realms\/alloy\/\* \/resources\/\*/);
+    expect(caddy).toMatch(/@matrix path_regexp ;/);
+    expect(caddy).toMatch(/respond @matrix 404/);
+    expect(caddy).not.toMatch(/@administration/);
     expect(caddy).toMatch(/admin off/);
+    expect(JSON.parse(realm)).toMatchObject({ realm: 'alloy' });
+    expect(outside).toMatch(/\/admin;x\/master\/console\//);
+    expect(outside).toMatch(/\/realms\/master;x\/protocol\/openid-connect\/token/);
   });
 
   it('answers on the store for objects in the bucket and nothing else', () => {
@@ -149,9 +155,16 @@ describe('the internet stack', () => {
     expect(caddy).toMatch(/respond @elsewhere 404/);
   });
 
-  it('has the store answer on the network the door reaches it by', () => {
+  it('has the store answer on the network the door reaches it by, and with S3 alone', () => {
     expect(services.get('seaweedfs')).toMatch(/'-s3\.ip\.bind=0\.0\.0\.0'/);
     expect(services.get('seaweedfs')).toMatch(/edge: \{\}/);
+    // Its master, volume server and filer take no credential, so no other container reaches them.
+    expect(services.get('seaweedfs')).toMatch(/'-ip=127\.0\.0\.1'/);
+    expect(services.get('seaweedfs')).toMatch(/'-ip\.bind=127\.0\.0\.1'/);
+    expect(services.get('seaweedfs')).toMatch(
+      /image: chrislusf\/seaweedfs:[\d.]+@sha256:[0-9a-f]{64}/,
+    );
+    expect(outside).toMatch(/seaweedfs:8888/);
   });
 
   it('believes only the proxy, and decides what the service is told', () => {
@@ -257,6 +270,18 @@ describe('the internet stack', () => {
     expect(caddy).toMatch(/request>headers>Cookie delete/);
     expect(caddy).toMatch(/request>headers>Authorization delete/);
     expect(caddy.match(/^\timport access$/gm)).toHaveLength(3);
+  });
+
+  it('deploys a release only by its tag, never a branch of the same name', () => {
+    expect(deploy).toMatch(/auto \| latest\)\s*\n\s*fail "\$target has no tag/);
+  });
+
+  it('finds the outside interface rather than assuming one, and says when the firewall fails', () => {
+    const firewall = read('internet/firewall.sh');
+    expect(firewall).toMatch(/ip route show default/);
+    expect(firewall).toMatch(/\/sys\/class\/net\/\$OUTSIDE/);
+    expect(firewall).not.toMatch(/:-eth0\}/);
+    expect(unit('alloy-firewall.service')).toMatch(/^OnFailure=alloy-alert@%n\.service$/m);
   });
 
   it('checks from outside each thing the plan names, and stops on none of them', () => {

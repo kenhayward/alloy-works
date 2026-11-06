@@ -69,11 +69,16 @@ fi
 section 'blocked paths'
 for path in /admin /admin/ /admin/master/console/ /realms/master /realms/master/.well-known/openid-configuration \
   //admin/ /%61dmin/master/console/ /realms/%6daster/.well-known/openid-configuration \
-  /realms/alloy/../master/.well-known/openid-configuration; do
+  /realms/alloy/../master/.well-known/openid-configuration '/admin;x/master/console/' \
+  '/realms/master;x/.well-known/openid-configuration' /realms/master%3Bx/.well-known/openid-configuration \
+  '/realms/alloy/..;/master/.well-known/openid-configuration' /health /metrics /js/; do
   expect "$path" '^404$' "$(status --path-as-is "https://$idp$path")"
 done
-expect 'the token endpoint of master' '^404$' \
-  "$(status -X POST -d grant_type=client_credentials "https://$idp/realms/master/protocol/openid-connect/token")"
+for path in /realms/master/protocol/openid-connect/token '/realms/master;x/protocol/openid-connect/token'; do
+  expect "the token endpoint of master, at $path" '^404$' \
+    "$(status --path-as-is -X POST -d grant_type=password -d client_id=admin-cli "https://$idp$path")"
+done
+expect 'the realm itself still answers' '^200$' "$(status "https://$idp/realms/alloy/.well-known/openid-configuration")"
 
 section 'the store'
 expect 'no list of buckets' '^404$' "$(status "https://$store/")"
@@ -139,7 +144,7 @@ if [ -n "${ALLOY_CHECK_SSH:-}" ] && [ -n "${ALLOY_CHECK_LAN:-}" ]; then
 s.setTimeout(12000,()=>{console.log("closed");process.exit()});s.on("connect",()=>{console.log("open");process.exit()});
 s.on("error",()=>{console.log("closed");process.exit()})'
   for service in service worker connector; do
-    for target in $ALLOY_CHECK_LAN github.com:443; do
+    for target in $ALLOY_CHECK_LAN seaweedfs:8888 seaweedfs:9333 seaweedfs:8080 github.com:443; do
       got=$(remote "sudo docker exec $(container "$service") node -e '$try' $target" 2>/dev/null | tail -1)
       if [ "$target" = github.com:443 ]; then
         [ "$service" = connector ] && want=closed || want=open

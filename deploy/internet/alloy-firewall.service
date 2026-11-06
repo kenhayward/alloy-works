@@ -4,6 +4,7 @@ After=docker.service
 Requires=docker.service
 # Again whenever Docker restarts, which rebuilds its chains.
 PartOf=docker.service
+OnFailure=alloy-alert@%n.service
 
 [Service]
 Type=oneshot

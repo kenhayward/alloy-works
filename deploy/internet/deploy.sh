@@ -87,6 +87,12 @@ git fetch --quiet --force --tags origin '+refs/heads/*:refs/remotes/origin/*'
 if git rev-parse --verify --quiet "refs/tags/$target^{commit}" >/dev/null; then
   ref=refs/tags/$target
 else
+  # A release is its tag here, never a branch someone named after it.
+  case "$mode" in
+  auto | latest)
+    fail "$target has no tag in $SOURCE_REPO, so nothing is deployed."
+    ;;
+  esac
   ref=refs/remotes/origin/$target
 fi
 if ! git cat-file -e "$ref:deploy/compose.internet.yaml" 2>/dev/null; then
