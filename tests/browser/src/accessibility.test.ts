@@ -380,6 +380,22 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         await page.keyboard.press('Escape');
         await leave(page.getByRole('menuitem', { name: first, exact: true }));
       }
+      // Duplicate's dialog, counted before anything is made, and cancelled (REU-057).
+      await page.goto(`${SERVICE}/#/documents`);
+      await page
+        .getByRole('button', { name: /^More actions for / })
+        .first()
+        .click();
+      await page.getByRole('menuitem', { name: 'Duplicate...', exact: true }).click();
+      const duplicate = page.getByRole('dialog');
+      await check("Duplicate's dialog (REU-057)", {
+        shows: [
+          duplicate.getByRole('heading', { name: /^Duplicate / }),
+          duplicate.getByRole('combobox', { name: 'Where' }),
+        ],
+      });
+      await duplicate.getByRole('button', { name: 'Cancel' }).click();
+      await leave(duplicate);
       await page.goto(`${SERVICE}/#/components`);
       const archivedOnly = page.getByRole('checkbox', { name: 'Archived', exact: true });
       await archivedOnly.check();
