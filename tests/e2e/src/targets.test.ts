@@ -7,6 +7,7 @@ const EVERY = {
   ALLOY_E2E_IDP_ISSUER: 'http://idp.localhost:19090',
   ALLOY_E2E_STORE_AT: '127.0.0.1',
   ALLOY_E2E_COMPOSE_PROJECT: 'd1fix',
+  ALLOY_E2E_MAIL: 'http://127.0.0.1:18025',
 };
 
 describe('the whole-system suite runs only at a stack it was pointed at', () => {
@@ -21,12 +22,13 @@ describe('the whole-system suite runs only at a stack it was pointed at', () => 
       idpIssuer: 'http://idp.localhost:19090',
       storeAt: '127.0.0.1',
       composeProject: 'd1fix',
+      mail: 'http://127.0.0.1:18025',
     });
   });
 
   it('refuses with none set, naming every variable and falling back to nothing', () => {
     expect(() => e2eTargets({})).toThrow(
-      /ALLOY_E2E_SERVICE, ALLOY_E2E_IDP, ALLOY_E2E_IDP_ISSUER, ALLOY_E2E_STORE_AT, ALLOY_E2E_COMPOSE_PROJECT/,
+      /ALLOY_E2E_SERVICE, ALLOY_E2E_IDP, ALLOY_E2E_IDP_ISSUER, ALLOY_E2E_STORE_AT, ALLOY_E2E_COMPOSE_PROJECT, ALLOY_E2E_MAIL/,
     );
     expect(() => e2eTargets({})).toThrow(/never falls back to a default/);
   });

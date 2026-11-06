@@ -976,6 +976,17 @@ export {
   type StoredDocument,
 } from './documents.js';
 export {
+  COPY_MAX,
+  copyArtifact,
+  previewCopy,
+  type CopyAnswer,
+  type CopyConsequences,
+  type CopyCounts,
+  type CopyInput,
+  type CopyPreview,
+  type CopyRefusal,
+} from './copies.js';
+export {
   MOVE_MOST,
   movedWithThreads,
   moveToSpace,
@@ -1549,6 +1560,7 @@ export {
   mailChoicesOf,
   mailCounts,
   NO_MAIL_CHANNEL,
+  queueClosureReminders,
   queueTestMail,
   recordMailAttempt,
   setMailChannel,

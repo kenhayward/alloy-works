@@ -28,12 +28,12 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
     group: 'Author',
     modules: [
       {
-        name: 'Components',
-        href: '#/components',
-      },
-      {
         name: 'Documents',
         href: '#/documents',
+      },
+      {
+        name: 'Components',
+        href: '#/components',
       },
       {
         name: 'Templates',

@@ -217,6 +217,11 @@ describe('the domain package', () => {
         'contentSize',
         'placeSection',
         'referencesUnder',
+        // RM: a document copied, its references repointed (the RM plan, RM-I, RM-J).
+        'COPY_MAX',
+        'chosenCopies',
+        'copyContent',
+        'copyOutline',
         // R4: a reference's local overrides.
         'OVERRIDES_MAX',
         'applyOverrides',
@@ -496,6 +501,9 @@ describe('the domain package', () => {
         'webhookSealRequestSchema',
         'webhookSecretContext',
         'childMailRequestSchema',
+        'CLOSURE_NOTICES',
+        'closureWords',
+        'invitationWords',
         'MAIL_DEADLINE_MS',
         'MAIL_KINDS',
         'MAIL_MESSAGES',

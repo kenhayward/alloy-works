@@ -314,6 +314,7 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
       archived: true,
       mayCreate: false,
       mayMoveInto: false,
+      mayDesign: false,
       language: null,
     });
     expect((await listed()).find((each) => each.id === general)).toMatchObject({

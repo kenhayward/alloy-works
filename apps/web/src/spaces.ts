@@ -34,14 +34,17 @@ export function useLanguageField(
  * component** and **New document** (the plan's decision 8), so the two forms cannot disagree about
  * where a person may create.
  */
-export function creatableSpacesIn(data: unknown): Space[] | undefined {
+/** Which of a space's answers says the caller may make the kind there: a template's is `mayDesign`. */
+export type MayMake = 'mayCreate' | 'mayDesign';
+
+export function creatableSpacesIn(data: unknown, may: MayMake = 'mayCreate'): Space[] | undefined {
   if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
   const items = (data as { items: unknown }).items;
   if (!Array.isArray(items)) return undefined;
   return items.flatMap((item: unknown) => {
     if (typeof item !== 'object' || item === null) return [];
-    const { id, name, mayCreate, language } = item as Record<string, unknown>;
-    if (typeof id !== 'string' || typeof name !== 'string' || mayCreate !== true) return [];
+    const { id, name, language, [may]: allowed } = item as Record<string, unknown>;
+    if (typeof id !== 'string' || typeof name !== 'string' || allowed !== true) return [];
     return [{ id, name, language: typeof language === 'string' ? language : null }];
   });
 }
@@ -73,7 +76,7 @@ export interface CreatableSpaces {
  * that is. The effect leaves its generation behind on the way out, so a read still in flight when the
  * form goes sets no state into a component that is no longer there.
  */
-export function useCreatableSpaces(client: Client): CreatableSpaces {
+export function useCreatableSpaces(client: Client, may: MayMake = 'mayCreate'): CreatableSpaces {
   const [spaces, setSpaces] = useState<readonly Space[] | null>(null);
   const [problem, setProblem] = useState<'signedOut' | 'failed' | null>(null);
   const [where, setWhere] = useState('');
@@ -89,7 +92,7 @@ export function useCreatableSpaces(client: Client): CreatableSpaces {
         }),
       );
       if (request.current !== generation) return;
-      const open = 'items' in all ? creatableSpacesIn({ items: all.items }) : undefined;
+      const open = 'items' in all ? creatableSpacesIn({ items: all.items }, may) : undefined;
       if (open === undefined) {
         setProblem('status' in all && all.status === 401 ? 'signedOut' : 'failed');
         return;
@@ -104,7 +107,7 @@ export function useCreatableSpaces(client: Client): CreatableSpaces {
     } catch {
       if (request.current === generation) setProblem('failed');
     }
-  }, [client]);
+  }, [client, may]);
 
   useEffect(() => {
     void reload();

@@ -67,8 +67,8 @@ describe('search and commands', () => {
         .map((each) => each.textContent),
     ).toEqual([
       'Go to Home',
-      'Go to Components',
       'Go to Documents',
+      'Go to Components',
       'Go to Templates',
       'Go to Prompts',
       'Go to Bibliography',

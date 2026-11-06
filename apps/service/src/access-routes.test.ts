@@ -919,6 +919,16 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { from: MISSING, to: MISSING, also: false },
     }),
+    copyArtifact: () => ({
+      url: `/v1/artifacts/${report}/copy`,
+      status: 404,
+      payload: { to: MISSING, title: 'A copy' },
+    }),
+    copyArtifactPreview: () => ({
+      url: `/v1/artifacts/${report}/copy/preview`,
+      status: 404,
+      payload: { to: MISSING, title: 'A copy' },
+    }),
     setDocumentLanguage: () => ({
       url: `/v1/documents/${report}/language`,
       status: 404,

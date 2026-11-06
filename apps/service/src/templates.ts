@@ -59,7 +59,7 @@ function templateView(template: StoredTemplate, facts: AccessFacts): TemplateVie
  * What a template's writers answer that is not a template: refused by name, the space or template gone
  * as absent. `facts` decide whether the template answered in a precondition may be changed.
  */
-function refusedTemplate(
+export function refusedTemplate(
   answer: Exclude<TemplateAnswer, { template: StoredTemplate }>,
   facts: AccessFacts,
 ): never {

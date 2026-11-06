@@ -281,6 +281,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0204_mail_channel',
       '0205_mail_queue',
       '0206_mail_notifications',
+      '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -432,6 +434,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0204_mail_channel',
       '0205_mail_queue',
       '0206_mail_notifications',
+      '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
 
     expect(await queryRoles(development)).toEqual([

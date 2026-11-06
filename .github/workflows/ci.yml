@@ -451,6 +451,8 @@ jobs:
           # The project the stack above runs as, compose.yaml's own name: the connector's tests reach
           # into its containers by it.
           ALLOY_E2E_COMPOSE_PROJECT: alloy-works
+          # Mailpit's API, where the mail tests read what the stack sent (the EM plan).
+          ALLOY_E2E_MAIL: http://127.0.0.1:8025
         run: pnpm exec turbo run test:e2e --filter=@alloy-works/e2e -- --retry=1
 
       # The renderer in a real browser, against the same containers (the W13 plan's B-A): run whenever
