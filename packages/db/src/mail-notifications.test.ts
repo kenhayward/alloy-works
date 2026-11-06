@@ -410,6 +410,57 @@ describe('notifications by email (the EM plan, EM-F, EM-G, EM-H, EM-N and EM-W)'
     expect((await notificationsOf(ada)).filter((each) => each.kind === 'mail')).toHaveLength(2);
   });
 
+  it('keeps the telling for later where nobody may be told, and tells one who may configure through a group', async () => {
+    await channelOn();
+    await as(async (trx) => {
+      await sql`delete from notification where kind = 'mail'`.execute(trx);
+      await sql`delete from access_grant where level = 'tenant'`.execute(trx);
+    });
+    const fail = async () => {
+      await mentioning(grace);
+      await due();
+      for (const each of (await claim()).claimed) {
+        await as((trx) =>
+          recordMailAttempt(
+            trx,
+            each.id,
+            { kind: 'failed', failure: 'timeout', latencyMs: 30_000 },
+            each.lease,
+          ),
+        );
+      }
+      await due();
+    };
+    await fail();
+    expect((await as((trx) => mailChannel(trx)))!.failingSince).not.toBeNull();
+    expect(
+      (
+        await as((trx) =>
+          sql<{ told_at: Date | null }>`select told_at from mail_channel`.execute(trx),
+        )
+      ).rows[0]!.told_at,
+    ).toBeNull();
+    const hedy = await person('hedy');
+    await as(async (trx) => {
+      const { id: group } = await sql<{ id: string }>`
+        insert into access_group (name, source) values ('Operators', 'tenant') returning id`
+        .execute(trx)
+        .then((answer) => answer.rows[0]!);
+      await sql`insert into group_member (group_id, principal_id) values (${group}, ${hedy})`.execute(
+        trx,
+      );
+      await grant(trx, {
+        roleId: (await findRole(trx, 'Administrator'))!.id,
+        subject: { group },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+    });
+    await fail();
+    expect((await notificationsOf(hedy)).map((each) => each.kind)).toEqual(['mail']);
+  });
+
   const stillOn = {
     enabled: true,
     relay: 'platform' as const,

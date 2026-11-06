@@ -434,7 +434,13 @@ async function toldOf(
     resolution: on('resolution') ? held.resolution : 0,
     round: on('round') ? (held.round ?? 0) : 0,
   };
-  if (counts.mention + counts.reply + counts.resolution + counts.round === 0) return 'opted_out';
+  if (counts.mention + counts.reply + counts.resolution + counts.round === 0) {
+    // Whose choice emptied it: the person's own, or the environment's over what they kept on.
+    const kept = (['mention', 'reply', 'resolution', 'round'] as const).some(
+      (each) => mailed[each] && (held[each] ?? 0) > 0,
+    );
+    return kept ? 'environment_off' : 'opted_out';
+  }
   return { kind, counts };
 }
 
@@ -463,13 +469,16 @@ export async function dropMail(
 async function tellFailing(trx: TenantTransaction): Promise<void> {
   await sql`savepoint tell_failing`.execute(trx);
   try {
-    const { rows: fresh } = await sql<{ id: string }>`
-      update mail_channel set told_at = now() where told_at is null returning id`.execute(trx);
-    if (fresh.length > 0) {
+    const { rows: untold } = await sql<{ id: string }>`
+      select id from mail_channel where told_at is null for update`.execute(trx);
+    let told = 0;
+    if (untold.length > 0) {
+      // Granted it directly or through a group (the final review): each decided again below.
       const { rows: candidates } = await sql<{ id: string }>`
         select distinct p.id from access_grant g
           join role r on r.id = g.role_id
-          join principal p on p.id = g.principal_id
+          left join group_member m on m.group_id = g.group_id
+          join principal p on p.id = coalesce(g.principal_id, m.principal_id)
          where g.level = 'tenant' and g.effect = 'allow'
            and 'configure_services' = any (r.permissions)
            and p.kind = 'user' and p.disabled_at is null and p.erased_at is null`.execute(trx);
@@ -478,8 +487,11 @@ async function tellFailing(trx: TenantTransaction): Promise<void> {
         if (facts === undefined || !decide('configure_services', facts).allowed) continue;
         await sql`insert into notification (recipient, kind) values (${id}, 'mail')`.execute(trx);
         await notifyTenant(trx, { kind: 'inbox', recipient: id });
+        told += 1;
       }
     }
+    // Told once, and only once somebody was: with nobody to tell, the next failure asks again.
+    if (told > 0) await sql`update mail_channel set told_at = now()`.execute(trx);
     await sql`release savepoint tell_failing`.execute(trx);
   } catch {
     await sql`rollback to savepoint tell_failing`.execute(trx);

@@ -86,7 +86,8 @@
 .mailed {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  /* Far enough apart to be pointed at: 24px a target (WCAG 2.2, target size). */
+  gap: var(--space-8);
   margin: 0;
   padding: var(--space-8) 0 0;
   border: 0;
