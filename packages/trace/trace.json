@@ -18360,6 +18360,10 @@
       "document": "diagnostics.md",
       "owns": [
         {
+          "id": "ADM-015",
+          "howItIsMet": "Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)"
+        },
+        {
           "id": "ADM-035",
           "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up"
         }
@@ -34543,6 +34547,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-015",
+      "file": "packages/domain/src/diagnostics/health.test.ts",
+      "line": 20,
+      "kind": "title"
+    },
+    {
       "id": "ADM-035",
       "file": "packages/domain/src/diagnostics/measure.test.ts",
       "line": 42,
@@ -34755,7 +34765,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1245,
+      "line": 1250,
       "kind": "title"
     },
     {
