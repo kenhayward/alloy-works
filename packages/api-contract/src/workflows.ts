@@ -595,7 +595,7 @@ const forbidden = {
 } as const;
 
 const approvalResponses = (
-  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term',
+  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term' | 'component group',
 ) =>
   ({
     200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
@@ -621,7 +621,7 @@ const approvalResponses = (
   }) as const;
 
 const transitionResponses = (
-  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term',
+  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term' | 'component group',
 ) =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
@@ -1110,6 +1110,28 @@ export const workflowRoutes = {
       403: { description: 'The caller may not read this term', schema: ErrorBody },
       404: { description: 'No such term the caller may read', schema: ErrorBody },
     },
+  },
+  transitionComponentGroup: {
+    operationId: 'transitionComponentGroup',
+    method: 'POST',
+    path: '/v1/component-groups/{id}/transitions',
+    summary: 'Move a component group along a transition of the component workflow',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: TransitionBody,
+    responses: transitionResponses('component group'),
+  },
+  decideComponentGroupGate: {
+    operationId: 'decideComponentGroupGate',
+    method: 'POST',
+    path: '/v1/component-groups/{id}/approvals',
+    summary: 'Approve or reject a component group at a gate of the component workflow',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('component group'),
   },
   transitionDocument: {
     operationId: 'transitionDocument',

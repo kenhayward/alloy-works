@@ -360,7 +360,14 @@ describe('the version chain as stored', () => {
         return rows.map((row) => row.column_name);
       });
 
-    expect(await columns('artifact')).toEqual(['created_at', 'id', 'kind', 'space_id']);
+    // `workflow_kind` is derived from `kind`, never written (the CG plan, 0211).
+    expect(await columns('artifact')).toEqual([
+      'created_at',
+      'id',
+      'kind',
+      'space_id',
+      'workflow_kind',
+    ]);
     expect(await columns('artifact_version')).toEqual(
       [
         'artifact_id',

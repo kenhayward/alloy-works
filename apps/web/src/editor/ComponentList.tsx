@@ -20,6 +20,7 @@ import { Lozenge, StateLozenge, stateWord } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { whenChanged } from './changed.js';
 import { ComponentDetail } from './ComponentDetail.js';
+import { ComponentGroupList } from '../groups/ComponentGroupList.js';
 import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
@@ -89,6 +90,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   // The deleted alone, listed by their own route (the DL plan, DL-H).
   const [deleted, setDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
+  // Components, or the groups of them (the CG plan, CG-D).
+  const [kind, setKind] = useState<'components' | 'groups'>('components');
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
   // The component Duplicate was chosen for (REU-056).
@@ -152,6 +155,34 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   useEffect(() => {
     void load(null);
   }, [load]);
+
+  const kinds = (
+    <fieldset className={styles['facet']}>
+      <legend className={styles['overline']}>{words('groups.kind')}</legend>
+      {(['components', 'groups'] as const).map((each) => (
+        <label key={each} className={styles['option']}>
+          <input
+            type="radio"
+            name="component-kind"
+            checked={kind === each}
+            onChange={() => setKind(each)}
+          />
+          <span className={styles['optionName']}>
+            {each === 'components'
+              ? words('groups.kind-components')
+              : words('groups.component-groups')}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+  if (kind === 'groups') {
+    return (
+      <ListLayout filter={kinds}>
+        <ComponentGroupList client={client} />
+      </ListLayout>
+    );
+  }
 
   const status = (
     <ArchivedFilter
@@ -240,6 +271,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
           </button>
         )}
       </div>
+      {kinds}
       <fieldset className={styles['facet']}>
         <legend className={styles['overline']}>{words('editor.space')}</legend>
         {spaces.map((space) => (

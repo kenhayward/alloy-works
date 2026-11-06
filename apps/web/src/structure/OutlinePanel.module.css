@@ -345,3 +345,18 @@
   font-size: var(--size-12);
   white-space: nowrap;
 }
+
+/* A placed component group's member (the CG plan, CG-G): the group named after its title, the run edged. */
+.groupMark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-inline-start: var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-12);
+  white-space: nowrap;
+}
+
+[data-group-run] > .row {
+  box-shadow: inset 2px 0 0 var(--accent);
+}

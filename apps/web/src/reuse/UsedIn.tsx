@@ -305,6 +305,26 @@ function UsedInDialog({
               )}
               {uses.unreadableDocuments && <p className={styles['muted']}>{MORE()}</p>}
             </section>
+            {(uses.groups.named.length > 0 || uses.groups.unreadable) && (
+              // The groups holding it (REU-063): each document placing one is among the documents above.
+              <section aria-labelledby={`${headingId}groups`}>
+                <h3 id={`${headingId}groups`}>{words('groups.component-groups')}</h3>
+                {uses.groups.named.length > 0 && (
+                  <ul className={styles['list']}>
+                    {uses.groups.named.map((each) => (
+                      <li key={each.id}>
+                        <a href={`#/component-groups/${each.id}`} data-content>
+                          {each.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {uses.groups.unreadable && (
+                  <p className={styles['muted']}>{words('groups.a-group-you-may-not-read')}</p>
+                )}
+              </section>
+            )}
             <section aria-labelledby={`${headingId}pinned`}>
               <h3 id={`${headingId}pinned`}>{words('reuse.pinned-so-no-change-reaches')}</h3>
               {pins > 0 && (

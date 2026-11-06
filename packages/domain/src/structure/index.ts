@@ -17,6 +17,8 @@ export {
   walkOutline,
   outlineMatterSchema,
   mayBeFront,
+  groupMarkerSchema,
+  GROUP_RUN_BROKEN,
 } from './outline.js';
 export type {
   OutlineDocument,
@@ -24,6 +26,7 @@ export type {
   OutlineMatter,
   SectionNode,
   ReferenceNode,
+  GroupMarker,
   OutlineReadOutcome,
   OutlineView,
   OutlineViewNode,
@@ -120,3 +123,15 @@ export {
   type CopyCounts,
   type PlacedComponent,
 } from './copy.js';
+export {
+  groupPlacements,
+  insideRun,
+  placeGroup,
+  placementOf,
+  removeGroup,
+  takeGroupVersion,
+  type GroupChange,
+  type GroupPlacement,
+  type GroupTaken,
+  type PlacedGroupVersion,
+} from './groups.js';

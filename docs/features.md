@@ -1512,6 +1512,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the components hold. Choose how each reference follows its component and a title, and the
   section's components are placed under a new section of your own; nothing else is copied, and a
   section placing a component you may not read is not offered to place.
+- **Component groups.** Components lists **Component groups** under its Kind filter. A group is an
+  ordered set of components, each at most once, each at the version the group pins, approved as one.
+  Its page adds, removes, reorders and moves a member to a newer version, saved as the group's next
+  version. In a document, **Place a component group** places an approved group's components at the
+  end of a section, held together in the group's order; each may be reworded there, never added,
+  removed or reordered alone. A newer approved version is offered on the part, says first what it
+  adds, removes and keeps, and is taken into the document's next version only when asked. **Remove
+  group** removes them as one.
 - **What a change reaches, through the API.** `GET /v1/artifacts/{id}/impact?depth=` walks from a
   component, an image, a query definition, a connection or a template to whatever references it, and
   on to what references those, to a depth from 1 to 10, nearest first and at most 1,000. Nothing you

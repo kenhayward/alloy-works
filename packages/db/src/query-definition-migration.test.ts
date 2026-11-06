@@ -299,7 +299,8 @@ describe('migration 0046, over an environment made before it', () => {
       '0209_capability_usage',
       '0210_new_document',
       '0211_background_work',
-      '0212_session_provider_check',
+      '0212_component_groups',
+      '0213_session_provider_check',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

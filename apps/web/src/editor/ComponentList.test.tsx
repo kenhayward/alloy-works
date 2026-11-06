@@ -131,6 +131,22 @@ function service({ creatable = true } = {}) {
         archived: archived.has(id),
       });
     }
+    if (url.pathname === '/v1/component-groups') {
+      return json(200, {
+        items: [
+          {
+            id: 'cc000000-0000-4000-8000-0000000000a1',
+            title: 'SOP references',
+            space: { id: GENERAL, name: 'General' },
+            version: { id: 'g1', number: '1.0' },
+            members: 2,
+            changedAt: new Date(2025, 11, 3).toISOString(),
+            state: { key: 'approved', name: 'Approved', approved: true },
+          },
+        ],
+        next: null,
+      });
+    }
     if (url.pathname !== '/v1/components') return json(404, {});
     const spaces = url.searchParams.get('spaces');
     asked.push(spaces ?? 'all');
@@ -342,6 +358,19 @@ describe('the components list', () => {
     expect(screen.queryByRole('link', { name: 'Replace the toner' })).not.toBeInTheDocument();
     expect(asked).toContain('deleted component');
     await user.click(screen.getByRole('checkbox', { name: 'Deleted' }));
+    expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
+  });
+
+  it('REU-060 lists component groups under the Kind filter, and components again', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+    await user.click(screen.getByRole('radio', { name: 'Component groups' }));
+    const table = await screen.findByRole('table', { name: 'Component groups' });
+    expect(within(table).getByRole('link', { name: 'SOP references' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Replace the toner' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'Components' }));
     expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
   });
 

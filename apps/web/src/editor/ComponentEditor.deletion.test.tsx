@@ -30,6 +30,28 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
     expect(asked.map((each) => each.route)).toContain('POST /v1/components/{id}/delete');
   });
 
+  it('REU-063 says a component group pins it, naming the group, and offers no Delete', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
+      'GET /v1/components/{id}/deletion': () =>
+        json(200, {
+          kind: 'component',
+          deleted: false,
+          remains,
+          refusals: [
+            { code: 'grouped', named: [{ id: 'g1', title: 'SOP references' }], unreadable: false },
+          ],
+        }),
+    });
+    await surface();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    const deleting = await screen.findByRole('dialog', { name: 'Delete Install the printer' });
+    expect(
+      await within(deleting).findByText('A component group pins it: SOP references.'),
+    ).toBeInTheDocument();
+    expect(within(deleting).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
   it('LIF-023 says every reason it may not be deleted, naming what may be read and saying only that something else does, and offers no Delete', async () => {
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),

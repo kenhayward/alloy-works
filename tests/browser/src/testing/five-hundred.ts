@@ -1,6 +1,7 @@
 import type { paths } from '@alloy-works/api-client';
 import {
   edit,
+  emptied,
   nodesOf,
   readDocument,
   titleOf,
@@ -266,7 +267,7 @@ async function make(client: Client, space: string): Promise<DocumentView> {
     body: { title: FIVE_HUNDRED_TITLE, language: 'en-GB', direction: 'ltr' },
   });
   if (!made) throw new Error(`making the fixture's document answered ${response.status}`);
-  let document: DocumentView = made;
+  let document: DocumentView = await emptied(client, made);
   let component = 0;
   for (let c = 0; c < FIVE_HUNDRED.chapters; c++) {
     document = await edit(client, document, {

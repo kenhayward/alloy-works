@@ -242,7 +242,7 @@ describe('local overrides (the R4 plan, R4-A to R4-E)', () => {
     await set(document, node.id, [override(step)]);
     const uses = await as((trx) => componentUses(trx, ada, step.artifactId));
     expect(uses.documents[0]!.references).toEqual([
-      { node: node.id, mode: 'latest', version: null, overridden: true },
+      { node: node.id, mode: 'latest', version: null, overridden: true, group: null },
     ]);
   });
 });

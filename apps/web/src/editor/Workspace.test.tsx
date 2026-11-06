@@ -418,6 +418,12 @@ describe('the workspace', () => {
     ).toBeInTheDocument();
   });
 
+  it('REU-060 opens the component group the address names', async () => {
+    window.location.hash = '#/component-groups/cc000000-0000-4000-8000-0000000000a1';
+    render(<Workspace fetch={serviceThat({})} />);
+    expect(await screen.findByText('The component group could not be loaded.')).toBeInTheDocument();
+  });
+
   it('shows the components of its space beside an open component, the open one marked', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {

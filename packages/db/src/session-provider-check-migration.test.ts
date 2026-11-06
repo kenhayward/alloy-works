@@ -9,22 +9,22 @@ import { provisionTenant } from './provision.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 /**
- * Migration 0212 (the PC plan, PC-A): a session may keep its provider's refresh token, sealed, and
+ * Migration 0213 (the PC plan, PC-A): a session may keep its provider's refresh token, sealed, and
  * when the provider was last asked. A session made before it keeps neither.
  */
-describe('migration 0212, which lets a session keep a sealed refresh token', () => {
+describe('migration 0213, which lets a session keep a sealed refresh token', () => {
   let db: TestDatabase;
   let before: string;
 
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
-    before = await mkdtemp(join(tmpdir(), 'aw-before-0212-'));
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0213-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
       filter: (source) => {
         const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
-        return numbered === null || Number(numbered[1]) < 212;
+        return numbered === null || Number(numbered[1]) < 213;
       },
     });
   });
@@ -67,7 +67,7 @@ describe('migration 0212, which lets a session keep a sealed refresh token', () 
       );
     await session('organisation', 'before', provider.id);
 
-    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0212_session_provider_check']);
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0213_session_provider_check']);
 
     expect(
       (

@@ -24,6 +24,7 @@ import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
 import { termRoutes } from './terms.js';
+import { componentGroupRoutes } from './component-groups.js';
 import { vocabularyRoutes } from './vocabularies.js';
 import { licenceRoutes } from './licences.js';
 import { themeRoutes } from './themes.js';
@@ -477,6 +478,7 @@ type Routes = typeof ownRoutes &
   typeof promptRoutes &
   typeof bibliographyRoutes &
   typeof termRoutes &
+  typeof componentGroupRoutes &
   typeof vocabularyRoutes &
   typeof licenceRoutes &
   typeof themeRoutes &
@@ -566,6 +568,7 @@ export const routes: Routes = {
   ...promptRoutes,
   ...bibliographyRoutes,
   ...termRoutes,
+  ...componentGroupRoutes,
   ...vocabularyRoutes,
   ...licenceRoutes,
   ...themeRoutes,

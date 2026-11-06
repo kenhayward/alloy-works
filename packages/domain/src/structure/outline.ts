@@ -97,8 +97,26 @@ export type ReferenceNode = {
   /** The key of the template's required component it was placed for (TPL-014; the R9 plan, R9-B). */
   readonly origin?: string | undefined;
   readonly conditions?: Conditions | undefined;
+  /** The group whose placement made it (the CG plan, CG-G): its version, and the run's one id. */
+  readonly group?: GroupMarker | undefined;
   readonly children: readonly OutlineNode[];
 };
+
+/**
+ * A placed group's marker on each member's reference (CG-G): the group, the group version placed, and
+ * the placement, one id for the run. A run is contiguous siblings, each pinned (`refuseAcrossTheTree`).
+ */
+export type GroupMarker = {
+  readonly id: string;
+  readonly version: string;
+  readonly placement: string;
+};
+
+export const groupMarkerSchema = z.strictObject({
+  id: artifactIdentifier,
+  version: artifactIdentifier,
+  placement: nodeIdentifier,
+});
 
 export type OutlineNode = SectionNode | ReferenceNode;
 
@@ -220,6 +238,8 @@ export const referenceNodeSchema = z.strictObject({
     .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/)
     .optional(),
   conditions: conditionsSchema.optional(),
+  // Additive, as `origin` is (the CG plan, CG-G): no reference stored before holds one.
+  group: groupMarkerSchema.optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -353,6 +373,7 @@ function refuseAcrossTheTree(
       throw new Error(`Outline node ${node.id} sets its matter below the top level`);
     }
   });
+  refuseBrokenRuns(nodes as readonly OutlineViewNode[]);
   let begun = false;
   for (const node of nodes) {
     if (node.matter !== 'front') begun = true;
@@ -362,6 +383,49 @@ function refuseAcrossTheTree(
       );
     }
   }
+}
+
+/** What a run that is not held together is refused with (CG-G). */
+export const GROUP_RUN_BROKEN =
+  "A placed group's members stay together, in its order, pinned, each component once";
+
+/**
+ * A placed group's run (CG-G): every reference carrying one placement is a sibling of the others,
+ * contiguous, of one group version, pinned, each component once. A placement in two places, or broken
+ * by another node, is refused. Over a view too, where a withheld component is no component to compare.
+ */
+function refuseBrokenRuns(nodes: readonly OutlineViewNode[]): void {
+  const seen = new Set<string>();
+  const check = (siblings: readonly OutlineViewNode[]) => {
+    let open: string | undefined;
+    let marker: GroupMarker | undefined;
+    let components = new Set<string>();
+    for (const node of siblings) {
+      const group = node.type === 'reference' ? node.group : undefined;
+      if (group === undefined || group.placement !== open) {
+        open = undefined;
+        if (group !== undefined) {
+          if (seen.has(group.placement)) throw new Error(GROUP_RUN_BROKEN);
+          seen.add(group.placement);
+          open = group.placement;
+          marker = group;
+          components = new Set();
+        }
+      }
+      if (group !== undefined && node.type === 'reference') {
+        if (group.id !== marker!.id || group.version !== marker!.version) {
+          throw new Error(GROUP_RUN_BROKEN);
+        }
+        if (node.mode.kind !== 'pinned') throw new Error(GROUP_RUN_BROKEN);
+        if (node.component !== null) {
+          if (components.has(node.component)) throw new Error(GROUP_RUN_BROKEN);
+          components.add(node.component);
+        }
+      }
+      check(node.children);
+    }
+  };
+  check(nodes);
 }
 
 /**
@@ -620,6 +684,8 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ...(node.conditions === undefined
             ? []
             : ([['conditions', canonicalJson(node.conditions)]] as const)),
+          // Only where it is a group's member: an outline stored before CG digests as it did.
+          ...(node.group === undefined ? [] : ([['group', canonicalJson(node.group)]] as const)),
           ['id', canonicalJson(node.id)],
           ['matter', canonicalJson(node.matter)],
           ['mode', canonicalJson(node.mode)],
