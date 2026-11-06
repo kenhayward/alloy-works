@@ -1,6 +1,7 @@
 import { BLANK_WORDS, blankTemplate, type BlankWords } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
+import { recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate } from './templates.js';
@@ -114,10 +115,24 @@ export async function setDefaultTemplate(
     .executeTakeFirst();
   if (!exists) return { answer: 'space.missing' };
   if (!(await usable(trx, space, template))) return { answer: 'template.unusable' };
-  await trx
+  const from = await storedDefault(trx, space);
+  const named = await trx
     .updateTable('space')
     .set({ default_template: template })
     .where('id', '=', space)
-    .execute();
+    .returning('name')
+    .executeTakeFirstOrThrow();
+  if (from !== template) {
+    await recordEvent(
+      trx,
+      {
+        kind: 'space.default_template_changed',
+        subject: { kind: 'space', id: space },
+        space,
+        detail: { from, to: template },
+      },
+      [{ role: 'subject', text: named.name, refersTo: space }],
+    );
+  }
   return { answer: 'set' };
 }

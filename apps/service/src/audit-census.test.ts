@@ -198,6 +198,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'space.archived',
     'space.restored',
   ),
+  setDefaultTemplate: writes('space.default_template_changed'),
   listComponentTypes: read,
   createComponent: writes('content.version_cut'),
   getComponent: read,

@@ -29,6 +29,7 @@ describe('the audit kinds', () => {
       'space.made',
       'space.renamed',
       'space.language_changed',
+      'space.default_template_changed',
       'space.archived',
       'space.restored',
       'content.version_cut',

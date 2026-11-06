@@ -1,4 +1,4 @@
-import { createDocument, findRole, grant } from '@alloy-works/db';
+import { findRole, grant } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
 
@@ -89,21 +89,13 @@ describe('relationships, through the service', () => {
   });
 
   it('REL-015 REL-029 answers the relationships of an artifact by direction, and a shortest path between two, to a reader of both', async () => {
-    // Made by the store with no template, as an import makes one: documents sharing a template are
-    // joined through it, and the path asked for is the relationships' alone (the ND plan, ND-O).
-    const untemplated = () =>
-      h.tenantDb.withTenant(h.tenant, async (trx) => {
-        const made = await createDocument(trx, {
-          spaceId: h.general,
-          title: 'Untemplated',
-          language: 'en-GB',
-          direction: 'ltr',
-          author: h.ids.ada!,
-        });
-        if (made.answer !== 'created') throw new Error(made.answer);
-        return { id: made.version.artifactId };
-      });
-    const [a, b, c] = [await untemplated(), await untemplated(), await untemplated()];
+    // Each made from the same template, which joins them by reference: a path never passes through
+    // a template that way, so it is the relationships' (the ND plan).
+    const [a, b, c] = [
+      await h.documentReferencing([]),
+      await h.documentReferencing([]),
+      await h.documentReferencing([]),
+    ];
     expect((await relate('ada', a.id, b.id)).statusCode).toBe(200);
     expect((await relate('ada', c.id, b.id)).statusCode).toBe(200);
 

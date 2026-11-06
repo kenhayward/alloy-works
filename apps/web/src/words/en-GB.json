@@ -6261,5 +6261,6 @@
   "admin.the-templates-could-not-be-loaded": "The templates could not be loaded.",
   "editor.copied-from-at": "Copied from {title} at {version}.",
   "editor.copied-from-changed-since": "Copied from {title} at {version}, which has changed since.",
-  "editor.made-from-the-template": "Made from the template {name}."
+  "editor.made-from-the-template": "Made from the template {name}.",
+  "admin.space-default-template-changed": "Space's default template changed"
 }

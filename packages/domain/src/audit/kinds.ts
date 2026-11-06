@@ -332,6 +332,11 @@ export const auditKindSpecs = {
     z.strictObject({ from: z.string().nullable(), to: z.string().nullable() }),
     'packages/db/src/spaces.ts',
   ),
+  'space.default_template_changed': kind(
+    ['ADM-002', 'TPL-074', 'LIF-067'],
+    z.strictObject({ from: z.uuid().nullable(), to: z.uuid() }),
+    'packages/db/src/default-template.ts',
+  ),
   'space.archived': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'space.restored': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'settings.changed': kind(
