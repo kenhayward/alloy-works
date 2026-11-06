@@ -1,0 +1,2555 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <style>
+      .sc-placeholder {
+        background: color-mix(in srgb, currentColor 8%, transparent);
+        border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+        border-radius: 2px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      @keyframes sc-shine {
+        0% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+      html.sc-dc-streaming .sc-placeholder,
+      html.sc-dc-streaming .sc-interp.sc-missing {
+        position: relative;
+        background: color-mix(in srgb, currentColor 5%, transparent);
+        border-color: transparent;
+      }
+      html.sc-dc-streaming .sc-placeholder::before,
+      html.sc-dc-streaming .sc-interp.sc-missing::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          90deg,
+          rgba(217, 119, 87, 0) 25%,
+          rgba(247, 225, 211, 0.95) 37%,
+          rgba(217, 119, 87, 0) 63%
+        );
+        background-size: 400% 100%;
+        animation: sc-shine 1.4s ease infinite;
+      }
+      html.sc-dc-streaming .sc-placeholder:nth-child(n + 9 of .sc-placeholder)::before,
+      html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n + 9 of .sc-interp.sc-missing)::before {
+        animation: none;
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      .sc-placeholder-error {
+        padding: 4px 8px;
+        font:
+          11px/1.4 ui-monospace,
+          monospace;
+        color: color-mix(in srgb, currentColor 70%, transparent);
+        word-break: break-word;
+      }
+      .sc-interp.sc-missing {
+        display: inline-block;
+        width: 2em;
+        height: 1em;
+        overflow: hidden;
+        vertical-align: text-bottom;
+        background: rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(0, 0, 0, 0.5);
+        border-radius: 2px;
+        box-sizing: border-box;
+        color: transparent;
+        user-select: none;
+      }
+      .sc-interp.sc-unresolved {
+        font-family: ui-monospace, monospace;
+        font-size: 0.85em;
+        color: color-mix(in srgb, currentColor 50%, transparent);
+        background: color-mix(in srgb, currentColor 10%, transparent);
+        border-radius: 3px;
+        padding: 0 3px;
+      }
+      .sc-host.sc-has-error {
+        position: relative;
+      }
+      .sc-logic-error {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 2147483647;
+        max-width: 60ch;
+        padding: 6px 10px;
+        background: #b00020;
+        color: #fff;
+        font:
+          12px/1.4 ui-monospace,
+          monospace;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        pointer-events: none;
+      }
+      /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+      @media print {
+        @page {
+          margin: 0.5cm;
+        }
+        figure,
+        table {
+          break-inside: avoid;
+        }
+        #dc-root,
+        #dc-root > .sc-host {
+          height: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          animation-delay: -99s !important;
+          animation-duration: 0.001s !important;
+          animation-iteration-count: 1 !important;
+          animation-fill-mode: both !important;
+          animation-play-state: running !important;
+          transition-duration: 0s !important;
+        }
+      }
+    </style>
+    <meta charset="utf-8" />
+    <title>Part panel: values-given, light</title>
+    <style>
+      x-dc {
+        display: none !important;
+      }
+    </style>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #dc-root,
+      #dc-root > .sc-host {
+        height: 100%;
+      }
+    </style>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+      data-dc-tpl="1"
+    />
+    <style data-dc-tpl="2">
+      body {
+        margin: 0;
+        background: #e6e9ed;
+      }
+    </style>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+      data-dc-tpl="1"
+    />
+    <style data-dc-tpl="2">
+      body {
+        margin: 0;
+      }
+      .nd input::placeholder {
+        color: inherit;
+        opacity: 0.55;
+      }
+      .nd .scroller {
+        scrollbar-width: thin;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dc-root">
+      <div class="sc-host" data-sc-name="nd-values-given-light">
+        <div data-dc-tpl="3" style="width: 1040px; height: 720px">
+          <div class="sc-host" data-sc-name="NewDoc" data-dc-tpl="4">
+            <div
+              data-dc-tpl="3"
+              class="nd"
+              style="
+                position: relative;
+                width: 1040px;
+                height: 720px;
+                overflow: hidden;
+                background: rgb(230, 233, 237);
+                font-family: 'IBM Plex Sans', system-ui, sans-serif;
+                font-size: 13px;
+                color: rgb(21, 32, 43);
+              "
+            >
+              <div
+                data-dc-tpl="4"
+                aria-hidden="true"
+                style="position: absolute; inset: 0px; padding: 28px 40px; opacity: 0.35"
+              >
+                <div
+                  data-dc-tpl="5"
+                  style="
+                    height: 22px;
+                    width: 220px;
+                    border-radius: 6px;
+                    background: rgb(201, 208, 216);
+                  "
+                ></div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 220px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 300px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 260px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 340px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 240px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 310px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 280px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 200px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 330px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 260px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 290px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+                <div
+                  data-dc-tpl="7"
+                  style="
+                    margin-top: 18px;
+                    height: 34px;
+                    border-bottom: 1px solid rgb(225, 229, 234);
+                    display: flex;
+                    gap: 24px;
+                    align-items: center;
+                  "
+                >
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      width: 220px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(201, 208, 216);
+                    "
+                  ></span
+                  ><span
+                    data-dc-tpl="9"
+                    style="
+                      width: 90px;
+                      height: 10px;
+                      border-radius: 4px;
+                      background: rgb(225, 229, 234);
+                    "
+                  ></span>
+                </div>
+              </div>
+              <div
+                data-dc-tpl="10"
+                style="position: absolute; inset: 0px; background: rgba(21, 32, 43, 0.32)"
+              ></div>
+
+              <div
+                data-dc-tpl="11"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="nd-title"
+                style="
+                  position: absolute;
+                  left: 50%;
+                  top: 50%;
+                  width: 920px;
+                  height: 684px;
+                  transform: translate(-50%, -50%);
+                  box-sizing: border-box;
+                  display: grid;
+                  grid-template-columns: 300px minmax(0px, 1fr);
+                  border: 1px solid rgb(201, 208, 216);
+                  border-radius: 14px;
+                  overflow: hidden;
+                  background: rgb(255, 255, 255);
+                  box-shadow: rgba(15, 23, 42, 0.22) 0px 24px 60px;
+                "
+              >
+                <aside
+                  data-dc-tpl="12"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 0px;
+                    border-right: 1px solid rgb(225, 229, 234);
+                    background: rgb(238, 241, 244);
+                  "
+                >
+                  <div
+                    data-dc-tpl="13"
+                    style="padding: 18px 16px 12px; display: flex; align-items: center; gap: 10px"
+                  >
+                    <span
+                      data-dc-tpl="14"
+                      aria-hidden="true"
+                      style="
+                        flex: 0 0 auto;
+                        width: 34px;
+                        height: 34px;
+                        border-radius: 9px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: rgb(29, 106, 133);
+                        color: rgb(255, 255, 255);
+                      "
+                      ><svg
+                        data-dc-tpl="15"
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          data-dc-tpl="16"
+                          d="M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6"
+                        ></path></svg
+                    ></span>
+                    <h2
+                      data-dc-tpl="17"
+                      id="nd-title"
+                      style="margin: 0px; font-size: 16px; font-weight: 600"
+                    >
+                      New document
+                    </h2>
+                  </div>
+                  <div data-dc-tpl="18" style="padding: 0px 12px 10px">
+                    <span
+                      data-dc-tpl="19"
+                      style="
+                        height: 34px;
+                        box-sizing: border-box;
+                        padding: 0px 10px;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        border: 1px solid rgb(201, 208, 216);
+                        border-radius: 8px;
+                        background: rgb(255, 255, 255);
+                        color: rgb(86, 96, 108);
+                      "
+                      ><svg
+                        data-dc-tpl="20"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          data-dc-tpl="21"
+                          d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5"
+                        ></path></svg
+                      >Find a template</span
+                    >
+                  </div>
+                  <div
+                    data-dc-tpl="22"
+                    role="listbox"
+                    aria-label="Start from"
+                    class="scroller"
+                    style="flex: 1 1 0%; min-height: 0px; overflow-y: auto; padding: 0px 8px 12px"
+                  >
+                    <div
+                      data-dc-tpl="25"
+                      style="
+                        padding: 12px 8px 5px;
+                        font-size: 10px;
+                        font-weight: 600;
+                        letter-spacing: 0.05em;
+                        text-transform: uppercase;
+                        color: rgb(86, 96, 108);
+                      "
+                    >
+                      <span class="sc-interp">Start fresh</span>
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="false"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: transparent;
+                        box-shadow: none;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(86, 96, 108)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="transparent"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 19h9"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">Blank</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">One component to start</span></span
+                        ></span
+                      >
+                    </div>
+
+                    <div
+                      data-dc-tpl="25"
+                      style="
+                        padding: 12px 8px 5px;
+                        font-size: 10px;
+                        font-weight: 600;
+                        letter-spacing: 0.05em;
+                        text-transform: uppercase;
+                        color: rgb(86, 96, 108);
+                      "
+                    >
+                      <span class="sc-interp">Clinical</span>
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="true"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: rgb(255, 255, 255);
+                        box-shadow: rgb(29, 106, 133) 0px 0px 0px 1.5px inset;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(22, 90, 114)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="#ffffff"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 15h14M8 19h14M8 23h10M8 27h12"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 600;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">Clinical study report</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">14 sections · 12 values</span></span
+                        ></span
+                      >
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="false"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: transparent;
+                        box-shadow: none;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(91, 63, 184)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="#ffffff"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 15h8M8 19h14M8 23h14M8 27h6"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">Protocol deviation report</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">6 sections · 4 values</span></span
+                        ></span
+                      >
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="false"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: transparent;
+                        box-shadow: none;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(29, 113, 72)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="#ffffff"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 15h14M8 19h6M8 23h14M8 27h14"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">Investigator's brochure</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">9 sections · 3 values</span></span
+                        ></span
+                      >
+                    </div>
+
+                    <div
+                      data-dc-tpl="25"
+                      style="
+                        padding: 12px 8px 5px;
+                        font-size: 10px;
+                        font-weight: 600;
+                        letter-spacing: 0.05em;
+                        text-transform: uppercase;
+                        color: rgb(86, 96, 108);
+                      "
+                    >
+                      <span class="sc-interp">Quality</span>
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="false"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: transparent;
+                        box-shadow: none;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(154, 70, 16)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="#ffffff"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 15h8M8 19h14M8 23h14M8 27h6"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">Standard operating procedure</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">8 sections · 5 values</span></span
+                        ></span
+                      >
+                    </div>
+
+                    <div
+                      data-dc-tpl="27"
+                      role="option"
+                      aria-selected="false"
+                      style="
+                        min-height: 46px;
+                        box-sizing: border-box;
+                        padding: 6px 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-radius: 8px;
+                        background: transparent;
+                        box-shadow: none;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        data-dc-tpl="28"
+                        aria-hidden="true"
+                        style="flex: 0 0 auto; color: rgb(154, 70, 16)"
+                        ><svg
+                          data-dc-tpl="29"
+                          width="24"
+                          height="29"
+                          viewBox="0 0 30 36"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linejoin="round"
+                        >
+                          <path data-dc-tpl="30" d="M3 1.5h16l8 8v25H3z" fill="#ffffff"></path>
+                          <path data-dc-tpl="31" d="M19 1.5v8h8"></path>
+                          <path
+                            data-dc-tpl="32"
+                            d="M8 15h14M8 19h6M8 23h14M8 27h14"
+                            stroke-linecap="round"
+                            stroke-width="1.7"
+                          ></path></svg
+                      ></span>
+                      <span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span
+                          data-dc-tpl="34"
+                          style="
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          ><span class="sc-interp">CAPA record</span></span
+                        ><span
+                          data-dc-tpl="35"
+                          style="display: block; font-size: 11px; color: rgb(86, 96, 108)"
+                          ><span class="sc-interp">5 sections · 6 values</span></span
+                        ></span
+                      >
+                    </div>
+                  </div>
+                </aside>
+
+                <div
+                  data-dc-tpl="36"
+                  style="display: flex; flex-direction: column; min-width: 0px; min-height: 0px"
+                >
+                  <div
+                    data-dc-tpl="37"
+                    style="
+                      flex: 0 0 auto;
+                      position: relative;
+                      padding: 22px 28px 14px;
+                      display: grid;
+                      grid-template-columns: 112px minmax(0px, 1fr);
+                      gap: 22px;
+                    "
+                  >
+                    <button
+                      data-dc-tpl="38"
+                      type="button"
+                      aria-label="Close"
+                      style="
+                        position: absolute;
+                        top: 12px;
+                        right: 12px;
+                        width: 30px;
+                        height: 30px;
+                        padding: 0px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: 0px;
+                        border-radius: 7px;
+                        background: transparent;
+                        color: rgb(86, 96, 108);
+                        cursor: pointer;
+                      "
+                    >
+                      <svg
+                        data-dc-tpl="39"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      >
+                        <path data-dc-tpl="40" d="M6 6l12 12M18 6 6 18"></path>
+                      </svg>
+                    </button>
+                    <figure
+                      data-dc-tpl="41"
+                      aria-label="Preview of the Clinical study report template"
+                      style="margin: 0px"
+                    >
+                      <div
+                        data-dc-tpl="42"
+                        style="
+                          position: relative;
+                          width: 112px;
+                          height: 145px;
+                          box-sizing: border-box;
+                          padding: 13px 10px 8px;
+                          border-radius: 3px;
+                          background: rgb(255, 255, 255);
+                          box-shadow:
+                            rgba(0, 0, 0, 0.35) 0px 8px 22px,
+                            rgb(213, 218, 224) 0px 0px 0px 1px;
+                          color: rgb(26, 26, 26);
+                          overflow: hidden;
+                        "
+                      >
+                        <span
+                          data-dc-tpl="43"
+                          aria-hidden="true"
+                          style="
+                            position: absolute;
+                            top: 0px;
+                            right: 0px;
+                            width: 17px;
+                            height: 17px;
+                            background: linear-gradient(
+                              225deg,
+                              rgb(255, 255, 255) 50%,
+                              rgb(223, 228, 234) 50%
+                            );
+                          "
+                        ></span>
+                        <div
+                          data-dc-tpl="44"
+                          style="
+                            font-family: Georgia, serif;
+                            font-size: 7px;
+                            font-weight: 700;
+                            line-height: 1.25;
+                            color: rgb(31, 56, 100);
+                          "
+                        >
+                          <span class="sc-interp">CLINICAL STUDY REPORT</span>
+                        </div>
+                        <div data-dc-tpl="46" style="margin-top: 5px">
+                          <div
+                            data-dc-tpl="47"
+                            style="
+                              font-family: Georgia, serif;
+                              font-size: 5px;
+                              font-weight: 700;
+                              color: rgb(31, 56, 100);
+                            "
+                          >
+                            <span class="sc-interp">1. Synopsis</span>
+                          </div>
+                          <div
+                            data-dc-tpl="48"
+                            style="
+                              margin-top: 2px;
+                              height: 1.5px;
+                              width: 100%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                          <div
+                            data-dc-tpl="49"
+                            style="
+                              margin-top: 1.5px;
+                              height: 1.5px;
+                              width: 76%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                        </div>
+                        <div data-dc-tpl="46" style="margin-top: 5px">
+                          <div
+                            data-dc-tpl="47"
+                            style="
+                              font-family: Georgia, serif;
+                              font-size: 5px;
+                              font-weight: 700;
+                              color: rgb(31, 56, 100);
+                            "
+                          >
+                            <span class="sc-interp">2. Ethics</span>
+                          </div>
+                          <div
+                            data-dc-tpl="48"
+                            style="
+                              margin-top: 2px;
+                              height: 1.5px;
+                              width: 100%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                          <div
+                            data-dc-tpl="49"
+                            style="
+                              margin-top: 1.5px;
+                              height: 1.5px;
+                              width: 76%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                        </div>
+                        <div data-dc-tpl="46" style="margin-top: 5px">
+                          <div
+                            data-dc-tpl="47"
+                            style="
+                              font-family: Georgia, serif;
+                              font-size: 5px;
+                              font-weight: 700;
+                              color: rgb(31, 56, 100);
+                            "
+                          >
+                            <span class="sc-interp">3. Investigators</span>
+                          </div>
+                          <div
+                            data-dc-tpl="48"
+                            style="
+                              margin-top: 2px;
+                              height: 1.5px;
+                              width: 100%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                          <div
+                            data-dc-tpl="49"
+                            style="
+                              margin-top: 1.5px;
+                              height: 1.5px;
+                              width: 76%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                        </div>
+                        <div data-dc-tpl="46" style="margin-top: 5px">
+                          <div
+                            data-dc-tpl="47"
+                            style="
+                              font-family: Georgia, serif;
+                              font-size: 5px;
+                              font-weight: 700;
+                              color: rgb(31, 56, 100);
+                            "
+                          >
+                            <span class="sc-interp">4. Study objectives</span>
+                          </div>
+                          <div
+                            data-dc-tpl="48"
+                            style="
+                              margin-top: 2px;
+                              height: 1.5px;
+                              width: 100%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                          <div
+                            data-dc-tpl="49"
+                            style="
+                              margin-top: 1.5px;
+                              height: 1.5px;
+                              width: 76%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                        </div>
+                        <div data-dc-tpl="46" style="margin-top: 5px">
+                          <div
+                            data-dc-tpl="47"
+                            style="
+                              font-family: Georgia, serif;
+                              font-size: 5px;
+                              font-weight: 700;
+                              color: rgb(31, 56, 100);
+                            "
+                          >
+                            <span class="sc-interp">5. Investigational plan</span>
+                          </div>
+                          <div
+                            data-dc-tpl="48"
+                            style="
+                              margin-top: 2px;
+                              height: 1.5px;
+                              width: 100%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                          <div
+                            data-dc-tpl="49"
+                            style="
+                              margin-top: 1.5px;
+                              height: 1.5px;
+                              width: 76%;
+                              background: rgb(213, 218, 224);
+                            "
+                          ></div>
+                        </div>
+                      </div>
+                      <figcaption
+                        data-dc-tpl="50"
+                        style="
+                          margin-top: 8px;
+                          font-size: 11px;
+                          color: rgb(86, 96, 108);
+                          line-height: 1.4;
+                        "
+                      >
+                        <span class="sc-interp">14 sections, 3 required components</span>
+                      </figcaption>
+                    </figure>
+                    <div data-dc-tpl="51" style="min-width: 0px; padding-right: 26px">
+                      <div data-dc-tpl="52" style="font-size: 11px; color: rgb(86, 96, 108)">
+                        <span class="sc-interp">Template · Clinical</span>
+                      </div>
+                      <div
+                        data-dc-tpl="53"
+                        style="margin-top: 2px; font-size: 18px; font-weight: 600"
+                      >
+                        <span class="sc-interp">Clinical study report</span>
+                      </div>
+                      <p
+                        data-dc-tpl="54"
+                        style="
+                          margin: 4px 0px 0px;
+                          font-size: 12px;
+                          color: rgb(86, 96, 108);
+                          line-height: 1.5;
+                        "
+                      >
+                        <span class="sc-interp"
+                          >An ICH E3 report: synopsis, ethics, investigators, study plan, results
+                          and appendices. Its values fill the title page, the headers and the
+                          synopsis.</span
+                        >
+                      </p>
+                      <label data-dc-tpl="55" style="display: block; margin-top: 12px">
+                        <span
+                          data-dc-tpl="56"
+                          style="
+                            display: block;
+                            margin-bottom: 6px;
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: rgb(86, 96, 108);
+                          "
+                          >Title</span
+                        >
+                        <input
+                          data-dc-tpl="57"
+                          type="text"
+                          placeholder="What is this document called?"
+                          value="FIN-3101 Clinical study report"
+                          style="
+                            width: 100%;
+                            height: 40px;
+                            box-sizing: border-box;
+                            padding: 0px 12px;
+                            border: 1px solid rgb(29, 106, 133);
+                            border-radius: 9px;
+                            background: rgb(238, 241, 244);
+                            color: rgb(21, 32, 43);
+                            font-family: inherit;
+                            font-size: 15px;
+                            font-weight: 500;
+                            outline: rgba(29, 106, 133, 0.22) solid 2px;
+                            outline-offset: 1px;
+                          "
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="59"
+                    style="
+                      flex: 0 0 auto;
+                      padding: 8px 28px 6px;
+                      display: flex;
+                      align-items: baseline;
+                      gap: 8px;
+                      border-top: 1px solid rgb(225, 229, 234);
+                    "
+                  >
+                    <span data-dc-tpl="60" id="nd-values" style="font-size: 12px; font-weight: 600"
+                      >Values for this template</span
+                    >
+                    <span data-dc-tpl="61" style="font-size: 11px; color: rgb(86, 96, 108)"
+                      ><span class="sc-interp">12 values · 6 required</span></span
+                    >
+                    <span data-dc-tpl="62" style="flex: 1 1 0%"></span>
+                  </div>
+                  <div data-dc-tpl="67" style="position: relative; flex: 1 1 0px; min-height: 0px">
+                    <div
+                      data-dc-tpl="68"
+                      role="group"
+                      aria-labelledby="nd-values"
+                      tabindex="0"
+                      class="scroller"
+                      style="
+                        height: 100%;
+                        box-sizing: border-box;
+                        overflow-y: auto;
+                        padding: 4px 22px 14px 28px;
+                        scrollbar-color: rgb(201, 208, 216) transparent;
+                      "
+                    >
+                      <div
+                        data-dc-tpl="69"
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(2, minmax(0px, 1fr));
+                          gap: 10px 14px;
+                        "
+                      >
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg
+                            ><span class="sc-interp">Study ID</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: 'IBM Plex Mono', monospace;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">FIN-3101</span></span
+                            ></span
+                          >
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg
+                            ><span class="sc-interp">Protocol number</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: 'IBM Plex Mono', monospace;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">FIN-3101-P03</span></span
+                            ></span
+                          >
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Product</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Stellest spectacle lens</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Sponsor</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Lumen Vision Ltd</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Phase</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Phase III</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg
+                            ><span class="sc-interp">Indication</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Myopia control in children</span></span
+                            ></span
+                          >
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Study design</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Randomised, double masked</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path
+                                data-dc-tpl="74"
+                                d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"
+                              ></path></svg
+                            ><span class="sc-interp">Data cut-off</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">30 Sep 2026</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path
+                                data-dc-tpl="74"
+                                d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"
+                              ></path></svg
+                            ><span class="sc-interp">Principal investigator</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Ravi Menon</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Countries</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Finland, Spain, Singapore</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg
+                            ><span class="sc-interp">Report version</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: 'IBM Plex Mono', monospace;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">1.0</span></span
+                            ></span
+                          >
+                        </label>
+
+                        <label data-dc-tpl="71" style="display: block; min-width: 0px">
+                          <span
+                            data-dc-tpl="72"
+                            style="
+                              display: flex;
+                              align-items: center;
+                              gap: 5px;
+                              margin-bottom: 5px;
+                              font-size: 12px;
+                              color: rgb(86, 96, 108);
+                            "
+                            ><svg
+                              data-dc-tpl="73"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="74" d="M4 6h16M4 12h16M4 18h10"></path></svg
+                            ><span class="sc-interp">Confidentiality</span
+                            ><span data-dc-tpl="76" style="color: rgb(154, 70, 16)">*</span></span
+                          >
+                          <span
+                            data-dc-tpl="77"
+                            style="
+                              height: 34px;
+                              box-sizing: border-box;
+                              padding: 0px 10px;
+                              display: flex;
+                              align-items: center;
+                              gap: 6px;
+                              border: 1px solid rgb(201, 208, 216);
+                              border-radius: 8px;
+                              background: rgb(238, 241, 244);
+                              color: rgb(21, 32, 43);
+                              font-family: inherit;
+                              font-size: 13px;
+                            "
+                            ><span
+                              data-dc-tpl="78"
+                              style="
+                                flex: 1 1 0%;
+                                min-width: 0px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                              "
+                              ><span class="sc-interp">Confidential</span></span
+                            ><svg
+                              data-dc-tpl="80"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#56606c"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="81" d="M6 9l6 6 6-6"></path></svg
+                          ></span>
+                        </label>
+                      </div>
+                    </div>
+                    <div
+                      data-dc-tpl="82"
+                      aria-hidden="true"
+                      style="
+                        position: absolute;
+                        left: 0px;
+                        right: 12px;
+                        bottom: 0px;
+                        height: 28px;
+                        background: linear-gradient(transparent, rgb(255, 255, 255));
+                        pointer-events: none;
+                      "
+                    ></div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="90"
+                    style="
+                      flex: 0 0 auto;
+                      padding: 12px 28px 14px;
+                      border-top: 1px solid rgb(225, 229, 234);
+                      display: grid;
+                      grid-template-columns: minmax(0px, 1fr) minmax(0px, 1.2fr) auto;
+                      gap: 10px;
+                      align-items: end;
+                    "
+                  >
+                    <label data-dc-tpl="91" style="display: block; min-width: 0px">
+                      <span
+                        data-dc-tpl="92"
+                        style="
+                          display: block;
+                          margin-bottom: 5px;
+                          font-size: 12px;
+                          font-weight: 500;
+                          color: rgb(86, 96, 108);
+                        "
+                        >Where</span
+                      >
+                      <span
+                        data-dc-tpl="93"
+                        style="
+                          height: 34px;
+                          box-sizing: border-box;
+                          padding: 0px 10px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          border: 1px solid rgb(201, 208, 216);
+                          border-radius: 8px;
+                          background: rgb(238, 241, 244);
+                        "
+                        ><svg
+                          data-dc-tpl="94"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#56606c"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path data-dc-tpl="95" d="M3 6h6l2 2h10v11H3z"></path></svg
+                        ><span data-dc-tpl="96" style="flex: 1 1 0%">Clinical</span
+                        ><svg
+                          data-dc-tpl="97"
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#56606c"
+                          stroke-width="2.2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path data-dc-tpl="98" d="M6 9l6 6 6-6"></path></svg
+                      ></span>
+                    </label>
+                    <label data-dc-tpl="99" style="display: block; min-width: 0px">
+                      <span
+                        data-dc-tpl="100"
+                        style="
+                          display: block;
+                          margin-bottom: 5px;
+                          font-size: 12px;
+                          font-weight: 500;
+                          color: rgb(86, 96, 108);
+                        "
+                        >Language</span
+                      >
+                      <span
+                        data-dc-tpl="101"
+                        style="
+                          height: 34px;
+                          box-sizing: border-box;
+                          padding: 0px 10px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          border: 1px solid rgb(201, 208, 216);
+                          border-radius: 8px;
+                          background: rgb(238, 241, 244);
+                        "
+                        ><svg
+                          data-dc-tpl="102"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#56606c"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            data-dc-tpl="103"
+                            d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3"
+                          ></path></svg
+                        ><span
+                          data-dc-tpl="104"
+                          style="
+                            flex: 1 1 0%;
+                            min-width: 0px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          >English (UK)</span
+                        ><span
+                          data-dc-tpl="105"
+                          style="
+                            font-family: 'IBM Plex Mono', monospace;
+                            font-size: 11px;
+                            color: rgb(86, 96, 108);
+                          "
+                          >en-GB</span
+                        ></span
+                      >
+                    </label>
+                    <div
+                      data-dc-tpl="106"
+                      role="radiogroup"
+                      aria-label="Direction"
+                      style="
+                        height: 34px;
+                        box-sizing: border-box;
+                        padding: 2px;
+                        display: flex;
+                        gap: 2px;
+                        border: 1px solid rgb(201, 208, 216);
+                        border-radius: 8px;
+                        background: rgb(238, 241, 244);
+                      "
+                    >
+                      <button
+                        data-dc-tpl="107"
+                        type="button"
+                        role="radio"
+                        aria-checked="true"
+                        aria-label="Left to right"
+                        title="Left to right"
+                        style="
+                          width: 32px;
+                          padding: 0px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          border: 0px;
+                          border-radius: 6px;
+                          background: rgb(228, 241, 245);
+                          color: rgb(22, 90, 114);
+                        "
+                      >
+                        <svg
+                          data-dc-tpl="108"
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.9"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            data-dc-tpl="109"
+                            d="M4 6h12M4 10h8M4 14h12M4 18h8M17 15l3 3-3 3"
+                          ></path>
+                        </svg>
+                      </button>
+                      <button
+                        data-dc-tpl="110"
+                        type="button"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Right to left"
+                        title="Right to left"
+                        style="
+                          width: 32px;
+                          padding: 0px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          border: 0px;
+                          border-radius: 6px;
+                          background: transparent;
+                          color: rgb(86, 96, 108);
+                        "
+                      >
+                        <svg
+                          data-dc-tpl="111"
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.9"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            data-dc-tpl="112"
+                            d="M8 6h12M12 10h8M8 14h12M12 18h8M7 15l-3 3 3 3"
+                          ></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="113"
+                    style="
+                      flex: 0 0 auto;
+                      padding: 12px 16px 12px 28px;
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      border-top: 1px solid rgb(225, 229, 234);
+                    "
+                  >
+                    <span
+                      data-dc-tpl="114"
+                      style="flex: 1 1 0%; min-width: 0px; font-size: 12px; color: rgb(86, 96, 108)"
+                      ><span class="sc-interp"
+                        >Creates 14 sections from the template, in Clinical.</span
+                      ></span
+                    >
+                    <button
+                      data-dc-tpl="115"
+                      type="button"
+                      style="
+                        height: 34px;
+                        padding: 0px 14px;
+                        border: 1px solid rgb(201, 208, 216);
+                        border-radius: 8px;
+                        background: transparent;
+                        color: rgb(21, 32, 43);
+                        font-family: inherit;
+                        font-size: 13px;
+                        cursor: pointer;
+                      "
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      data-dc-tpl="116"
+                      type="button"
+                      aria-disabled="false"
+                      style="
+                        height: 34px;
+                        padding: 0px 14px 0px 11px;
+                        display: flex;
+                        align-items: center;
+                        gap: 7px;
+                        border: 0px;
+                        border-radius: 8px;
+                        background: rgb(29, 106, 133);
+                        color: rgb(255, 255, 255);
+                        font-family: inherit;
+                        font-size: 13px;
+                        font-weight: 600;
+                        cursor: pointer;
+                      "
+                    >
+                      <svg
+                        data-dc-tpl="117"
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          data-dc-tpl="118"
+                          d="M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6"
+                        ></path></svg
+                      >Create document
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
