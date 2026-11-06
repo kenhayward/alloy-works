@@ -3,7 +3,7 @@
 How an administrator answers "is it us or is it you" without a support ticket: each capability's health, what
 background work last did, what failed silently, what the environment uses, and whether the product meets what it
 promises. Built by [the DG plan](../plans/2026-11-06-dg-diagnostics-usage-and-health.md), which holds the decisions;
-built so far is the measuring and background work.
+built so far is the measuring, background work, and Diagnostics' read.
 
 ## Measuring
 
@@ -33,16 +33,32 @@ built so far is the measuring and background work.
   configured; one run says nothing of it.
 - Left out of every export.
 
+## Diagnostics' read
+
+`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever administers, in one transaction under the
+environment's role. Codes and counts, never content.
+
+- **Health** (`capabilityHealth`, DG-F) per capability over 15 minutes: failing at half the answered requests failing
+  on the server, degraded at 5% or a 95th percentile past its budget, idle with none answered. Client errors and
+  refusals by the environment's state are kept out. Background work (`workHealth`) is failing when its last run failed
+  or it has not run for twice its cadence, and paused, never failing, while the environment holds it.
+- **Jobs** by kind and state for the last day, through `platform.own_jobs` ([ADR-0098](../decisions/0098-an-environment-reads-its-own-jobs-through-a-definer.md)):
+  the queue stays closed to the environment's role.
+- **The index** (serving model, a change pending, lag), **webhooks** and **mail** (failing, turned off), **each
+  connection's runs** in the last day (down when its latest failed, time-outs counted) and **budgets** (the month's
+  model spend against its limit, query runs at once).
+
 ## Not yet built
 
-Jobs by kind and state, read through a definer function (DGc); Administration's Diagnostics and silent failures surfaced (DGc); usage over time (DGd);
+Administration's Diagnostics and silent failures surfaced (DGc); usage over time (DGd);
 budgets, objectives, availability, backups and integrity (DGe).
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up |
+| ID          | How it is met                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`) |
+| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up      |
 
-The rest are claimed as each is answered in full. ADM-015 is measured here, and claimed once Diagnostics shows health
-(DGc).
+The rest are claimed as each is answered in full: ADM-036, ADM-037, ADM-021 and COL-061 once Administration shows them
+(DGc2).

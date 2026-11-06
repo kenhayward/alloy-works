@@ -278,6 +278,11 @@ export const documentationGroups = [
           'List deleted components and documents, and set how long content is kept before it may be deleted.',
       },
       { name: 'Audit log', description: 'Read and export the environment’s audit log.' },
+      {
+        name: 'Diagnostics',
+        description:
+          'How each capability, the background work, the search index, deliveries and data sources are doing, and the environment against its budgets.',
+      },
     ],
   },
   {
@@ -487,6 +492,7 @@ const operationTags = {
     'getPublicationBindings',
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
+  Diagnostics: ['getDiagnostics'],
   'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
   'Range previews': [
     'requestRangePreview',
@@ -1477,6 +1483,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs export_environment at the environment.',
   getQueryUsage:
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
+  getDiagnostics:
+    'Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.',
   getQueryRunsCsv:
     'Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.',
   listPublicationShares:

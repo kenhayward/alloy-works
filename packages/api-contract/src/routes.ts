@@ -8,6 +8,7 @@ import { relationshipRoutes } from './relationships.js';
 import { holdRoutes } from './holds.js';
 import { shareRoutes } from './shares.js';
 import { queryUsageRoutes } from './query-usage.js';
+import { diagnosticsRoutes } from './diagnostics.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { closureRoutes } from './closure.js';
 import { organisationRoutes } from './organisation.js';
@@ -459,6 +460,7 @@ type Routes = typeof ownRoutes &
   typeof relationshipRoutes &
   typeof shareRoutes &
   typeof queryUsageRoutes &
+  typeof diagnosticsRoutes &
   typeof datasetSourceRoutes &
   typeof closureRoutes &
   typeof organisationRoutes &
@@ -547,6 +549,7 @@ export const routes: Routes = {
   ...relationshipRoutes,
   ...shareRoutes,
   ...queryUsageRoutes,
+  ...diagnosticsRoutes,
   ...datasetSourceRoutes,
   ...closureRoutes,
   ...organisationRoutes,

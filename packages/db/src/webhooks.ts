@@ -599,3 +599,26 @@ export async function deliveryRecord(
     })),
   };
 }
+
+/** How the environment's webhooks are delivering, for Diagnostics (the DG plan, DG-H; COL-061). */
+export async function webhookCounts(trx: TenantTransaction): Promise<{
+  readonly subscriptions: number;
+  readonly failing: number;
+  readonly disabledFailing: number;
+}> {
+  const row = await trx
+    .selectFrom('webhook_subscription')
+    .select((eb) => [
+      eb.fn.countAll<string>().as('subscriptions'),
+      sql<string>`count(*) filter (where disabled_at is null and failing_since is not null)`.as(
+        'failing',
+      ),
+      sql<string>`count(*) filter (where disabled_reason = 'failing')`.as('disabled_failing'),
+    ])
+    .executeTakeFirstOrThrow();
+  return {
+    subscriptions: Number(row.subscriptions),
+    failing: Number(row.failing),
+    disabledFailing: Number(row.disabled_failing),
+  };
+}
