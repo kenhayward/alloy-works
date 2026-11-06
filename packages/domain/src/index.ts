@@ -14,6 +14,7 @@ export {
 } from './version/substance.js';
 export type {
   ComponentSubstance,
+  ComponentGroupSubstance,
   DefinitionSubstance,
   DocumentSubstance,
   LayoutSubstance,
