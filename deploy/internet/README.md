@@ -58,7 +58,8 @@ of its own with no network, and must arrive with the running store's databases a
 verified against the repository. Run it after changing the repository, and now and then.
 
 A failed deploy or backup runs `alert.sh`, which mails `ALERT_EMAIL` the unit's last lines through the SMTP
-settings. Watching that the service is up is for a monitor elsewhere: `https://<app>/v1/me` answers 401.
+settings. Watching that the service is up is for a monitor elsewhere: `https://<app>/health` answers 200 with
+`{"status":"ok"}`.
 
 ## Going back
 
