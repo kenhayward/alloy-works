@@ -6,6 +6,7 @@ import { whenChanged } from '../editor/changed.js';
 import { ListLayout } from '../layouts/ListLayout.js';
 import { Facet, More, SortChooser, toggled, type SortOption } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
+import { ContentRowMenu } from '../listing/ContentRowMenu.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
@@ -58,6 +59,9 @@ export function TemplateList({ client }: { readonly client: Client }) {
   const [spaces, setSpaces] = useState<readonly string[]>([]);
   // The template documents are being generated from, in its dialog (the R7 plan, R7-B).
   const [generating, setGenerating] = useState<Item | null>(null);
+  // What a row's menu last said (SCH-075), and the template Duplicate was chosen for (REU-056).
+  const [notice, setNotice] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState<{ id: string; title: string } | null>(null);
   const fetchPage = useCallback(
     (cursor: string | null) =>
       client.GET('/v1/templates', {
@@ -140,6 +144,9 @@ export function TemplateList({ client }: { readonly client: Client }) {
             <span>{words('document.showing-1-to', { length: listing.items.length })}</span>
           )}
         </p>
+        <p role="status" className={styles['status']}>
+          {notice}
+        </p>
         {listing.items.length === 0 ? (
           <Empty>
             <p>{words('document.there-are-no-templates-you')}</p>
@@ -154,6 +161,9 @@ export function TemplateList({ client }: { readonly client: Client }) {
                   <th scope="col">{words('document.version-2')}</th>
                   <th scope="col">{words('document.changed')}</th>
                   <th scope="col">{words('document.documents')}</th>
+                  <th scope="col" className={styles['actions']}>
+                    <span className="aw-visually-hidden">{words('rows.actions')}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -184,6 +194,20 @@ export function TemplateList({ client }: { readonly client: Client }) {
                       >
                         {words('document.generate')}
                       </button>
+                    </td>
+                    <td className={styles['actions']}>
+                      <ContentRowMenu
+                        client={client}
+                        kind="template"
+                        id={item.id}
+                        title={item.name}
+                        onChanged={(said, changed) => {
+                          setNotice(said);
+                          if (changed) void listing.load(null);
+                        }}
+                        onDuplicate={() => setDuplicating({ id: item.id, title: item.name })}
+                        onGenerate={() => setGenerating(item)}
+                      />
                     </td>
                   </tr>
                 ))}
