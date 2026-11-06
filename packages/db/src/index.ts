@@ -1669,3 +1669,10 @@ export {
   principalAllowsInForce,
   type GrantInForce,
 } from './grant-limits.js';
+export {
+  capabilityUsage,
+  recordCapabilityMinute,
+  rollUpMeasurements,
+  type CapabilityCount,
+  type CapabilityUsage,
+} from './measurements.js';

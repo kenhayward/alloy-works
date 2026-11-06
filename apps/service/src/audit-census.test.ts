@@ -753,6 +753,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepWebhookDeliveriesEverywhere: { none: 'derived' },
     // Mail done with past 30 days, and its attempts (the EM plan, EM-M).
     sweepMailEverywhere: { none: 'derived' },
+    // Measurements rolled up and forgotten: aggregates, not an event (the DG plan, DGa).
+    sweepMeasurementsEverywhere: { none: 'derived' },
     // A proposal left 30 days abandoned as the system, its importer told seven days before (IM-F).
     sweepImportsEverywhere: writes('import.abandoned'),
   },

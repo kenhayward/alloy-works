@@ -47,6 +47,8 @@ store=$(compose ps -q seaweedfs)
 data=$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}' "$store")
 [ -d "$data" ] || fail "The store's files are not at '$data'."
 
+# Group-readable, so the backup machine's pull (rsyncd.conf) reads it without root.
+umask 027
 restic cat config >/dev/null 2>&1 || restic init
 deployed=$(cat "$ROOT/state/deployed" 2>/dev/null || echo unknown)
 restic backup --quiet --tag databases --tag "release-${deployed//\//-}" "$WORK"

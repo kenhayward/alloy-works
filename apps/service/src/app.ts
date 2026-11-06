@@ -12,6 +12,7 @@ import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated, Streamed } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
+  documentationFor,
   routes,
   SESSION_COOKIE,
   type AccessExplanation,
@@ -42,6 +43,7 @@ import {
   loadFacts,
   notifyTenant,
   openSecret,
+  recordCapabilityMinute,
   streamScope,
   SealedSecretRefused,
   readsOnlyShares,
@@ -56,6 +58,7 @@ import {
   ownTenantState,
   type TenantTransaction,
 } from '@alloy-works/db';
+import { createMeasuring, flushEveryMinute, type Measuring } from './measure.js';
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
@@ -217,6 +220,11 @@ export type Credential =
   | { readonly kind: 'token'; readonly id: string; readonly scopes: readonly Permission[] };
 
 export interface AppOptions extends HttpOptions {
+  /**
+   * How requests are measured (the DG plan): given, for a test to read what was counted; else made
+   * here, written once a minute to each tenant's `capability_usage` and once more on closing.
+   */
+  readonly measuring?: Measuring;
   readonly db: TenantDatabase;
   /** The operator's mail relay, where one is offered (the EM plan, EM-B). */
   readonly mailPlatform?: MailPlatform;
@@ -400,6 +408,34 @@ export function buildApp(options: AppOptions): FastifyInstance {
     refusals.set(request, error);
   };
   const app = createHttp(options, options.rendererRoot ? rendererFallback : undefined, failed);
+  // Each request to a resolved tenant's contract route, counted by its capability (the DG plan, DG-C);
+  // written once a minute, never on the request's path.
+  const measuring =
+    options.measuring ??
+    createMeasuring(
+      (tenant, minute, counts) =>
+        db.withTenant(tenant, (trx) => recordCapabilityMinute(trx, minute, counts), {
+          actorKind: 'system',
+        }),
+      { failed: (error) => app.log.error({ err: error }, 'measurements could not be written') },
+    );
+  if (options.measuring === undefined) {
+    const stop = flushEveryMinute(measuring);
+    app.addHook('onClose', stop);
+  }
+  const measured = new WeakMap<FastifyRequest, { tenant: Tenant; refused: boolean }>();
+  app.addHook('onResponse', async (request, reply) => {
+    const resolved = measured.get(request);
+    const capability = (request.routeOptions.config as { capability?: string } | undefined)
+      ?.capability;
+    if (resolved && capability) {
+      measuring.record(resolved.tenant, capability, {
+        status: reply.statusCode,
+        ms: reply.elapsedTime,
+        refused: resolved.refused,
+      });
+    }
+  });
   app.addHook('onResponse', async (request) => {
     const error = refusals.get(request);
     if (error === undefined) return;
@@ -424,6 +460,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       route: request.routeOptions.url,
       bearer: authorization !== undefined && isBearer(authorization),
     });
+    measured.set(request, { tenant, refused: refusal !== undefined });
     if (refusal) throw refusal;
     const elsewhere = kindRefusal(tenant.kind, {
       method: request.method,
@@ -1686,6 +1723,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       method: route.method,
       // OpenAPI names a path parameter `{like this}`; Fastify names it `:like_this`.
       url: route.path.replace(/\{(\w+)\}/g, ':$1'),
+      // What it is measured as: the contract's tag (the DG plan, DG-C).
+      config: { capability: documentationFor(route).tag },
       schema: {
         response,
         ...(route.query ? { querystring: route.query } : {}),

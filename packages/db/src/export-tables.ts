@@ -113,6 +113,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   bridge_element: kept(),
   bridge_settings: kept(),
   bridge_unlisted_property: kept(),
+  capability_usage: leftOut('How each capability did, measured afresh in a copy.'),
   cohort: kept(),
   cohort_row: kept(),
   component_lock: leftOut('Who is editing what at this moment.'),
