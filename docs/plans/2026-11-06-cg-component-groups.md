@@ -45,7 +45,7 @@ the document's own; member conditions; search of a group as such.
 
 ## Stored shapes
 
-- `artifact` kind `component_group`; its version content `{title, members: [{component, version}]}`, no
+- `artifact` kind `componentGroup`; its version content `{title, members: [{component, version}]}`, no
   component twice, members readable and not groups. Kind checks widened where an artifact kind is enumerated.
 - `ReferenceNode` gains optional `group: {id, version, placement}`, additive at the outline's schema; every write
   path checked (operations, Place, Duplicate, import, restore, template materialise).
@@ -55,7 +55,7 @@ the document's own; member conditions; search of a group as such.
 
 - Domain: the group shape and its checks; `placeGroup`, `takeGroupVersion` (pure, over the outline); the run
   rule in the outline's checks; operations refusing what CG-G refuses.
-- Db and service: `component_group` create, read, version, list; its workflow as a component's; the index rows;
+- Db and service: `componentGroup` create, read, version, list; its workflow as a component's; the index rows;
   deletion and moving guards; where-used; `POST /v1/documents/{id}/groups` (place) and
   `POST /v1/documents/{id}/groups/{placement}/take` with a preview.
 - Web: Components' Kind filter and New component group; the group page; Place a group in a section; a placed

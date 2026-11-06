@@ -3,6 +3,26 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.240.0 - 2026-11-06 (PR #1035)
+
+Component groups: a set of components reused as one, approved together, and offered to each document that places it. New document now shows the templates, every document starts from one, the service measures each capability and its background work for Diagnostics to come, and backups can be pulled by another machine.
+
+### Added
+
+- **Component groups.** Reuse a set of components as one unit, approved together, from Components' new Kind filter. Place one in a section of a document; a newer approved version is offered there and taken only when you choose.
+- **New document shows the templates.** The New document dialog lists the templates you may use by space, with a preview, a description and their counts, beside the title and the template's values, which scroll on their own. It says how many required values are left and what Create will make.
+- **A default template for each space.** A document always starts from a template: the space's default, Blank until its administrator chooses another from the space's row in Administration. Blank starts with one component to write in.
+- **Copied or shared components in a template.** A template can give each new document its own copy of a component rather than sharing it, and each copy says what it was copied from and whether that has changed since. A template can carry a description and a label for each value.
+- **Measuring each capability.** The service now counts every request to an environment by what it is for, its errors and how long it took, a minute at a time, kept by the hour after a week and by the day after 90 days, for 13 months. Nothing is shown yet: Diagnostics in Administration comes next.
+- **Background work recorded.** Each of the worker's sweeps and loops now records, in every environment, when it last ran, how it went and when it is next due, and each job is counted under its kind of work. Nothing is shown yet: Diagnostics in Administration comes next.
+- **Diagnostics, read.** Whoever administers an environment can read, through the API, how each capability is doing over the last 15 minutes, what background work last did, the last day of jobs, the search index, webhook and mail delivery, each data source's recent runs and the month's model spend against its budget. The page in Administration comes next.
+- **A copy of the backups on another machine.** A backup machine on the network can pull the encrypted backups nightly, reading them and nothing else.
+- **Each deploy brings its own scripts.** An installation on the internet takes its backup, restore and alert scripts and its services from the release it deploys, not from a copy made by hand.
+
+### Changed
+
+- **CT Studio lists each environment by name.** An Alloy Works environment now calls itself "Alloy Works" followed by the environment's name in brackets, so two connected to one CT Studio read apart.
+
 ## 0.239.0 - 2026-11-06 (PR #1020)
 
 Email: an environment chooses how its mail leaves, and people are told by email of notifications, of being invited, and of an environment closing. An installation can also run on the internet, every row has its own actions and can be duplicated, and nobody can give an administrative permission they do not hold.

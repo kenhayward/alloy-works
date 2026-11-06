@@ -12,7 +12,7 @@ pre-flight found that a new outline node would reach about 45 consumers of the o
 
 ## Decision
 
-1. **A component group is an artifact of its own**, kind `component_group`, on the component workflow. Its version
+1. **A component group is an artifact of its own**, kind `componentGroup`, on the component workflow. Its version
    pins each member's version, so approving it approves the set's shape and text, whatever the members' own states.
    One level, each component at most once.
 2. **Placing a group writes ordinary references**, one per member, pinned to the version the group pins, each marked

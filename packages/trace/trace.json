@@ -20445,7 +20445,7 @@
         },
         {
           "id": "REU-060",
-          "howItIsMet": "A `component_group` artifact on the component workflow; its version `{title, members: [{component, version}]}` pins each member, refuses a component twice or a group as a member, and its approval shows each member's changes ([ADR-0098](../decisions/0098-a-component-group-is-offered-never-followed.md); the CG plan, CG-A to CG-C)"
+          "howItIsMet": "A `componentGroup` artifact on the component workflow; its version `{title, members: [{component, version}]}` pins each member, refuses a component twice or a group as a member, and its approval shows each member's changes ([ADR-0098](../decisions/0098-a-component-group-is-offered-never-followed.md); the CG plan, CG-A to CG-C)"
         },
         {
           "id": "REU-061",
@@ -37590,6 +37590,18 @@
       "id": "CNT-190",
       "file": "tests/browser/src/canvas.test.ts",
       "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "REU-060",
+      "file": "tests/browser/src/component-groups.test.ts",
+      "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "REU-061",
+      "file": "tests/browser/src/component-groups.test.ts",
+      "line": 101,
       "kind": "title"
     },
     {
