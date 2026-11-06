@@ -75,7 +75,7 @@ and **AST-001** (the asset door).
 
 | Member              | Value                                                                                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`              | `Alloy Works`                                                                                                                                           |
+| `name`              | `Alloy Works (<the environment's name>)`, so two environments read apart in CT Studio's lists                                                           |
 | `connectionKind`    | `shared`: the target's connection holds the service identity's token                                                                                    |
 | `instances`         | None, as for any shared sink: the hostname names the tenant, so CT Studio's targets, browsing and deliveries name no instance                           |
 | `credentialFields`  | `token`, secret: an `awt_` token issued to a service identity                                                                                           |
