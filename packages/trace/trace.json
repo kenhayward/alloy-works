@@ -26761,7 +26761,7 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 369,
+      "line": 372,
       "kind": "title"
     },
     {
@@ -26773,13 +26773,13 @@
     {
       "id": "LIF-046",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 382,
+      "line": 385,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 390,
+      "line": 393,
       "kind": "title"
     },
     {
@@ -27379,13 +27379,13 @@
     {
       "id": "SCH-075",
       "file": "apps/web/src/listing/ContentRowMenu.test.tsx",
-      "line": 76,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "REU-056",
       "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
-      "line": 97,
+      "line": 103,
       "kind": "title"
     },
     {
@@ -37075,13 +37075,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1459,
+      "line": 1482,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1028,
+      "line": 1051,
       "kind": "title"
     },
     {
