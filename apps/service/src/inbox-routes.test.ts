@@ -258,7 +258,7 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
     ).toBe(400);
   });
 
-  it('COL-064 reads and chooses which kinds are mailed, each left as it was, and says whether this environment mails', async () => {
+  it('reads and chooses which kinds are mailed, each left as it was, and says whether this environment mails', async () => {
     const set = await call('PUT', '/v1/inbox/preferences', 'ivy', {
       email: { mention: false, digest: false },
     });

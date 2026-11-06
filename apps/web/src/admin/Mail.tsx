@@ -385,23 +385,25 @@ export function Mail({ client, mayChange }: { client: Client; mayChange: boolean
             {words('admin.email-from-name-hint')}
           </span>
         </div>
-        <fieldset className={styles['settings']}>
+        <fieldset>
           <legend className={styles['strong']}>{words('admin.email-kinds')}</legend>
           {MAIL_KINDS.map(({ kind, name }) => (
             <label key={kind} className={styles['setting']}>
-              <input
-                type="checkbox"
-                checked={!draft.kindsOff.includes(kind)}
-                disabled={!mayChange}
-                onChange={(event) =>
-                  set({
-                    kindsOff: MAIL_KINDS.map((each) => each.kind).filter((each) =>
-                      each === kind ? !event.target.checked : draft.kindsOff.includes(each),
-                    ),
-                  })
-                }
-              />
-              {name()}
+              <span>
+                <input
+                  type="checkbox"
+                  checked={!draft.kindsOff.includes(kind)}
+                  disabled={!mayChange}
+                  onChange={(event) =>
+                    set({
+                      kindsOff: MAIL_KINDS.map((each) => each.kind).filter((each) =>
+                        each === kind ? !event.target.checked : draft.kindsOff.includes(each),
+                      ),
+                    })
+                  }
+                />{' '}
+                {name()}
+              </span>
             </label>
           ))}
           <p className={styles['muted']}>{words('admin.email-kinds-hint')}</p>

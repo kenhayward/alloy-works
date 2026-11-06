@@ -266,7 +266,7 @@ describe('the header band', () => {
     expect(await screen.findByRole('dialog', { name: 'Inbox' })).toBeInTheDocument();
   });
 
-  it('COL-064 opens the inbox at its own address, where a mail links, and leaves it on closing', async () => {
+  it('opens the inbox at its own address, where a mail links, and leaves it on closing', async () => {
     window.location.hash = '#/inbox';
     render(
       <Header

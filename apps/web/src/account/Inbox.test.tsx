@@ -256,7 +256,7 @@ describe('the inbox, from the account chip', () => {
     expect(cadences()).toEqual({ mention: 'daily', reply: 'at_once', resolution: 'never' });
   });
 
-  it('COL-064 chooses which kinds are sent by email, where the environment mails', async () => {
+  it('chooses which kinds are sent by email, where the environment mails', async () => {
     const { client, email, bodies } = service(undefined, true);
     render(<Inbox client={client} onClose={() => undefined} />);
     const mailed = await screen.findByRole('group', { name: 'Sent to you by email' });
