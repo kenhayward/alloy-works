@@ -29,10 +29,12 @@ hand. **Six high-risk acts** leave `administer` for permissions of their own.
 | **IAM-088** | `beyondHolding` asks `administerOrAbove` of each administrative permission a change gives, at the level it stands: `grant_beyond_held` on a grant, a role, a service identity's token scopes, a group's change or deletion, removing a denial, enabling or erasing. `lastHolderRemains` refuses taking the last holder, as `grant_last_holder`, `group_last_holder` and `principal_last_holder` ([ADR-0091](../decisions/0091-nobody-gives-an-administrative-permission-they-do-not-hold.md)) |
 | **IAM-008** | SCIM 2.0 `Users` and `Groups` per provider, as a service identity of its own; without SCIM, people are invited and disabled in Administration, documented in the administration guide ([SCIM](#scim))                                                                                                                                                                                                                                                                                         |
 | **IAM-032** | Access explains any person's permissions on any artifact, space or the environment to an administrator (IAM-029) without a session of theirs; a disabled person's every answer is refused, naming it                                                                                                                                                                                                                                                                                          |
+| **IAM-010** | For an organisation's provider that grants offline access: the session keeps the provider's refresh token, sealed, and asks the provider again with it at a request at least five minutes after it last did; a refusal (`invalid_grant`, as a disabled or deleted person gets) ends the session and the person's API tokens ([Asked again at the provider](#asked-again-at-the-provider))                                                                                                     |
 
-**Not claimed.** **IAM-010** is met only for a provider that provisions by SCIM: a person disabled at a
-provider without it keeps their session until it expires or an administrator disables them here.
-Back-channel logout was considered and left out (IN-C). **IAM-056** is met for a provider that
+**IAM-010 is claimed for an organisation's provider that grants offline access**, and by SCIM for one
+that provisions. Not covered: the Google route, and a provider that will not grant offline access, where
+a person disabled at the provider keeps their session until it expires or an administrator disables them
+here, as before (PC-F). Back-channel logout was considered and left out (IN-C, [the PC plan](../plans/2026-11-06-pc-provider-checks-each-session.md)). **IAM-056** is met for a provider that
 provisions by SCIM, whose memberships come from SCIM alone and apply on receipt; without SCIM they are
 re-read at each sign-in and re-authentication, which a person using only a token never makes, so no
 interval bounds them. **IAM-070** names eight acts; six exist and are split out here, and suspension or
@@ -144,6 +146,26 @@ A route declares `access.recentSignIn: 600` (seconds); a request whose session a
 ago is refused `reauthentication_required`. A token never satisfies it. ID's own consumers are the
 Sign-in page's changes; SG's signing is the next.
 
+## Asked again at the provider
+
+[The PC plan](../plans/2026-11-06-pc-provider-checks-each-session.md) builds this. An organisation's
+provider is asked for `openid email profile offline_access` (IAM-090); Google's route keeps the basic
+three. Where the token response's `scope` includes `offline_access`, the session keeps the refresh
+token in `session.sealed_refresh`, sealed (`session-refresh`) to the environment with the session's id
+as its context, and `provider_checked_at` beside it; re-authentication replaces both. The token is
+never logged or sent: `ProviderToken` says only what it is.
+
+A cookie request whose session was last checked more than **five minutes** ago claims the check
+(`update ... set provider_checked_at = now() ... where provider_checked_at < due`), so one replica asks;
+calls the provider's token endpoint with no transaction open and a **3-second** timeout; and writes the
+rotated token, or the ending, in a second transaction. `invalid_grant` ends the session as the system's
+act (`authentication.signed_out`, `provider_refused`) with the person's API tokens, says
+`credential_ended` for each, and answers `401 unauthenticated`. A provider unreachable, slow, erring,
+closed or unreadable is not a refusal: the session goes on and is asked at the next interval.
+
+Not covered: a sign-out or an expiry here leaves the offline token alive at the provider until its own
+lifetime. The stand-in grants offline access as Keycloak does, and plays a disabled person.
+
 ## SCIM
 
 SCIM 2.0 (RFC 7643, RFC 7644), the subset Entra ID and Okta use, at `/scim/v2/` on the environment's
@@ -216,19 +238,19 @@ as the identity provider is. Access explains them as any other permission
 
 ## Decisions
 
-| #    | Decision                                                                                                                 | Instead of                                                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| IN-A | **Sign-in is configured in Administration** (Ken), not by an operator                                                    | Several providers configured through `dev:setup` and the database, a customer needing us for each change      |
-| IN-B | **No act leaves nobody able to sign in and configure sign-in**; a SCIM deprovision excepted, recovered by an operator    | Guarding only a provider's close, or a warning, which still lets an environment lock itself out               |
-| IN-C | **SCIM plus a manual disable** (Ken) is how a disabled person loses access; back-channel logout left out                 | Back-channel logout, which Entra ID and Okta send at sign-out, not when a person is disabled                  |
-| IN-D | **Sign-in changes need a sign-in in the last ten minutes**, asked for as the page opens                                  | Re-authentication with no consumer until SG; or asked for at save, losing the form to the redirect            |
-| IN-E | **A provider names the claim equal to SCIM `externalId`** (Ken): `sub` (Okta) or `oid` (Entra ID), kept at every sign-in | Linking by email, which can be reassigned, and Entra's `userName` is the UPN                                  |
-| IN-F | **A shortened session lifetime applies at once**; a lengthened one to new sessions                                       | Every session keeping the lifetime it began with, so a shortening waits up to the old lifetime                |
-| IN-G | **A SCIM delete disables, never erases**                                                                                 | Erasure on delete, which removes authorship a provider's clean-up should not                                  |
-| IN-H | **Six permissions now, two with their acts**; existing administrators and `administer` tokens keep every act             | All eight now, two read by no check                                                                           |
-| IN-I | **A provider's groups are its own**: its claim and its SCIM touch only them                                              | One namespace of provider values, where a second provider asserting `admins` joins the first's administrators |
-| IN-J | **An invitation names its ways in**; a SCIM-pushed person is never claimed by address                                    | Any provider asserting a verified address claiming any invitation, grants included                            |
-| IN-K | **SCIM acts as a service identity per provider**, admitting only those it pushed                                         | A bare provider token, which the audit cannot name as an actor                                                |
+| #    | Decision                                                                                                                                            | Instead of                                                                                                    |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| IN-A | **Sign-in is configured in Administration** (Ken), not by an operator                                                                               | Several providers configured through `dev:setup` and the database, a customer needing us for each change      |
+| IN-B | **No act leaves nobody able to sign in and configure sign-in**; a SCIM deprovision excepted, recovered by an operator                               | Guarding only a provider's close, or a warning, which still lets an environment lock itself out               |
+| IN-C | Superseded by the PC plan's PC-E: **SCIM, a manual disable, or the provider asked again** with an offline token; back-channel logout still left out | Back-channel logout, which Entra ID and Okta send at sign-out, not when a person is disabled                  |
+| IN-D | **Sign-in changes need a sign-in in the last ten minutes**, asked for as the page opens                                                             | Re-authentication with no consumer until SG; or asked for at save, losing the form to the redirect            |
+| IN-E | **A provider names the claim equal to SCIM `externalId`** (Ken): `sub` (Okta) or `oid` (Entra ID), kept at every sign-in                            | Linking by email, which can be reassigned, and Entra's `userName` is the UPN                                  |
+| IN-F | **A shortened session lifetime applies at once**; a lengthened one to new sessions                                                                  | Every session keeping the lifetime it began with, so a shortening waits up to the old lifetime                |
+| IN-G | **A SCIM delete disables, never erases**                                                                                                            | Erasure on delete, which removes authorship a provider's clean-up should not                                  |
+| IN-H | **Six permissions now, two with their acts**; existing administrators and `administer` tokens keep every act                                        | All eight now, two read by no check                                                                           |
+| IN-I | **A provider's groups are its own**: its claim and its SCIM touch only them                                                                         | One namespace of provider values, where a second provider asserting `admins` joins the first's administrators |
+| IN-J | **An invitation names its ways in**; a SCIM-pushed person is never claimed by address                                                               | Any provider asserting a verified address claiming any invitation, grants included                            |
+| IN-K | **SCIM acts as a service identity per provider**, admitting only those it pushed                                                                    | A bare provider token, which the audit cannot name as an actor                                                |
 
 ## Open questions
 

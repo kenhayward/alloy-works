@@ -423,6 +423,7 @@ describe('the component editor', () => {
         },
       ],
       unreadableDocuments: false,
+      groups: { named: [], unreadable: false },
       baselines: { named: [], unreadable: false },
       publications: { named: [], unreadable: false },
     });
@@ -489,6 +490,7 @@ describe('the component editor', () => {
               },
             ],
             unreadableDocuments: false,
+            groups: { named: [], unreadable: false },
             baselines: { named: [], unreadable: false },
             publications: { named: [], unreadable: false },
           }),

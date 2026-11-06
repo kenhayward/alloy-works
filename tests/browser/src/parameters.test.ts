@@ -13,8 +13,8 @@ import { withPage } from './testing/page.js';
  * History opened; axe over the form and the panel. Uncited: the jsdom tests cite what a person sees.
  */
 
-/** A template over development's Report - its theme, layout and Review schema - with three parameters. */
-async function makeTemplate(client: Client): Promise<{ name: string; reviewer: string }> {
+/** Development's Report template's definition, to make others over. */
+async function reportDefinition(client: Client) {
   const { data: listed } = await client.GET('/v1/templates', {
     params: { query: { limit: '100' } },
   });
@@ -23,9 +23,14 @@ async function makeTemplate(client: Client): Promise<{ name: string; reviewer: s
   const { data: read } = await client.GET('/v1/templates/{id}', {
     params: { path: { id: report.id } },
   });
-  const definition = read!.definition as Record<string, unknown> & {
+  return read!.definition as Record<string, unknown> & {
     parameters: { name: string; feeds: { field: string } }[];
   };
+}
+
+/** A template over development's Report - its theme, layout and Review schema - with three parameters. */
+async function makeTemplate(client: Client): Promise<{ name: string; reviewer: string }> {
+  const definition = await reportDefinition(client);
   const reviewer = definition.parameters.find((each) => each.name === 'reviewer')!.feeds.field;
   const name = `Inspection ${Date.now()}`;
   const { data, error, response } = await client.POST('/v1/spaces/{space}/templates', {
@@ -70,6 +75,33 @@ async function makeTemplate(client: Client): Promise<{ name: string; reviewer: s
   return { name, reviewer };
 }
 
+/** A template over Report asking for thirty values, three of them required (the ND handoff). */
+async function makeThirty(client: Client): Promise<string> {
+  const definition = await reportDefinition(client);
+  const name = `Survey ${Date.now()}`;
+  const { data, error, response } = await client.POST('/v1/spaces/{space}/templates', {
+    params: { path: { space: await generalSpace(client) } },
+    body: {
+      definition: {
+        ...definition,
+        name,
+        parameters: Array.from({ length: 30 }, (_, index) => ({
+          name: `value_${index + 1}`,
+          type: { base: 'text' },
+          required: index < 3,
+          list: false,
+          changeable: true,
+          feeds: { arguments: true },
+        })),
+      },
+    } as never,
+  });
+  if (!data) {
+    throw new Error(`making a template answered ${response.status}: ${JSON.stringify(error)}`);
+  }
+  return name;
+}
+
 /** Tab pressed until `target` holds the focus: at most `most` presses. */
 async function tabTo(page: Page, target: Locator, most = 60) {
   for (let pressed = 0; pressed < most; pressed++) {
@@ -79,10 +111,66 @@ async function tabTo(page: Page, target: Locator, most = 60) {
   throw new Error(`${String(target)} never took the focus`);
 }
 
+/** A template chosen by the keyboard: its name typed into Find, then the first left, by Home. */
+async function choose(page: Page, form: Locator, template: string) {
+  const find = form.getByRole('searchbox', { name: 'Find a template' });
+  await find.waitFor();
+  await tabTo(page, find);
+  await page.keyboard.type(template);
+  await tabTo(page, form.getByRole('listbox', { name: 'Template' }));
+  await page.keyboard.press('Home');
+  await expect
+    .poll(() => form.getByRole('option', { name: template }).getAttribute('aria-selected'))
+    .toBe('true');
+}
+
 describe('template parameters, in Chromium (the TP1 plan, task 5)', () => {
   let template = '';
+  let thirty = '';
   beforeAll(async () => {
     template = (await makeTemplate(api())).name;
+    thirty = await makeThirty(api());
+  });
+
+  it('keeps Title and Create document on screen with thirty values, which scroll on their own', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/documents`);
+      await page.getByRole('button', { name: 'New document' }).click();
+      const form = page.getByRole('dialog');
+      await choose(page, form, thirty);
+      const values = form.getByRole('group', { name: 'Values for this template' });
+      await values.getByLabel('value_30').waitFor({ state: 'attached' });
+      const viewport = page.viewportSize()!;
+      for (const fixed of [
+        form.getByLabel('Title'),
+        form.getByRole('button', { name: 'Create document' }),
+      ]) {
+        const box = (await fixed.boundingBox())!;
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+      }
+      expect(await values.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
+        true,
+      );
+      // The pill goes to the first required value left, edging it.
+      await form.getByRole('button', { name: '3 required values left' }).click();
+      await expect
+        .poll(() =>
+          form
+            .getByLabel('value_1 (required)')
+            .evaluate((element) => element === document.activeElement),
+        )
+        .toBe(true);
+      await checkAxe(page, 'New document with thirty values', task.meta, {
+        shows: [
+          form.getByRole('listbox', { name: 'Template' }),
+          values,
+          form.getByRole('radiogroup', { name: 'Direction' }),
+        ],
+      });
+    });
   });
 
   it('makes a document from a template by the keyboard, asking for its parameters, and changes one in the Parameters panel', async ({
@@ -96,17 +184,12 @@ describe('template parameters, in Chromium (the TP1 plan, task 5)', () => {
       await tabTo(page, opener);
       await page.keyboard.press('Enter');
       const form = page.getByRole('dialog');
-      const chooser = form.getByLabel('Template');
-      await form.getByRole('option', { name: `${template} (General)` }).waitFor({
-        state: 'attached',
-      });
-      await tabTo(page, chooser);
-      await chooser.selectOption({ label: `${template} (General)` });
+      await choose(page, form, template);
       const due = form.getByLabel('due (required)');
       await due.waitFor();
 
       // Create waits for the required ones, and says so.
-      const create = form.getByRole('button', { name: 'Create' });
+      const create = form.getByRole('button', { name: 'Create document' });
       expect(await create.getAttribute('aria-disabled')).toBe('true');
       await expect
         .poll(() => form.getByText('Fill in due and region to create the document.').isVisible())

@@ -11,6 +11,8 @@ export class SealedSecretRefused extends Error {}
  * opened by the connector alike (ADR-0064). `webhook-signing` is a webhook subscription's signing secret,
  * sealed by the connector and opened there to sign (the WB plan, WB-G). `reference-credential` is a
  * reference extension's secret, sealed and opened by the connector alike (the XR plan, XR-J).
+ * `session-refresh` is an organisation sign-in's refresh token, sealed by the service to the tenant
+ * with the session's id as its context, so it opens for that session alone (the PC plan, PC-A).
  */
 export type SealPurpose =
   | 'object-store'
@@ -19,7 +21,8 @@ export type SealPurpose =
   | 'model-credential'
   | 'webhook-signing'
   | 'reference-credential'
-  | 'mail-credential';
+  | 'mail-credential'
+  | 'session-refresh';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;

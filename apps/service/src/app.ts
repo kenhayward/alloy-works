@@ -8,6 +8,7 @@ import { lineHandlers } from './lines.js';
 import { translationHandlers } from './translations.js';
 import { shareHandlers } from './shares.js';
 import { queryUsageHandlers } from './query-usage.js';
+import { diagnosticsHandlers } from './diagnostics.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated, Streamed } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -43,6 +44,9 @@ import {
   loadFacts,
   notifyTenant,
   openSecret,
+  createMeasuring,
+  flushEveryMinute,
+  type Measuring,
   recordCapabilityMinute,
   streamScope,
   SealedSecretRefused,
@@ -58,7 +62,6 @@ import {
   ownTenantState,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { createMeasuring, flushEveryMinute, type Measuring } from './measure.js';
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
@@ -87,6 +90,7 @@ import { searchHandlers } from './search.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
+import { crossSiteRefusal } from './cross-site.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { sendStreamed } from './streamed.js';
@@ -109,6 +113,7 @@ import { bridgeSettingsHandlers } from './bridge/settings.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
+import { componentGroupHandlers } from './component-groups.js';
 import { vocabularyHandlers } from './vocabularies.js';
 import { licenceHandlers } from './licences.js';
 import { themeHandlers } from './themes.js';
@@ -136,6 +141,7 @@ import {
   type Identity,
   type OidcClient,
   type ProviderSettings,
+  type ProviderToken,
   type SignInStart,
 } from './oidc.js';
 import { baselineHandlers } from './baselines.js';
@@ -162,16 +168,19 @@ import { comparisonHandlers } from './comparison.js';
 import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
 import type { SecretStore } from './secrets.js';
 import {
+  checkAtProvider,
   createSession,
   endSession,
   hashToken,
   sessionHeld,
   markReauthenticated,
+  providerCheckDue,
+  type KeptRefresh,
   type SessionPrincipal,
 } from './sessions.js';
 import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.js';
 import { signState, verifyState } from './sign-in-state.js';
-import { rendererFallback, rendererRoutes, serveRenderer } from './renderer.js';
+import { rendererFallback, rendererPolicy, rendererRoutes, serveRenderer } from './renderer.js';
 import { streamToViewer } from './stream.js';
 import {
   answersInAnyState,
@@ -247,6 +256,8 @@ export interface AppOptions extends HttpOptions {
   readonly stateCheckMs?: number;
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
+  /** The object store's public origin, which the renderer's policy lets its signed links come from. */
+  readonly storeOrigin?: string;
   readonly tenantCacheMs?: number;
   /**
    * Where the connector answers and the key it is asked with (the D1 plan, D1-F); without it every
@@ -268,6 +279,16 @@ const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
 /** How long a hand-off code lives: one redirect's worth. */
 const HANDOFF_MS = 60 * 1000;
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
+
+/**
+ * What an organisation's sign-in brings with it: the provider it came through, the group values it
+ * asserted (null where it provisions), and the refresh token, where it granted offline access (PC-A).
+ */
+interface Asserted {
+  readonly providerId: string;
+  readonly groups: readonly string[] | null;
+  readonly refreshToken?: ProviderToken | null;
+}
 
 type Success<R extends RouteContract> = R['responses'] extends {
   200: { schema: infer S extends z.ZodType };
@@ -443,7 +464,25 @@ export function buildApp(options: AppOptions): FastifyInstance {
     await recordRefusal(db, request, error);
   });
   void app.register(cookie);
-  if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
+  // Before every route, so no write a browser sent from another site reaches one. The header is read
+  // here, as this may run before the cookie plugin's own hook.
+  app.addHook('onRequest', async (request) => {
+    const header = (name: string) => {
+      const value = request.headers[name];
+      return Array.isArray(value) ? value[0] : value;
+    };
+    const refusal = crossSiteRefusal({
+      method: request.method,
+      session: (header('cookie') ?? '').includes(`${SESSION_COOKIE}=`),
+      ownOrigin: `${request.protocol}://${request.host}`,
+      origin: header('origin'),
+      fetchSite: header('sec-fetch-site'),
+    });
+    if (refusal) throw refusal;
+  });
+  if (options.rendererRoot) {
+    serveRenderer(app, options.rendererRoot, rendererPolicy(options.storeOrigin));
+  }
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });
@@ -581,6 +620,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       groupsClaim: row.groups_claim,
       scimClaim: row.scim_claim,
       provisions: row.scim_identity !== null,
+      offlineAccess: true,
     };
   }
 
@@ -696,6 +736,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
   }
 
+  /** A token kept with a session, sealed to this environment (PC-A). */
+  function keeping(tenant: Tenant, token: ProviderToken): KeptRefresh {
+    return { token, sealingKey: options.sealingKey, tenantId: tenant.id };
+  }
+
   /**
    * Starts a session for the principal, and sends the browser on into the application. `groups` are
    * the values the organisation's provider asserted, which the principal's provider memberships are
@@ -716,7 +761,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
      * The provider an organisation's sign-in came through, and the group values it asserted; null
      * where it provisions, its memberships coming from SCIM alone (identity.md, "Groups").
      */
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
+    asserted?: Asserted,
   ): Promise<FastifyReply> {
     let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
     const started = await db
@@ -743,6 +788,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
             route,
             undefined,
             asserted?.providerId ?? null,
+            asserted?.refreshToken ? keeping(tenant, asserted.refreshToken) : undefined,
           ),
           lifetimes: await sessionSettings(trx),
         };
@@ -825,7 +871,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     tenant: Tenant,
     session: { readonly id: string; readonly principalId: string },
     route: SignInRoute,
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
+    asserted?: Asserted,
   ): Promise<FastifyReply> {
     const token = request.cookies[SESSION_COOKIE];
     await db
@@ -846,7 +892,17 @@ export function buildApp(options: AppOptions): FastifyInstance {
             asserted.providerId,
           );
         }
-        await markReauthenticated(trx, { ...session, route });
+        // An organisation's answer replaces the token kept, none included (PC-A).
+        await markReauthenticated(
+          trx,
+          { ...session, route },
+          undefined,
+          asserted === undefined
+            ? undefined
+            : asserted.refreshToken
+              ? keeping(tenant, asserted.refreshToken)
+              : null,
+        );
       })
       .catch((error: unknown) => {
         if (error instanceof SignInUnheld) throw signInFailed();
@@ -922,6 +978,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
+    ...componentGroupHandlers(db, tenantOf, principalOf),
     ...vocabularyHandlers(db, tenantOf, principalOf, vocabularySource),
     ...licenceHandlers(db, tenantOf, principalOf),
     ...themeHandlers(db, tenantOf, principalOf),
@@ -977,6 +1034,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
+    ...diagnosticsHandlers(),
     ...movingHandlers(),
     ...copyingHandlers(),
     ...templateMoveHandlers(),
@@ -1076,6 +1134,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         return reauthenticated(request, reply, tenant, session, 'organisation', {
           providerId: provider.id,
           groups: provider.provisions ? null : identity.groups,
+          refreshToken: identity.refreshToken,
         });
       }
       // Found by issuer and subject, never by email address, which can be reassigned. Only somebody
@@ -1142,6 +1201,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return signInAs(request, reply, tenant, principal.id, 'organisation', {
         providerId: provider.id,
         groups: provider.provisions ? null : identity.groups,
+        refreshToken: identity.refreshToken,
       });
     },
 
@@ -1709,6 +1769,26 @@ export function buildApp(options: AppOptions): FastifyInstance {
           ? await db.withTenant(tenantOf(request), (trx) => sessionHeld(trx, token))
           : undefined;
         if (!held) throw unauthenticated();
+        // Asked again at its provider once an interval, outside any transaction (IAM-010; PC-C).
+        if (providerCheckDue(held)) {
+          const tenant = tenantOf(request);
+          const checked = await checkAtProvider(
+            {
+              db,
+              sealingKey: options.sealingKey,
+              provider: (id) => organisationProvider(request, tenant, id),
+              oidc,
+            },
+            tenant,
+            held,
+            new Date(),
+            request.id,
+          );
+          if (checked === 'ended') throw unauthenticated();
+          if (checked === 'not_asked') {
+            request.log.warn("a session's identity provider could not be asked; it goes on");
+          }
+        }
         request.principal = held.principal;
         request.credential = {
           kind: 'session',

@@ -1,7 +1,6 @@
-import type { CapabilityCount } from '@alloy-works/db';
+import { createMeasuring, type CapabilityCount } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createMeasuring } from './measure.js';
 import { startHarness, type Harness } from './test/bindings-harness.js';
 
 describe('each request counted by its capability for its environment (the DG plan, DG-C)', () => {

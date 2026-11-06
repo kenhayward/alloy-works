@@ -59,6 +59,7 @@ const NAMING = {
   published: ['lifecycle.refused-published', 'lifecycle.refused-published-unseen'],
   publishing: ['lifecycle.refused-publishing', 'lifecycle.refused-publishing-unseen'],
   referenced: ['lifecycle.refused-referenced', 'lifecycle.refused-referenced-unseen'],
+  grouped: ['lifecycle.refused-grouped', 'lifecycle.refused-grouped-unseen'],
   in_review: ['lifecycle.refused-in-review', 'lifecycle.refused-in-review-unseen'],
 } as const;
 

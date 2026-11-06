@@ -19,6 +19,12 @@ export const MAX_TEMPLATE_PARAMETERS = 50;
  * seeds, and whether bindings may take it as an argument.
  */
 export const templateParameterSchema = parameterSchema.omit({ variation: true }).extend({
+  // Additive (TPL-076; the ND plan, ND-D): what a person is asked for; absent, its name is shown.
+  label: z
+    .string()
+    .max(200)
+    .refine((label) => label.trim() !== '', 'A label is not blank')
+    .optional(),
   changeable: z.boolean(),
   feeds: z.strictObject({
     field: z.string().min(1).optional(),

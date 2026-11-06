@@ -8,6 +8,8 @@ import {
   type DocumentParameters,
   type Parameter,
   templateDefinitionSchema,
+  templateSummary,
+  type TemplateSummaryCounts,
   type FieldDefinition,
   type MetadataSchemaDefinition,
   type ResolvedTemplate,
@@ -293,6 +295,10 @@ export interface TemplateSummary {
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
   /** When its latest version was made. */
   readonly changedAt: Date;
+  /** What its latest definition holds, as a gallery shows it (the ND plan, ND-H). */
+  readonly summary: TemplateSummaryCounts;
+  /** Whether it is its space's default template (TPL-074). */
+  readonly isDefault: boolean;
 }
 
 /**
@@ -337,6 +343,7 @@ export async function listReadableTemplates(
               'v.version_no',
               'v.created_at',
               sql<string>`v.content ->> 'name'`.as('name'),
+              'v.content',
             ])
             .whereRef('v.artifact_id', '=', 'a.id')
             .where(visibleIn('v.written_by', snapshot))
@@ -348,6 +355,12 @@ export async function listReadableTemplates(
       )
       .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
       .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
+      .select('latest.content')
+      .select(
+        sql<boolean>`coalesce(to_jsonb(s) ->> 'default_template' = a.id::text, false)`.as(
+          'is_default',
+        ),
+      )
       .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
       .where('a.kind', '=', 'template')
       .where((eb) => readableArtifacts(eb, readable))
@@ -365,6 +378,8 @@ export async function listReadableTemplates(
     revision_no: number;
     version_no: number;
     created_at: Date;
+    content: unknown;
+    is_default: boolean;
   }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
   return {
     items: rows.map((row) => ({
@@ -373,6 +388,8 @@ export async function listReadableTemplates(
       space: { id: row.space_id, name: row.space_name },
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
       changedAt: new Date(row.created_at),
+      summary: templateSummary(templateDefinitionSchema.parse(row.content)),
+      isDefault: row.is_default,
     })),
     next,
     snapshot,

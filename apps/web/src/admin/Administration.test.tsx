@@ -1098,6 +1098,7 @@ describe("Administration's menu", () => {
     ).toEqual([
       '#/admin/holds',
       '#/admin/retention',
+      '#/admin/diagnostics',
       '#/admin/queries',
       '#/admin/audit',
       '#/admin/export',

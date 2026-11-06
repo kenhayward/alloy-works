@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { blockNodeSchema } from '../content/model/blocks.js';
+import { CURRENT_SCHEMA_VERSION, parseContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
 import { checkPermitted } from '../data/definition.js';
 import { profileSchema } from '../reuse/conditions.js';
@@ -35,7 +37,13 @@ export type StartingSection = {
   readonly matter: OutlineMatter;
   readonly pageBreak: 'none' | 'page' | 'recto';
   readonly children: readonly StartingSection[];
+  /** How the components placed in it, at any depth, are placed unless they say (TPL-075; ND-C). */
+  readonly instantiate?: Instantiate | undefined;
 };
+
+/** A template component placed by reference, the default, or as a copy the document owns (TPL-075). */
+export type Instantiate = 'reference' | 'copy';
+const instantiateSchema = z.enum(['reference', 'copy']);
 
 /** Whether inline content holds a cross-reference anywhere, a footnote's paragraphs included. */
 function refers(inlines: readonly InlineNode[]): boolean {
@@ -61,6 +69,8 @@ export const startingSectionSchema: z.ZodType<StartingSection> = z.lazy(() =>
     matter: outlineMatterSchema,
     pageBreak: z.enum(['none', 'page', 'recto']),
     children: z.array(startingSectionSchema),
+    // Additive at schema 1 (the ND plan, ND-C): absent, its parent's, else by reference.
+    instantiate: instantiateSchema.optional(),
   }),
 );
 
@@ -86,23 +96,95 @@ export const MAX_TEMPLATE_COMPONENTS = 50;
  * revisions unless declared (ADR-0062), and its place (TPL-073): the start or end of a starting
  * section, or at the top level, where `section` is null, of the block its `matter` names - the front
  * matter, the body, unless declared, or the appendices. Below the top level a node is body matter.
+ *
+ * Additive at schema 1 (the ND plan, ND-C, ND-F, ND-G; TPL-075): it names a `component` or holds its
+ * `content`, a title and blocks, exactly one; it is placed by reference or as a copy made for the new
+ * document (`instantiateOf`), content always copied; and it is required unless `required` is false. A
+ * copy is made from its component's latest version and placed `latest`, so `mode` is a reference's.
  */
-export const templateComponentSchema = z.strictObject({
-  key,
-  component: artifact,
-  mode: referenceModeSchema.optional(),
-  place: z
-    .strictObject({
-      section: key.nullable(),
-      at: z.enum(['start', 'end']),
-      matter: outlineMatterSchema.optional(),
-    })
-    .refine(
-      (place) => place.section === null || place.matter === undefined,
-      'A component placed in a section is body matter, as every node below the top level is',
-    ),
-});
+export const templateComponentSchema = z
+  .strictObject({
+    key,
+    component: artifact.optional(),
+    content: z
+      .strictObject({
+        title: z
+          .string()
+          .max(200)
+          .refine((title) => title.trim() !== '', 'Content needs a title'),
+        blocks: z.array(blockNodeSchema).min(1),
+      })
+      // Its words checked as a component's content is (identifiers, inline rules), so a document
+      // made from it never meets content it cannot store.
+      .refine((content) => {
+        try {
+          parseContentDocument({
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            title: content.title,
+            language: 'en',
+            direction: 'ltr',
+            content: content.blocks,
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Content is not a component content')
+      .optional(),
+    instantiate: instantiateSchema.optional(),
+    required: z.boolean().optional(),
+    mode: referenceModeSchema.optional(),
+    place: z
+      .strictObject({
+        section: key.nullable(),
+        at: z.enum(['start', 'end']),
+        matter: outlineMatterSchema.optional(),
+      })
+      .refine(
+        (place) => place.section === null || place.matter === undefined,
+        'A component placed in a section is body matter, as every node below the top level is',
+      ),
+  })
+  .refine(
+    (each) => (each.component === undefined) !== (each.content === undefined),
+    'A template component names a component or holds its content, exactly one',
+  )
+  .refine(
+    (each) => each.content === undefined || each.instantiate !== 'reference',
+    'Content a template holds is always copied: there is no component to refer to',
+  )
+  .refine(
+    (each) => each.content === undefined || each.mode === undefined,
+    'Content a template holds is copied and followed at its latest: it takes no mode',
+  );
 export type TemplateComponent = z.infer<typeof templateComponentSchema>;
+
+/**
+ * How a template component is placed (TPL-075; ND-C): content always as a copy; else as it declares;
+ * else as the nearest starting section around its place declares; else by reference.
+ */
+export function instantiateOf(
+  definition: Pick<TemplateDefinition, 'outline'>,
+  component: TemplateComponent,
+): Instantiate {
+  if (component.content !== undefined) return 'copy';
+  if (component.instantiate !== undefined) return component.instantiate;
+  const section = component.place.section;
+  if (section === null) return 'reference';
+  const find = (
+    sections: readonly StartingSection[],
+    inherited: Instantiate,
+  ): Instantiate | undefined => {
+    for (const each of sections) {
+      const here = each.instantiate ?? inherited;
+      if (each.key === section) return here;
+      const below = find(each.children, here);
+      if (below !== undefined) return below;
+    }
+    return undefined;
+  };
+  return find(definition.outline.sections, 'reference') ?? 'reference';
+}
 
 /**
  * A template's payload (templates.md; TPL-059, TPL-053): exactly one theme and one layout by
@@ -122,6 +204,8 @@ export const templateDefinitionSchema = z
       .string()
       .max(200)
       .refine((name) => name.trim() !== '', 'A template needs a name'),
+    // Additive at schema 1 (TPL-076; the ND plan, ND-D): shown wherever a document is made from it.
+    description: z.string().max(1000).optional(),
     theme: artifact,
     layout: artifact,
     schemas: z.array(templateAssignmentSchema),

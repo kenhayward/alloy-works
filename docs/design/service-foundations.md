@@ -37,7 +37,7 @@ generated from them and committed, and the renderer's client is generated from t
 | **IAM-041** | The Google route needs no customer configuration: one product-registered client, returning through `signin.<domain>` to the environment                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **IAM-042** | There is no credential table: principals are identified by their provider's issuer and subject, and no password field exists anywhere                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **IAM-043** | Each tenant records the routes it permits; sign-in offers only those, and closing one ends the sessions it issued                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **IAM-044** | Sign-in requests `openid`, `email` and `profile` and nothing else, and a test pins the scope list                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **IAM-090** | Sign-in requests `openid`, `email` and `profile`, and `offline_access` from a tenant's own provider only, and a test pins each route's scope list                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **IAM-054** | A tenant accepting Google accounts admits only the addresses it invited and the Workspace domains it names; an invitation binds once, by verified email                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **IAM-075** | Every search index, cache, secret and publication store the service and the worker keep is the tenant's own, each shown by a test ([Tenant scope of every store](#tenant-scope-of-every-store)): the search projection, publications with their outputs and checks, and each environment's secrets - its object store credential and sign-in client secret sealed to it, its source credentials sealed by the connector, its sessions' and tokens' hashes - in its schema, which no other tenant's role can read or delete; objects under a credential the store confines to the tenant's prefix; the shared job queue, which a tenant's role may add to only in its own name and never read; and every in-process cache keyed by the tenant, its hostname or its principal, or holding nothing of any tenant's. The platform directory and the logs are outside it |
 | **IAM-078** | An organisation groups a customer's tenants - production, a sandbox, a validation copy - and holds no content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -104,8 +104,9 @@ certificate for `*.acme.<domain>` is issued automatically when an organisation i
 ## Signing in
 
 There are two routes in, and a tenant declares which it permits (IAM-043). Both are OpenID Connect
-authorisation code flows with PKCE, requesting `openid`, `email` and `profile` and nothing else
-(IAM-044); what differs is whose provider it is and who may come through it.
+authorisation code flows with PKCE, requesting `openid`, `email` and `profile`, and from the organisation's provider
+`offline_access` too, so the session can be checked against it again (IAM-090, [identity](identity.md));
+what differs is whose provider it is and who may come through it.
 
 | Route                           | For                                                                              | Needs from the customer                         |
 | ------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -229,6 +230,12 @@ The browser holds `__Host-aw_session`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Pa
 The `__Host-` prefix means only this exact hostname can set or read it, so `dev.acme.<domain>` cannot
 plant a cookie on `acme.<domain>`. An API token is sent as a bearer token. Either is checked against
 its row on every request, which is what makes revocation immediate (IAM-035, IAM-039).
+
+A write carrying that cookie is refused `403 cross_site_refused`, before any route, unless the browser
+says it came from the app itself: `Sec-Fetch-Site: same-origin`, or else an `Origin` equal to the
+request's own (`cross-site.ts`). `SameSite=Lax` alone lets through a sibling name, which is the same
+site but another origin. A request with neither header came from no browser, and a bearer or signed
+caller has no cookie to ride on, so neither is asked.
 
 **A person's own sessions** (IAM-040; the AU2 plan, SE-A to SE-C): `GET /v1/sessions` lists those
 that have not ended, newest first, each with its route, when it began, when it was last used and
@@ -468,6 +475,12 @@ themselves as product operations. The route-parity test keeps its stronger exist
 contract routes and separately pins the documentation routes and their methods, rather than acquiring
 an open-ended exception for anything outside `/v1`. `/docs`, `/docs/v1/` and `/openapi/v1.json` are
 claimed before the renderer's fallback, so none can accidentally answer the application's `index.html`.
+
+The renderer itself is served under a Content Security Policy (`rendererPolicy` in `renderer.ts`): its
+own scripts alone, inline styles (ProseMirror and React set them on elements), the object store's
+public origin only where its signed links go (images, frames, uploads, media), `blob:` where the
+renderer makes a file itself, and no framing. The browser suite's console gate fails a test on any
+violation, so every walk checks it.
 
 ### One source, made complete
 
@@ -811,17 +824,18 @@ client and a development proxy to the service.
 - **The contract**: the regenerated OpenAPI document equals the committed one.
 - **The reference**: API-062's completeness, hierarchy, versioned endpoints and explicit-token browser
   boundary are exercised as [Developer API reference, in T1](#developer-api-reference-in-t1) describes.
-- **The scopes**: sign-in requests exactly `openid email profile`.
+- **The scopes**: Google's route requests exactly `openid email profile`, and an organisation's
+  provider `openid email profile offline_access` (IAM-090).
 - **The Google route**: an uninvited account is refused; a personal account never matches a named
   Workspace domain; a hand-off code works once and not after sixty seconds; a tampered state is
   refused; and `signin.<domain>` will not redirect to a hostname the state's tenant does not own.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| New | How a user disabled at their provider loses access at once (IAM-010): OpenID Connect back-channel logout, periodic re-validation, or SCIM. Server-side sessions make each possible   |
-| New | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                           |
-| New | How many Google-route tenants one product-registered Google client can serve before Google's quotas or review expectations change, which a demonstration programme would reach first |
-| New | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                            |
-| New | Where secrets live in production, which is decided with hosting                                                                                                                      |
+| ID       | Question                                                                                                                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Answered | How a user disabled at their provider loses access at once (IAM-010): by SCIM, or by asking the provider again every five minutes with the session's offline refresh token ([identity.md](identity.md), the PC plan). Back-channel logout was left out |
+| New      | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                                                                                             |
+| New      | How many Google-route tenants one product-registered Google client can serve before Google's quotas or review expectations change, which a demonstration programme would reach first                                                                   |
+| New      | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                                                                                              |
+| New      | Where secrets live in production, which is decided with hosting                                                                                                                                                                                        |

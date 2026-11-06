@@ -423,13 +423,15 @@ describe('the outline a document version holds', () => {
               type: 'reference',
               id: OTHER,
               component: COMPONENT,
-              mode: { kind: 'latest' },
+              // Pinned, as a placed group's member is (the CG plan, CG-G).
+              mode: { kind: 'pinned', version: COMPONENT },
               numbered: true,
               matter: 'body',
               pageBreak: 'none',
               values: {},
-              // Every member a reference may hold (the R4 plan, R4-A; the R9 plan, R9-B).
+              // Every member a reference may hold (the R4 plan, R4-A; the R9 plan, R9-B; CG-G).
               origin: 'statement',
+              group: { id: COMPONENT, version: COMPONENT, placement: NODE.replace(/a/g, 'b') },
               conditions: [{ axis: 'audience', values: ['regulator'] }],
               overrides: [
                 {

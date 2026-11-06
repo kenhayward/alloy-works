@@ -51,9 +51,14 @@ export function usesHandlers(
             mode: reference.mode,
             version: reference.version && { ...reference.version },
             overridden: reference.overridden,
+            group: reference.group,
           })),
         })),
         unreadableDocuments: uses.unreadableDocuments,
+        groups: {
+          named: uses.groups.named.map((each) => ({ ...each })),
+          unreadable: uses.groups.unreadable,
+        },
         baselines: {
           named: uses.baselines.named.map((each) => ({ ...each })),
           unreadable: uses.baselines.unreadable,

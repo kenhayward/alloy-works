@@ -162,7 +162,8 @@ async function adjacent(
  * artifacts, in either direction along each, no longer than `depth`, along named relationship types
  * alone where `types` names any (and then no reference). Searched from both ends at once, the smaller
  * side grown first; an artifact `by` may not read, or one deleted, is never stepped onto, and `cut`
- * says one was met (REL-019, REL-020). The caller has decided `by` may read both ends.
+ * says one was met (REL-019, REL-020). A template is never passed through by reference, since every
+ * document made from it holds one. The caller has decided `by` may read both ends.
  */
 export async function shortestPath(
   trx: TenantTransaction,
@@ -203,6 +204,11 @@ export async function shortestPath(
     for (const edge of edges) {
       if (sides[grow].has(edge.to)) continue;
       if (deleted.has(edge.to)) continue;
+      // A template joins every document made from it by reference, so a path never passes through
+      // one that way, only ends at it; a relationship to a template is a step like any other (ND).
+      if (edge.via === null && edge.kind === 'template' && edge.to !== from && edge.to !== to) {
+        continue;
+      }
       if (!readableBy(readable, edge.to, edge.space)) {
         cut = true;
         continue;

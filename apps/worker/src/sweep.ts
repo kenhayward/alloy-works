@@ -35,6 +35,7 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
+import { inEachTenant, PAUSED } from './background.js';
 import type { WorkerLog } from './worker.js';
 
 /** A restored tenant, whose dates and reminders wait until someone has looked (EI-M). */
@@ -95,9 +96,11 @@ export const SWEEPS_BY_STATE: {
 export async function sweepExpiredSignIns(
   db: TenantDatabase,
   now: Date = new Date(),
+  // A tenant failing is recorded as its background work, logged only when a log is given.
+  log: WorkerLog = { info() {}, warn() {}, error() {} },
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
+  await inEachTenant(db, log, 'sweepExpiredSignIns', async (tenant) => {
     removed += await db.withTenant(
       tenant,
       async (trx) => {
@@ -135,7 +138,7 @@ export async function sweepExpiredSignIns(
       },
       { actorKind: 'system' },
     );
-  }
+  });
   return removed;
 }
 
@@ -147,27 +150,19 @@ export async function sweepExpiredSignIns(
  */
 export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      if (await held(db, tenant)) continue;
-      removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the iteration sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepExpiredIterations', async (tenant) => {
+    if (await held(db, tenant)) return PAUSED;
+    removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
+  });
   return removed;
 }
 
 /** Query runs past their 13 months, in every tenant (the R18 plan, R18-D). */
 export async function sweepExpiredQueryRuns(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepQueryRuns(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the query run sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepExpiredQueryRuns', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepQueryRuns(trx));
+  });
   return removed;
 }
 
@@ -177,13 +172,9 @@ export async function sweepExpiredRangePreviews(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepRangePreviews(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the range preview sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepExpiredRangePreviews', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepRangePreviews(trx));
+  });
   return removed;
 }
 
@@ -196,13 +187,9 @@ export async function sweepAbandonedGenerationRuns(
   log: WorkerLog,
 ): Promise<number> {
   let ended = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      ended += await db.withTenant(tenant, (trx) => sweepAbandonedRuns(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the abandoned run sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepAbandonedGenerationRuns', async (tenant) => {
+    ended += await db.withTenant(tenant, (trx) => sweepAbandonedRuns(trx));
+  });
   return ended;
 }
 
@@ -212,13 +199,9 @@ export async function sweepQueryEmbeddingsEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepQueryEmbeddings(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the query vector sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepQueryEmbeddingsEverywhere', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepQueryEmbeddings(trx));
+  });
   return removed;
 }
 
@@ -228,13 +211,9 @@ export async function sweepEmbeddingLagEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepEmbeddingLag(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, "the meaning's lag sweep failed in a tenant");
-    }
-  }
+  await inEachTenant(db, log, 'sweepEmbeddingLagEverywhere', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepEmbeddingLag(trx));
+  });
   return removed;
 }
 
@@ -269,38 +248,34 @@ export async function sweepUncheckedPublications(
 ): Promise<{ readonly queued: number; readonly left: number }> {
   let queued = 0;
   let left = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      if (await held(db, tenant)) continue;
-      const waiting = await queue.waiting(tenant.id, 'check_pdf');
-      const givenUp = await queue.givenUp(tenant.id, 'check_pdf');
-      const swept = await db.withTenant(tenant, async (trx) => {
-        const again = await publicationsToCheckAgain(trx, { now, waiting });
-        const done = { queued: 0, left: 0 };
-        for (const publication of again) {
-          const giveUps = givenUp.get(publication) ?? 0;
-          if (giveUps >= CHECK_GIVE_UPS) {
-            await recordCheckGivenUp(trx, publication, giveUps);
-            done.left += 1;
-          } else {
-            await enqueueJob(trx, 'check_pdf', publication);
-            done.queued += 1;
-          }
+  await inEachTenant(db, log, 'sweepUncheckedPublications', async (tenant) => {
+    if (await held(db, tenant)) return PAUSED;
+    const waiting = await queue.waiting(tenant.id, 'check_pdf');
+    const givenUp = await queue.givenUp(tenant.id, 'check_pdf');
+    const swept = await db.withTenant(tenant, async (trx) => {
+      const again = await publicationsToCheckAgain(trx, { now, waiting });
+      const done = { queued: 0, left: 0 };
+      for (const publication of again) {
+        const giveUps = givenUp.get(publication) ?? 0;
+        if (giveUps >= CHECK_GIVE_UPS) {
+          await recordCheckGivenUp(trx, publication, giveUps);
+          done.left += 1;
+        } else {
+          await enqueueJob(trx, 'check_pdf', publication);
+          done.queued += 1;
         }
-        return done;
-      });
-      queued += swept.queued;
-      left += swept.left;
-      if (swept.left > 0) {
-        log.warn(
-          { tenant: tenant.id, left: swept.left },
-          'left publications whose checks gave up every time',
-        );
       }
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the check sweep failed in a tenant');
+      return done;
+    });
+    queued += swept.queued;
+    left += swept.left;
+    if (swept.left > 0) {
+      log.warn(
+        { tenant: tenant.id, left: swept.left },
+        'left publications whose checks gave up every time',
+      );
     }
-  }
+  });
   return { queued, left };
 }
 
@@ -322,36 +297,29 @@ export async function sweepExpiredPreviews(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
+  await inEachTenant(db, log, 'sweepExpiredPreviews', async (tenant) => {
+    const keys = await db.withTenant(tenant, (trx) => sweepPreviews(trx));
+    if (keys.length === 0) return PAUSED;
+    let store: TenantStore;
     try {
-      const keys = await db.withTenant(tenant, (trx) => sweepPreviews(trx));
-      if (keys.length === 0) continue;
-      let store: TenantStore;
-      try {
-        store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
-      } catch (error) {
-        // The requests are gone, so nothing will name these keys again: said here, or never.
-        log.error(
-          { tenant: tenant.id, keys, err: error },
-          "the swept previews' PDFs were not removed: the tenant's store was not reached",
-        );
-        continue;
-      }
-      for (const key of keys) {
-        try {
-          await store.remove(key);
-          removed += 1;
-        } catch (error) {
-          log.error(
-            { tenant: tenant.id, key, err: error },
-            "a swept preview's PDF was not removed",
-          );
-        }
-      }
+      store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
     } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the preview sweep failed in a tenant');
+      // The requests are gone, so nothing will name these keys again: said here, or never.
+      log.error(
+        { tenant: tenant.id, keys, err: error },
+        "the swept previews' PDFs were not removed: the tenant's store was not reached",
+      );
+      return PAUSED;
     }
-  }
+    for (const key of keys) {
+      try {
+        await store.remove(key);
+        removed += 1;
+      } catch (error) {
+        log.error({ tenant: tenant.id, key, err: error }, "a swept preview's PDF was not removed");
+      }
+    }
+  });
   return removed;
 }
 
@@ -361,13 +329,9 @@ export async function sweepExpiredPreviews(
  */
 export async function sweepStalePresence(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepPresence(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the stale presence was not swept');
-    }
-  }
+  await inEachTenant(db, log, 'sweepStalePresence', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepPresence(trx));
+  });
   return removed;
 }
 
@@ -382,14 +346,10 @@ export async function foldNotificationDigests(
   now: Date = new Date(),
 ): Promise<number> {
   let made = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      if (await held(db, tenant)) continue;
-      made += await db.withTenant(tenant, (trx) => foldDigests(trx, now));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the inbox digests were not folded');
-    }
-  }
+  await inEachTenant(db, log, 'foldNotificationDigests', async (tenant) => {
+    if (await held(db, tenant)) return PAUSED;
+    made += await db.withTenant(tenant, (trx) => foldDigests(trx, now));
+  });
   return made;
 }
 
@@ -405,23 +365,19 @@ export async function sweepDates(
 ): Promise<{ readonly effected: number; readonly lapsed: number }> {
   let effected = 0;
   let lapsed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      if (await held(db, tenant)) continue;
-      const done = await db.withTenant(
-        tenant,
-        async (trx) => ({
-          effected: await recordEffected(trx, now),
-          lapsed: await recordLapses(trx, now),
-        }),
-        { actorKind: 'system' },
-      );
-      effected += done.effected;
-      lapsed += done.lapsed;
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the dates were not swept');
-    }
-  }
+  await inEachTenant(db, log, 'sweepDates', async (tenant) => {
+    if (await held(db, tenant)) return PAUSED;
+    const done = await db.withTenant(
+      tenant,
+      async (trx) => ({
+        effected: await recordEffected(trx, now),
+        lapsed: await recordLapses(trx, now),
+      }),
+      { actorKind: 'system' },
+    );
+    effected += done.effected;
+    lapsed += done.lapsed;
+  });
   return { effected, lapsed };
 }
 
@@ -432,14 +388,10 @@ export async function sweepOldNotifications(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      if (await held(db, tenant)) continue;
-      removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the old notifications were not swept');
-    }
-  }
+  await inEachTenant(db, log, 'sweepOldNotifications', async (tenant) => {
+    if (await held(db, tenant)) return PAUSED;
+    removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
+  });
   return removed;
 }
 
@@ -449,8 +401,11 @@ export async function sweepOldNotifications(
  */
 export async function sweepClosures(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let moved = 0;
-  for (const tenant of await db.closingTenants()) {
-    try {
+  await inEachTenant(
+    db,
+    log,
+    'sweepClosures',
+    async (tenant) => {
       // The notice 7 days before the grace ends, in its own transaction, once to each (EM-V).
       await db.withTenant(tenant, (trx) => queueClosureReminders(trx), { actorKind: 'system' });
       const state = await db.withTenant(tenant, (trx) => advanceClosure(trx, tenant), {
@@ -460,10 +415,9 @@ export async function sweepClosures(db: TenantDatabase, log: WorkerLog): Promise
         moved += 1;
         log.info({ tenant: tenant.id }, 'a closed tenant has begun to be deleted');
       }
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'a closure could not be moved on');
-    }
-  }
+    },
+    await db.closingTenants(),
+  );
   return moved;
 }
 
@@ -475,28 +429,24 @@ export async function sweepRestorations(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      const gaveUp = await queue.givenUp(tenant.id, 'restoration');
-      const { store, expired } = await db.withTenant(tenant, async (trx) => {
-        for (const id of gaveUp.keys()) await restorationJobGaveUp(trx, id);
-        return {
-          store: await stores.forTenant(trx, tenant),
-          expired: await expiredRestorationArchives(trx, now),
-        };
+  await inEachTenant(db, log, 'sweepRestorations', async (tenant) => {
+    const gaveUp = await queue.givenUp(tenant.id, 'restoration');
+    const { store, expired } = await db.withTenant(tenant, async (trx) => {
+      for (const id of gaveUp.keys()) await restorationJobGaveUp(trx, id);
+      return {
+        store: await stores.forTenant(trx, tenant),
+        expired: await expiredRestorationArchives(trx, now),
+      };
+    });
+    for (const { id, key, sha256 } of expired) {
+      await db.withTenant(tenant, async (trx) => {
+        const elsewhere = await archiveHeldElsewhere(trx, { key, sha256 }, { restoration: id });
+        if (!elsewhere) await store.remove(key);
+        await forgetRestorationArchive(trx, id);
       });
-      for (const { id, key, sha256 } of expired) {
-        await db.withTenant(tenant, async (trx) => {
-          const elsewhere = await archiveHeldElsewhere(trx, { key, sha256 }, { restoration: id });
-          if (!elsewhere) await store.remove(key);
-          await forgetRestorationArchive(trx, id);
-        });
-        removed += 1;
-      }
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'restorations were not swept');
+      removed += 1;
     }
-  }
+  });
   return removed;
 }
 
@@ -512,36 +462,28 @@ export async function sweepExpiredTenantExports(
   now: Date = new Date(),
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      const due = await db.withTenant(tenant, (trx) => tenantExportsDue(trx, now));
-      if (due.length === 0) continue;
-      const store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
-      for (const { id, key } of due) {
-        try {
-          await db.withTenant(tenant, async (trx) => {
-            // An archive may be waiting to come back in, by the same key.
-            const sha256 = key.slice(key.lastIndexOf('/') + 1);
-            const elsewhere = await archiveHeldElsewhere(
-              trx,
-              { key, sha256 },
-              { tenantExport: id },
-            );
-            if (!elsewhere) await store.remove(key);
-          });
-          await db.withTenant(tenant, (trx) => expireTenantExport(trx, id));
-          removed += 1;
-        } catch (error) {
-          log.error(
-            { tenant: tenant.id, key, err: error },
-            "an expired export's archive was not removed",
-          );
-        }
+  await inEachTenant(db, log, 'sweepExpiredTenantExports', async (tenant) => {
+    const due = await db.withTenant(tenant, (trx) => tenantExportsDue(trx, now));
+    if (due.length === 0) return PAUSED;
+    const store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
+    for (const { id, key } of due) {
+      try {
+        await db.withTenant(tenant, async (trx) => {
+          // An archive may be waiting to come back in, by the same key.
+          const sha256 = key.slice(key.lastIndexOf('/') + 1);
+          const elsewhere = await archiveHeldElsewhere(trx, { key, sha256 }, { tenantExport: id });
+          if (!elsewhere) await store.remove(key);
+        });
+        await db.withTenant(tenant, (trx) => expireTenantExport(trx, id));
+        removed += 1;
+      } catch (error) {
+        log.error(
+          { tenant: tenant.id, key, err: error },
+          "an expired export's archive was not removed",
+        );
       }
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the export sweep failed for a tenant');
     }
-  }
+  });
   return removed;
 }
 
@@ -551,26 +493,18 @@ export async function sweepWebhookDeliveriesEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepWebhookDeliveries(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the webhook delivery sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepWebhookDeliveriesEverywhere', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepWebhookDeliveries(trx));
+  });
   return removed;
 }
 
 /** Mail done with, and its attempts, past 30 days, in every tenant (the EM plan, EM-M). */
 export async function sweepMailEverywhere(db: TenantDatabase, log: WorkerLog): Promise<number> {
   let removed = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      removed += await db.withTenant(tenant, (trx) => sweepMail(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the mail sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepMailEverywhere', async (tenant) => {
+    removed += await db.withTenant(tenant, (trx) => sweepMail(trx));
+  });
   return removed;
 }
 
@@ -583,13 +517,9 @@ export async function sweepMeasurementsEverywhere(
   log: WorkerLog,
 ): Promise<number> {
   let rolled = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      rolled += await db.withTenant(tenant, (trx) => rollUpMeasurements(trx));
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the measurement sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepMeasurementsEverywhere', async (tenant) => {
+    rolled += await db.withTenant(tenant, (trx) => rollUpMeasurements(trx));
+  });
   return rolled;
 }
 
@@ -604,21 +534,17 @@ export async function sweepImportsEverywhere(
 ): Promise<{ readonly warned: number; readonly swept: number }> {
   let warned = 0;
   let swept = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      const done = await db.withTenant(
-        tenant,
-        async (trx) => {
-          const store = await stores.forTenant(trx, tenant);
-          return sweepImports(trx, (key) => store.remove(key));
-        },
-        { actorKind: 'system' },
-      );
-      warned += done.warned;
-      swept += done.swept;
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'the import sweep failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'sweepImportsEverywhere', async (tenant) => {
+    const done = await db.withTenant(
+      tenant,
+      async (trx) => {
+        const store = await stores.forTenant(trx, tenant);
+        return sweepImports(trx, (key) => store.remove(key));
+      },
+      { actorKind: 'system' },
+    );
+    warned += done.warned;
+    swept += done.swept;
+  });
   return { warned, swept };
 }

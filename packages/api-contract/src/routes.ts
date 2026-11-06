@@ -8,6 +8,7 @@ import { relationshipRoutes } from './relationships.js';
 import { holdRoutes } from './holds.js';
 import { shareRoutes } from './shares.js';
 import { queryUsageRoutes } from './query-usage.js';
+import { diagnosticsRoutes } from './diagnostics.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { closureRoutes } from './closure.js';
 import { organisationRoutes } from './organisation.js';
@@ -23,6 +24,7 @@ import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
 import { termRoutes } from './terms.js';
+import { componentGroupRoutes } from './component-groups.js';
 import { vocabularyRoutes } from './vocabularies.js';
 import { licenceRoutes } from './licences.js';
 import { themeRoutes } from './themes.js';
@@ -459,6 +461,7 @@ type Routes = typeof ownRoutes &
   typeof relationshipRoutes &
   typeof shareRoutes &
   typeof queryUsageRoutes &
+  typeof diagnosticsRoutes &
   typeof datasetSourceRoutes &
   typeof closureRoutes &
   typeof organisationRoutes &
@@ -475,6 +478,7 @@ type Routes = typeof ownRoutes &
   typeof promptRoutes &
   typeof bibliographyRoutes &
   typeof termRoutes &
+  typeof componentGroupRoutes &
   typeof vocabularyRoutes &
   typeof licenceRoutes &
   typeof themeRoutes &
@@ -547,6 +551,7 @@ export const routes: Routes = {
   ...relationshipRoutes,
   ...shareRoutes,
   ...queryUsageRoutes,
+  ...diagnosticsRoutes,
   ...datasetSourceRoutes,
   ...closureRoutes,
   ...organisationRoutes,
@@ -563,6 +568,7 @@ export const routes: Routes = {
   ...promptRoutes,
   ...bibliographyRoutes,
   ...termRoutes,
+  ...componentGroupRoutes,
   ...vocabularyRoutes,
   ...licenceRoutes,
   ...themeRoutes,

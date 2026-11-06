@@ -55,20 +55,21 @@ export function missingSections(
 
 /**
  * TPL-044's check (the R9 plan, R9-D): every component the template requires must be the `origin` of
- * some reference of the outline, unless removed with a stated reason.
+ * some reference of the outline, unless removed with a stated reason. One not required (ND-G) is the
+ * author's to keep or remove; one held as content names no component, so `component` is null.
  */
 export function missingComponents(
   definition: TemplateDefinition,
   outline: OutlineDocument,
   waived: ReadonlySet<string> = new Set(),
-): { readonly key: string; readonly component: string }[] {
+): { readonly key: string; readonly component: string | null }[] {
   const origins = new Set<string>();
   walkOutline(outline.nodes, (node) => {
     if (node.type === 'reference' && node.origin !== undefined) origins.add(node.origin);
   });
   return (definition.components ?? [])
-    .filter((each) => !origins.has(each.key) && !waived.has(each.key))
-    .map((each) => ({ key: each.key, component: each.component }));
+    .filter((each) => each.required !== false && !origins.has(each.key) && !waived.has(each.key))
+    .map((each) => ({ key: each.key, component: each.component ?? null }));
 }
 
 /**
@@ -76,7 +77,9 @@ export function missingComponents(
  * TPL-029, TPL-044): each removed only with a reason.
  */
 export function requiredKeys(definition: TemplateDefinition): string[] {
-  const keys: string[] = (definition.components ?? []).map((each) => each.key);
+  const keys: string[] = (definition.components ?? [])
+    .filter((each) => each.required !== false)
+    .map((each) => each.key);
   const walk = (sections: readonly StartingSection[]) => {
     for (const each of sections) {
       if (each.required) keys.push(each.key);
@@ -118,6 +121,9 @@ export function departures(
     }
   };
   walkKeys(definition.outline.sections);
+  // A template that starts no section, as Blank does, asks nothing of a document's shape: nothing
+  // a document adds departs from it (the ND plan's final walks).
+  if (definition.outline.sections.length === 0) return { added: [], missing: [] };
   const origins = new Set<string>();
   const added: { node: string; title: string }[] = [];
   walkOutline(outline.nodes, (node) => {

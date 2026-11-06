@@ -52,6 +52,15 @@ positioning claim, and it is the one Workiva does not have.
 | **REU-056** | A document, component or template must be duplicable under a new title into a space the caller may create in; a title already used there must be warned of, not refused                                                                                                                                                                                                                                                                    | T7         | Specified             |
 | **REU-057** | A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit                                                                                                                                                                                         | T7         | Specified             |
 | **REU-058** | A copy must keep the outline's structure and node identities, so cross-references resolve in it (**STR-046**), and its template, parameters, values, language and profile; it must carry no versions, comments, baselines, publications or grants, start in its workflow's first state, and be audited (**LIF-063**)                                                                                                                       | T7         | Specified             |
+| **REU-059** | A component copied from another component or from a template must record what it was made from and at which version, and must say whether that source has changed since (**TPL-075**, REU-056)                                                                                                                                                                                                                                             | T7         | Specified             |
+| **REU-060** | A set of components must be reusable as one unit, a **component group**: versioned, approved as a whole, its version pinning each member's version, holding components only and each at most once                                                                                                                                                                                                                                          | T7         | Specified             |
+| **REU-061** | Placing a group must place each member as a reference to the version the group pins, kept together and in the group's order; a document may reword a member locally (REU-011) but must not add, remove or reorder members except by taking a group version                                                                                                                                                                                 | T7         | Specified             |
+| **REU-062** | A newer approved version of a group a document places must be offered on that document, never applied by itself; taking it must say first what changes, become the document's next version, and keep each kept member's local rewording                                                                                                                                                                                                    | T7         | Specified             |
+| **REU-063** | Where-used must name the documents placing a group for each of its members (REU-052), and a component a group version pins must not be deletable or movable away on its own                                                                                                                                                                                                                                                                | T7         | Specified             |
+| **REU-064** | A template must be able to place a component group in a section it defines, pinned to a group version the template version names, so every document made from it places the group as REU-061 does. A group the template declares required must be held as a required component is (TPL-044), and a newer group version must reach those documents by REU-062's offer or by a move to a newer template version, never by itself.            | T7         | Specified             |
+| **REU-065** | An author must be able to make a placed group the document's own: its members become ordinary references at the versions they pin, keeping their rewordings and conditions, free to be moved, removed or repinned, and no newer group version is offered for them again. It must say first what it gives up, be the document's next version, and be refused for a group the template requires.                                             | T7         | Specified             |
+| **REU-066** | A group version must be able to give each member conditions (REU-021) that its placement applies to the member's reference, so a member shown only in one profile is approved as part of the group's shape. A document must not change the conditions a group gives, except by taking another group version or making the group its own; conditions a document adds of its own stay its own.                                               | T7         | Specified             |
+| **REU-067** | Search must find a component group the reader may read by its title, shown as a component group apart from components and documents and filterable by that kind, and must name the groups holding a component found (REU-063). A group must never be found through a member the reader may not read.                                                                                                                                       | T7         | Specified             |
 
 **REU-042 and REU-043 answer what a reader sees, which only the publish path had covered.** A
 reference to something deleted or unreadable fails a publish by name (REU-005) and, until this
@@ -379,3 +388,42 @@ copying them (issue [#1016](https://github.com/kenhayward/alloy-works/issues/101
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 55, of which 4 superseded and 1 withdrawn | 58, of which 4 superseded and 1 withdrawn |
+
+### Where a copy came from (#1025), 2026-11-06
+
+Not a review. Ken asked that a template's copied components keep a link back to their original
+([the ND plan](../../plans/2026-11-06-nd-new-document.md)).
+
+| What was found                     | Change          |
+| ---------------------------------- | --------------- |
+| A copy kept no trace of its source | **REU-059** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 58, of which 4 superseded and 1 withdrawn | 59, of which 4 superseded and 1 withdrawn |
+
+### Component groups (#1031), 2026-11-06
+
+Not a review. Ken asked for components reused, approved and changed as one unit, and chose that a group's new
+version is offered on each document rather than followed ([the CG plan](../../plans/2026-11-06-cg-component-groups.md)).
+
+| What was found                                | Change                         |
+| --------------------------------------------- | ------------------------------ |
+| Reuse stopped at the component; STR-004 holds | **REU-060** to **REU-063** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 59, of which 4 superseded and 1 withdrawn | 63, of which 4 superseded and 1 withdrawn |
+
+### What component groups deferred (#1036 to #1039), 2026-11-06
+
+What the CG plan deferred, raised so it is not lost (#1036 to #1039): a template placing a group, a placed group made the
+document's own, conditions a group carries, and search finding groups.
+
+| What was found                                   | Change                         |
+| ------------------------------------------------ | ------------------------------ |
+| The CG plan deferred four parts of a group's use | **REU-064** to **REU-067** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 63, of which 4 superseded and 1 withdrawn | 67, of which 4 superseded and 1 withdrawn |

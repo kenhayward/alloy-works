@@ -169,6 +169,7 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
               mode: 'pinned',
               version: { id: step.id, number: '0.1' },
               overridden: false,
+              group: null,
             },
           ],
         },
@@ -177,12 +178,13 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
           title: 'Pump report',
           state: { key: 'draft', name: 'Draft', approved: false },
           references: [
-            { node: floating.id, mode: 'latest', version: null, overridden: false },
-            { node: tracking.id, mode: 'approved', version: null, overridden: false },
+            { node: floating.id, mode: 'latest', version: null, overridden: false, group: null },
+            { node: tracking.id, mode: 'approved', version: null, overridden: false, group: null },
           ],
         },
       ],
       unreadableDocuments: false,
+      groups: { named: [], unreadable: false },
       baselines: { named: [], unreadable: false },
       publications: { named: [], unreadable: false },
     });
@@ -279,6 +281,7 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
     expect(await uses(step.artifactId, ada)).toEqual({
       documents: [],
       unreadableDocuments: false,
+      groups: { named: [], unreadable: false },
       baselines: {
         named: [{ id: issue, name: 'Issue 1', document: report.artifactId }],
         unreadable: false,

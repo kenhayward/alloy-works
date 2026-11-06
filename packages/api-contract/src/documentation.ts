@@ -278,6 +278,11 @@ export const documentationGroups = [
           'List deleted components and documents, and set how long content is kept before it may be deleted.',
       },
       { name: 'Audit log', description: 'Read and export the environment’s audit log.' },
+      {
+        name: 'Diagnostics',
+        description:
+          'How each capability, the background work, the search index, deliveries and data sources are doing, and the environment against its budgets.',
+      },
     ],
   },
   {
@@ -311,6 +316,7 @@ const operationTags = {
     'listSpaces',
     'createSpace',
     'updateSpace',
+    'setDefaultTemplate',
     'listComponentTypes',
     'moveToSpace',
     'previewMoveToSpace',
@@ -341,6 +347,10 @@ const operationTags = {
     'undeleteComponent',
     'getComponentUses',
     'getStyleUses',
+    'listComponentGroups',
+    'createComponentGroup',
+    'getComponentGroup',
+    'recordComponentGroupVersion',
   ],
   Documents: [
     'listDocuments',
@@ -360,6 +370,10 @@ const operationTags = {
     'setDocumentLanguage',
     'previewPlacement',
     'placeSection',
+    'placeComponentGroup',
+    'previewComponentGroupTake',
+    'takeComponentGroup',
+    'removeComponentGroup',
     'getDocumentTexts',
     'recordDocumentValues',
     'getDocumentParameters',
@@ -486,6 +500,7 @@ const operationTags = {
     'getPublicationBindings',
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
+  Diagnostics: ['getDiagnostics'],
   'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
   'Range previews': [
     'requestRangePreview',
@@ -777,6 +792,8 @@ const operationTags = {
     'transitionTerm',
     'decideTermGate',
     'listTermApprovals',
+    'transitionComponentGroup',
+    'decideComponentGroupGate',
     'setComponentDates',
     'setDocumentDates',
     'setComponentScope',
@@ -1017,7 +1034,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getDocument:
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:
-    'Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.',
+    'Creates a document at version 0.1 in the named space from a template: the one named, else the space’s default, which is Blank until its administrator chooses another. Each component the template copies is made as the new document’s own.',
   previewPlacement:
     "Reports what placing another document's section here would pull in, placing nothing: how many references it makes, one per occurrence of a component in the section and its subsections, each component the caller may read once with its blocks and characters at its latest version and whether it has an approved revision, and how many the caller may not read. Send the source version it names back to place. Needs edit on this document and read on the other.",
   placeSection:
@@ -1062,7 +1079,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the current version of a definition so it can be read or used as a precondition for an update.',
   recordDefinitionVersion:
     'Records the next definition version based on the version the caller opened.',
-  listTemplates: 'Lists readable templates with their name, space and latest version.',
+  listTemplates:
+    'Lists readable templates with their name, space and latest version, and what each holds: its description, its starting sections, values and components, its first headings, and whether it is its space’s default.',
   createTemplate: 'Creates a template in the named space at its first version.',
   getTemplate: 'Opens the current template version and its starting document structure.',
   recordTemplateVersion: 'Records a new template version based on the version the caller opened.',
@@ -1475,6 +1493,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs export_environment at the environment.',
   getQueryUsage:
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
+  getDiagnostics:
+    'Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.',
   getQueryRunsCsv:
     'Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.',
   listPublicationShares:
@@ -1640,6 +1660,26 @@ const descriptions: Readonly<Record<string, string>> = {
     "Moves a term along a transition from its state, named as the caller saw it, needing the transition's permission on the term and a reason where the transition asks for one: as seeded, deprecating an approved term, reinstating a deprecated one, or reopening one to draft. Saving an approved term moves it back to draft on its own. Audited.",
   decideTermGate:
     'Approves or rejects a term at a gate from its state, against the version the approver saw, needing approve on the term. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version documents print; a rejection needs a reason. Audited.',
+  transitionComponentGroup:
+    "Moves a component group along a transition of the component workflow from its state, named as the caller saw it, needing the transition's permission on the group and a reason where the transition asks for one. Cutting a version of an approved group moves it back to draft on its own. Audited.",
+  decideComponentGroupGate:
+    'Approves or rejects a component group at a gate of the component workflow, against the version the approver saw, needing approve on the group. Approving it approves its members in order at the versions it pins, whatever their own states. The gate passes once enough distinct approvers approve, and designates a revision: the version a document placing the group is offered. Audited.',
+  listComponentGroups:
+    'Lists the component groups the caller may read, by title, a page at a time, each with its space, latest version, how many members it holds and its workflow state. Narrow it to one space with `space`. It needs a signed-in session.',
+  createComponentGroup:
+    'Makes a component group in a space at version 0.1, in the component workflow’s first state: a title and its members in order, each a component the caller may read, at most once, pinned at the version named or its latest now. A group never holds another group. It needs create in the space. Audited.',
+  getComponentGroup:
+    'Returns a component group at its latest version: its members in order, each at the version the group pins with the newest version of it where that is newer, its workflow state and the transitions and gates the caller may take, and whether the caller may cut its next version. A member the caller may not read is shown without its component.',
+  recordComponentGroupVersion:
+    'Cuts the next version of a component group from the version the caller opened: its title and its members whole, so adding, removing, reordering a member or taking a newer version of one are each a version. Refused with the group as it stands when a newer version was cut since. It needs edit on the group. Audited.',
+  placeComponentGroup:
+    'Places a component group in a section of a document, or at its top, as the document’s next version: one ordinary reference per member, in its order, pinned to the version the group version pins, each marked with the group and one placement id. The group’s latest approved version unless one is named. The members stay together: none moves or goes alone, and nothing is put among them. It needs edit on the document. Audited.',
+  previewComponentGroupTake:
+    'Says what taking another version of a group placed in a document’s latest version would change, before anything is recorded: the members it adds and drops, how many it keeps with their local rewording, and how many local rewordings go with the dropped. It needs read on the document.',
+  takeComponentGroup:
+    'Takes another version of a group placed in a document, as the document’s next version: each kept member keeps its node and its local rewording, new members are added, dropped ones go, and every member is pinned as the version taken pins it. A document never takes one by itself. It needs edit on the document. Audited.',
+  removeComponentGroup:
+    'Removes a group placed in a document, its members as one, as the document’s next version. It needs edit on the document. Audited.',
   listTermApprovals:
     'Lists every approval and rejection of a term at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the term.',
   setRetention:
@@ -1747,6 +1787,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Makes a space. Needs administer on the environment. The name is normalised to NFC and trimmed, and must be unique in the environment, archived spaces included.',
   updateSpace:
     'Renames a space, archives it or restores it. Needs administer on the environment. Nothing new can be made in an archived space, and nothing already in it changes; the last space not archived cannot be archived.',
+  setDefaultTemplate:
+    'Makes one of the space’s own templates its default: what a document made here without naming a template takes. Needs administer on the space. Every space starts with Blank, made the first time it is needed.',
   listComponentTypes:
     'Lists component types usable for a new component in this space, marking the default.',
   openStream:

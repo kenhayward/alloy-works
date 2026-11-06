@@ -284,6 +284,10 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0207_copying',
       '0208_mail_invitations_and_closures',
       '0209_capability_usage',
+      '0210_new_document',
+      '0211_background_work',
+      '0212_component_groups',
+      '0213_session_provider_check',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -438,6 +442,10 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0207_copying',
       '0208_mail_invitations_and_closures',
       '0209_capability_usage',
+      '0210_new_document',
+      '0211_background_work',
+      '0212_component_groups',
+      '0213_session_provider_check',
     ]);
 
     expect(await queryRoles(development)).toEqual([

@@ -1055,6 +1055,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/component-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The component groups the caller may read, by title, a page at a time
+         * @description Lists the component groups the caller may read, by title, a page at a time, each with its space, latest version, how many members it holds and its workflow state. Narrow it to one space with `space`. It needs a signed-in session.
+         */
+        get: operations["listComponentGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/component-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A component group at its latest version: its members, pinned, and its standing
+         * @description Returns a component group at its latest version: its members in order, each at the version the group pins with the newest version of it where that is newer, its workflow state and the transitions and gates the caller may take, and whether the caller may cut its next version. A member the caller may not read is shown without its component.
+         */
+        get: operations["getComponentGroup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/component-groups/{id}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a component group at a gate of the component workflow
+         * @description Approves or rejects a component group at a gate of the component workflow, against the version the approver saw, needing approve on the group. Approving it approves its members in order at the versions it pins, whatever their own states. The gate passes once enough distinct approvers approve, and designates a revision: the version a document placing the group is offered. Audited.
+         */
+        post: operations["decideComponentGroupGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/component-groups/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a component group along a transition of the component workflow
+         * @description Moves a component group along a transition of the component workflow from its state, named as the caller saw it, needing the transition's permission on the group and a reason where the transition asks for one. Cutting a version of an approved group moves it back to draft on its own. Audited.
+         */
+        post: operations["transitionComponentGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/component-groups/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a component group's next version: its members added, removed, reordered or repinned
+         * @description Cuts the next version of a component group from the version the caller opened: its title and its members whole, so adding, removing, reordering a member or taking a newer version of one are each a version. Refused with the group as it stands when a newer version was cut since. It needs edit on the group. Audited.
+         */
+        post: operations["recordComponentGroupVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components": {
         parameters: {
             query?: never;
@@ -2459,6 +2559,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/diagnostics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How the environment's capabilities, background work and deliveries are doing
+         * @description Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.
+         */
+        get: operations["getDiagnostics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents": {
         parameters: {
             query?: never;
@@ -2941,6 +3061,86 @@ export interface paths {
         get: operations["getDocumentGenerated"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Place a component group in a document: a reference per member, pinned as the group pins it
+         * @description Places a component group in a section of a document, or at its top, as the document’s next version: one ordinary reference per member, in its order, pinned to the version the group version pins, each marked with the group and one placement id. The group’s latest approved version unless one is named. The members stay together: none moves or goes alone, and nothing is put among them. It needs edit on the document. Audited.
+         */
+        post: operations["placeComponentGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/groups/{placement}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a placed group from a document, its members as one
+         * @description Removes a group placed in a document, its members as one, as the document’s next version. It needs edit on the document. Audited.
+         */
+        post: operations["removeComponentGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/groups/{placement}/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take another version of a placed group: its run rewritten, local rewording kept, as the next version
+         * @description Takes another version of a group placed in a document, as the document’s next version: each kept member keeps its node and its local rewording, new members are added, dropped ones go, and every member is pinned as the version taken pins it. A document never takes one by itself. It needs edit on the document. Audited.
+         */
+        post: operations["takeComponentGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/groups/{placement}/take/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say what taking another version of a placed group would change in the document's latest version
+         * @description Says what taking another version of a group placed in a document’s latest version would change, before anything is recorded: the members it adds and drops, how many it keeps with their local rewording, and how many local rewordings go with the dropped. It needs read on the document.
+         */
+        post: operations["previewComponentGroupTake"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7155,6 +7355,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/component-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a component group in this space, at version 0.1, in draft
+         * @description Makes a component group in a space at version 0.1, in the component workflow’s first state: a title and its members in order, each a component the caller may read, at most once, pinned at the version named or its latest now. A group never holds another group. It needs create in the space. Audited.
+         */
+        post: operations["createComponentGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/spaces/{space}/component-types": {
         parameters: {
             query?: never;
@@ -7215,6 +7435,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/default-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make one of the space’s templates the one its new documents take by default
+         * @description Makes one of the space’s own templates its default: what a document made here without naming a template takes. Needs administer on the space. Every space starts with Blank, made the first time it is needed.
+         */
+        put: operations["setDefaultTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/spaces/{space}/documents": {
         parameters: {
             query?: never;
@@ -7226,7 +7466,7 @@ export interface paths {
         put?: never;
         /**
          * Create a document in this space, at version 0.1: an empty outline, or its template's starting one
-         * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
+         * @description Creates a document at version 0.1 in the named space from a template: the one named, else the space’s default, which is Blank until its administrator chooses another. Each component the template copies is made as the new document’s own.
          */
         post: operations["createDocument"];
         delete?: never;
@@ -7572,7 +7812,7 @@ export interface paths {
         };
         /**
          * The templates the caller may read, each with its name, space and latest version
-         * @description Lists readable templates with their name, space and latest version.
+         * @description Lists readable templates with their name, space and latest version, and what each holds: its description, its starting sections, values and components, its first headings, and whether it is its space’s default.
          */
         get: operations["listTemplates"];
         put?: never;
@@ -10863,6 +11103,3197 @@ export interface components {
             /** @enum {string} */
             pageBreak: "none" | "page" | "recto";
             children: components["schemas"]["createTemplateBody_schema0"][];
+            /** @enum {string} */
+            instantiate?: "reference" | "copy";
+        };
+        createTemplateBody_schema1: {
+            /** @constant */
+            type: "paragraph";
+            id: string;
+            /** @default body */
+            style: string;
+            content: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "list";
+            id: string;
+            /** @enum {string} */
+            kind: "ordered" | "unordered" | "definition";
+            start?: number;
+            /** @enum {string} */
+            format?: "decimal" | "alphabetic" | "roman";
+            items: {
+                term?: ({
+                    /** @constant */
+                    type: "text";
+                    value: string;
+                    /** @default [] */
+                    marks: ({
+                        /** @constant */
+                        type: "emphasis";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "strong";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "underline";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "subscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "superscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "inlineCode";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "quotedPhrase";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "definedTerm";
+                        id: string;
+                        term: string;
+                    } | {
+                        /** @constant */
+                        type: "condition";
+                        id: string;
+                        axis: string;
+                        values: string[];
+                    } | {
+                        /** @constant */
+                        type: "suggestion";
+                        id: string;
+                        /** @enum {string} */
+                        operation: "insert" | "delete" | "replace";
+                        author: string;
+                    } | {
+                        /** @constant */
+                        type: "comment";
+                        id: string;
+                        threadId: string;
+                    } | {
+                        /** @constant */
+                        type: "hyperlink";
+                        id: string;
+                        href: string;
+                        title?: string;
+                    } | {
+                        /** @constant */
+                        type: "language";
+                        id: string;
+                        tag: string;
+                    })[];
+                } | {
+                    /** @constant */
+                    type: "equation";
+                    mathml: string;
+                    latex?: string;
+                } | {
+                    /** @constant */
+                    type: "footnote";
+                    id: string;
+                    anchor: {
+                        /** @constant */
+                        kind: "span";
+                    } | {
+                        /** @constant */
+                        kind: "cell";
+                        key: string;
+                    } | {
+                        /** @constant */
+                        kind: "cellPosition";
+                        row: number;
+                        column: number;
+                    } | {
+                        /** @constant */
+                        kind: "table";
+                    } | {
+                        /** @constant */
+                        kind: "keyed";
+                        key: {
+                            [key: string]: string | boolean;
+                        };
+                        column: string;
+                    } | {
+                        /** @constant */
+                        kind: "column";
+                        column: string;
+                    };
+                    content: unknown[];
+                } | {
+                    /** @constant */
+                    type: "crossReference";
+                    id: string;
+                    target: {
+                        /** @constant */
+                        kind: "block";
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "component";
+                        component: string;
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "node";
+                        node: string;
+                    } | {
+                        /** @constant */
+                        kind: "entry";
+                        entry: string;
+                    };
+                    /** @enum {string} */
+                    display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                    /** @enum {string} */
+                    withoutPages?: "number" | "title" | "numberAndTitle";
+                } | {
+                    /** @constant */
+                    type: "citation";
+                    entry: string;
+                    locator?: string;
+                } | {
+                    /** @constant */
+                    type: "indexMarker";
+                    term: string;
+                    sub?: string;
+                    see?: string;
+                    seeAlso?: string[];
+                } | {
+                    /** @constant */
+                    type: "variable";
+                    name: string;
+                } | {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                } | {
+                    /** @constant */
+                    type: "messageForm";
+                    id: string;
+                    /** @constant */
+                    kind: "plural";
+                    binding: {
+                        /** @constant */
+                        type: "binding";
+                        id: string;
+                        query: string;
+                        version?: string;
+                        parameters: {
+                            [key: string]: {
+                                literal: (string | boolean | null) | (string | boolean | null)[];
+                            } | {
+                                document: string;
+                            };
+                        };
+                        /** @enum {string} */
+                        mode: "checked" | "pinned";
+                        take: {
+                            column: string;
+                        } | {
+                            key: {
+                                [key: string]: string | boolean | null;
+                            };
+                            column: string;
+                        };
+                    };
+                    arms: {
+                        [key: string]: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "messageValue";
+                        })[];
+                    };
+                } | {
+                    /** @constant */
+                    type: "image";
+                    asset: string;
+                    /** @constant */
+                    follow?: "latest";
+                    imageStyle: string;
+                    alternative: {
+                        /** @constant */
+                        kind: "own";
+                        text: string;
+                    } | {
+                        /** @constant */
+                        kind: "inherited";
+                    } | {
+                        /** @constant */
+                        kind: "decorative";
+                    };
+                })[];
+                content: components["schemas"]["createTemplateBody_schema1"][];
+            }[];
+        } | {
+            /** @constant */
+            type: "table";
+            id: string;
+            /** @default table */
+            style: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            headerRows: number;
+            headerColumns: number;
+            keyColumns?: number[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            /** @constant */
+            numbered?: false;
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+            rows: {
+                cells: {
+                    content: components["schemas"]["createTemplateBody_schema1"][];
+                    /** @default 1 */
+                    colspan: number;
+                    /** @default 1 */
+                    rowspan: number;
+                }[];
+            }[];
+        } | {
+            /** @constant */
+            type: "boundTable";
+            id: string;
+            /** @default table */
+            style: string;
+            /** @constant */
+            numbered?: false;
+            binding: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+            };
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            columns: {
+                column: string;
+                header: string;
+                unit?: {
+                    text: string;
+                    /** @enum {string} */
+                    place: "header" | "value";
+                };
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+                /** @enum {string} */
+                align?: "start" | "centre" | "end" | "decimal";
+                /** @constant */
+                wrap?: false;
+            }[];
+            headerColumn: boolean;
+            sort?: {
+                column: string;
+                /** @enum {string} */
+                direction: "ascending" | "descending";
+                /** @enum {string} */
+                nulls: "first" | "last";
+            }[];
+            groups?: {
+                column: string;
+                subtotal?: string;
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+            }[];
+            transpose?: {
+                header: string;
+            };
+            empty?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            source?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            notes?: {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            }[];
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "figure";
+            id: string;
+            asset?: string;
+            /** @constant */
+            follow?: "latest";
+            binding?: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            };
+            imageStyle: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            alternative: {
+                /** @constant */
+                kind: "own";
+                text: string;
+            } | {
+                /** @constant */
+                kind: "inherited";
+            } | {
+                /** @constant */
+                kind: "decorative";
+            };
+            /** @constant */
+            numbered?: false;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "preformatted";
+            id: string;
+            text: string;
+            language?: string;
+        } | {
+            /** @constant */
+            type: "blockquote";
+            id: string;
+            content: components["schemas"]["createTemplateBody_schema1"][];
+            attribution?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "equation";
+            id: string;
+            mathml: string;
+            latex?: string;
+            numbered: boolean;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
         };
         recordTemplateVersionBody_schema0: {
             key: string;
@@ -11166,6 +14597,3197 @@ export interface components {
             /** @enum {string} */
             pageBreak: "none" | "page" | "recto";
             children: components["schemas"]["recordTemplateVersionBody_schema0"][];
+            /** @enum {string} */
+            instantiate?: "reference" | "copy";
+        };
+        recordTemplateVersionBody_schema1: {
+            /** @constant */
+            type: "paragraph";
+            id: string;
+            /** @default body */
+            style: string;
+            content: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "list";
+            id: string;
+            /** @enum {string} */
+            kind: "ordered" | "unordered" | "definition";
+            start?: number;
+            /** @enum {string} */
+            format?: "decimal" | "alphabetic" | "roman";
+            items: {
+                term?: ({
+                    /** @constant */
+                    type: "text";
+                    value: string;
+                    /** @default [] */
+                    marks: ({
+                        /** @constant */
+                        type: "emphasis";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "strong";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "underline";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "subscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "superscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "inlineCode";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "quotedPhrase";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "definedTerm";
+                        id: string;
+                        term: string;
+                    } | {
+                        /** @constant */
+                        type: "condition";
+                        id: string;
+                        axis: string;
+                        values: string[];
+                    } | {
+                        /** @constant */
+                        type: "suggestion";
+                        id: string;
+                        /** @enum {string} */
+                        operation: "insert" | "delete" | "replace";
+                        author: string;
+                    } | {
+                        /** @constant */
+                        type: "comment";
+                        id: string;
+                        threadId: string;
+                    } | {
+                        /** @constant */
+                        type: "hyperlink";
+                        id: string;
+                        href: string;
+                        title?: string;
+                    } | {
+                        /** @constant */
+                        type: "language";
+                        id: string;
+                        tag: string;
+                    })[];
+                } | {
+                    /** @constant */
+                    type: "equation";
+                    mathml: string;
+                    latex?: string;
+                } | {
+                    /** @constant */
+                    type: "footnote";
+                    id: string;
+                    anchor: {
+                        /** @constant */
+                        kind: "span";
+                    } | {
+                        /** @constant */
+                        kind: "cell";
+                        key: string;
+                    } | {
+                        /** @constant */
+                        kind: "cellPosition";
+                        row: number;
+                        column: number;
+                    } | {
+                        /** @constant */
+                        kind: "table";
+                    } | {
+                        /** @constant */
+                        kind: "keyed";
+                        key: {
+                            [key: string]: string | boolean;
+                        };
+                        column: string;
+                    } | {
+                        /** @constant */
+                        kind: "column";
+                        column: string;
+                    };
+                    content: unknown[];
+                } | {
+                    /** @constant */
+                    type: "crossReference";
+                    id: string;
+                    target: {
+                        /** @constant */
+                        kind: "block";
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "component";
+                        component: string;
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "node";
+                        node: string;
+                    } | {
+                        /** @constant */
+                        kind: "entry";
+                        entry: string;
+                    };
+                    /** @enum {string} */
+                    display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                    /** @enum {string} */
+                    withoutPages?: "number" | "title" | "numberAndTitle";
+                } | {
+                    /** @constant */
+                    type: "citation";
+                    entry: string;
+                    locator?: string;
+                } | {
+                    /** @constant */
+                    type: "indexMarker";
+                    term: string;
+                    sub?: string;
+                    see?: string;
+                    seeAlso?: string[];
+                } | {
+                    /** @constant */
+                    type: "variable";
+                    name: string;
+                } | {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                } | {
+                    /** @constant */
+                    type: "messageForm";
+                    id: string;
+                    /** @constant */
+                    kind: "plural";
+                    binding: {
+                        /** @constant */
+                        type: "binding";
+                        id: string;
+                        query: string;
+                        version?: string;
+                        parameters: {
+                            [key: string]: {
+                                literal: (string | boolean | null) | (string | boolean | null)[];
+                            } | {
+                                document: string;
+                            };
+                        };
+                        /** @enum {string} */
+                        mode: "checked" | "pinned";
+                        take: {
+                            column: string;
+                        } | {
+                            key: {
+                                [key: string]: string | boolean | null;
+                            };
+                            column: string;
+                        };
+                    };
+                    arms: {
+                        [key: string]: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "messageValue";
+                        })[];
+                    };
+                } | {
+                    /** @constant */
+                    type: "image";
+                    asset: string;
+                    /** @constant */
+                    follow?: "latest";
+                    imageStyle: string;
+                    alternative: {
+                        /** @constant */
+                        kind: "own";
+                        text: string;
+                    } | {
+                        /** @constant */
+                        kind: "inherited";
+                    } | {
+                        /** @constant */
+                        kind: "decorative";
+                    };
+                })[];
+                content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+            }[];
+        } | {
+            /** @constant */
+            type: "table";
+            id: string;
+            /** @default table */
+            style: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            headerRows: number;
+            headerColumns: number;
+            keyColumns?: number[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            /** @constant */
+            numbered?: false;
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+            rows: {
+                cells: {
+                    content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+                    /** @default 1 */
+                    colspan: number;
+                    /** @default 1 */
+                    rowspan: number;
+                }[];
+            }[];
+        } | {
+            /** @constant */
+            type: "boundTable";
+            id: string;
+            /** @default table */
+            style: string;
+            /** @constant */
+            numbered?: false;
+            binding: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+            };
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            columns: {
+                column: string;
+                header: string;
+                unit?: {
+                    text: string;
+                    /** @enum {string} */
+                    place: "header" | "value";
+                };
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+                /** @enum {string} */
+                align?: "start" | "centre" | "end" | "decimal";
+                /** @constant */
+                wrap?: false;
+            }[];
+            headerColumn: boolean;
+            sort?: {
+                column: string;
+                /** @enum {string} */
+                direction: "ascending" | "descending";
+                /** @enum {string} */
+                nulls: "first" | "last";
+            }[];
+            groups?: {
+                column: string;
+                subtotal?: string;
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+            }[];
+            transpose?: {
+                header: string;
+            };
+            empty?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            source?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            notes?: {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            }[];
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "figure";
+            id: string;
+            asset?: string;
+            /** @constant */
+            follow?: "latest";
+            binding?: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            };
+            imageStyle: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            alternative: {
+                /** @constant */
+                kind: "own";
+                text: string;
+            } | {
+                /** @constant */
+                kind: "inherited";
+            } | {
+                /** @constant */
+                kind: "decorative";
+            };
+            /** @constant */
+            numbered?: false;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "preformatted";
+            id: string;
+            text: string;
+            language?: string;
+        } | {
+            /** @constant */
+            type: "blockquote";
+            id: string;
+            content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+            attribution?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "equation";
+            id: string;
+            mathml: string;
+            latex?: string;
+            numbered: boolean;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
         };
     };
     responses: never;
@@ -12847,7 +19469,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
+            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset, or a component group pins it; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13053,7 +19675,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
+            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset, or a component group pins it; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -23951,6 +30573,1471 @@ export interface operations {
             };
         };
     };
+    listComponentGroups: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                space?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of component groups */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            /** @description Its latest version, as `revision.version` */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description How many members its latest version holds */
+                            members: number;
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                            /** @description Its workflow state now: the component workflow’s (CG-A) */
+                            state: {
+                                key: string;
+                                name: string;
+                                approved: boolean;
+                            };
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The component group */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "title": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "members": [],
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description In order */
+                        members: {
+                            /** @description By its latest title; null where the caller may not read it */
+                            component: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
+                            version: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The component's latest version, where newer than the one pinned; null else */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                        mayEdit: boolean;
+                        archived: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a group the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component group in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideComponentGroupGate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "decision": "approved"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The gate, by its transition key */
+                    transition: string;
+                    /**
+                     * Format: uuid
+                     * @description The version the approver saw: refused, as version_moved, where it has been replaced since
+                     */
+                    version: string;
+                    /** @enum {string} */
+                    decision: "approved" | "rejected";
+                    /** @description Why it is rejected: required for a rejection, kept with it */
+                    reason?: string;
+                    /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
+                    publish?: boolean;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose gate it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Decided; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component group but may not approve it, or is one of its authors where the gate refuses them (approval_author) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component group in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    transitionComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "from": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The transition to take, by key */
+                    transition: string;
+                    /** @description The state the caller saw it in: refused, as state_moved, where it has moved since */
+                    from: string;
+                    /** @description Why, recorded with the move; required where the transition says so */
+                    reason?: string;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line to move (LIF-044); its main line where absent
+                     */
+                    line?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component group but lacks the permission the transition needs */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component group in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: the component group is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component group does not move until unarchived; conditions_unmet: what the transition requires is not met */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description The component group has been deleted */
+            410: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordComponentGroupVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "title": "example",
+                 *       "members": [
+                 *         {
+                 *           "component": "00000000-0000-4000-8000-000000000001"
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version the group was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    title: string;
+                    /** @description Its members in order, 1 to 200, each component once */
+                    members: {
+                        /** @description The component, never a group (CG-C) */
+                        component: string & (unknown & unknown);
+                        /** @description The version of it the group pins; absent, the component's latest at the time */
+                        version?: string & (unknown & unknown);
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description The group at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "title": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "members": [],
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description In order */
+                        members: {
+                            /** @description By its latest title; null where the caller may not read it */
+                            component: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
+                            version: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The component's latest version, where newer than the one pinned; null else */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                        mayEdit: boolean;
+                        archived: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description group_member_invalid: a member is no component the caller may read, a deleted one, or named at a version not its own; `index` says which */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description group_member_invalid: the first member refused, by its place in the list */
+                        index?: number;
+                        /** @description version_precondition: the group as it now stands */
+                        current?: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description In order */
+                            members: {
+                                /** @description By its latest title; null where the caller may not read it */
+                                component: {
+                                    id: string;
+                                    title: string;
+                                } | null;
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The component's latest version, where newer than the one pinned; null else */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                            mayEdit: boolean;
+                            archived: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the group but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component group in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the group has a newer version than the one named, answered with it. group_members_withheld: it holds a member the caller may not read, which a version they cut would lose */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description group_member_invalid: the first member refused, by its place in the list */
+                        index?: number;
+                        /** @description version_precondition: the group as it now stands */
+                        current?: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description In order */
+                            members: {
+                                /** @description By its latest title; null where the caller may not read it */
+                                component: {
+                                    id: string;
+                                    title: string;
+                                } | null;
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The component's latest version, where newer than the one pinned; null else */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                            mayEdit: boolean;
+                            archived: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listComponents: {
         parameters: {
             query?: {
@@ -24225,7 +32312,22 @@ export interface operations {
                      *       },
                      *       "fields": [],
                      *       "schemas": [],
-                     *       "values": {}
+                     *       "values": {},
+                     *       "origin": {
+                     *         "from": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "title": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "changedSince": false
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -24469,6 +32571,29 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description What it was copied from (REU-059); null where it was made, not copied */
+                        origin: {
+                            /** @description The component it was copied from, by its latest title; null where it was made from content its template holds, or the caller may not read it */
+                            from: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version of it the copy was made from; null where `from` is */
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The template that made the copy for a new document; null where Duplicate made it, or the caller may not read it */
+                            template: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description Whether what it was made from has a newer version now: the component, else the template */
+                            changedSince: boolean;
+                        } | null;
                     };
                 };
             };
@@ -26142,10 +34267,10 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. grouped: a version of a component group pins it. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "grouped" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -26264,10 +34389,10 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. grouped: a version of a component group pins it. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "grouped" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -31651,6 +39776,10 @@ export interface operations {
                      * @example {
                      *       "documents": [],
                      *       "unreadableDocuments": false,
+                     *       "groups": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       },
                      *       "baselines": {
                      *         "named": [],
                      *         "unreadable": false
@@ -31690,10 +39819,20 @@ export interface operations {
                                 } | null;
                                 /** @description Whether it carries local overrides in its document, which no other document has */
                                 overridden: boolean;
+                                /** @description The component group whose placement made it, by id; null for a reference of its own (REU-063) */
+                                group: (string & (unknown & unknown)) | null;
                             }[];
                         }[];
                         /** @description Whether a document the caller may not read places it too: never how many, nor which */
                         unreadableDocuments: boolean;
+                        /** @description The component groups whose latest version holds it: each document placing one is among `documents` (REU-063) */
+                        groups: {
+                            named: {
+                                id: string & (unknown & unknown);
+                                title: string;
+                            }[];
+                            unreadable: boolean;
+                        };
                         /** @description The baselines pinning a version of it, which no change reaches */
                         baselines: {
                             named: {
@@ -40936,6 +49075,236 @@ export interface operations {
             };
         };
     };
+    getDiagnostics: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The diagnostics */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "at": "example",
+                     *       "capabilities": [],
+                     *       "work": [],
+                     *       "jobs": [],
+                     *       "index": {
+                     *         "serving": "example",
+                     *         "pending": {
+                     *           "model": "example",
+                     *           "missing": -9007199254740991,
+                     *           "confirmed": false
+                     *         },
+                     *         "p95LagSeconds": 0,
+                     *         "maxLagSeconds": 0
+                     *       },
+                     *       "webhooks": {
+                     *         "subscriptions": -9007199254740991,
+                     *         "failing": -9007199254740991,
+                     *         "disabledFailing": -9007199254740991
+                     *       },
+                     *       "mail": {
+                     *         "enabled": false,
+                     *         "failingSince": "example",
+                     *         "waiting": -9007199254740991,
+                     *         "givenUp": -9007199254740991
+                     *       },
+                     *       "connections": [],
+                     *       "budgets": {
+                     *         "model": {
+                     *           "currency": "example",
+                     *           "spentMicros": "example",
+                     *           "limitMicros": "example"
+                     *         },
+                     *         "queryRunsAtOnce": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description An ISO 8601 time */
+                        at: string;
+                        /** @description Each capability with requests in the window */
+                        capabilities: {
+                            /** @description A route tag of this API, or one of the worker's kinds of work, such as Indexing */
+                            capability: string;
+                            /**
+                             * @description Over the last 15 minutes: failing when most answered requests failed on the server, degraded when 5% did or the 95th percentile passed its budget, idle with none answered
+                             * @enum {string}
+                             */
+                            health: "healthy" | "degraded" | "failing" | "idle";
+                            requests: number;
+                            /** @description Server errors over the requests answered; null with none */
+                            errorRate: number | null;
+                            /** @description The 95th percentile, as the bucket bound holding it; null with none */
+                            p95Ms: number | null;
+                        }[];
+                        /** @description Each sweep and loop that has run here */
+                        work: {
+                            /** @description The sweep or loop, by name */
+                            work: string;
+                            /**
+                             * @description Failing when its last run failed or it has not run for twice its cadence; paused while the environment is held
+                             * @enum {string}
+                             */
+                            health: "healthy" | "failing" | "paused";
+                            /** @enum {string} */
+                            outcome: "succeeded" | "failed" | "paused";
+                            /** @description An ISO 8601 time */
+                            lastStartedAt: string;
+                            /** @description An ISO 8601 time */
+                            lastFinishedAt: string;
+                            /** @description Read from its own cadence; null after one run */
+                            nextDueAt: string | null;
+                            /** @description The last failure, as a code, kept after it clears */
+                            failure: string | null;
+                            failedAt: string | null;
+                            /** @description Failures in a row */
+                            failures: number;
+                        }[];
+                        /** @description The last 24 hours of jobs, and those still to do */
+                        jobs: {
+                            kind: string;
+                            /** @description The kind of work it is measured as */
+                            capability: string;
+                            /** @enum {string} */
+                            state: "waiting" | "running" | "done" | "failed";
+                            jobs: number;
+                            /** @description An ISO 8601 time */
+                            firstAt: string;
+                            /** @description An ISO 8601 time */
+                            lastAt: string;
+                            /** @description The latest failed job's code */
+                            lastError: string | null;
+                        }[];
+                        index: {
+                            /** @description The embedding model searches are served by */
+                            serving: string | null;
+                            /** @description A model being changed to, and the texts it has still to embed */
+                            pending: {
+                                model: string;
+                                missing: number;
+                                confirmed: boolean;
+                            } | null;
+                            /** @description A version's wait to be searchable by meaning, over the last 7 days */
+                            p95LagSeconds: number | null;
+                            maxLagSeconds: number | null;
+                        };
+                        webhooks: {
+                            subscriptions: number;
+                            /** @description Enabled, and failing since an attempt not yet succeeded */
+                            failing: number;
+                            /** @description Turned off after three days of failing */
+                            disabledFailing: number;
+                        };
+                        mail: {
+                            enabled: boolean;
+                            failingSince: string | null;
+                            waiting: number;
+                            givenUp: number;
+                        };
+                        /** @description Each connection run on in the last 24 hours */
+                        connections: {
+                            connection: string;
+                            /** @description Its name at its latest version; null where it has gone */
+                            name: string | null;
+                            runs: number;
+                            failed: number;
+                            timedOut: number;
+                            /** @description An ISO 8601 time */
+                            lastRunAt: string;
+                            /** @description Its latest run failed: as far as the product knows, the source is down */
+                            down: boolean;
+                            lastFailure: string | null;
+                        }[];
+                        budgets: {
+                            /** @description The month's model spend against its budget; null with no budget set */
+                            model: {
+                                currency: string;
+                                /** @description This month so far, in millionths, as a decimal string */
+                                spentMicros: string;
+                                limitMicros: string;
+                            } | null;
+                            /** @description How many query runs may run at once */
+                            queryRunsAtOnce: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listDocuments: {
         parameters: {
             query?: {
@@ -41153,6 +49522,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -41314,6 +49684,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -57489,10 +65879,10 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. grouped: a version of a component group pins it. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "grouped" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -57611,10 +66001,10 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. grouped: a version of a component group pins it. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "grouped" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -58188,6 +66578,3419 @@ export interface operations {
             };
         };
     };
+    placeComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "group": "00000000-0000-4000-8000-000000000001",
+                 *       "parent": "example",
+                 *       "position": 0
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version the outline was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    group: string & (unknown & unknown);
+                    /** @description The group's version to place; absent, its latest approved version */
+                    version?: string & (unknown & unknown);
+                    /** @description The section it goes in, or null for the top of the document */
+                    parent: string | null;
+                    /** @description Where among the parent's children */
+                    position: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Placed: the document at its latest version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "parameters": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "groups": [],
+                     *       "movedParts": [],
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "scope": {
+                     *         "scope": [],
+                     *         "pending": []
+                     *       },
+                     *       "onHold": false,
+                     *       "mayHold": false,
+                     *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "maySuggest": false,
+                     *       "mayReview": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "languages": [],
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                        parameters: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
+                            };
+                        } | null;
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
+                            }[];
+                        };
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The language of the words below: those serving the document's own language */
+                            language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                            words: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                            formats: string[];
+                        };
+                    };
+                };
+            };
+            /** @description outline_invalid: the placement does not apply there, or a member is not one the caller may reference; group_version_invalid: the version is not one of the group */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may edit, or no such component group the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the outline has changed since it was read; group_unapproved: no version is named and the group has no approved one */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    removeComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                placement: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version the outline was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Removed: the document at its latest version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "parameters": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "groups": [],
+                     *       "movedParts": [],
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "scope": {
+                     *         "scope": [],
+                     *         "pending": []
+                     *       },
+                     *       "onHold": false,
+                     *       "mayHold": false,
+                     *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "maySuggest": false,
+                     *       "mayReview": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "languages": [],
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                        parameters: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
+                            };
+                        } | null;
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
+                            }[];
+                        };
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The language of the words below: those serving the document's own language */
+                            language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                            words: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                            formats: string[];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may edit, or no such placement in the version opened */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the outline has changed since it was read */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    takeComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                placement: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "version": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version the outline was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    /** @description The group's version to take */
+                    version: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Taken: the document at its latest version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "parameters": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "groups": [],
+                     *       "movedParts": [],
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "scope": {
+                     *         "scope": [],
+                     *         "pending": []
+                     *       },
+                     *       "onHold": false,
+                     *       "mayHold": false,
+                     *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "maySuggest": false,
+                     *       "mayReview": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "languages": [],
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                        parameters: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
+                            };
+                        } | null;
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
+                            }[];
+                        };
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The language of the words below: those serving the document's own language */
+                            language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                            words: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                            formats: string[];
+                        };
+                    };
+                };
+            };
+            /** @description outline_invalid: a member is not one the caller may reference; group_version_invalid: the version is not one of the placed group */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may edit, no such placement in the version opened, or a group the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the outline has changed since it was read */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewComponentGroupTake: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                placement: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The group's version that would be taken */
+                    version: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description What it would change; nothing recorded */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "added": [],
+                     *       "removed": [],
+                     *       "kept": -9007199254740991,
+                     *       "overridesDropped": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Members it adds, by latest title, empty where the caller may not read one */
+                        added: {
+                            id: string;
+                            title: string;
+                        }[];
+                        /** @description Members it drops, by latest title */
+                        removed: {
+                            id: string;
+                            title: string;
+                        }[];
+                        /** @description How many members it keeps, each with its local rewording */
+                        kept: number;
+                        /** @description Local rewordings on the members it drops, which go with them */
+                        overridesDropped: number;
+                    };
+                };
+            };
+            /** @description group_version_invalid: the version is not one of the placed group */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, no such placement in its latest version, or a group the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     setDocumentLanguage: {
         parameters: {
             query?: never;
@@ -58276,6 +70079,7 @@ export interface operations {
                      *         "archived": false,
                      *         "mayRetire": false,
                      *         "mayMove": false,
+                     *         "groups": [],
                      *         "movedParts": [],
                      *         "state": {
                      *           "key": "example",
@@ -58449,6 +70253,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -58752,6 +70576,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -59140,6 +70984,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -60632,6 +72496,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -60793,6 +72658,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -61078,6 +72963,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -61466,6 +73371,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -61758,6 +73683,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -61983,6 +73909,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -62144,6 +74071,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -62429,6 +74376,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -62817,6 +74784,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -63594,6 +75581,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -63755,6 +75743,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -64040,6 +76048,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -64428,6 +76456,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -65277,6 +77325,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -65438,6 +77487,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -65723,6 +77792,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -66111,6 +78200,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -70346,6 +82455,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -70507,6 +82617,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -70852,6 +82982,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -72735,6 +84885,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -72896,6 +85047,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -73181,6 +85352,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -73569,6 +85760,26 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Whether the caller may move it to another space: administer on it */
                             mayMove: boolean;
+                            /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                            groups: {
+                                /** @description The run's one id, each member's `group.placement` */
+                                placement: string;
+                                group: {
+                                    id: string;
+                                    /** @description Its title at the version placed; null where the caller may not read it */
+                                    title: string | null;
+                                };
+                                /** @description The version placed */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                                newer: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
                             /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                             movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -111992,6 +124203,8 @@ export interface operations {
                             mayMoveInto: boolean;
                             /** @description Whether the caller may design a template in this space; never in one archived */
                             mayDesign: boolean;
+                            /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                            defaultTemplate: string | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -112103,7 +124316,8 @@ export interface operations {
                      *       "archived": false,
                      *       "archivedAt": "example",
                      *       "archivedBy": "example",
-                     *       "language": "en"
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
                      *     }
                      */
                     "application/json": {
@@ -112116,6 +124330,8 @@ export interface operations {
                         archivedBy: string | null;
                         /** @description The language new documents and CT Studio deliveries here take; null where it names none */
                         language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
                     };
                 };
             };
@@ -112270,7 +124486,8 @@ export interface operations {
                      *       "archived": false,
                      *       "archivedAt": "example",
                      *       "archivedBy": "example",
-                     *       "language": "en"
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
                      *     }
                      */
                     "application/json": {
@@ -112283,6 +124500,8 @@ export interface operations {
                         archivedBy: string | null;
                         /** @description The language new documents and CT Studio deliveries here take; null where it names none */
                         language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
                     };
                 };
             };
@@ -118115,6 +130334,421 @@ export interface operations {
             };
         };
     };
+    createComponentGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "example",
+                 *       "members": [
+                 *         {
+                 *           "component": "00000000-0000-4000-8000-000000000001"
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    title: string;
+                    /** @description Its members in order, 1 to 200, each component once */
+                    members: {
+                        /** @description The component, never a group (CG-C) */
+                        component: string & (unknown & unknown);
+                        /** @description The version of it the group pins; absent, the component's latest at the time */
+                        version?: string & (unknown & unknown);
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "title": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "members": [],
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "states": [],
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description In order */
+                        members: {
+                            /** @description By its latest title; null where the caller may not read it */
+                            component: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
+                            version: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The component's latest version, where newer than the one pinned; null else */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                        mayEdit: boolean;
+                        archived: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description group_member_invalid: a member is no component the caller may read, a deleted one, or named at a version not its own; `index` says which */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description group_member_invalid: the first member refused, by its place in the list */
+                        index?: number;
+                        /** @description version_precondition: the group as it now stands */
+                        current?: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description In order */
+                            members: {
+                                /** @description By its latest title; null where the caller may not read it */
+                                component: {
+                                    id: string;
+                                    title: string;
+                                } | null;
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
+                                version: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The component's latest version, where newer than the one pinned; null else */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                            }[];
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
+                            mayEdit: boolean;
+                            archived: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not create in it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listComponentTypes: {
         parameters: {
             query?: {
@@ -118386,7 +131020,22 @@ export interface operations {
                      *       },
                      *       "fields": [],
                      *       "schemas": [],
-                     *       "values": {}
+                     *       "values": {},
+                     *       "origin": {
+                     *         "from": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "title": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "changedSince": false
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -118630,6 +131279,29 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description What it was copied from (REU-059); null where it was made, not copied */
+                        origin: {
+                            /** @description The component it was copied from, by its latest title; null where it was made from content its template holds, or the caller may not read it */
+                            from: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version of it the copy was made from; null where `from` is */
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The template that made the copy for a new document; null where Duplicate made it, or the caller may not read it */
+                            template: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description Whether what it was made from has a newer version now: the component, else the template */
+                            changedSince: boolean;
+                        } | null;
                     };
                 };
             };
@@ -119593,6 +132265,192 @@ export interface operations {
             };
         };
     };
+    setDefaultTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "template": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description One of the space's own templates */
+                    template: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description The space as it now is */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "archived": false,
+                     *       "archivedAt": "example",
+                     *       "archivedBy": "example",
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        archived: boolean;
+                        /** @description When it was archived; null while it is not */
+                        archivedAt: string | null;
+                        /** @description The principal who archived it; null while it is not archived */
+                        archivedBy: string | null;
+                        /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                        language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
+                    };
+                };
+            };
+            /** @description Not a template id */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description template_unusable: not one of the templates in this space */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     createDocument: {
         parameters: {
             query?: never;
@@ -119621,7 +132479,7 @@ export interface operations {
                     language: string;
                     /** @enum {string} */
                     direction: "ltr" | "rtl";
-                    /** @description The template to make it from, at its latest version (templates.md); without one, a blank document */
+                    /** @description The template to make it from, at its latest version (templates.md); without one, the space default (TPL-074) */
                     template?: string & (unknown & unknown);
                     /** @description A value for each of the template's parameters, by name: each in its type's canonical form, or a list of them where the parameter is a list (templates.md, "Asked for when a document is made"). A required one must be given; none for a blank document */
                     parameters?: {
@@ -119686,6 +132544,7 @@ export interface operations {
                      *       "archived": false,
                      *       "mayRetire": false,
                      *       "mayMove": false,
+                     *       "groups": [],
                      *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
@@ -119848,6 +132707,26 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Whether the caller may move it to another space: administer on it */
                         mayMove: boolean;
+                        /** @description Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F) */
+                        groups: {
+                            /** @description The run's one id, each member's `group.placement` */
+                            placement: string;
+                            group: {
+                                id: string;
+                                /** @description Its title at the version placed; null where the caller may not read it */
+                                title: string | null;
+                            };
+                            /** @description The version placed */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The group's latest approved version, where newer than the one placed: offered, never followed (REU-062) */
+                            newer: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
                         /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
                         movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -122805,6 +135684,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         name: string;
+                        description?: string;
                         /** Format: uuid */
                         theme: string;
                         /** Format: uuid */
@@ -122863,6 +135743,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -122876,7 +135757,14 @@ export interface operations {
                         components?: {
                             key: string;
                             /** Format: uuid */
-                            component: string;
+                            component?: string;
+                            content?: {
+                                title: string;
+                                blocks: components["schemas"]["createTemplateBody_schema1"][];
+                            };
+                            /** @enum {string} */
+                            instantiate?: "reference" | "copy";
+                            required?: boolean;
                             mode?: {
                                 /** @constant */
                                 kind: "pinned";
@@ -125880,6 +138768,22 @@ export interface operations {
                             };
                             /** @description When its latest version was made */
                             changedAt: string;
+                            /** @description What it is for (TPL-076); null where it says none */
+                            description: string | null;
+                            /** @description Its starting sections, at every depth */
+                            sections: number;
+                            /** @description The values a document made from it is asked for */
+                            values: number;
+                            /** @description Of those, the ones it must be given */
+                            requiredValues: number;
+                            /** @description The components it places as copies the new document owns (TPL-075) */
+                            copied: number;
+                            /** @description The components it places by reference */
+                            referenced: number;
+                            /** @description Its first five top-level starting sections, by title as plain text */
+                            headings: string[];
+                            /** @description Whether it is its space's default template (TPL-074) */
+                            isDefault: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -126147,6 +139051,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         name: string;
+                        description?: string;
                         /** Format: uuid */
                         theme: string;
                         /** Format: uuid */
@@ -126205,6 +139110,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -126218,7 +139124,14 @@ export interface operations {
                         components?: {
                             key: string;
                             /** Format: uuid */
-                            component: string;
+                            component?: string;
+                            content?: {
+                                title: string;
+                                blocks: components["schemas"]["recordTemplateVersionBody_schema1"][];
+                            };
+                            /** @enum {string} */
+                            instantiate?: "reference" | "copy";
+                            required?: boolean;
                             mode?: {
                                 /** @constant */
                                 kind: "pinned";

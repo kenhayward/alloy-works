@@ -18,7 +18,9 @@ import { definitionKinds } from '@alloy-works/domain';
  * its space making and changing it (the CI plan, CI-B). A citation style, added by 0146, is the tenant's,
  * as a prompt library is, administered at the environment (CI-D). A term, added by 0153, lives in one
  * space and is authored, as an entry is (the TM plan, TM-A). A vocabulary, added by 0176, is a
- * definition kind and so arrives with `definitionKinds` (the VO plan, VO-A).
+ * definition kind and so arrives with `definitionKinds` (the VO plan, VO-A). A component group, added
+ * by 0211, lives in one space and is authored, `create` and `edit` in its space making and changing it,
+ * and moves under the component workflow (the CG plan, CG-A): `workflowKindOf`.
  */
 export const artifactKinds = [
   'component',
@@ -38,6 +40,7 @@ export const artifactKinds = [
   'bibliographyEntry',
   'citationStyle',
   'term',
+  'componentGroup',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -59,4 +62,10 @@ export const spacedKinds = [
   'prompt',
   'bibliographyEntry',
   'term',
+  'componentGroup',
 ] as const satisfies readonly ArtifactKind[];
+
+/** The workflow an artifact of this kind moves under: its own kind's, but a group's (CG-A). */
+export function workflowKindOf(kind: string): string {
+  return kind === 'componentGroup' ? 'component' : kind;
+}

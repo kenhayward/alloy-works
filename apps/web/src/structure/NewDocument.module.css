@@ -1,0 +1,496 @@
+/* New document (the ND handoff, docs/interface/handoffs/new-document/): a gallery of templates
+ * beside what is chosen. Only the template list and the values scroll; everything else stays put. */
+.dialog {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.dialog[data-narrow] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dialog[data-narrow] .side {
+  border-inline-end: none;
+  border-block-end: 1px solid var(--border);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-24) var(--space-16) var(--space-16);
+  border-inline-end: 1px solid var(--border);
+  background: var(--sunken);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  margin-block-end: var(--space-16);
+}
+
+.brand h2 {
+  margin: 0;
+  font-size: var(--size-16);
+}
+
+.tile {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-8);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.find input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.find input:focus {
+  outline: none;
+}
+
+.find:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  margin-block-start: var(--space-12);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--strong-border) transparent;
+}
+
+.group {
+  margin: var(--space-12) 0 var(--space-4);
+  padding-inline: var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: 46px;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-8);
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--chrome);
+}
+
+.option[aria-selected='true'] {
+  background: var(--chrome);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.list:focus-visible .option[aria-selected='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+/* A tone per space, telling spaces apart and nothing more: the name is always beside it (ND-L). */
+.glyph {
+  display: inline-grid;
+  color: var(--accent-text);
+}
+.glyph[data-tone='1'] {
+  color: var(--warn);
+}
+.glyph[data-tone='2'] {
+  color: var(--info);
+}
+.glyph[data-tone='3'] {
+  color: var(--ok);
+}
+.glyph[data-tone='blank'] {
+  color: var(--muted);
+}
+
+.said {
+  margin: var(--space-8) 0 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.main > * {
+  padding-inline: 28px;
+}
+
+.chosen {
+  display: flex;
+  gap: var(--space-24);
+  padding-block: var(--space-24) var(--space-16);
+  /* Clear of the dialog's close button. */
+  padding-inline-end: 56px;
+  border-block-end: 1px solid var(--border);
+}
+
+.previewed {
+  flex: none;
+  width: 112px;
+}
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 145px;
+  padding: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  /* A page is white whatever the theme, as printed. */
+  background: var(--doc-page);
+  color: var(--doc-ink);
+  box-shadow: var(--sheet-shadow);
+  font-size: 6px;
+  line-height: 1.2;
+}
+
+.page::after {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(225deg, var(--chrome) 50%, var(--doc-th-bg) 50%);
+  content: '';
+}
+
+.pageTitle {
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pageHeading {
+  padding-block-end: 7px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* Each heading over two grey lines of text. */
+  background:
+    linear-gradient(var(--doc-rule), var(--doc-rule)) 0 calc(100% - 4px) / 100% 1px no-repeat,
+    linear-gradient(var(--doc-rule), var(--doc-rule)) 0 100% / 70% 1px no-repeat;
+}
+
+.caption {
+  margin: var(--space-8) 0 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--size-20);
+}
+
+.description {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+/* The base style indents a label not first in its parent; these stand on their own. */
+.title,
+.narrowChoice,
+.where,
+.language {
+  margin-inline: 0;
+}
+
+.title,
+.narrowChoice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-block-start: var(--space-8);
+}
+
+.title input,
+.narrowChoice select {
+  width: 100%;
+}
+
+.title input {
+  height: 40px;
+  box-sizing: border-box;
+  font-size: var(--size-16);
+}
+
+.values {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding-block: var(--space-12) 0;
+  border-block-end: 1px solid var(--border);
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  margin-block-end: var(--space-8);
+}
+
+.line h3 {
+  margin: 0;
+  font-size: var(--size-14);
+}
+
+.count {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.pill {
+  margin-inline-start: auto;
+  padding: 2px var(--space-12);
+  border: none;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--strong-border) transparent;
+}
+
+/* Fades into the page while there is more to scroll to, and only then: a mask, so any opaque
+ * colour does. */
+.scroll[data-above] {
+  mask-image: linear-gradient(transparent, var(--surface) 28px);
+}
+.scroll[data-below] {
+  mask-image: linear-gradient(var(--surface) calc(100% - 28px), transparent);
+}
+.scroll[data-above][data-below] {
+  mask-image: linear-gradient(
+    transparent,
+    var(--surface) 28px,
+    var(--surface) calc(100% - 28px),
+    transparent
+  );
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 14px;
+  padding-block-end: var(--space-12);
+}
+
+.fields :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.fields [data-warn] :is(input, select) {
+  border-color: var(--warn);
+}
+
+.note {
+  margin: 0 0 var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border: 1px dashed var(--strong-border);
+  border-radius: var(--radius-8);
+  color: var(--muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-12);
+  padding-block: var(--space-12);
+  border-block-end: 1px solid var(--border);
+}
+
+.where,
+.language {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.iconed {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.iconed > svg {
+  position: absolute;
+  inset-inline-start: 10px;
+  pointer-events: none;
+}
+
+.iconed > :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline-start: 32px;
+  color: var(--text);
+}
+
+.direction {
+  display: flex;
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  overflow: hidden;
+}
+
+.way {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 34px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.way input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.way:has(input:checked) {
+  background: var(--chrome);
+  color: var(--accent-text);
+}
+
+.way:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding-block: var(--space-16);
+}
+
+.say {
+  flex: 1;
+  min-width: 0;
+}
+
+.say p {
+  margin: 0;
+  font-size: var(--size-13);
+}
+
+.say p:empty {
+  display: none;
+}
+
+.say [data-warn] {
+  color: var(--warn);
+}
+
+.foot button.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+@media (max-width: 759px) {
+  .fields,
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chosen {
+    flex-direction: column;
+  }
+}

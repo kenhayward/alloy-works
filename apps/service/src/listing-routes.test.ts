@@ -6,6 +6,7 @@ import {
   decideGate,
   moveArtifact,
   createComponent,
+  createComponentGroup,
   createConnection,
   createPrompt,
   createEntry,
@@ -658,12 +659,33 @@ describe('the listings through the service', () => {
         if (begun.answer !== 'begun') throw new Error(begun.answer);
       });
     }
+    // Two component groups, so their listing has pages to turn (the CG plan, CG-D).
+    for (const title of ['Group one', 'Group two']) {
+      await tenantDb.withTenant(tenant, async (trx) => {
+        const member = await createComponent(trx, {
+          spaceId: general,
+          title: `${title} member`,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: asker,
+        });
+        if (member.answer !== 'created') throw new Error(member.answer);
+        const made = await createComponentGroup(trx, {
+          author: asker,
+          spaceId: general,
+          title,
+          members: [{ component: member.version.artifactId }],
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+      });
+    }
     // Two tests queued, so the environment's mail has pages to turn (the EM plan, EMb).
     await tenantDb.withTenant(tenant, async (trx) => {
       for (let each = 0; each < 2; each += 1) await queueTestMail(trx, asker);
     });
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
+      listComponentGroups: '/v1/component-groups',
       listComponentVersions: `/v1/components/${component}/versions`,
       listDocumentVersions: `/v1/documents/${document}/versions`,
       listIterations: `/v1/components/${component}/iterations?session=${session}`,

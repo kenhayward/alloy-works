@@ -248,7 +248,8 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     expect(answer.statusCode, answer.body).toBe(200);
     const described = SinkDescribeSchema.parse(answer.json());
     expect(described).toMatchObject({
-      name: 'Alloy Works',
+      // The environment by name, so two Alloy Works sinks read apart in CT Studio's lists.
+      name: 'Alloy Works (Production)',
       contractVersion: 2,
       connectionKind: 'shared',
       // A shared sink lists no instance, so CT Studio's targets and browsing name none.

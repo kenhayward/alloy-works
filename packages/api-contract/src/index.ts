@@ -25,6 +25,7 @@ export {
   SpaceListQuery,
   SpaceParams,
   SpaceView,
+  DefaultTemplateBody,
   UpdateSpaceBody,
 } from './components.js';
 export {
@@ -120,6 +121,7 @@ export {
   shareRoutes,
 } from './shares.js';
 export { QueryUsageQuery, QueryUsageView, queryUsageRoutes } from './query-usage.js';
+export { DiagnosticsView, diagnosticsRoutes } from './diagnostics.js';
 export {
   DatasetSourceList,
   DatasetSourceQuery,
@@ -903,3 +905,19 @@ export {
 } from './mail.js';
 // The tag each route is documented, and measured, under (the DG plan, DG-C).
 export { documentationFor } from './documentation.js';
+export {
+  ComponentGroupList,
+  ComponentGroupListQuery,
+  ComponentGroupParams,
+  ComponentGroupRefusal,
+  ComponentGroupVersionBody,
+  ComponentGroupView,
+  CreateComponentGroupBody,
+  GroupPlacementParams,
+  GroupTakePreviewBody,
+  GroupTakePreviewView,
+  PlaceComponentGroupBody,
+  RemoveComponentGroupBody,
+  TakeComponentGroupBody,
+  componentGroupRoutes,
+} from './component-groups.js';

@@ -17,6 +17,8 @@ const idp = await startStandInProvider({
   ...(process.env.STAND_IN_ISSUER ? { issuer: process.env.STAND_IN_ISSUER } : {}),
   // Behind deploy/compose.lan.yaml's proxy, which ends TLS for other machines.
   trustProxy: process.env.STAND_IN_TRUST_PROXY === 'true',
+  // Disabling a person over HTTP, for the browser suite and for trying it by hand (the PC plan).
+  controls: process.env.STAND_IN_CONTROLS === 'true',
   clients: [
     { clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret', redirectUris },
     // Plays the product's one Google client, returning only to the sign-in address.

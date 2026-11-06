@@ -131,7 +131,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   signing in again has not been confirmed with a real account (IDb's plan names it). A provider may
   **provision by SCIM 2.0**, at `/scim/v2/`, through a service identity of its own: it then admits only
   those it pushed, linked by the claim it names and never by email, and anybody it sets inactive or
-  deletes is signed out at once. Its groups come from SCIM alone, applied on receipt. Neither Entra ID's
+  deletes is signed out at once. Its groups come from SCIM alone, applied on receipt. Without SCIM, a
+  session through an organisation's provider that grants offline access asks the provider again every
+  five minutes: a person it refuses, as it refuses somebody disabled or deleted there, is signed out at
+  their next request and loses their API tokens, and a provider that cannot be reached signs nobody
+  out. The Google route and a provider that will not grant offline access are not asked. Not yet tried
+  against a real Keycloak, Entra ID or Okta. Neither Entra ID's
   nor Okta's validator has been run against it yet. [Inviting, disabling and SCIM](guides/people-and-scim.md) says how. Six high-risk acts are
   permissions of their own, apart from administer: exporting the environment, exporting the audit,
   holds, rotating secrets, configuring services (Sign-in among them) and configuring webhooks.
@@ -212,6 +217,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
+- **Diagnostics.** An administrator of the environment reads how it is doing in Administration's
+  **Diagnostics**, or through the API (`GET /v1/diagnostics`): what failed with nobody told first, then
+  each capability's health over the last 15 minutes (healthy, degraded, failing or idle, in icon and
+  words), its requests, server error rate and 95th percentile; the search index's model and lag;
+  webhook and mail delivery; each sweep and loop's last run, its last failure and when it is next due;
+  the last day's jobs by kind and state; each data source's runs, down when its latest failed; and the
+  month's model spend against its budget. Codes and counts only, never content. Measured by the minute,
+  kept by the hour after a week and by the day after 90 days, for 13 months.
 - **Suspending an environment.** The operator suspends one with a reason, from the `steward` command line, and lifts that the same way. Every route refuses within 30 seconds, an open stream ends, jobs and sweeps wait, and a person is told it is suspended, never why, though a download link already signed lives out its 5 minutes. Lifting loses nothing, and a webhook still being tried loses no time. An administrator cannot suspend from inside yet.
 - **An organisation's own tenant.** An organisation administers from a tenant holding no content: sign-in, people,
   roles, sessions, audit and export are the ones every tenant has, and everything else there answers as not there. Its
@@ -887,12 +900,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
   makes or changes one yet.
 
-- **Making a document from a template.** **New document** offers **Blank** and every template you
-  may read, named with its space; a document made from one starts with the template's sections, in
+- **Making a document from a template.** A document always starts from a template. **New document**
+  lists every template you may read by space, the space chosen for Where first, each with its counts,
+  and shows the one chosen beside them: a preview of its first headings, its description, its title,
+  its values in a region of their own that scrolls, with how many required values are left, then
+  where, language and direction, and a line saying what Create will make. Each space has a **default
+  template**, chosen first and taken by a document made through the API with none named: **Blank**,
+  one component titled "Please supply a title" to write over, until the space's administrator chooses
+  another of its templates from its row in Administration's Spaces. A template may give each new
+  document its own **copy** of a component instead of sharing it, and the copy says on it what it was
+  copied from and whether that has changed since; Duplicate's copies say so too. A template may carry
+  a description and a label for each value, set through the API. A document made from one starts with the template's sections, in
   its order, each numbered, placed and broken as the template says, and with the default values the
   template's metadata schemas give the document and each section. It records the template and the
   version it was made from, and is published, shown and numbered under that template's theme and
-  layout, at their latest versions; a blank document keeps the environment's. After that the outline
+  layout, at their latest versions. After that the outline
   is the document's own: changing it changes no template, and a template's next version changes no
   document already made. A template you may not read is answered as not there, and one naming
   something that no longer exists is refused with a sentence saying so, keeping your choice.
@@ -1498,6 +1520,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the components hold. Choose how each reference follows its component and a title, and the
   section's components are placed under a new section of your own; nothing else is copied, and a
   section placing a component you may not read is not offered to place.
+- **Component groups.** Components lists **Component groups** under its Kind filter. A group is an
+  ordered set of components, each at most once, each at the version the group pins, approved as one.
+  Its page adds, removes, reorders and moves a member to a newer version, saved as the group's next
+  version. In a document, **Place a component group** places an approved group's components at the
+  end of a section, held together in the group's order; each may be reworded there, never added,
+  removed or reordered alone. A newer approved version is offered on the part, says first what it
+  adds, removes and keeps, and is taken into the document's next version only when asked. **Remove
+  group** removes them as one.
 - **What a change reaches, through the API.** `GET /v1/artifacts/{id}/impact?depth=` walks from a
   component, an image, a query definition, a connection or a template to whatever references it, and
   on to what references those, to a depth from 1 to 10, nearest first and at most 1,000. Nothing you

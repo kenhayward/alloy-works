@@ -191,6 +191,13 @@ export interface SessionTable {
   last_seen_at: Generated<Date>;
   idle_expires_at: Date;
   expires_at: Date;
+  /**
+   * The provider's refresh token, sealed to the tenant and the session's id (0213; the PC plan,
+   * PC-A): only for a session that came through a provider granting offline access. Never sent or logged.
+   */
+  sealed_refresh: Generated<string | null>;
+  /** When the provider was last asked whether the person may still sign in (0213; PC-C). */
+  provider_checked_at: Generated<Date | null>;
 }
 
 /** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */
@@ -274,6 +281,18 @@ export interface CapabilityUsageTable {
   server_errors: Generated<number>;
   refused: Generated<number>;
   buckets: number[];
+}
+
+/** A kind of background work's last run in this tenant (0211; the DG plan, DG-G). */
+export interface BackgroundWorkTable {
+  work: string;
+  started_at: Date;
+  finished_at: Date;
+  outcome: 'succeeded' | 'failed' | 'paused';
+  failure: string | null;
+  failed_at: Date | null;
+  failures: Generated<number>;
+  next_due_at: Date | null;
 }
 
 /** One attempt at a mail (0205; EM-N): its codes, never the relay's words. */
@@ -459,6 +478,8 @@ export interface SpaceTable {
   /** Both null while the space is live, both set once archived (0059; the SP1 plan, SP-C). */
   archived_at: ColumnType<Date | null, undefined, Date | null>;
   archived_by: ColumnType<string | null, undefined, string | null>;
+  /** The template a document made here without one takes; Blank until chosen, none where null (0209). */
+  default_template: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /** No update: an artifact's identity does not change, and the runtime role holds no such grant. */
@@ -1215,6 +1236,16 @@ export interface ArtifactMoveTable {
   at: ColumnType<Date, never, never>;
 }
 
+/** What a component was copied from, inserted once and never changed (0209; the ND plan, ND-M). */
+export interface ArtifactOriginTable {
+  artifact_id: ColumnType<string, string, never>;
+  from_artifact: ColumnType<string | null, string | null | undefined, never>;
+  from_version: ColumnType<string | null, string | null | undefined, never>;
+  template_id: ColumnType<string | null, string | null | undefined, never>;
+  template_version: ColumnType<string | null, string | null | undefined, never>;
+  made_at: ColumnType<Date, never, never>;
+}
+
 /** One deletion act on a component or a document, inserted and never changed (0085; DL-B). */
 export interface ArtifactDeletionTable {
   id: ColumnType<string, never, never>;
@@ -1500,6 +1531,7 @@ export interface TenantTables {
   mail_channel: MailChannelTable;
   email_delivery: EmailDeliveryTable;
   capability_usage: CapabilityUsageTable;
+  background_work: BackgroundWorkTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;
@@ -1557,6 +1589,7 @@ export interface TenantTables {
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;
   artifact_move: ArtifactMoveTable;
+  artifact_origin: ArtifactOriginTable;
   artifact_deletion: ArtifactDeletionTable;
   legal_hold: LegalHoldTable;
   legal_hold_release: LegalHoldReleaseTable;

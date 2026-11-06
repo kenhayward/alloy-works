@@ -89,6 +89,8 @@ describe('relationships, through the service', () => {
   });
 
   it('REL-015 REL-029 answers the relationships of an artifact by direction, and a shortest path between two, to a reader of both', async () => {
+    // Each made from the same template, which joins them by reference: a path never passes through
+    // a template that way, so it is the relationships' (the ND plan).
     const [a, b, c] = [
       await h.documentReferencing([]),
       await h.documentReferencing([]),

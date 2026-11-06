@@ -1545,6 +1545,7 @@ export {
   type AttemptOutcome,
   type ClaimedDelivery,
   listWebhookSubscriptions,
+  webhookCounts,
   removeWebhookSubscription,
   rotateWebhookSecret,
   subscribableIdentity,
@@ -1670,9 +1671,47 @@ export {
   type GrantInForce,
 } from './grant-limits.js';
 export {
+  defaultTemplateOf,
+  ensureDefaultTemplate,
+  setDefaultTemplate,
+  type SetDefaultAnswer,
+} from './default-template.js';
+export { originOf, type Origin } from './origins.js';
+export { ownJobs, type OwnJobs, type QueueState } from './own-jobs.js';
+export { connectionRunsSince, type ConnectionRuns } from './connection-runs.js';
+export {
+  backgroundWork,
+  recordBackgroundWork,
+  type BackgroundOutcome,
+  type BackgroundRun,
+  type BackgroundWork,
+} from './background-work.js';
+export {
   capabilityUsage,
   recordCapabilityMinute,
   rollUpMeasurements,
   type CapabilityCount,
   type CapabilityUsage,
 } from './measurements.js';
+export {
+  createComponentGroup,
+  groupsPinning,
+  listComponentGroups,
+  memberViews,
+  placeComponentGroup,
+  placedGroups,
+  previewGroupTake,
+  readComponentGroup,
+  recordComponentGroupVersion,
+  removeComponentGroup,
+  takeComponentGroup,
+  type ComponentGroupAnswer,
+  type ComponentGroupSummary,
+  type GroupActAnswer,
+  type GroupTakePreview,
+  type MemberInput,
+  type MemberView,
+  type PlacedGroupView,
+  type StoredComponentGroup,
+} from './component-groups.js';
+export { createMeasuring, flushEveryMinute, type Measured, type Measuring } from './measuring.js';

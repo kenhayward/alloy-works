@@ -16,12 +16,19 @@ import type {
   PlacementBody,
   PlacementQuery,
   PlacementReportView,
+  GroupPlacementParams,
+  GroupTakePreviewBody,
+  GroupTakePreviewView,
+  PlaceComponentGroupBody,
+  RemoveComponentGroupBody,
+  TakeComponentGroupBody,
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
 import { scopeView } from './scopes.js';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
+  ensureDefaultTemplate,
   type CreateDocumentAnswer,
   unresolvedVariables,
   documentLayout,
@@ -65,6 +72,12 @@ import {
   workflowStates,
   placeFromSection,
   previewPlacement,
+  placedGroups,
+  placeComponentGroup,
+  previewGroupTake,
+  takeComponentGroup,
+  removeComponentGroup,
+  type GroupActAnswer,
   applyOutlineOverrides,
   lineNumbers,
   openLinesOf,
@@ -273,6 +286,8 @@ async function documentView(
     archived: await isArchived(viewer.trx, document.id),
     mayRetire: viewer.mayRetire,
     mayMove: administerOrAbove(viewer.facts).allowed,
+    // Each group it places, with a newer approved version offered (the CG plan, CG-F; REU-062).
+    groups: read.ok ? await placedGroups(viewer.trx, viewer.principalId, read.outline) : [],
     movedParts: await movedParts(viewer, document.id, version),
     // Told only to whoever may retire it or administer the environment (AH-G).
     onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
@@ -468,6 +483,16 @@ export async function createdView(
       },
     );
   }
+  if (answer.answer === 'values.invalid') {
+    throw refused(
+      409,
+      'values.invalid',
+      'A component its template copies holds a value its field no longer takes.',
+      {
+        failures: answer.failures,
+      },
+    );
+  }
   if (answer.answer !== 'created') throw refusedParameters(answer);
   const held = await trx
     .selectFrom('space')
@@ -497,6 +522,75 @@ export async function createdView(
     ...view,
     unresolvedVariables: await unresolvedVariables(trx, answer.version.artifactId, principalId),
   };
+}
+
+/** A group version that is not one of the group's (CG-F). */
+function groupVersionInvalid(): AppError {
+  return refused(400, 'group.version_invalid', 'That version is not one of this group.');
+}
+
+/**
+ * A document's act on a placed group (CG-F to CG-I), answered as an outline act is: the document at
+ * its next version, or stale, or refused by name.
+ */
+async function groupAct(
+  { trx, principalId, facts }: Authorised,
+  id: string,
+  openedFrom: string,
+  work: (trx: TenantTransaction, author: string) => Promise<GroupActAnswer>,
+): Promise<DocumentView> {
+  const viewer = {
+    trx,
+    principalId,
+    mayEdit: decide('edit', facts).allowed,
+    mayPublish: decide('publish', facts).allowed,
+    mayRetire: decide('retire', facts).allowed,
+    mayHold: holdsAtTenant(facts),
+    facts,
+    mayComment: decide('comment', facts).allowed,
+    mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+    maySuggest: decide('suggest', facts).allowed,
+  };
+  const document = await readDocument(trx, id);
+  if (!document) throw notFound();
+  const answer = await work(trx, principalId);
+  switch (answer.answer) {
+    case 'recorded':
+      return documentView(viewer, document, answer.version);
+    case 'version.unchanged':
+      return documentView(viewer, document, answer.current);
+    case 'version.precondition':
+      throw stale(await documentView(viewer, document, answer.current));
+    case 'artifact.missing':
+      throw stale(await latestView(viewer, id));
+    case 'group.missing':
+    case 'placement.missing': {
+      const current = await latestView(viewer, id);
+      if (current.version.id !== openedFrom) throw stale(current);
+      throw notFound();
+    }
+    case 'group.unapproved':
+      throw refused(
+        409,
+        'group.unapproved',
+        'This group has no approved version yet. Approve one, or name the version to place.',
+      );
+    case 'version.invalid':
+      throw groupVersionInvalid();
+    case 'values.invalid':
+    case 'template.unresolved':
+      return refusedValues(viewer, id, openedFrom, answer);
+    case 'outline.invalid': {
+      const current = await latestView(viewer, id);
+      if (current.version.id !== openedFrom) throw stale(current);
+      throw refused(
+        400,
+        'outline.invalid',
+        'This change does not apply to the outline as it stands.',
+        { reason: answer.reason },
+      );
+    }
+  }
 }
 
 export function documentHandlers(
@@ -563,7 +657,11 @@ export function documentHandlers(
     createDocument: async (request: FastifyRequest, authorised: Authorised) => {
       const { trx, principalId } = authorised;
       const { space } = request.params as SpaceParams;
-      const body = request.body as CreateDocumentBody;
+      const asked = request.body as CreateDocumentBody;
+      // None named, the space's default, made first where it has none (TPL-074; the ND plan, ND-B).
+      const template = asked.template ?? (await ensureDefaultTemplate(trx, space, principalId));
+      const body = { ...asked, ...(template === undefined ? {} : { template }) };
+      request.body = body;
       // A template whose required components run queries: they run first (the R9 plan, R9-E).
       const bound = boundCreation && (await boundCreation(request, authorised));
       if (bound) return bound;
@@ -1310,6 +1408,78 @@ export function documentHandlers(
           );
         }
       }
+    },
+
+    // A component group placed, taken at another version, or removed (the CG plan, CG-F to CG-I).
+    placeComponentGroup: async (request: FastifyRequest, authorised: Authorised) => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as PlaceComponentGroupBody;
+      return groupAct(authorised, id, body.openedFrom, (trx, author) =>
+        placeComponentGroup(trx, {
+          documentId: id,
+          openedFrom: body.openedFrom,
+          author,
+          group: body.group,
+          version: body.version,
+          parent: body.parent,
+          position: body.position,
+        }),
+      );
+    },
+
+    previewComponentGroupTake: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<GroupTakePreviewView> => {
+      const { id, placement } = request.params as GroupPlacementParams;
+      const body = request.body as GroupTakePreviewBody;
+      if (!(await readDocument(trx, id))) throw notFound();
+      const answer = await previewGroupTake(trx, {
+        documentId: id,
+        by: principalId,
+        placement,
+        version: body.version,
+      });
+      switch (answer.answer) {
+        case 'preview':
+          return {
+            added: answer.preview.added.map((each) => ({ ...each })),
+            removed: answer.preview.removed.map((each) => ({ ...each })),
+            kept: answer.preview.kept,
+            overridesDropped: answer.preview.overridesDropped,
+          };
+        case 'version.invalid':
+          throw groupVersionInvalid();
+        default:
+          throw notFound();
+      }
+    },
+
+    takeComponentGroup: async (request: FastifyRequest, authorised: Authorised) => {
+      const { id, placement } = request.params as GroupPlacementParams;
+      const body = request.body as TakeComponentGroupBody;
+      return groupAct(authorised, id, body.openedFrom, (trx, author) =>
+        takeComponentGroup(trx, {
+          documentId: id,
+          openedFrom: body.openedFrom,
+          author,
+          placement,
+          version: body.version,
+        }),
+      );
+    },
+
+    removeComponentGroup: async (request: FastifyRequest, authorised: Authorised) => {
+      const { id, placement } = request.params as GroupPlacementParams;
+      const body = request.body as RemoveComponentGroupBody;
+      return groupAct(authorised, id, body.openedFrom, (trx, author) =>
+        removeComponentGroup(trx, {
+          documentId: id,
+          openedFrom: body.openedFrom,
+          author,
+          placement,
+        }),
+      );
     },
   };
 }

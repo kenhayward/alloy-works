@@ -115,3 +115,23 @@
     grid-column: 1;
   }
 }
+
+/* New document's two panes (the ND handoff): 920 x 684 at most, the window less 32px otherwise,
+ * centred, the panes filling it edge to edge. */
+.gallery {
+  width: min(920px, 100%);
+  height: min(684px, calc(100vh - 32px));
+  overflow: hidden;
+  border: 1px solid var(--strong-border);
+  border-radius: 14px;
+}
+
+.gallery > .body {
+  height: 100%;
+  padding: 0;
+}
+
+.scrim[data-size='gallery'] {
+  align-items: center;
+  padding: var(--space-16);
+}

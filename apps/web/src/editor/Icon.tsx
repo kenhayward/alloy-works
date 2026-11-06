@@ -99,6 +99,10 @@ const PATHS: Record<string, readonly string[]> = {
   Undo: ['M3 5.4h6.2a3.4 3.4 0 0 1 0 6.8H5.4', 'M5.4 2.8 2.6 5.4l2.8 2.6'],
   Folder: ['M2.4 4.2h4l1.2 1.6h6V12H2.4z'],
   Document: ['M3.4 2.6h5.4l3 3v7.8H3.4z', 'M8.6 2.6v3.2h3'],
+  // A page with a plus on it: making a document (the ND handoff).
+  'New document': ['M3.4 2.6h5.4l3 3v7.8H3.4z', 'M8.6 2.6v3.2h3', 'M7.6 7.4v4.4M5.4 9.6h4.4'],
+  // Two parts joined by a line: components kept and placed together (the CG plan).
+  'Component group': ['M2.5 2.5h6v4.5h-6z', 'M7.5 9h6v4.5h-6z', 'M5.5 7v4h2'],
   Move: ['M8 3v10M5.2 10.2 8 13l2.8-2.8'],
   // A picture in a frame: a hill and the sun, as every image button draws one.
   Figure: ['M2.5 3h11v10h-11z', 'M2.5 11.5 6 8l3 3 2-2 2.5 2.5', 'M10.5 5.8h.01'],

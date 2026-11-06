@@ -34,6 +34,7 @@ interface SpaceView {
   readonly archived: boolean;
   readonly archivedAt: string | null;
   readonly archivedBy: string | null;
+  readonly defaultTemplate: string | null;
 }
 
 /** A template definition any environment resolves: the default theme and layout, one section. */
@@ -114,7 +115,7 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
 
   const call = (
     credential: { cookie: string } | { authorization: string },
-    method: 'GET' | 'POST' | 'PATCH',
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT',
     url: string,
     payload?: Record<string, unknown>,
   ) =>
@@ -316,6 +317,8 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
       mayMoveInto: false,
       mayDesign: false,
       language: null,
+      // Made with its Blank (TPL-074).
+      defaultTemplate: shelved.defaultTemplate,
     });
     expect((await listed()).find((each) => each.id === general)).toMatchObject({
       archived: false,
@@ -370,6 +373,53 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
       direction: 'ltr',
     });
     expect(made.statusCode, made.body).toBe(200);
+  });
+
+  it('TPL-074 makes a new space with Blank as its default, and lets its administrator choose another of its templates', async () => {
+    const made = await make('Defaults');
+    expect(made.defaultTemplate).toEqual(expect.any(String));
+    const listing = await call(asGrace(), 'GET', `/v1/templates?spaces=${made.id}`);
+    expect(
+      listing.json<{ items: { id: string; name: string; isDefault: boolean }[] }>().items,
+    ).toEqual([
+      expect.objectContaining({ id: made.defaultTemplate, name: 'Blank', isDefault: true }),
+    ]);
+
+    const report = await call(asGrace(), 'POST', `/v1/spaces/${made.id}/templates`, {
+      definition: { ...aTemplate(), description: 'A report of one site.' },
+    });
+    expect(report.statusCode, report.body).toBe(200);
+    const reportId = report.json<{ id: string }>().id;
+    const set = await call(asGrace(), 'PUT', `/v1/spaces/${made.id}/default-template`, {
+      template: reportId,
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json<SpaceView>().defaultTemplate).toBe(reportId);
+    const after = await call(asGrace(), 'GET', `/v1/templates?spaces=${made.id}`);
+    expect(
+      after
+        .json<{ items: { id: string; isDefault: boolean; description: string | null }[] }>()
+        .items.find((each) => each.id === reportId),
+    ).toMatchObject({ isDefault: true, description: 'A report of one site.', sections: 1 });
+
+    // Another space's template is not one of its own.
+    const elsewhere = await call(asGrace(), 'POST', `/v1/spaces/${general}/templates`, {
+      definition: aTemplate(),
+    });
+    const refused = await call(asGrace(), 'PUT', `/v1/spaces/${made.id}/default-template`, {
+      template: elsewhere.json<{ id: string }>().id,
+    });
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'template_unusable', rule: 'TPL-074' });
+    // Administering it is required: Ada administers another space only.
+    const theirs = await call(asAda(), 'PUT', `/v1/spaces/${made.id}/default-template`, {
+      template: reportId,
+    });
+    expect([403, 404]).toContain(theirs.statusCode);
+    const own = await call(asAda(), 'PUT', `/v1/spaces/${adaSpace}/default-template`, {
+      template: reportId,
+    });
+    expect(own.statusCode, own.body).toBe(409);
   });
 
   it('refuses archiving the last space not archived', async () => {

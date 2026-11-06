@@ -76,6 +76,8 @@ services:
       STAND_IN_ISSUER: http://idp.localhost:${IDP_PORT:-9090}
       STAND_IN_REDIRECT_URIS: http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://org.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://127.0.0.1:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback
       STAND_IN_GOOGLE_REDIRECT_URI: http://signin.localhost:${SERVICE_PORT:-8088}/v1/sign-in/google/callback
+      # PUT or DELETE /stand-in/people/<id>/disabled plays a person disabled at their provider.
+      STAND_IN_CONTROLS: 'true'
     ports:
       - '127.0.0.1:${IDP_PORT:-9090}:${IDP_PORT:-9090}'
     networks:

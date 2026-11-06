@@ -19,10 +19,14 @@ describe("which sweeps run in which of a tenant's states (the TL plan, TL-C)", (
   });
 
   it('ADM-028 has no loop ask for every tenant, which would act in a suspended one', () => {
-    for (const file of ['sweep.ts', 'webhooks.ts', 'rechecks.ts', 'mail.ts']) {
+    for (const file of ['sweep.ts', 'webhooks.ts', 'rechecks.ts', 'mail.ts', 'background.ts']) {
       const source = readFileSync(new URL(file, import.meta.url), 'utf8');
       expect(source, file).not.toMatch(/\.tenants\(\)/);
-      expect(source, file).toMatch(/\.liveTenants\(\)/);
+      // Each asks for the live tenants, or has the one recording background work ask (DG-G).
+      expect(source, file).toMatch(/\.liveTenants\(\)|inEachTenant\(/);
     }
+    expect(readFileSync(new URL('background.ts', import.meta.url), 'utf8')).toMatch(
+      /\.liveTenants\(\)/,
+    );
   });
 });

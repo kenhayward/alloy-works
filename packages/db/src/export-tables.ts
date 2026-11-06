@@ -85,6 +85,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   artifact_deletion: renumbered(),
   artifact_line: kept(),
   artifact_move: renumbered(),
+  artifact_origin: kept(),
   artifact_scope: renumbered(),
   artifact_version: kept({
     breaksCycleAt: ['line_id', 'restored_from'],
@@ -98,6 +99,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   audit_export: leftOut('An earlier export of the log, which this holds whole.'),
   audit_label: kept(),
   audit_restored: kept(),
+  background_work: leftOut('What background work last did here, recorded afresh in a copy.'),
   baseline: kept(),
   baseline_binding: kept(),
   baseline_pin: kept(),
@@ -248,7 +250,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   sign_in_handoff: SIGN_IN,
   sign_in_route: SIGN_IN,
   source_change: renumbered(),
-  space: natural(['name']),
+  space: natural(['name'], { breaksCycleAt: ['default_template'] }),
   suggestion: kept(),
   suggestion_resolution: kept(),
   tenant_restore: leftOut(

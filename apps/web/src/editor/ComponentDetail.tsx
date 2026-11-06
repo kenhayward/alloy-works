@@ -26,6 +26,41 @@ function excerptOf(content: unknown): string | null {
   return words.length > EXCERPT ? `${words.slice(0, EXCERPT).trimEnd()}...` : words;
 }
 
+/** What a copy was made from (REU-059): a component at a version, or a template's own words. */
+interface Origin {
+  readonly from: { readonly id: string; readonly title: string } | null;
+  readonly version: { readonly id: string; readonly number: string } | null;
+  readonly template: { readonly id: string; readonly name: string } | null;
+  readonly changedSince: boolean;
+}
+
+/** Where a copy came from, in a sentence, its source a link. */
+function OriginLine({ origin }: { origin: Origin }) {
+  if (origin.from !== null && origin.version !== null) {
+    const link = '\u0000';
+    const sentence = say(
+      origin.changedSince ? 'editor.copied-from-changed-since' : 'editor.copied-from-at',
+      { title: link, version: origin.version.number },
+    );
+    const [before, after] = sentence.split(link);
+    return (
+      <p className={styles['muted']}>
+        {before}
+        <a href={`#/components/${origin.from.id}`}>{origin.from.title}</a>
+        {after}
+      </p>
+    );
+  }
+  if (origin.template !== null) {
+    return (
+      <p className={styles['muted']}>
+        {say('editor.made-from-the-template', { name: origin.template.name })}
+      </p>
+    );
+  }
+  return null;
+}
+
 /**
  * The chosen component beside the list (the Ledger's components screen, ADR-0046): its facts as chips,
  * Open and Give access, the start of its text and its Versions panel, without Restore: that is the
@@ -42,14 +77,18 @@ export function ComponentDetail({
   onClose: () => void;
 }) {
   const [text, setText] = useState<string | null | undefined>(undefined);
+  const [origin, setOrigin] = useState<Origin | null>(null);
 
   useEffect(() => {
     let current = true;
     setText(undefined);
+    setOrigin(null);
     client
       .GET('/v1/components/{id}', { params: { path: { id: item.id } } })
       .then(({ data }) => {
-        if (current) setText(data ? excerptOf(data.content) : null);
+        if (!current) return;
+        setText(data ? excerptOf(data.content) : null);
+        setOrigin((data?.origin as Origin | null | undefined) ?? null);
       })
       .catch(() => current && setText(null));
     return () => {
@@ -74,6 +113,7 @@ export function ComponentDetail({
         <Chip>{item.space.name}</Chip>
         <Chip>{item.language}</Chip>
       </div>
+      {origin !== null && <OriginLine origin={origin} />}
       <div className={styles['acts']}>
         <a className={styles['open']} href={`#/components/${item.id}`}>
           {say('editor.open')}

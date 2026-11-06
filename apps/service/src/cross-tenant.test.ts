@@ -14,6 +14,7 @@ import {
   createPrompt,
   createEntry,
   createTerm,
+  createComponentGroup,
   createImport,
   startConversation,
   setGuardrail,
@@ -578,6 +579,7 @@ const OTHER_TENANT_IDS: Readonly<
   // A purpose is no artifact of either environment: the target is the endpoint its body names, B's.
   setModelRoute: async () => ({ purpose: 'drafting' }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
+  setDefaultTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -641,6 +643,24 @@ const OTHER_TENANT_IDS: Readonly<
   exportTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
   recordTermVersion: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  createComponentGroup: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getComponentGroup: async (tenant, db) => ({ id: await componentGroupIdIn(tenant, db) }),
+  recordComponentGroupVersion: async (tenant, db) => ({ id: await componentGroupIdIn(tenant, db) }),
+  transitionComponentGroup: async (tenant, db) => ({ id: await componentGroupIdIn(tenant, db) }),
+  decideComponentGroupGate: async (tenant, db) => ({ id: await componentGroupIdIn(tenant, db) }),
+  placeComponentGroup: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  previewComponentGroupTake: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    placement: 'a'.repeat(26),
+  }),
+  takeComponentGroup: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    placement: 'a'.repeat(26),
+  }),
+  removeComponentGroup: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    placement: 'a'.repeat(26),
+  }),
   getTermUses: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
   archiveTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
   unarchiveTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
@@ -826,6 +846,20 @@ const VALID_INPUT: Readonly<
   allowThemeStyles: { payload: { openedFrom: SESSION, allowed: {} } },
   importThemeCatalogue: { payload: { openedFrom: SESSION, document: {} } },
   recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
+  createComponentGroup: { payload: { title: 'Probe group', members: [{ component: SESSION }] } },
+  recordComponentGroupVersion: {
+    payload: { openedFrom: SESSION, title: 'Probe group', members: [{ component: SESSION }] },
+  },
+  transitionComponentGroup: { payload: { transition: 'submit', from: 'draft' } },
+  decideComponentGroupGate: {
+    payload: { transition: 'approve', version: SESSION, decision: 'approved' },
+  },
+  placeComponentGroup: {
+    payload: { openedFrom: SESSION, group: SESSION, parent: null, position: 0 },
+  },
+  previewComponentGroupTake: { payload: { version: SESSION } },
+  takeComponentGroup: { payload: { openedFrom: SESSION, version: SESSION } },
+  removeComponentGroup: { payload: { openedFrom: SESSION } },
   transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
   decideTermGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
@@ -1103,6 +1137,7 @@ const VALID_INPUT: Readonly<
   },
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
+  setDefaultTemplate: { payload: { template: '7e1d0c5a-3b2f-4a6e-9d8c-1f0e2d3c4b5a' } },
   putBridgeSettings: {
     payload: { componentType: null, template: null, propertyMap: {}, data: false },
   },
@@ -1408,6 +1443,43 @@ const termIdIn = (tenant: Tenant, db: TenantDatabase) =>
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.term.id;
   });
+
+/** A component group in environment B's General space, holding one of its components. */
+const componentGroupIdIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const component = await componentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await grant(trx, {
+      roleId: (await findRole(trx, 'Author'))!.id,
+      subject: { principal: author.id },
+      level: { kind: 'space', id: general.id },
+      effect: 'allow',
+      grantedBy: author.id,
+    });
+    const made = await createComponentGroup(trx, {
+      author: author.id,
+      spaceId: general.id,
+      title: 'Probe group',
+      members: [{ component }],
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.group.id;
+  });
+};
 
 const entryIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {

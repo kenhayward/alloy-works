@@ -40,7 +40,7 @@ export const CreateDocumentBody = CreateComponentBody.pick({
   direction: true,
 }).extend({
   template: LowercaseUuid.optional().describe(
-    'The template to make it from, at its latest version (templates.md); without one, a blank document',
+    'The template to make it from, at its latest version (templates.md); without one, the space default (TPL-074)',
   ),
   parameters: z
     .record(z.string(), z.unknown())
@@ -396,6 +396,29 @@ export const DocumentView = z.object({
   mayMove: z
     .boolean()
     .describe('Whether the caller may move it to another space: administer on it'),
+  groups: z
+    .array(
+      z.object({
+        placement: z.string().describe("The run's one id, each member's `group.placement`"),
+        group: z.object({
+          id: z.string(),
+          title: z
+            .string()
+            .nullable()
+            .describe('Its title at the version placed; null where the caller may not read it'),
+        }),
+        version: z.object({ id: z.string(), number: z.string() }).describe('The version placed'),
+        newer: z
+          .object({ id: z.string(), number: z.string() })
+          .nullable()
+          .describe(
+            "The group's latest approved version, where newer than the one placed: offered, never followed (REU-062)",
+          ),
+      }),
+    )
+    .describe(
+      'Each component group the outline places, in document order: its members are the references marked with its `group.placement` (the CG plan, CG-F)',
+    ),
   movedParts: z
     .array(z.string())
     .describe(
