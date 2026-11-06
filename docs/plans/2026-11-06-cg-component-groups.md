@@ -36,8 +36,8 @@ Mine:
   a group asks first what it reaches, as a component's approval does.
 - **CG-J** **conditions** apply to the group reference, and to a member through the group's version, not per
   document.
-- **CG-K** a document may **make a group its own**: its members become references (or copies, with derived
-  from), the shape no longer followed. One act, reported first, using Place and Duplicate's code.
+- **CG-K** a document may **make a group its own**: its members become references (or copies, with an
+  origin record, as ND's), the shape no longer followed. One act, reported first, using Place and Duplicate's code.
 - **CG-L** baselines pin the group's version; publishing, numbering, Duplicate, moving, export and import, the
   Part panel and the outline tree learn the group reference.
 
