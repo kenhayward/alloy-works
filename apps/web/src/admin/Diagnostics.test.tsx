@@ -91,7 +91,8 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
       '1 of 2 webhooks failing',
     );
     const work = screen.getByRole('table', { name: 'Background work' });
-    expect(within(work).getByRole('row', { name: /sendMail/ })).toHaveTextContent(
+    // Each kind of work by a name an administrator reads, never the code's.
+    expect(within(work).getByRole('row', { name: /Mail sending/ })).toHaveTextContent(
       'connection_refused',
     );
     expect(screen.getByRole('region', { name: 'Budgets' })).toHaveTextContent('25%');
@@ -101,7 +102,7 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
     const said = needsAttention(troubled);
     expect(said).toEqual([
       expect.stringContaining('Indexing'),
-      expect.stringContaining('sendMail'),
+      expect.stringContaining('Mail sending'),
       expect.stringContaining('Publishing work'),
       expect.stringContaining('failing to deliver'),
       expect.stringContaining('turned off'),

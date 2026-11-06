@@ -5,7 +5,7 @@ import { Icon } from '../editor/Icon.js';
 import { Chip, type ChipTone } from '../parts/Chip.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
-import { formats, words } from '../words/words.js';
+import { formats, words, type WordKey } from '../words/words.js';
 import styles from './Administration.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -101,6 +101,37 @@ function HealthChip({ health }: { health: Health }) {
   );
 }
 
+/** The work's name as an administrator reads it; one the page does not know, by its own name. */
+const WORK_NAMES: Readonly<Record<string, WordKey>> = {
+  deliverWebhooks: 'admin.diag-work.deliverWebhooks',
+  foldNotificationDigests: 'admin.diag-work.foldNotificationDigests',
+  recheckEntries: 'admin.diag-work.recheckEntries',
+  sendMail: 'admin.diag-work.sendMail',
+  sweepAbandonedGenerationRuns: 'admin.diag-work.sweepAbandonedGenerationRuns',
+  sweepClosures: 'admin.diag-work.sweepClosures',
+  sweepDates: 'admin.diag-work.sweepDates',
+  sweepEmbeddingLagEverywhere: 'admin.diag-work.sweepEmbeddingLagEverywhere',
+  sweepExpiredIterations: 'admin.diag-work.sweepExpiredIterations',
+  sweepExpiredPreviews: 'admin.diag-work.sweepExpiredPreviews',
+  sweepExpiredQueryRuns: 'admin.diag-work.sweepExpiredQueryRuns',
+  sweepExpiredRangePreviews: 'admin.diag-work.sweepExpiredRangePreviews',
+  sweepExpiredSignIns: 'admin.diag-work.sweepExpiredSignIns',
+  sweepExpiredTenantExports: 'admin.diag-work.sweepExpiredTenantExports',
+  sweepImportsEverywhere: 'admin.diag-work.sweepImportsEverywhere',
+  sweepMailEverywhere: 'admin.diag-work.sweepMailEverywhere',
+  sweepMeasurementsEverywhere: 'admin.diag-work.sweepMeasurementsEverywhere',
+  sweepOldNotifications: 'admin.diag-work.sweepOldNotifications',
+  sweepQueryEmbeddingsEverywhere: 'admin.diag-work.sweepQueryEmbeddingsEverywhere',
+  sweepRestorations: 'admin.diag-work.sweepRestorations',
+  sweepStalePresence: 'admin.diag-work.sweepStalePresence',
+  sweepUncheckedPublications: 'admin.diag-work.sweepUncheckedPublications',
+  sweepWebhookDeliveriesEverywhere: 'admin.diag-work.sweepWebhookDeliveriesEverywhere',
+};
+const workName = (work: string) => {
+  const key = WORK_NAMES[work];
+  return key === undefined ? work : words(key);
+};
+
 const when = (at: string) =>
   `${formats().date(new Date(at), { day: 'numeric', month: 'short' })} ${formats().time(new Date(at))}`;
 
@@ -129,11 +160,11 @@ export function needsAttention(view: DiagnosticsView): string[] {
     said.push(
       each.outcome === 'failed'
         ? words('admin.diag-work-failed', {
-            work: each.work,
+            work: workName(each.work),
             failures: each.failures,
             failure: each.failure ?? '',
           })
-        : words('admin.diag-work-late', { work: each.work }),
+        : words('admin.diag-work-late', { work: workName(each.work) }),
     );
   }
   for (const each of view.jobs) {
@@ -199,9 +230,7 @@ function HealthTable({ view }: { view: DiagnosticsView }) {
       <tbody>
         {view.capabilities.map((each) => (
           <tr key={each.capability}>
-            <th scope="row" className={styles['strong']}>
-              {each.capability}
-            </th>
+            <td className={styles['strong']}>{each.capability}</td>
             <td>
               <HealthChip health={each.health} />
             </td>
@@ -241,9 +270,7 @@ function WorkTable({ view }: { view: DiagnosticsView }) {
       <tbody>
         {view.work.map((each) => (
           <tr key={each.work}>
-            <th scope="row" className={styles['strong']}>
-              {each.work}
-            </th>
+            <td className={styles['strong']}>{workName(each.work)}</td>
             <td>
               <HealthChip health={each.health} />
             </td>
@@ -283,9 +310,7 @@ function JobsTable({ view }: { view: DiagnosticsView }) {
       <tbody>
         {kinds.map((kind) => (
           <tr key={kind}>
-            <th scope="row" className={styles['strong']}>
-              {kind}
-            </th>
+            <td className={styles['strong']}>{kind}</td>
             {STATES.map((state) => (
               <td key={state}>
                 {formats().number(
@@ -321,13 +346,12 @@ function SourcesTable({ view }: { view: DiagnosticsView }) {
       <tbody>
         {view.connections.map((each) => (
           <tr key={each.connection}>
-            <th
-              scope="row"
+            <td
               className={styles['strong']}
               {...(each.name === null ? {} : { 'data-content': '' })}
             >
               {each.name ?? words('admin.diag-source-gone')}
-            </th>
+            </td>
             <td>
               <Chip tone={each.down ? 'danger' : 'ok'}>
                 <Icon name={each.down ? 'Close' : 'Confirmed'} size={12} />{' '}
@@ -413,11 +437,13 @@ export function Diagnostics({ client }: { client: Client }) {
       </Part>
       <Part title={words('admin.diag-deliveries')}>
         <p>
-          {words('admin.diag-webhooks', {
-            failing: webhooks.failing,
-            subscriptions: webhooks.subscriptions,
-            off: webhooks.disabledFailing,
-          })}
+          {webhooks.subscriptions === 0
+            ? words('admin.diag-no-webhooks')
+            : words('admin.diag-webhooks', {
+                failing: webhooks.failing,
+                subscriptions: webhooks.subscriptions,
+                off: webhooks.disabledFailing,
+              })}
         </p>
         <p>
           {!mail.enabled
