@@ -72,6 +72,12 @@ describe('a component group in a document', () => {
           newer: { id: 'g2', number: '2.0' },
         },
         { placement: 'n-other', group: null },
+        {
+          placement: 'n-unread',
+          group: { id: GROUP, title: null },
+          version: { id: 'g1', number: '1.0' },
+          newer: null,
+        },
         'nonsense',
       ]),
     ).toEqual([
@@ -80,6 +86,12 @@ describe('a component group in a document', () => {
         group: { id: GROUP, title: 'SOP references' },
         version: { id: 'g1', number: '1.0' },
         newer: { id: 'g2', number: '2.0' },
+      },
+      {
+        placement: 'n-unread',
+        group: { id: GROUP, title: null },
+        version: { id: 'g1', number: '1.0' },
+        newer: null,
       },
     ]);
     expect(groupsIn(undefined)).toEqual([]);

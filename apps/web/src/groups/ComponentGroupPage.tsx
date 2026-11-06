@@ -149,7 +149,7 @@ export function ComponentGroupPage({ client, id }: { client: Client; id: string 
       if (isView(data)) {
         shown(data);
         setNotice(words('groups.saved-as-version', { number: data.version.number }));
-      } else if (error?.code === 'version_stale') {
+      } else if (error?.code === 'version_precondition') {
         await load();
         setNotice(words('groups.the-group-changed-since-you'));
       } else {

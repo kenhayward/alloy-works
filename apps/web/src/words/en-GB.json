@@ -6319,5 +6319,9 @@
   "groups.took-the-version": "Took the group version.",
   "groups.removed-the-group": "Removed the group.",
   "groups.in-the-group": "In the group {title}",
-  "groups.a-component-group": "a component group"
+  "groups.a-component-group": "a component group",
+  "groups.a-group-you-may-not-read": "A group you may not read holds it too.",
+  "lifecycle.refused-grouped": "{count, plural, one {A component group pins it} other {Component groups pin it}}: {names}.{unreadable, select, yes { One you may not read does too.} other {}}",
+  "lifecycle.refused-grouped-unseen": "A component group you may not read pins it.",
+  "groups.part-of-a-group-you": "Part of a component group you may not read, version {number}."
 }

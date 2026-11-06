@@ -20,7 +20,8 @@ interface Numbered {
 /** A group a document places, as its view gives it (REU-061): `newer` is an approved version not taken. */
 export interface PlacedGroupView {
   readonly placement: string;
-  readonly group: { readonly id: string; readonly title: string };
+  /** Its title null where the reader may not read the group. */
+  readonly group: { readonly id: string; readonly title: string | null };
   readonly version: Numbered;
   readonly newer: Numbered | null;
 }
@@ -39,7 +40,11 @@ export function groupsIn(value: unknown): readonly PlacedGroupView[] {
   return value.flatMap((each: unknown) => {
     if (!isRecord(each) || typeof each.placement !== 'string') return [];
     const { group } = each;
-    if (!isRecord(group) || typeof group.id !== 'string' || typeof group.title !== 'string')
+    if (
+      !isRecord(group) ||
+      typeof group.id !== 'string' ||
+      (typeof group.title !== 'string' && group.title !== null)
+    )
       return [];
     const version = numbered(each.version);
     if (version === undefined) return [];
@@ -274,6 +279,7 @@ export function PlacedGroup({
   const [busy, setBusy] = useState(false);
   const path = { id: documentId, placement: placed.placement };
   // The sentence about the group, split where its title goes so the title can be its link.
+  const unread = placed.group.title === null;
   const [before, after] = words('groups.part-of-the-group', {
     title: MARK,
     number: placed.version.number,
@@ -301,15 +307,21 @@ export function PlacedGroup({
   return (
     <div className={styles['placed']}>
       <p>
-        {before}
-        <a href={`#/component-groups/${placed.group.id}`} data-content>
-          {placed.group.title}
-        </a>
-        {after}
+        {unread ? (
+          words('groups.part-of-a-group-you', { number: placed.version.number })
+        ) : (
+          <>
+            {before}
+            <a href={`#/component-groups/${placed.group.id}`} data-content>
+              {placed.group.title}
+            </a>
+            {after}
+          </>
+        )}
       </p>
       {editable && (
         <div className={styles['acts']}>
-          {placed.newer !== null && (
+          {placed.newer !== null && !unread && (
             <button type="button" onClick={() => setTaking(true)}>
               {words('groups.take-version', { number: placed.newer.number })}
             </button>
@@ -333,7 +345,7 @@ export function PlacedGroup({
         </div>
       )}
       {said !== null && <p role="status">{said}</p>}
-      {taking && placed.newer !== null && (
+      {taking && placed.newer !== null && placed.group.title !== null && (
         <TakeDialog
           client={client}
           path={path}

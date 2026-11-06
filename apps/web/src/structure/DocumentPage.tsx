@@ -2986,7 +2986,13 @@ export function DocumentPage({
                   busy={busy}
                   onOperation={(operation) => apply(operation, false)}
                   groupTitles={
-                    new Map(document.groups.map((each) => [each.placement, each.group.title]))
+                    new Map(
+                      document.groups.flatMap((each) =>
+                        each.group.title === null
+                          ? []
+                          : [[each.placement, each.group.title] as const],
+                      ),
+                    )
                   }
                   placeFrom={
                     <>
