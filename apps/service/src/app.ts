@@ -58,7 +58,7 @@ import {
   ownTenantState,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { createMeasuring, type Measuring } from './measure.js';
+import { createMeasuring, flushEveryMinute, type Measuring } from './measure.js';
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
@@ -420,12 +420,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       { failed: (error) => app.log.error({ err: error }, 'measurements could not be written') },
     );
   if (options.measuring === undefined) {
-    const flushing = setInterval(() => void measuring.flush(), 60_000);
-    flushing.unref();
-    app.addHook('onClose', async () => {
-      clearInterval(flushing);
-      await measuring.flush();
-    });
+    const stop = flushEveryMinute(measuring);
+    app.addHook('onClose', stop);
   }
   const measured = new WeakMap<FastifyRequest, { tenant: Tenant; refused: boolean }>();
   app.addHook('onResponse', async (request, reply) => {

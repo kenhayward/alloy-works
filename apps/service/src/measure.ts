@@ -127,3 +127,13 @@ export function createMeasuring(
     }
   }
 }
+
+/** Flushes once a minute, not holding the process open; the returned stop flushes what is left. */
+export function flushEveryMinute(measuring: Measuring): () => Promise<void> {
+  const flushing = setInterval(() => void measuring.flush(), 60_000);
+  flushing.unref();
+  return async () => {
+    clearInterval(flushing);
+    await measuring.flush();
+  };
+}
