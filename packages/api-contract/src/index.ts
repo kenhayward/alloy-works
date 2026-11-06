@@ -839,6 +839,14 @@ export {
   templateMoveRoutes,
 } from './template-moves.js';
 export {
+  CopyAnswer,
+  CopyBody,
+  CopyPreviewAnswer,
+  CopyRefusal,
+  copyingRoutes,
+  type CopyParams,
+} from './copying.js';
+export {
   MoveBody,
   MoveAnswer,
   MovePreviewAnswer,

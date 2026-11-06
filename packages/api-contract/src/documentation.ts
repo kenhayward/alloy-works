@@ -314,6 +314,8 @@ const operationTags = {
     'listComponentTypes',
     'moveToSpace',
     'previewMoveToSpace',
+    'copyArtifact',
+    'copyArtifactPreview',
   ],
   Components: [
     'listComponents',
@@ -1024,6 +1026,10 @@ const descriptions: Readonly<Record<string, string>> = {
     "Moves a component, document, template or image to another space, changing nothing it says and cutting no version. A document's publications follow, and with `also` its components and their images, each decided for itself and otherwise left and listed. Grants on what moves end, but for a publication's shares; who may read it then follows the new space at once. Needs administer on it, and create or administer at the target. Supply the space it was read in.",
   previewMoveToSpace:
     'Answers what `moveToSpace` would do now, or how it would refuse, and what it would leave behind, changing nothing.',
+  copyArtifact:
+    "Makes a copy of a document, component or template under a new title, in its own space or another, as one transaction. A document's copy keeps its outline's node identities, its template, parameters, values, language, profile, waivers and each binding's latest result, and with `components` reuses every component, copies only those no other document places (the default) or copies every one, each at the version the document shows; a component the template requires, or one deleted or archived, is reused. A component's copy is its latest version; a template's is its definition under the new name. A copy starts at 0.1 in its workflow's first state, with no other version, comment, baseline, publication or grant. A title in use there is answered, not refused. Needs read on it, and create at the target, or design for a template.",
+  copyArtifactPreview:
+    'Answers what `copyArtifact` would make and reuse now, whether the title is in use there, and what a copy in another space leaves behind, changing nothing.',
   setDocumentLanguage:
     'Changes the language a document is written in, and with `components` each component it references, as one transaction. A component the caller may not edit, one being edited, one the document pins behind its latest, and one already translated into that language are left as they were and counted. Supply the version that was read.',
   editOutline:

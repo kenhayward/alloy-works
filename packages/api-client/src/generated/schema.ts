@@ -99,6 +99,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/artifacts/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a document, component or template under a new title
+         * @description Makes a copy of a document, component or template under a new title, in its own space or another, as one transaction. A document's copy keeps its outline's node identities, its template, parameters, values, language, profile, waivers and each binding's latest result, and with `components` reuses every component, copies only those no other document places (the default) or copies every one, each at the version the document shows; a component the template requires, or one deleted or archived, is reused. A component's copy is its latest version; a template's is its definition under the new name. A copy starts at 0.1 in its workflow's first state, with no other version, comment, baseline, publication or grant. A title in use there is answered, not refused. Needs read on it, and create at the target, or design for a template.
+         */
+        post: operations["copyArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/artifacts/{id}/copy/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What copying would make, reuse and leave behind
+         * @description Answers what `copyArtifact` would make and reuse now, whether the title is in use there, and what a copy in another space leaves behind, changing nothing.
+         */
+        post: operations["copyArtifactPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts/{id}/impact": {
         parameters: {
             query?: never;
@@ -11653,6 +11693,588 @@ export interface operations {
             };
             /** @description The caller may read the level but may not administer it, or anything above it */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    copyArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "to": "00000000-0000-4000-8000-000000000001",
+                 *       "title": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The space to make the copy in: its own, or another */
+                    to: string & (unknown & unknown);
+                    /** @description The copy's title, or a template's name; one in use there is warned of */
+                    title: string;
+                    /**
+                     * @description A document's components: reuse every one, copy only those no other document places (the default), or copy every one
+                     * @enum {string}
+                     */
+                    components?: "reuse" | "own" | "all";
+                };
+            };
+        };
+        responses: {
+            /** @description Copied */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "version": "00000000-0000-4000-8000-000000000001",
+                     *       "kind": "document",
+                     *       "titleInUse": false,
+                     *       "copied": -9007199254740991,
+                     *       "reused": -9007199254740991,
+                     *       "required": -9007199254740991,
+                     *       "kept": -9007199254740991,
+                     *       "unreadable": -9007199254740991,
+                     *       "approvedToLatest": -9007199254740991,
+                     *       "newestShown": -9007199254740991,
+                     *       "overridesDropped": -9007199254740991,
+                     *       "lines": -9007199254740991,
+                     *       "translations": -9007199254740991,
+                     *       "components": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The copy */
+                        id: string & (unknown & unknown);
+                        /** @description Its one version, 0.1 */
+                        version: string & (unknown & unknown);
+                        /** @enum {string} */
+                        kind: "document" | "component" | "template";
+                        /** @description Another of its kind the caller may read in that space has this title */
+                        titleInUse: boolean;
+                        /** @description Components a document's copy makes */
+                        copied: number;
+                        /** @description Components it places that it reuses */
+                        reused: number;
+                        /** @description Of those reused, the ones its template requires, never copied */
+                        required: number;
+                        /** @description Of those reused, the deleted or archived ones, never copied */
+                        kept: number;
+                        /** @description Of those it would copy, the ones the caller may not read, which refuse the copy */
+                        unreadable: number;
+                        /** @description References to a copy that tracked the approved revision, now its latest */
+                        approvedToLatest: number;
+                        /** @description Components placed at more than one version, copied at the newest shown */
+                        newestShown: number;
+                        /** @description Local overrides dropped, their paragraph changed at the version copied */
+                        overridesDropped: number;
+                        /** @description Divergent lines of what is copied, which are not */
+                        lines: number;
+                        /** @description Translations of what is copied, which are not */
+                        translations: number;
+                        /** @description Each component a document's copy made, by the one it was made from */
+                        components: {
+                            from: string & (unknown & unknown);
+                            copy: string & (unknown & unknown);
+                        }[];
+                    };
+                };
+            };
+            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                        /** @description copy_too_large: the most components one copy makes */
+                        limit?: number;
+                        /** @description copy_unreadable: how many components it would copy the caller may not read */
+                        unreadable?: number;
+                        /** @description values_invalid: each value that no longer fits its field */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It needs read on the artifact, and create at the target (design, for a template) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact or space, or the caller may not read it */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description space_archived: the target is archived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    copyArtifactPreview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "to": "00000000-0000-4000-8000-000000000001",
+                 *       "title": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The space to make the copy in: its own, or another */
+                    to: string & (unknown & unknown);
+                    /** @description The copy's title, or a template's name; one in use there is warned of */
+                    title: string;
+                    /**
+                     * @description A document's components: reuse every one, copy only those no other document places (the default), or copy every one
+                     * @enum {string}
+                     */
+                    components?: "reuse" | "own" | "all";
+                };
+            };
+        };
+        responses: {
+            /** @description What the copy would do, nothing changing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "kind": "document",
+                     *       "titleInUse": false,
+                     *       "copied": -9007199254740991,
+                     *       "reused": -9007199254740991,
+                     *       "required": -9007199254740991,
+                     *       "kept": -9007199254740991,
+                     *       "unreadable": -9007199254740991,
+                     *       "approvedToLatest": -9007199254740991,
+                     *       "newestShown": -9007199254740991,
+                     *       "overridesDropped": -9007199254740991,
+                     *       "lines": -9007199254740991,
+                     *       "translations": -9007199254740991,
+                     *       "limit": -9007199254740991,
+                     *       "consequences": {
+                     *         "citations": -9007199254740991,
+                     *         "terms": -9007199254740991,
+                     *         "imagesStaying": -9007199254740991,
+                     *         "bound": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "document" | "component" | "template";
+                        /** @description Another of its kind the caller may read in that space has this title */
+                        titleInUse: boolean;
+                        /** @description Components a document's copy makes */
+                        copied: number;
+                        /** @description Components it places that it reuses */
+                        reused: number;
+                        /** @description Of those reused, the ones its template requires, never copied */
+                        required: number;
+                        /** @description Of those reused, the deleted or archived ones, never copied */
+                        kept: number;
+                        /** @description Of those it would copy, the ones the caller may not read, which refuse the copy */
+                        unreadable: number;
+                        /** @description References to a copy that tracked the approved revision, now its latest */
+                        approvedToLatest: number;
+                        /** @description Components placed at more than one version, copied at the newest shown */
+                        newestShown: number;
+                        /** @description Local overrides dropped, their paragraph changed at the version copied */
+                        overridesDropped: number;
+                        /** @description Divergent lines of what is copied, which are not */
+                        lines: number;
+                        /** @description Translations of what is copied, which are not */
+                        translations: number;
+                        /** @description The most components one copy makes */
+                        limit: number;
+                        /** @description What a copy in another space leaves behind in this one; null in the same space */
+                        consequences: {
+                            /** @description Citations of the original space's bibliography */
+                            citations: number;
+                            /** @description Marked terms, which print as their words */
+                            terms: number;
+                            /** @description Images staying, which new readers may not read */
+                            imagesStaying: number;
+                            /** @description Bound parts, whose query definition stays */
+                            bound: number;
+                        } | null;
+                    };
+                };
+            };
+            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                        /** @description copy_too_large: the most components one copy makes */
+                        limit?: number;
+                        /** @description copy_unreadable: how many components it would copy the caller may not read */
+                        unreadable?: number;
+                        /** @description values_invalid: each value that no longer fits its field */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It needs read on the artifact, and create at the target (design, for a template) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact or space, or the caller may not read it */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description space_archived: the target is archived */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -111311,6 +111933,8 @@ export interface operations {
                             mayCreate: boolean;
                             /** @description Whether the caller may move content into this space: create or administer there */
                             mayMoveInto: boolean;
+                            /** @description Whether the caller may design a template in this space; never in one archived */
+                            mayDesign: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;

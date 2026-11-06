@@ -43,6 +43,7 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **LIF-032** | `sequence` is a per-tenant identity, monotonic in commit order of its assignment; order is read by sequence, never by time ([Order](#order))                       |
 | **LIF-056** | The log is under no retention policy in T3: kept for ever, never shorter than anything it describes ([Retention](#retention))                                      |
 | **LIF-073** | Hold applied and removed, archival and deletion are kinds of their own; gate rejection (LIF-074) is declared                                                       |
+| **LIF-079** | `artifact.copied`, written once for each copy made: a document, a template, and each component a document's copy makes ([structure.md](structure.md), Copying)     |
 | **LIF-069** | A bound value revised and an asset ingested are kinds of their own                                                                                                 |
 | **LIF-070** | A relationship made, changed and removed, and an access to a shared publication, are kinds of their own, each written by its act's design                          |
 | **LIF-025** | Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))                                 |

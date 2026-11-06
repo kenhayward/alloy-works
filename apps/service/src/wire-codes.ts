@@ -138,6 +138,9 @@ const WIRE_CODES = {
   'move.too_large': 'move_too_large',
   'artifact.not_movable': 'artifact_not_movable',
   'asset.uploading': 'asset_uploading',
+  // A copy's own refusals (the RM plan, RM-H, RM-K).
+  'copy.too_large': 'copy_too_large',
+  'copy.unreadable': 'copy_unreadable',
   'artifact.held': 'artifact_held',
   'artifact.kept': 'artifact_kept',
   'space.name_invalid': 'space_name_invalid',
@@ -326,6 +329,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'approval.author': 'LIF-010',
   // A transition taken, or a gate approved, while what it requires is unmet (workflow.md, WF3-B).
   'conditions.unmet': 'LIF-004',
+  // A copy of more components than it makes at once (the RM plan, RM-H).
+  'copy.too_large': 'REU-057',
   // A prompt run on a part of another component type than it declares it writes (the GC plan, GC-C).
   'prompt.output_mismatch': 'GEN-004',
 };

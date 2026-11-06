@@ -50,6 +50,7 @@ describe('the rule behind a refusal', () => {
       ['reason.required', 'reason_required', 'LIF-061'],
       ['approval.author', 'approval_author', 'LIF-010'],
       ['conditions.unmet', 'conditions_unmet', 'LIF-004'],
+      ['copy.too_large', 'copy_too_large', 'REU-057'],
       ['prompt.output_mismatch', 'prompt_output_mismatch', 'GEN-004'],
       ['grant.last_holder', 'grant_last_holder', 'IAM-088'],
       ['group.last_holder', 'group_last_holder', 'IAM-088'],
@@ -192,6 +193,8 @@ describe('the rule behind a refusal', () => {
       'asset.uploading',
       'artifact.held',
       'artifact.kept',
+      // A copy of a component its copier may not read (the RM plan, RM-K): the design's own guard.
+      'copy.unreadable',
       // A space's own guards (the SP1 plan, SP-B to SP-D): a name past its shape or taken, the last
       // live space, and a creation in an archived one. ADM-049 asks that a space can be archived;
       // what archiving refuses is the design's.

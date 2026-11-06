@@ -8146,13 +8146,22 @@
       "line": 212
     },
     {
+      "id": "LIF-079",
+      "area": "LIF",
+      "statement": "The list in LIF-067 must also include a document, component or template copied (**REU-058**), as an event type of its own",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "LIF-lifecycle-workflow-and-audit.md",
+      "line": 213
+    },
+    {
       "id": "LIF-062",
       "area": "LIF",
       "statement": "Every recorded time must be an absolute instant in UTC, with the local offset preserved where the local time is part of the act - a signature, an effective date - and displayed in the reader's own zone (**COL-054**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "LIF-063",
@@ -8161,7 +8170,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "LIF-064",
@@ -8170,7 +8179,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-069",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "LIF-069",
@@ -8179,7 +8188,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "LIF-070",
@@ -8188,7 +8197,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "LIF-071",
@@ -8197,7 +8206,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "LIF-072",
@@ -8206,7 +8215,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "LIF-065",
@@ -8215,7 +8224,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "LIF-066",
@@ -8224,7 +8233,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "LIF-033",
@@ -8233,7 +8242,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 251
+      "line": 252
     },
     {
       "id": "LIF-034",
@@ -8242,7 +8251,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 252
+      "line": 253
     },
     {
       "id": "LIF-035",
@@ -8251,7 +8260,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 253
+      "line": 254
     },
     {
       "id": "LOC-001",
@@ -15255,37 +15264,37 @@
       "id": "LIF-N01",
       "statement": "**Not an electronic signature provider.** The product records an attested act; a qualified signature is somebody else's business",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 262
+      "line": 263
     },
     {
       "id": "LIF-N02",
       "statement": "**No editing or deletion of audit entries**, by anybody, including an administrator",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 263
+      "line": 264
     },
     {
       "id": "LIF-N03",
       "statement": "**No workflow scripting.** Transitions are declared, not programmed; an escape hatch here becomes an unauditable path",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 264
+      "line": 265
     },
     {
       "id": "LIF-N04",
       "statement": "**Not a records management system** for anything other than this product's own content",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 265
+      "line": 266
     },
     {
       "id": "LIF-N05",
       "statement": "**No branching by copying.** A divergent line (LIF-044) is a declared relationship between revisions of one artifact, never a duplicate artifact somebody keeps in step by hand",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 266
+      "line": 267
     },
     {
       "id": "LIF-N06",
       "statement": "**Not a version control system.** Divergence here is a regulated fact - two revisions effective in two places - not a development workflow. Nothing rebases, cherry-picks, replays or rewrites history",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 267
+      "line": 268
     },
     {
       "id": "LOC-N01",
@@ -16119,49 +16128,49 @@
       "question": "**Which regimes are targeted first?** 21 CFR Part 11, SOX and GxP overlap but differ in what they require of a signature and a record",
       "settledBy": "The first customer. It decides how much of section 4 is needed at once",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 273
+      "line": 274
     },
     {
       "id": "LIF-Q02",
       "question": "**Is the audit log write-once at the storage layer, or only by policy?** LIF-025 says impossible through any product surface, which is weaker than immutable",
       "settledBy": "The storage decision, and whether an auditor will accept application-enforced immutability",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 274
+      "line": 275
     },
     {
       "id": "LIF-Q03",
       "question": "**How does erasure of personal data work against LIF-025 (see VER-038)?**",
       "settledBy": "One design decision covering both, taken with legal input",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 275
+      "line": 276
     },
     {
       "id": "LIF-Q04",
       "question": "**Do components have their own lifecycle, or only documents?** A component approved once and reused in forty reports is attractive and hard",
       "settledBy": "**Settled: yes, and it is not optional.** Customers were unambiguous - an approved component carries value on its own and stays approved while the document around it is still being polished. Section 5, LIF-036 to LIF-041, with \"latest approved\" as a third reference mode",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 276
+      "line": 277
     },
     {
       "id": "LIF-Q05",
       "question": "**How far does bringing a divergent line back go (LIF-045)?** Choosing a side is simple and loses work; reconciling two changed revisions is a three-way merge of content, which is a large piece of work",
       "settledBy": "The first customer who diverges and then converges. Until then LIF-045 requires comparison, an explicit act and a record of what was left behind, which is the part that cannot be added later",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 277
+      "line": 278
     },
     {
       "id": "LIF-Q06",
       "question": "**What happens by default when a review date passes and nobody acts (LIF-059)?** A state change is safe and disruptive; a flag is gentle and ignorable",
       "settledBy": "**Answered (ADR-0061): visibility alone** by default; LIF-059 lets a workflow definition declare a state change or an escalation instead",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 278
+      "line": 279
     },
     {
       "id": "LIF-Q07",
       "question": "**Is the scope a revision is effective for (LIF-042) the same axis as a profiling condition (**REU**)?** A plant and a market look like conditions, and effectiveness is a property of a revision rather than of content",
       "settledBy": "A decision with **REU**. Sharing the axis makes one vocabulary; separating them stops a content filter deciding what is legally in force",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 279
+      "line": 280
     },
     {
       "id": "LOC-Q01",
@@ -16824,6 +16833,10 @@
         {
           "id": "LIF-073",
           "howItIsMet": "Hold applied and removed, archival and deletion are kinds of their own; gate rejection (LIF-074) is declared"
+        },
+        {
+          "id": "LIF-079",
+          "howItIsMet": "`artifact.copied`, written once for each copy made: a document, a template, and each component a document's copy makes ([structure.md](structure.md), Copying)"
         },
         {
           "id": "LIF-069",
@@ -20289,6 +20302,18 @@
           "howItIsMet": "A placement adds a new section of the author's, titled by them, holding one new reference per occurrence in the found section's subtree in the mode chosen; nothing is shared and no value copied; refused where the source moved since the report or a component is not the author's to reference"
         },
         {
+          "id": "REU-056",
+          "howItIsMet": "`POST /v1/artifacts/{id}/copy` copies a document, a component or a template under a new title into a space the caller may create in (design in, for a template); a title in use there is answered by the preview, not refused (RM-F)"
+        },
+        {
+          "id": "REU-057",
+          "howItIsMet": "A document's copy reuses every component, copies only those no other document places (the default), or copies every one, never one its template requires or one archived or deleted; the preview counts what it copies and reuses before it is made, and a copy past 200 components, or of one the caller may not read, is refused (`previewCopy`; RM-G, RM-H, RM-K)"
+        },
+        {
+          "id": "REU-058",
+          "howItIsMet": "A copy keeps the outline and its node ids, so cross-references, section titles and bound parts' resolutions hold; its template at its effective version, waivers, parameters, values, language, profile and scope; each bound part's latest resolution and the revisions on it. No versions, comments, baselines, publications or grants; it starts its workflow's first state and is audited as `artifact.copied` (`copyArtifact`; the RM plan, RM-I to RM-N)"
+        },
+        {
           "id": "REU-011",
           "howItIsMet": "A reference's `overrides` replace a paragraph's text of its component in this document alone, at most twenty: text runs and their marks, so no number, binding, footnote or cross-reference changes ([the R4 plan](../plans/2026-10-15-r4-local-overrides.md), R4-A)"
         },
@@ -22584,13 +22609,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 839,
+      "line": 841,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 852,
+      "line": 854,
       "kind": "title"
     },
     {
@@ -23134,6 +23159,24 @@
       "kind": "title"
     },
     {
+      "id": "LIF-079",
+      "file": "apps/service/src/copying-routes.test.ts",
+      "line": 304,
+      "kind": "title"
+    },
+    {
+      "id": "REU-056",
+      "file": "apps/service/src/copying-routes.test.ts",
+      "line": 210,
+      "kind": "title"
+    },
+    {
+      "id": "REU-057",
+      "file": "apps/service/src/copying-routes.test.ts",
+      "line": 175,
+      "kind": "title"
+    },
+    {
       "id": "IAM-021",
       "file": "apps/service/src/creating-roles.test.ts",
       "line": 103,
@@ -23172,7 +23215,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2350,
+      "line": 2354,
       "kind": "title"
     },
     {
@@ -27340,6 +27383,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-056",
+      "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
+      "line": 97,
+      "kind": "title"
+    },
+    {
+      "id": "REU-057",
+      "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
+      "line": 60,
+      "kind": "title"
+    },
+    {
       "id": "SCH-064",
       "file": "apps/web/src/listing/views.test.tsx",
       "line": 117,
@@ -30844,6 +30899,24 @@
       "kind": "title"
     },
     {
+      "id": "REU-056",
+      "file": "packages/db/src/copies.test.ts",
+      "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "REU-057",
+      "file": "packages/db/src/copies.test.ts",
+      "line": 159,
+      "kind": "title"
+    },
+    {
+      "id": "REU-058",
+      "file": "packages/db/src/copies.test.ts",
+      "line": 204,
+      "kind": "title"
+    },
+    {
       "id": "CNT-124",
       "file": "packages/db/src/creation.test.ts",
       "line": 86,
@@ -33408,13 +33481,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 296,
+      "line": 298,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 273,
+      "line": 275,
       "kind": "title"
     },
     {
@@ -34464,7 +34537,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1221,
+      "line": 1226,
       "kind": "title"
     },
     {
@@ -35676,6 +35749,18 @@
     {
       "id": "VER-046",
       "file": "packages/domain/src/structure/baseline.test.ts",
+      "line": 75,
+      "kind": "title"
+    },
+    {
+      "id": "REU-057",
+      "file": "packages/domain/src/structure/copy.test.ts",
+      "line": 199,
+      "kind": "title"
+    },
+    {
+      "id": "REU-058",
+      "file": "packages/domain/src/structure/copy.test.ts",
       "line": 75,
       "kind": "title"
     },
@@ -36990,13 +37075,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1442,
+      "line": 1459,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1011,
+      "line": 1028,
       "kind": "title"
     },
     {

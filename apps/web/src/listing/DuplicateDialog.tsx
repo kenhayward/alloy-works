@@ -18,23 +18,51 @@ export interface Previewed {
   readonly titleInUse: boolean;
   /** What it says it would refuse, in the service's words, or null. */
   readonly refused: string | null;
-  /** What going to another space would cost, each said whole. */
+  /** What it reuses rather than copies, drops, and leaves behind in another space, each said whole. */
   readonly costs: readonly string[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+const count = (data: Record<string, unknown>, key: string): number =>
+  typeof data[key] === 'number' ? (data[key] as number) : 0;
+
+/** What a count says, where it is not none, in the plural it needs. */
+const said = (key: string, n: number, more: Record<string, unknown> = {}): string[] =>
+  n > 0 ? [words(key as never, { count: n, ...more } as never)] : [];
+
+/**
+ * The preview's answer (`CopyPreviewAnswer`): the counts said as sentences, and what would refuse the
+ * copy said here, since the preview reports rather than refuses.
+ */
 export function previewIn(data: unknown): Previewed | null {
   if (!isRecord(data)) return null;
-  const counts = isRecord(data.counts) ? data.counts : {};
+  const limit = count(data, 'limit');
+  const copied = count(data, 'copied');
+  const unreadable = count(data, 'unreadable');
+  const left = isRecord(data.consequences) ? data.consequences : {};
   return {
-    copies: typeof counts.copied === 'number' ? counts.copied : 0,
+    copies: copied,
     titleInUse: data.titleInUse === true,
-    refused: null,
-    costs: Array.isArray(data.costs)
-      ? data.costs.filter((each): each is string => typeof each === 'string')
-      : [],
+    refused:
+      limit > 0 && copied > limit
+        ? words('rows.copy-too-large', { limit })
+        : unreadable > 0
+          ? words('rows.copy-unreadable', { count: unreadable })
+          : null,
+    costs: [
+      ...said('rows.copy-required', count(data, 'required')),
+      ...said('rows.copy-kept', count(data, 'kept')),
+      ...said('rows.copy-approved-to-latest', count(data, 'approvedToLatest')),
+      ...said('rows.copy-newest-shown', count(data, 'newestShown')),
+      ...said('rows.copy-overrides-dropped', count(data, 'overridesDropped')),
+      ...said('rows.copy-lines', count(data, 'lines') + count(data, 'translations')),
+      ...said('moving.citations', count(left, 'citations')),
+      ...said('moving.terms', count(left, 'terms')),
+      ...said('moving.images-staying', count(left, 'imagesStaying')),
+      ...said('moving.bound', count(left, 'bound')),
+    ],
   };
 }
 
@@ -44,12 +72,16 @@ const refusalIn = (data: unknown): string =>
 type Body = { to: string; title: string; components?: Components };
 
 async function post(client: Client, id: string, path: 'copy' | 'copy/preview', body: Body) {
-  const route = `/v1/artifacts/{id}/${path}` as '/v1/artifacts/{id}/move';
-  const { data, error, response } = await client.POST(route, {
-    params: { path: { id } },
-    body: body as never,
-  });
-  return { data: data as unknown, error: error as unknown, ok: response.ok };
+  const options = { params: { path: { id } }, body };
+  try {
+    const { data, error, response } =
+      path === 'copy'
+        ? await client.POST('/v1/artifacts/{id}/copy', options)
+        : await client.POST('/v1/artifacts/{id}/copy/preview', options);
+    return { data: data as unknown, error: error as unknown, ok: response.ok };
+  } catch {
+    return { data: undefined, error: undefined, ok: false };
+  }
 }
 
 /**
@@ -164,7 +196,7 @@ export function DuplicateDialog({
         <p>{words('rows.it-copies', { count: previewed.copies })}</p>
       )}
       {previewed !== null && previewed.costs.length > 0 && (
-        <ul aria-label={words('rows.what-the-space-costs')}>
+        <ul aria-label={words('rows.what-the-copy-leaves')}>
           {previewed.costs.map((cost) => (
             <li key={cost}>{cost}</li>
           ))}

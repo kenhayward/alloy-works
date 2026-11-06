@@ -30,7 +30,22 @@ function service({ inUse = false, hold }: { inUse?: boolean; hold?: Promise<void
     bodies.push({ path: pathname, body });
     if (pathname === `/v1/artifacts/${MANUAL}/copy/preview`) {
       const copied = body['components'] === 'all' ? 12 : body['components'] === 'own' ? 4 : 0;
-      return json(200, { counts: { copied }, titleInUse: inUse, costs: [] });
+      return json(200, {
+        kind: 'document',
+        titleInUse: inUse,
+        copied,
+        reused: 12 - copied,
+        required: body['components'] === 'reuse' ? 0 : 1,
+        kept: 0,
+        unreadable: 0,
+        approvedToLatest: 0,
+        newestShown: 0,
+        overridesDropped: 0,
+        lines: 0,
+        translations: 0,
+        limit: copied === 12 ? 10 : 200,
+        consequences: null,
+      });
     }
     if (pathname === `/v1/artifacts/${MANUAL}/copy`) {
       await hold;
@@ -60,7 +75,14 @@ describe('Duplicate', () => {
     expect(screen.getByRole('radio', { name: /^Copy only its own components/ })).toBeChecked();
     expect(await screen.findByText('It copies 4 components.')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'Copy every component' }));
-    expect(await screen.findByText('It copies 12 components.')).toBeInTheDocument();
+    // Past the limit the service states, refused before it is asked (REU-057).
+    expect(
+      await screen.findByText('It would copy more than 10 components. Reuse some of them instead.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Duplicate' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('list', { name: 'What the copy reuses and leaves' })).toHaveTextContent(
+      '1 component its template requires is reused, never copied.',
+    );
     await user.click(screen.getByRole('radio', { name: 'Reuse every component' }));
     expect(await screen.findByText('It copies no components.')).toBeInTheDocument();
 
