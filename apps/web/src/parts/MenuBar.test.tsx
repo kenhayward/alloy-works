@@ -166,6 +166,36 @@ describe('the menu bar', () => {
     expect(screen.getByRole('textbox', { name: 'Text' })).toHaveFocus();
   });
 
+  it('a flyout says when it opens, and its rows can change while it is open', async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    const row = (enabled: boolean) => [
+      { kind: 'item' as const, key: 'archive', label: 'Archive', enabled, run: vi.fn() },
+    ];
+    const { rerender } = render(
+      <Flyout label="More actions" entries={row(false)} onOpen={onOpen} under>
+        M
+      </Flyout>,
+    );
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    rerender(
+      <Flyout label="More actions" entries={row(true)} onOpen={onOpen} under>
+        M
+      </Flyout>,
+    );
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    );
+    await user.keyboard('{Escape}');
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
   it('takes no key while a dialog stands over the page', async () => {
     const user = userEvent.setup();
     render(

@@ -277,6 +277,7 @@ describe('making, renaming, archiving and restoring a space (the SP1 plan)', () 
         language: null,
         mayCreate: true,
         mayMoveInto: true,
+        mayDesign: false,
       },
       {
         id: quality.id,
@@ -285,6 +286,7 @@ describe('making, renaming, archiving and restoring a space (the SP1 plan)', () 
         language: null,
         mayCreate: false,
         mayMoveInto: false,
+        mayDesign: false,
       },
     ]);
     expect((await listed({ archived: false })).items).toEqual([
@@ -295,6 +297,7 @@ describe('making, renaming, archiving and restoring a space (the SP1 plan)', () 
         language: null,
         mayCreate: true,
         mayMoveInto: true,
+        mayDesign: false,
       },
     ]);
   });

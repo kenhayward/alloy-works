@@ -115,8 +115,21 @@ function service({ creatable = true } = {}) {
         next: null,
       });
     }
-    if (url.pathname === `/v1/components/${PRINTER}`) {
-      return json(200, { id: PRINTER, content: content('Unbox the printer.', 'Keep the box.') });
+    // A component's own view, as a row's menu reads it: only the printer may be retired.
+    const own = /^\/v1\/components\/([^/]+)$/.exec(url.pathname);
+    if (own && request.method === 'GET') {
+      const id = own[1]!;
+      return json(200, {
+        id,
+        space: { id: GENERAL, name: 'General' },
+        version: { id: 'v2', number: '0.2' },
+        ...(id === PRINTER ? { content: content('Unbox the printer.', 'Keep the box.') } : {}),
+        mayEdit: id === PRINTER,
+        mayRetire: id === PRINTER,
+        mayMove: false,
+        mayHold: false,
+        archived: archived.has(id),
+      });
     }
     if (url.pathname !== '/v1/components') return json(404, {});
     const spaces = url.searchParams.get('spaces');
@@ -248,29 +261,29 @@ describe('the components list', () => {
     );
   });
 
-  it('offers Open and Copy link in a row menu, and Manage access only where it is allowed', async () => {
+  it('SCH-075 offers Open and Copy link in a row menu, and Manage access only where it is allowed', async () => {
+    const user = userEvent.setup();
     const { client } = service();
     render(<ComponentList client={client} principalId="p9" />);
     await screen.findByRole('link', { name: 'Replace the toner' });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
-    expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute(
-      'href',
-      `#/components/${PRINTER}`,
-    );
-    expect(screen.getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
-      'href',
-      `#/components/${PRINTER}/access`,
-    );
-    await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('link', { name: 'Open' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Actions for Install the printer' })).toHaveFocus();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
-    expect(screen.getByRole('link', { name: 'Open' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'More actions for Install the printer' }));
+    expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Copy link' })).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByRole('link', { name: 'Manage access' })).not.toBeInTheDocument(),
+      expect(screen.getByRole('menuitem', { name: 'Manage access' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
+    );
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Replace the toner' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Manage access' }));
+    expect(screen.getByRole('menuitem', { name: 'Manage access' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
     );
   });
 
@@ -280,15 +293,18 @@ describe('the components list', () => {
     render(<ComponentList client={client} principalId="p9" />);
     await screen.findByRole('link', { name: 'Replace the toner' });
 
-    await user.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
-    expect(await screen.findByRole('link', { name: 'Open' })).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
+    await user.click(screen.getByRole('button', { name: 'More actions for Replace the toner' }));
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument());
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
     );
     await user.keyboard('{Escape}');
 
-    await user.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
-    await user.click(await screen.findByRole('button', { name: 'Archive' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for Install the printer' }));
+    const archive = screen.getByRole('menuitem', { name: 'Archive' });
+    await waitFor(() => expect(archive).toHaveAttribute('aria-disabled', 'false'));
+    await user.click(archive);
     expect(await screen.findByText('Archived Install the printer.')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole('link', { name: 'Install the printer' })).not.toBeInTheDocument(),
@@ -298,8 +314,14 @@ describe('the components list', () => {
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     expect(within(link.closest('td')!).getByText('Archived')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Replace the toner' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
-    await user.click(await screen.findByRole('button', { name: 'Unarchive' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for Install the printer' }));
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', { name: 'Unarchive' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'Unarchive' }));
     expect(await screen.findByText('Unarchived Install the printer.')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole('link', { name: 'Install the printer' })).not.toBeInTheDocument(),
@@ -329,8 +351,8 @@ describe('the components list', () => {
     render(<ComponentList client={client} principalId="p9" />);
     await screen.findByRole('link', { name: 'Replace the toner' });
 
-    await user.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
-    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for Replace the toner' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy link' }));
 
     expect(await screen.findByText('Copied the link to Replace the toner.')).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe(

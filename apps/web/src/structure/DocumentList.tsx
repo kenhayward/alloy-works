@@ -16,6 +16,8 @@ import {
   type SortOption,
 } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
+import { ContentRowMenu } from '../listing/ContentRowMenu.js';
+import { DuplicateDialog } from '../listing/DuplicateDialog.js';
 import { DeletedList } from '../lifecycle/Deleted.js';
 import { Lozenge, StateLozenge, stateWord } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
@@ -202,6 +204,13 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   const [deleted, setDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
+  // What a row's menu last said (SCH-075), and the document Duplicate was chosen for (REU-056).
+  const [notice, setNotice] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState<{
+    id: string;
+    title: string;
+    space: string;
+  } | null>(null);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
     async (cursor: string | null) => {
@@ -360,6 +369,9 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
           </Modal>
         )}
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
+        <p role="status" className={styles['status']}>
+          {notice}
+        </p>
         <p className={styles['summary']}>
           <span>
             {filtered
@@ -398,6 +410,9 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                   </th>
                   <th scope="col">{words('document.publishing')}</th>
                   <th scope="col">{words('document.changed')}</th>
+                  <th scope="col" className={styles['actions']}>
+                    <span className="aw-visually-hidden">{words('rows.actions')}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -427,6 +442,21 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                         <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
                       )}
                     </td>
+                    <td className={styles['actions']}>
+                      <ContentRowMenu
+                        client={client}
+                        kind="document"
+                        id={item.id}
+                        title={item.title}
+                        onChanged={(said, changed) => {
+                          setNotice(said);
+                          if (changed) void listing.load(null);
+                        }}
+                        onDuplicate={() =>
+                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                        }
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -434,6 +464,21 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
           </div>
         )}
         <More listing={listing} failed={words('document.more-failed')} />
+        {duplicating !== null && (
+          <DuplicateDialog
+            client={client}
+            kind="document"
+            id={duplicating.id}
+            title={duplicating.title}
+            space={duplicating.space}
+            onDone={(said) => {
+              setDuplicating(null);
+              setNotice(said);
+              void listing.load(null);
+            }}
+            onClose={() => setDuplicating(null)}
+          />
+        )}
       </section>
     </ListLayout>
   );

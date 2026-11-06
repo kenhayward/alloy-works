@@ -293,6 +293,7 @@ describe('creating a component through the service', () => {
         language: null,
         mayCreate: true,
         mayMoveInto: true,
+        mayDesign: true,
       },
       {
         id: quality,
@@ -301,6 +302,7 @@ describe('creating a component through the service', () => {
         language: null,
         mayCreate: false,
         mayMoveInto: true,
+        mayDesign: false,
       },
     ]);
     const alice = await call('alice', 'GET', '/v1/spaces');
@@ -312,6 +314,7 @@ describe('creating a component through the service', () => {
         language: null,
         mayCreate: false,
         mayMoveInto: false,
+        mayDesign: false,
       },
     ]);
     expect((await call(undefined, 'GET', '/v1/spaces')).statusCode).toBe(401);

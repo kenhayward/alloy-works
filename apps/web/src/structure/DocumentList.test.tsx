@@ -101,7 +101,7 @@ function listed() {
 afterEach(() => window.localStorage.clear());
 
 describe('the documents list', () => {
-  it('shows each document as a row: title linking to it, space, version, sections, components, publishing state and when changed', async () => {
+  it('shows each document as a row: title linking to it, space, version, sections, components, publishing state, when changed, and its More actions', async () => {
     render(<DocumentList client={listed()} onOpen={vi.fn()} />);
 
     const link = await screen.findByRole('link', { name: 'Operator manual' });
@@ -116,7 +116,11 @@ describe('the documents list', () => {
       '128',
       'Changed since',
       '3 Dec 2025',
+      '',
     ]);
+    expect(
+      within(link.closest('tr')!).getByRole('button', { name: 'More actions for Operator manual' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument();
     expect(screen.getByText('3 documents you may read.')).toBeInTheDocument();
   });

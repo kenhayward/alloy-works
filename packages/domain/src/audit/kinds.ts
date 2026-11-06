@@ -541,6 +541,12 @@ export const auditKindSpecs = {
     z.strictObject({ from: Id, to: Id }),
     'packages/db/src/moving.ts',
   ),
+  // A document, component or template copied (the RM plan, RM-N): about the copy, naming the original.
+  'artifact.copied': kind(
+    ['LIF-079', 'REU-058'],
+    z.strictObject({ from: Id }),
+    'packages/db/src/copies.ts',
+  ),
   // A component or a document deleted and undeleted (the DL plan, DL-B): about the artifact.
   'artifact.deleted': kind(['LIF-073'], empty, 'packages/db/src/deletion.ts'),
   'artifact.undeleted': kind(['LIF-073'], empty, 'packages/db/src/deletion.ts'),

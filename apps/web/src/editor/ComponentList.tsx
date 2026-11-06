@@ -23,7 +23,8 @@ import { ComponentDetail } from './ComponentDetail.js';
 import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
-import { RowMenu } from './RowMenu.js';
+import { ContentRowMenu } from '../listing/ContentRowMenu.js';
+import { DuplicateDialog } from '../listing/DuplicateDialog.js';
 import { TranslationChips } from '../translation/Translations.js';
 import { words } from '../words/words.js';
 
@@ -90,6 +91,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
+  // The component Duplicate was chosen for (REU-056).
+  const [duplicating, setDuplicating] = useState<{
+    id: string;
+    title: string;
+    space: string;
+  } | null>(null);
   // The row shown in the panel beside the list, and each row's button, to give the focus back to.
   const [shown, setShown] = useState<string | null>(null);
   const showButtons = useRef(new Map<string, HTMLButtonElement>());
@@ -400,13 +407,18 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       >
                         <Icon name="Contents" size={14} />
                       </IconButton>
-                      <RowMenu
+                      <ContentRowMenu
                         client={client}
+                        kind="component"
                         id={item.id}
                         title={item.title}
-                        archived={archived}
-                        onNotice={setNotice}
-                        onArchived={() => void load(null)}
+                        onChanged={(said, changed) => {
+                          setNotice(said);
+                          if (changed) void load(null);
+                        }}
+                        onDuplicate={() =>
+                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                        }
                       />
                     </td>
                   </tr>
@@ -430,6 +442,21 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
               </button>
             </div>
           )
+        )}
+        {duplicating !== null && (
+          <DuplicateDialog
+            client={client}
+            kind="component"
+            id={duplicating.id}
+            title={duplicating.title}
+            space={duplicating.space}
+            onDone={(said) => {
+              setDuplicating(null);
+              setNotice(said);
+              void load(null);
+            }}
+            onClose={() => setDuplicating(null)}
+          />
         )}
       </section>
     </ListLayout>

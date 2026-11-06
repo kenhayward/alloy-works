@@ -284,6 +284,7 @@ export function Flyout({
   className,
   disabled = false,
   under = false,
+  onOpen,
 }: {
   label: string;
   entries: readonly MenuEntry[];
@@ -292,6 +293,8 @@ export function Flyout({
   disabled?: boolean;
   /** Opens under its button, for one in a row; beside it otherwise. */
   under?: boolean;
+  /** Told as it opens, for rows read only then: a row's permissions. */
+  onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
@@ -324,7 +327,10 @@ export function Flyout({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => {
           if (disabled) return;
-          if (!open) before.current = document.activeElement as HTMLElement | null;
+          if (!open) {
+            before.current = document.activeElement as HTMLElement | null;
+            onOpen?.();
+          }
           setOpen((was) => !was);
         }}
       >

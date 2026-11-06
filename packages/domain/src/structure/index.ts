@@ -110,3 +110,13 @@ export {
   overridesSchema,
   type Override,
 } from './overrides.js';
+export {
+  COPY_MAX,
+  chosenCopies,
+  copyContent,
+  copyOutline,
+  type CopiedComponent,
+  type CopyChoice,
+  type CopyCounts,
+  type PlacedComponent,
+} from './copy.js';

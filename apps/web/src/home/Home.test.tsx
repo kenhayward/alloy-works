@@ -87,7 +87,7 @@ describe('Home', () => {
       within(group('Author'))
         .getAllByRole('link')
         .map((each) => each.getAttribute('href')),
-    ).toEqual(['#/components', '#/documents', '#/templates', '#/prompts']);
+    ).toEqual(['#/documents', '#/components', '#/templates', '#/prompts']);
     expect(
       within(group('Library'))
         .getAllByRole('link')

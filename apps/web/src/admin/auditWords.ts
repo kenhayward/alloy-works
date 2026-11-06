@@ -26,6 +26,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'artifact.deleted'() {
     return words('admin.deleted');
   },
+  get 'artifact.copied'() {
+    return words('admin.copied-artifact');
+  },
   get 'artifact.moved'() {
     return words('admin.moved');
   },

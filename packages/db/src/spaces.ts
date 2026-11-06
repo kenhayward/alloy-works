@@ -305,6 +305,8 @@ export interface SpaceForPrincipal {
   readonly mayCreate: boolean;
   /** Whether the caller may move content here: `create` or `administer` (MV-C), never one archived. */
   readonly mayMoveInto: boolean;
+  /** Whether the caller may design a template here (the RM plan, RM-P), never one archived. */
+  readonly mayDesign: boolean;
 }
 
 /**
@@ -369,6 +371,7 @@ export async function listSpacesFor(
         facts !== undefined &&
         (decide('create', { ...facts, scopes }).allowed ||
           administerOrAbove({ ...facts, scopes }).allowed),
+      mayDesign: !archived && facts !== undefined && decide('design', { ...facts, scopes }).allowed,
     });
   }
   return { items: shown, next, snapshot };
