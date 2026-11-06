@@ -90,6 +90,7 @@ import { searchHandlers } from './search.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
+import { crossSiteRefusal } from './cross-site.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { sendStreamed } from './streamed.js';
@@ -446,6 +447,22 @@ export function buildApp(options: AppOptions): FastifyInstance {
     await recordRefusal(db, request, error);
   });
   void app.register(cookie);
+  // Before every route, so no write a browser sent from another site reaches one. The header is read
+  // here, as this may run before the cookie plugin's own hook.
+  app.addHook('onRequest', async (request) => {
+    const header = (name: string) => {
+      const value = request.headers[name];
+      return Array.isArray(value) ? value[0] : value;
+    };
+    const refusal = crossSiteRefusal({
+      method: request.method,
+      session: (header('cookie') ?? '').includes(`${SESSION_COOKIE}=`),
+      ownOrigin: `${request.protocol}://${request.host}`,
+      origin: header('origin'),
+      fetchSite: header('sec-fetch-site'),
+    });
+    if (refusal) throw refusal;
+  });
   if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
