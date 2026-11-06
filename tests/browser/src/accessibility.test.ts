@@ -356,14 +356,31 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await chosen.getByRole('button', { name: 'Close' }).click();
       await leave(chosen);
       await page
-        .getByRole('button', { name: /^Actions for / })
+        .getByRole('button', { name: /^More actions for / })
         .first()
         .click();
-      await check("a component row's menu", {
-        shows: page.getByRole('button', { name: 'Archive', exact: true }),
+      await check("a component row's menu (SCH-075)", {
+        shows: page.getByRole('menuitem', { name: 'Archive', exact: true }),
       });
       await page.keyboard.press('Escape');
-      await leave(page.getByRole('button', { name: 'Archive', exact: true }));
+      await leave(page.getByRole('menuitem', { name: 'Archive', exact: true }));
+      // A document's and a template's, each as its kind has it (SCH-075).
+      for (const [list, first] of [
+        ['documents', 'Copy link'],
+        ['templates', 'Generate documents...'],
+      ] as const) {
+        await page.goto(`${SERVICE}/#/${list}`);
+        await page
+          .getByRole('button', { name: /^More actions for / })
+          .first()
+          .click();
+        await check(`a ${list.slice(0, -1)} row's menu (SCH-075)`, {
+          shows: page.getByRole('menuitem', { name: first, exact: true }),
+        });
+        await page.keyboard.press('Escape');
+        await leave(page.getByRole('menuitem', { name: first, exact: true }));
+      }
+      await page.goto(`${SERVICE}/#/components`);
       const archivedOnly = page.getByRole('checkbox', { name: 'Archived', exact: true });
       await archivedOnly.check();
       await check('the archived components', {
