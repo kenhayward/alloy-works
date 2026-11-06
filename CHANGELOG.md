@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.239.0 - 2026-11-06 (PR #PRNUMBER)
+## 0.239.0 - 2026-11-06 (PR #1020)
 
 Email: an environment chooses how its mail leaves, and people are told by email of notifications, of being invited, and of an environment closing. An installation can also run on the internet, and nobody can give an administrative permission they do not hold.
 
