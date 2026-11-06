@@ -4,6 +4,7 @@ import {
   createOidcClient,
   groupValues,
   MOST_GROUP_VALUES,
+  ORGANISATION_SCOPES,
   SCOPES,
   SignInFailed,
   type ProviderSettings,
@@ -26,7 +27,7 @@ describe('the OpenID Connect client', () => {
 
   afterAll(() => idp.close());
 
-  it('asks for exactly openid, email and profile, with PKCE, a state and a nonce', async () => {
+  it('IAM-090 asks a provider not given offline access, as Google is not, for exactly openid, email and profile, with PKCE, a state and a nonce', async () => {
     const start = await oidc.start(provider, REDIRECT);
     const url = new URL(start.url);
     expect(SCOPES).toBe('openid email profile');
@@ -60,11 +61,13 @@ describe('the OpenID Connect client', () => {
     });
   });
 
-  it('IAM-044 reads the groups a provider asserts from the ID token, having asked for openid, email and profile alone', async () => {
-    const organisation = { ...provider, groupsClaim: 'groups' };
+  it("IAM-090 reads the groups a provider asserts from the ID token, having asked an organisation's provider for openid, email, profile and offline_access alone", async () => {
+    const organisation = { ...provider, groupsClaim: 'groups', offlineAccess: true };
     const start = await oidc.start(organisation, REDIRECT);
-    expect(SCOPES).toBe('openid email profile');
-    expect(new URL(start.url).searchParams.get('scope')).toBe('openid email profile');
+    expect(ORGANISATION_SCOPES).toBe('openid email profile offline_access');
+    expect(new URL(start.url).searchParams.get('scope')).toBe(
+      'openid email profile offline_access',
+    );
     const back = await completeAtStandIn(start.url, 'grace', idp.issuer);
     expect(await oidc.finish(organisation, back, start)).toMatchObject({
       subject: 'grace',

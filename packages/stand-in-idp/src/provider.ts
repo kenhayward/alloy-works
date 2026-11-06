@@ -186,7 +186,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     pkce: { required: () => true },
     // `hd` rides on the openid scope, as Google sends it: present only for a Workspace account. So do
     // `groups`, as an organisation's provider is configured to send them without a scope of their own
-    // (GP-A): the service never asks for one (IAM-044).
+    // (GP-A): the service never asks for one (IAM-090).
     claims: {
       openid: ['sub', 'hd', 'groups'],
       email: ['email', 'email_verified'],

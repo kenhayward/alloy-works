@@ -601,6 +601,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       groupsClaim: row.groups_claim,
       scimClaim: row.scim_claim,
       provisions: row.scim_identity !== null,
+      offlineAccess: true,
     };
   }
 

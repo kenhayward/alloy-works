@@ -116,7 +116,8 @@ describe('the committed trace.json', () => {
     // 1642, from 1639 (2026-11-04): IAM-085, IAM-086 and IAM-087 (TL).
     // 1654, from 1649 (2026-11-06): SCH-075, REU-056 to REU-058 and LIF-079 (RM).
     // 1659, from 1654 (2026-11-06): TPL-074 to TPL-077 and REU-059 (ND).
-    expect(model.requirements).toHaveLength(1659);
+    // 1660, from 1659 (2026-11-06): IAM-090, superseding IAM-044 (PC).
+    expect(model.requirements).toHaveLength(1660);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -739,7 +740,7 @@ describe('the citations in the committed model', () => {
   // 500, from 499 (2026-09-28): W12.3's final review - IAM-049 in packages/db's groups.test.ts, where
   // the decision holds an external principal a provider group reaches to the tenant's cap.
   // 499, from 496 (2026-09-28): W12.3 - IAM-009 in packages/db's groups.test.ts, through
-  // syncProviderGroups, and apps/service's group-routes.test.ts, through a real sign-in; IAM-044 in
+  // syncProviderGroups, and apps/service's group-routes.test.ts, through a real sign-in; IAM-044 (now IAM-090) in
   // oidc.test.ts, where groups arrive in the ID token under the basic scopes.
   // 496, from 489 (2026-09-28): W12.1 - IAM-034 in packages/domain's access/scopes.test.ts,
   // packages/db's api-token.test.ts and apps/service's token-routes.test.ts, in a title and as the

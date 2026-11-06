@@ -1,8 +1,15 @@
 import * as client from 'openid-client';
 import { guardedProviderFetch } from './oidc-fetch.js';
 
-/** Exactly these, and nothing sensitive (IAM-044): what keeps Google's route out of app review. */
+/** Exactly these, and nothing sensitive (IAM-090): what keeps Google's route out of app review. */
 export const SCOPES = 'openid email profile';
+
+/**
+ * An organisation's provider is asked for offline access too (IAM-090, PC-B), so the session can ask
+ * it again whether the person may still sign in (IAM-010): an online token dies with the provider's
+ * own session, refused as a leaver's is.
+ */
+export const ORGANISATION_SCOPES = 'openid email profile offline_access';
 
 export interface ProviderSettings {
   readonly issuer: string;
@@ -15,6 +22,8 @@ export interface ProviderSettings {
   readonly groupsClaim?: string;
   /** The ID token claim equal to SCIM's `externalId` (IN-E). Absent for Google. */
   readonly scimClaim?: string;
+  /** Asks for `offline_access` as well (IAM-090): an organisation's provider, never Google. */
+  readonly offlineAccess?: boolean;
 }
 
 export interface SignInStart {
@@ -155,7 +164,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       const nonce = client.randomNonce();
       const url = client.buildAuthorizationUrl(config, {
         redirect_uri: redirectUri,
-        scope: SCOPES,
+        scope: provider.offlineAccess ? ORGANISATION_SCOPES : SCOPES,
         // Without it a provider still signed in skips straight back to whoever signed out.
         ...(options?.reauthenticate
           ? { prompt: 'login', max_age: '0' }
@@ -202,7 +211,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         emailVerified: claims.email_verified === true,
         name: typeof claims.name === 'string' ? claims.name : null,
         hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
-        // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-044).
+        // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-090).
         groups: provider.groupsClaim === undefined ? [] : groupValues(claims[provider.groupsClaim]),
         providerKey:
           provider.scimClaim !== undefined && typeof claims[provider.scimClaim] === 'string'
