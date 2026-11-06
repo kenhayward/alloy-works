@@ -19954,6 +19954,10 @@
           "howItIsMet": "A section result carries its document, by id and title, and each component placed beneath it that the reader may read, once in outline order, read from the document version it matched in and titled from the entries now; the page links each and offers **Place in a document**, REU-054's act with the destination chosen (the R14 plan, R14-C)"
         },
         {
+          "id": "SCH-075",
+          "howItIsMet": "Each row of Documents, Components and Templates has More actions, the menu bar's flyout under its button, reading the item's own view as it opens and offering its page's acts by kind, each the caller may not take shown unavailable ([ADR-0095](../decisions/0095-a-row-offers-its-pages-acts-and-a-copy-keeps-its-identities.md); the RM plan)"
+        },
+        {
           "id": "SCH-061",
           "howItIsMet": "An entry's `field_values` hold every `axis:value` its content is conditioned on under `~conditions` - a component's blocks' and marks', a document's every node's, a section's own and those beneath it - read with `conditionsIn`, nothing resolved under a profile; `condition=<axis>:<value>` filters, several of one axis either and several axes all, served by 0110's index, and each axis facets, its own filter left out (the R14 plan, R14-D)"
         },
@@ -26714,25 +26718,31 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 350,
+      "line": 369,
       "kind": "title"
     },
     {
       "id": "LIF-020",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 277,
+      "line": 290,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 363,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 371,
+      "line": 390,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-075",
+      "file": "apps/web/src/editor/ComponentList.test.tsx",
+      "line": 264,
       "kind": "title"
     },
     {
@@ -27321,6 +27331,12 @@
       "id": "VER-015",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
       "line": 387,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-075",
+      "file": "apps/web/src/listing/ContentRowMenu.test.tsx",
+      "line": 76,
       "kind": "title"
     },
     {
@@ -28130,13 +28146,13 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/structure/DocumentList.test.tsx",
-      "line": 181,
+      "line": 185,
       "kind": "title"
     },
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentList.test.tsx",
-      "line": 146,
+      "line": 150,
       "kind": "title"
     },
     {
