@@ -132,6 +132,19 @@ function useOverflow(box: React.RefObject<HTMLElement | null>, deps: readonly un
   return { more, measure };
 }
 
+/** 'Template · {space}', the space's name marked as content, a person's words, not the interface's. */
+function Kicker({ space }: { space: string }) {
+  const mark = '\u0000';
+  const [before, after] = words('document.template-in-space', { space: mark }).split(mark);
+  return (
+    <>
+      {before}
+      <span data-content>{space}</span>
+      {after}
+    </>
+  );
+}
+
 export interface NewDocumentProps {
   readonly client: Client;
   /** Called with the new document's id, so the page can open it. */
@@ -415,7 +428,7 @@ export function NewDocument({ client, onCreated, onCancel }: NewDocumentProps) {
         <div className={styles['chosen']}>
           {chosen !== undefined && (
             <div className={styles['previewed']}>
-              <div className={styles['page']} aria-hidden="true">
+              <div className={styles['page']} aria-hidden="true" data-content>
                 <span className={styles['pageTitle']}>{chosen.name}</span>
                 {chosen.headings.map((heading, index) => (
                   <span key={index} className={styles['pageHeading']}>
@@ -438,11 +451,15 @@ export function NewDocument({ client, onCreated, onCancel }: NewDocumentProps) {
             {chosen !== undefined && (
               <>
                 <p className={styles['kicker']}>
-                  {words('document.template-in-space', { space: chosen.space.name })}
+                  <Kicker space={chosen.space.name} />
                 </p>
-                <h3 className={styles['name']}>{chosen.name}</h3>
+                <h3 className={styles['name']} data-content={chosen.id !== null || undefined}>
+                  {chosen.name}
+                </h3>
                 {chosen.description !== null && (
-                  <p className={styles['description']}>{chosen.description}</p>
+                  <p className={styles['description']} data-content>
+                    {chosen.description}
+                  </p>
                 )}
               </>
             )}

@@ -132,8 +132,14 @@ export function TemplateGallery({
         onKeyDown={onKeyDown}
       >
         {groups.map((group) => (
-          <div key={group.space.id} role="group" aria-label={group.space.name}>
-            <div className={styles['group']} aria-hidden="true">
+          <div
+            key={group.space.id}
+            role="group"
+            aria-label={group.space.name}
+            // A space's name is content, a person's, not the interface's.
+            data-content-name
+          >
+            <div className={styles['group']} aria-hidden="true" data-content>
               {group.space.name}
             </div>
             {group.offers.map((offer) => {
@@ -156,7 +162,12 @@ export function TemplateGallery({
                     <Icon name="Document" size={20} />
                   </span>
                   <span className={styles['optionText']}>
-                    <span id={`${optionId(key)}-name`}>{offer.name}</span>
+                    <span
+                      id={`${optionId(key)}-name`}
+                      data-content={offer.id !== null || undefined}
+                    >
+                      {offer.name}
+                    </span>
                     <span id={`${optionId(key)}-meta`} className={styles['meta']}>
                       {meta(offer)}
                     </span>

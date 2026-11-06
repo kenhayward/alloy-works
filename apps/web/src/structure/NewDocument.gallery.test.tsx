@@ -130,7 +130,11 @@ describe('New document, a gallery of templates (the ND plan)', () => {
       expect.stringMatching(/^Dossier/),
     ]);
     expect(option('Report')).toHaveAccessibleDescription('3 sections · 2 values');
-    expect(screen.getByText('Template · General')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, element) => element?.tagName === 'P' && element.textContent === 'Template · General',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Report', level: 3 })).toBeInTheDocument();
     expect(screen.getByText('A monthly report on the dosing trial.')).toBeInTheDocument();
     expect(screen.getByText('3 sections, 2 components')).toBeInTheDocument();
