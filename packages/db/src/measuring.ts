@@ -1,4 +1,5 @@
-import type { CapabilityCount, Tenant } from '@alloy-works/db';
+import type { CapabilityCount } from './measurements.js';
+import type { Tenant } from './provision.js';
 import { addBuckets, bucketOf, emptyBuckets } from '@alloy-works/domain';
 
 /** How a request ended, as it is counted (the DG plan, pre-flight 3). */

@@ -8,6 +8,7 @@ import { lineHandlers } from './lines.js';
 import { translationHandlers } from './translations.js';
 import { shareHandlers } from './shares.js';
 import { queryUsageHandlers } from './query-usage.js';
+import { diagnosticsHandlers } from './diagnostics.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated, Streamed } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -43,6 +44,9 @@ import {
   loadFacts,
   notifyTenant,
   openSecret,
+  createMeasuring,
+  flushEveryMinute,
+  type Measuring,
   recordCapabilityMinute,
   streamScope,
   SealedSecretRefused,
@@ -58,7 +62,6 @@ import {
   ownTenantState,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { createMeasuring, flushEveryMinute, type Measuring } from './measure.js';
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
@@ -979,6 +982,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
+    ...diagnosticsHandlers(),
     ...movingHandlers(),
     ...copyingHandlers(),
     ...templateMoveHandlers(),

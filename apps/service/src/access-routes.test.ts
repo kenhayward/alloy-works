@@ -1106,6 +1106,7 @@ describe('routes that check a permission', () => {
       status: 404,
     }),
     getQueryUsage: () => ({ url: '/v1/data/usage', status: 403 }),
+    getDiagnostics: () => ({ url: '/v1/diagnostics', status: 403 }),
     getQueryRunsCsv: () => ({ url: '/v1/data/usage/runs.csv', status: 403 }),
     listPublicationShares: () => ({
       url: `/v1/publications/${reportPublication}/shares`,

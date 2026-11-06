@@ -272,6 +272,10 @@
       "description": "Read and export the environment’s audit log."
     },
     {
+      "name": "Diagnostics",
+      "description": "How each capability, the background work, the search index, deliveries and data sources are doing, and the environment against its budgets."
+    },
+    {
       "name": "Event stream",
       "description": "Receive environment events. The event protocol is specified separately from OpenAPI."
     },
@@ -373,7 +377,8 @@
         "Settings",
         "Legal holds",
         "Deletion and retention",
-        "Audit log"
+        "Audit log",
+        "Diagnostics"
       ]
     },
     {
@@ -135638,6 +135643,643 @@
           },
           "401": {
             "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/diagnostics": {
+      "get": {
+        "operationId": "getDiagnostics",
+        "summary": "How the environment's capabilities, background work and deliveries are doing",
+        "description": "Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.",
+        "tags": [
+          "Diagnostics"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "at": {
+                      "type": "string",
+                      "description": "An ISO 8601 time"
+                    },
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "capability": {
+                            "type": "string",
+                            "description": "A route tag of this API, or one of the worker's kinds of work, such as Indexing"
+                          },
+                          "health": {
+                            "type": "string",
+                            "enum": [
+                              "healthy",
+                              "degraded",
+                              "failing",
+                              "idle"
+                            ],
+                            "description": "Over the last 15 minutes: failing when most answered requests failed on the server, degraded when 5% did or the 95th percentile passed its budget, idle with none answered"
+                          },
+                          "requests": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "errorRate": {
+                            "description": "Server errors over the requests answered; null with none",
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "p95Ms": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The 95th percentile, as the bucket bound holding it; null with none"
+                          }
+                        },
+                        "required": [
+                          "capability",
+                          "health",
+                          "requests",
+                          "errorRate",
+                          "p95Ms"
+                        ]
+                      },
+                      "description": "Each capability with requests in the window"
+                    },
+                    "work": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "work": {
+                            "type": "string",
+                            "description": "The sweep or loop, by name"
+                          },
+                          "health": {
+                            "type": "string",
+                            "enum": [
+                              "healthy",
+                              "failing",
+                              "paused"
+                            ],
+                            "description": "Failing when its last run failed or it has not run for twice its cadence; paused while the environment is held"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "succeeded",
+                              "failed",
+                              "paused"
+                            ]
+                          },
+                          "lastStartedAt": {
+                            "type": "string",
+                            "description": "An ISO 8601 time"
+                          },
+                          "lastFinishedAt": {
+                            "type": "string",
+                            "description": "An ISO 8601 time"
+                          },
+                          "nextDueAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "description": "An ISO 8601 time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Read from its own cadence; null after one run"
+                          },
+                          "failure": {
+                            "description": "The last failure, as a code, kept after it clears",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "failedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "description": "An ISO 8601 time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "failures": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Failures in a row"
+                          }
+                        },
+                        "required": [
+                          "work",
+                          "health",
+                          "outcome",
+                          "lastStartedAt",
+                          "lastFinishedAt",
+                          "nextDueAt",
+                          "failure",
+                          "failedAt",
+                          "failures"
+                        ]
+                      },
+                      "description": "Each sweep and loop that has run here"
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string"
+                          },
+                          "capability": {
+                            "type": "string",
+                            "description": "The kind of work it is measured as"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "waiting",
+                              "running",
+                              "done",
+                              "failed"
+                            ]
+                          },
+                          "jobs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "firstAt": {
+                            "type": "string",
+                            "description": "An ISO 8601 time"
+                          },
+                          "lastAt": {
+                            "type": "string",
+                            "description": "An ISO 8601 time"
+                          },
+                          "lastError": {
+                            "description": "The latest failed job's code",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "capability",
+                          "state",
+                          "jobs",
+                          "firstAt",
+                          "lastAt",
+                          "lastError"
+                        ]
+                      },
+                      "description": "The last 24 hours of jobs, and those still to do"
+                    },
+                    "index": {
+                      "type": "object",
+                      "properties": {
+                        "serving": {
+                          "description": "The embedding model searches are served by",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "pending": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "missing": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "confirmed": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "model",
+                                "missing",
+                                "confirmed"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "A model being changed to, and the texts it has still to embed"
+                        },
+                        "p95LagSeconds": {
+                          "description": "A version's wait to be searchable by meaning, over the last 7 days",
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "maxLagSeconds": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "serving",
+                        "pending",
+                        "p95LagSeconds",
+                        "maxLagSeconds"
+                      ]
+                    },
+                    "webhooks": {
+                      "type": "object",
+                      "properties": {
+                        "subscriptions": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "failing": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Enabled, and failing since an attempt not yet succeeded"
+                        },
+                        "disabledFailing": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Turned off after three days of failing"
+                        }
+                      },
+                      "required": [
+                        "subscriptions",
+                        "failing",
+                        "disabledFailing"
+                      ]
+                    },
+                    "mail": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "failingSince": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "description": "An ISO 8601 time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "waiting": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "givenUp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "failingSince",
+                        "waiting",
+                        "givenUp"
+                      ]
+                    },
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "connection": {
+                            "type": "string"
+                          },
+                          "runs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "failed": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "timedOut": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "lastRunAt": {
+                            "type": "string",
+                            "description": "An ISO 8601 time"
+                          },
+                          "down": {
+                            "type": "boolean",
+                            "description": "Its latest run failed: as far as the product knows, the source is down"
+                          },
+                          "lastFailure": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "connection",
+                          "runs",
+                          "failed",
+                          "timedOut",
+                          "lastRunAt",
+                          "down",
+                          "lastFailure"
+                        ]
+                      },
+                      "description": "Each connection run on in the last 24 hours"
+                    },
+                    "budgets": {
+                      "type": "object",
+                      "properties": {
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "currency": {
+                                  "type": "string"
+                                },
+                                "spentMicros": {
+                                  "type": "string",
+                                  "description": "This month so far, in millionths, as a decimal string"
+                                },
+                                "limitMicros": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "currency",
+                                "spentMicros",
+                                "limitMicros"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The month's model spend against its budget; null with no budget set"
+                        },
+                        "queryRunsAtOnce": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "How many query runs may run at once"
+                        }
+                      },
+                      "required": [
+                        "model",
+                        "queryRunsAtOnce"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "at",
+                    "capabilities",
+                    "work",
+                    "jobs",
+                    "index",
+                    "webhooks",
+                    "mail",
+                    "connections",
+                    "budgets"
+                  ]
+                },
+                "example": {
+                  "at": "example",
+                  "capabilities": [],
+                  "work": [],
+                  "jobs": [],
+                  "index": {
+                    "serving": "example",
+                    "pending": {
+                      "model": "example",
+                      "missing": -9007199254740991,
+                      "confirmed": false
+                    },
+                    "p95LagSeconds": 0,
+                    "maxLagSeconds": 0
+                  },
+                  "webhooks": {
+                    "subscriptions": -9007199254740991,
+                    "failing": -9007199254740991,
+                    "disabledFailing": -9007199254740991
+                  },
+                  "mail": {
+                    "enabled": false,
+                    "failingSince": "example",
+                    "waiting": -9007199254740991,
+                    "givenUp": -9007199254740991
+                  },
+                  "connections": [],
+                  "budgets": {
+                    "model": {
+                      "currency": "example",
+                      "spentMicros": "example",
+                      "limitMicros": "example"
+                    },
+                    "queryRunsAtOnce": -9007199254740991
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not administer the environment",
             "content": {
               "application/json": {
                 "schema": {

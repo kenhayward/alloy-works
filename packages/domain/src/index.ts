@@ -157,11 +157,24 @@ export {
   bucketOf,
   BUCKETS_VERSION,
   emptyBuckets,
+  JOB_CAPABILITIES,
   LATENCY_BOUNDS_MS,
   MEASUREMENT_TIERS,
   percentileBound,
   type MeasurementSpan,
 } from './diagnostics/measure.js';
+export {
+  capabilityHealth,
+  DEGRADED_RATE,
+  FAILING_RATE,
+  HEALTH_WINDOW_MS,
+  workHealth,
+  type CapabilityCounts,
+  type CapabilityHealth,
+  type Health,
+  type WorkHealth,
+  type WorkRun,
+} from './diagnostics/health.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,
