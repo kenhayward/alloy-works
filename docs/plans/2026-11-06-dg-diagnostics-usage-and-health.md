@@ -66,6 +66,45 @@ worker's kinds of work (publishing, webhook and mail delivery, indexing, imports
 - **DG-K Integrity** re-verified by a sweep sampling assets against their hashes and versions against their digests, a
   share each night so all are covered in a stated period; a mismatch audited and told as a silent failure.
 
+## Pre-flight (2026-11-06): fourteen found, answered here
+
+1. **Availability is not the service's own record**, which a dead service never writes. The worker probes `/health`,
+   which now touches the database, each minute and writes the minute; availability is minutes probed up over minutes
+   elapsed, so a minute nobody recorded counts as down. ADR.
+2. **Backups are shown, not assumed.** `backup.sh` and `restore-drill.sh` write a result (class, time, outcome,
+   duration) to `platform.backup_run`; Diagnostics reads it. `diagnostics.md` declares each class (database, objects,
+   audit exports) with its frequency, recovery point and time; a class never drilled reads "not rehearsed".
+3. **Only a resolved tenant is measured.** An unknown hostname is not; a request refused by the tenant's state is
+   counted and kept out of health. 4xx is counted apart from 5xx; health reads 5xx and timeouts only.
+4. **The flush is additive**: one batched pass a minute per process, `on conflict (capability, minute) do update set
+count = count + excluded.count`, buckets an `int[]`, under the tenant's role through `withTenant`; minutes with no
+   traffic write nothing. At most a minute per process is lost on a crash, and said so. Roll-ups and pruning are one
+   sweep an hour.
+5. **Buckets are fixed and versioned**: log-spaced bounds plus every registered budget's value, a `buckets_version`
+   column; p95 reads as the smallest bound holding the 95th percentile, so a budget is met or not exactly.
+6. **Budgets are audited before they are claimed.** The registry gives each a measure kind (`request`, `job`, `lag`,
+   `client`, `none`); the report says "not measured in production" with the reason. ADM-016 and ADM-046 are claimed
+   only if DGe's audit leaves none unmeasured; a client beacon for the editor's budgets is decided there.
+7. **ADM-037's waiting person**: the domain list of silent failures says, kind by kind, how its requester is told, or
+   that there is none and why; a test per kind.
+8. **Jobs are read through a definer function** on `platform.job`, its tenant taken from the `withTenant` setting,
+   returning kind, state and times alone, its grant tested. ADR.
+9. **Background work is one row per tenant and loop**, upserted, history only on failure, next due from the loop's own
+   cadence; a tenant held by its state (ADM-045) reads "paused", never "failing".
+10. **Usage**: storage sampled nightly by the worker, capped per tenant; precision and retention declared in an ADR
+    before DGd (ADM-035); `generation_run` is kept for ever and `query_run` 13 months, both enough. ADM-048 stays
+    unclaimed until every operation it names is counted; DGd counts those that exist (mail, webhooks, translation,
+    reference searches, embedding) and names the rest.
+11. **Integrity covers audit exports too**, against their `sha256`; each class a share a night so all are checked in 30
+    days, the object reads rate-capped; `integrity.failed` is a new audit kind.
+12. **ADM-021**: a connection's recent runs (`query_run`) show it down in Diagnostics. **COL-061**: the stable id and
+    backoff exist (EM-L, EM-M); DGc adds the surfacing, so it is claimed.
+13. **ADRs, one per choice**: the store and its flush and buckets; reading `platform.job`; the availability definition;
+    precision and retention. `administer` reads Diagnostics, which shows codes and counts, never content.
+14. **Smaller**: measurement tables join the export census as left out, and count in storage; a test fails on a route
+    tag missing from the capability list; health is shown in icon and words by a status pattern of its own, not
+    `Lozenge`, which is for content's states; each PR names its fragment and cited titles.
+
 ## Not in this slice
 
 Support access, the boundary's declaration and secrets' consumers (DG-E). Billing. An operator's view across tenants.
