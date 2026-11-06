@@ -44,6 +44,8 @@ interface Graces {
   readonly translated: { readonly id: string; readonly title: string };
   /** Her document, the component placed in it. */
   readonly document: string;
+  /** Its title, as its row in Documents names it. */
+  readonly documentTitle: string;
   /** A token of hers, to be asked about revoking. */
   readonly token: string;
   /** Her component holding a figure. */
@@ -453,6 +455,53 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     'document.new-document',
     (language) => say(language, 'document.new-document'),
   ),
+  // A row's More actions (SCH-075): Duplicate from her component's, Publish from her document's.
+  {
+    name: 'The Duplicate dialog',
+    dialog: 'listing/DuplicateDialog.tsx',
+    address: '#/components',
+    regions: ['[role="dialog"]'],
+    ready: heading('editor.components'),
+    open: async (page, language) => {
+      await page
+        .getByLabel(say(language, 'listing.sort-by'))
+        .selectOption({ label: say(language, 'editor.newest-changed-first') });
+      await page
+        .getByRole('button', {
+          name: say(language, 'parts.more-actions-for', { subject: grace.component.title }),
+        })
+        .click();
+      const duplicate = page.getByRole('menuitem', { name: say(language, 'rows.duplicate') });
+      await expect.poll(() => duplicate.getAttribute('aria-disabled')).toBe('false');
+      await duplicate.click();
+      return page.getByRole('dialog', {
+        name: say(language, 'rows.duplicate-title', { title: grace.component.title }),
+      });
+    },
+  },
+  {
+    name: "A row's Publish dialog",
+    dialog: 'listing/ContentRowMenu.tsx',
+    address: '#/documents',
+    regions: ['[role="dialog"]'],
+    ready: heading('document.documents'),
+    open: async (page, language) => {
+      await page
+        .getByLabel(say(language, 'listing.sort-by'))
+        .selectOption({ label: say(language, 'document.newest-changed-first') });
+      await page
+        .getByRole('button', {
+          name: say(language, 'parts.more-actions-for', { subject: grace.documentTitle }),
+        })
+        .click();
+      const publish = page.getByRole('menuitem', { name: say(language, 'rows.publish') });
+      await expect.poll(() => publish.getAttribute('aria-disabled')).toBe('false');
+      await publish.click();
+      return page.getByRole('dialog', {
+        name: say(language, 'rows.publish-title', { title: grace.documentTitle }),
+      });
+    },
+  },
   // Her document, the component placed in it.
   {
     name: 'The Language dialog',
@@ -848,6 +897,7 @@ async function graces(): Promise<Graces> {
   const grace = await apiAs('grace');
   const component = await makeComponent(grace, 'Pseudo', indexed);
   let document = await makeDocument(grace, 'Pseudo', ['Introduction']);
+  const documentTitle = String(document.outline.title);
   document = await edit(grace, document, {
     operation: 'insert',
     parent: null,
@@ -863,6 +913,7 @@ async function graces(): Promise<Graces> {
     component,
     translated: await translatedComponent(api()),
     document: document.id,
+    documentTitle,
     token,
     figured: (
       await makeComponent(grace, 'Pseudo figure', [
