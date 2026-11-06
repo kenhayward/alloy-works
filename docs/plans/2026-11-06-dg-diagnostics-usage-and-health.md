@@ -7,11 +7,12 @@
 what background work last did, what failed silently, what the environment uses over time, and whether the product is
 meeting what it promises.
 
-**Requirements:** ADM-015, ADM-016, ADM-017, ADM-020, ADM-033, ADM-035, ADM-036, ADM-037, ADM-040, ADM-044, ADM-046;
-ADM-011; COL-061; ADM-021 (a constraint), as far as diagnostics show a data source down. **Left unclaimed, gaps named:**
-ADM-048 names malware scanning, which nothing does yet (AST-Q03): DG counts every chargeable operation that exists and
-names that one. **ADM-043** and **IAM-006** for the internet stack alone, whose backups and restore drill exist;
-elsewhere backups are the operator's own.
+**Requirements:** ADM-011, ADM-015, ADM-017, ADM-020, ADM-033, ADM-035, ADM-036, ADM-037, ADM-040, ADM-044; COL-061;
+ADM-021 (a constraint), as far as Diagnostics shows a data source down; **ADM-043** and **IAM-006** for the internet stack
+alone, whose backups and drill now record their results (elsewhere backups are the operator's own). **ADM-016** and
+**ADM-046** only if DGe's audit leaves no budget unmeasured in production (pre-flight 6). **Left unclaimed, gap
+named:** ADM-048 names malware scanning, which nothing does yet (AST-Q03): DG counts every chargeable operation that
+exists and names the rest.
 
 **What exists** (the map, 2026-11-06): nothing measures latency or error rate; `/health` touches nothing; no sweep
 records when it ran; jobs are visible only to the worker. Usage exists for models (`generation_run`) and queries
