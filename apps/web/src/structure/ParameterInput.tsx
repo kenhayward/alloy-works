@@ -309,7 +309,12 @@ export interface ParameterInputProps {
   readonly note?: string;
   /** The service's refusal of this parameter, in its words, beside it. */
   readonly problem?: string;
+  /** Marked as still wanted: a required value left empty once Create was asked for (ND-K). */
+  readonly warn?: boolean;
 }
+
+/** What a value is called where it is asked for: its label, else its key (TPL-076). */
+export const labelOf = (parameter: TemplateParameter): string => parameter.label ?? parameter.name;
 
 /**
  * A template parameter's value, asked for by its type (the TP1 plan, TP1-I): a box for text and a
@@ -325,12 +330,13 @@ export function ParameterInput({
   readOnly = false,
   note,
   problem,
+  warn = false,
 }: ParameterInputProps) {
   const said = [hint(parameter), note].filter((each): each is string => each != null);
   const noteId = said.length > 0 ? `${id}-note` : undefined;
   const problemId = problem === undefined ? undefined : `${id}-problem`;
   const describedBy = [noteId, problemId].filter(Boolean).join(' ') || undefined;
-  const name = `${parameter.name}${parameter.required ? ' (required)' : ''}`;
+  const name = `${labelOf(parameter)}${parameter.required ? ' (required)' : ''}`;
   const notes = (
     <>
       {noteId !== undefined && (
@@ -348,7 +354,7 @@ export function ParameterInput({
 
   if (!parameter.list) {
     return (
-      <div className={styles['field']}>
+      <div className={styles['field']} data-warn={warn || undefined}>
         <label htmlFor={id}>{name}</label>
         <Entry
           parameter={parameter}
@@ -366,7 +372,11 @@ export function ParameterInput({
 
   const entries: readonly ParameterEntry[] = Array.isArray(value) ? value : [];
   return (
-    <fieldset className={styles['field']} aria-describedby={describedBy}>
+    <fieldset
+      className={styles['field']}
+      aria-describedby={describedBy}
+      data-warn={warn || undefined}
+    >
       <legend>{name}</legend>
       {notes}
       {entries.length > 0 && (
@@ -377,7 +387,7 @@ export function ParameterInput({
               <Entry
                 parameter={parameter}
                 id={`${id}-${index + 1}`}
-                label={say('document.entry', { name: parameter.name, value2: index + 1 })}
+                label={say('document.entry', { name: labelOf(parameter), value2: index + 1 })}
                 value={entry}
                 onChange={(next) =>
                   onChange(entries.map((each, at) => (at === index ? next : each)))
@@ -391,7 +401,10 @@ export function ParameterInput({
                   type="button"
                   onClick={() => onChange(entries.filter((_, at) => at !== index))}
                 >
-                  {say('document.remove-entry-from', { value1: index + 1, name: parameter.name })}
+                  {say('document.remove-entry-from', {
+                    value1: index + 1,
+                    name: labelOf(parameter),
+                  })}
                 </button>
               )}
             </li>
@@ -403,7 +416,7 @@ export function ParameterInput({
           type="button"
           onClick={() => onChange([...entries, parameter.type.base === 'boolean' ? false : ''])}
         >
-          {say('document.add-an-entry-to', { name: parameter.name })}
+          {say('document.add-an-entry-to', { name: labelOf(parameter) })}
         </button>
       )}
     </fieldset>

@@ -7215,6 +7215,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/default-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make one of the space’s templates the one its new documents take by default
+         * @description Makes one of the space’s own templates its default: what a document made here without naming a template takes. Needs administer on the space. Every space starts with Blank, made the first time it is needed.
+         */
+        put: operations["setDefaultTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/spaces/{space}/documents": {
         parameters: {
             query?: never;
@@ -7226,7 +7246,7 @@ export interface paths {
         put?: never;
         /**
          * Create a document in this space, at version 0.1: an empty outline, or its template's starting one
-         * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
+         * @description Creates a document at version 0.1 in the named space from a template: the one named, else the space’s default, which is Blank until its administrator chooses another. Each component the template copies is made as the new document’s own.
          */
         post: operations["createDocument"];
         delete?: never;
@@ -7572,7 +7592,7 @@ export interface paths {
         };
         /**
          * The templates the caller may read, each with its name, space and latest version
-         * @description Lists readable templates with their name, space and latest version.
+         * @description Lists readable templates with their name, space and latest version, and what each holds: its description, its starting sections, values and components, its first headings, and whether it is its space’s default.
          */
         get: operations["listTemplates"];
         put?: never;
@@ -10863,6 +10883,3197 @@ export interface components {
             /** @enum {string} */
             pageBreak: "none" | "page" | "recto";
             children: components["schemas"]["createTemplateBody_schema0"][];
+            /** @enum {string} */
+            instantiate?: "reference" | "copy";
+        };
+        createTemplateBody_schema1: {
+            /** @constant */
+            type: "paragraph";
+            id: string;
+            /** @default body */
+            style: string;
+            content: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "list";
+            id: string;
+            /** @enum {string} */
+            kind: "ordered" | "unordered" | "definition";
+            start?: number;
+            /** @enum {string} */
+            format?: "decimal" | "alphabetic" | "roman";
+            items: {
+                term?: ({
+                    /** @constant */
+                    type: "text";
+                    value: string;
+                    /** @default [] */
+                    marks: ({
+                        /** @constant */
+                        type: "emphasis";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "strong";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "underline";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "subscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "superscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "inlineCode";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "quotedPhrase";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "definedTerm";
+                        id: string;
+                        term: string;
+                    } | {
+                        /** @constant */
+                        type: "condition";
+                        id: string;
+                        axis: string;
+                        values: string[];
+                    } | {
+                        /** @constant */
+                        type: "suggestion";
+                        id: string;
+                        /** @enum {string} */
+                        operation: "insert" | "delete" | "replace";
+                        author: string;
+                    } | {
+                        /** @constant */
+                        type: "comment";
+                        id: string;
+                        threadId: string;
+                    } | {
+                        /** @constant */
+                        type: "hyperlink";
+                        id: string;
+                        href: string;
+                        title?: string;
+                    } | {
+                        /** @constant */
+                        type: "language";
+                        id: string;
+                        tag: string;
+                    })[];
+                } | {
+                    /** @constant */
+                    type: "equation";
+                    mathml: string;
+                    latex?: string;
+                } | {
+                    /** @constant */
+                    type: "footnote";
+                    id: string;
+                    anchor: {
+                        /** @constant */
+                        kind: "span";
+                    } | {
+                        /** @constant */
+                        kind: "cell";
+                        key: string;
+                    } | {
+                        /** @constant */
+                        kind: "cellPosition";
+                        row: number;
+                        column: number;
+                    } | {
+                        /** @constant */
+                        kind: "table";
+                    } | {
+                        /** @constant */
+                        kind: "keyed";
+                        key: {
+                            [key: string]: string | boolean;
+                        };
+                        column: string;
+                    } | {
+                        /** @constant */
+                        kind: "column";
+                        column: string;
+                    };
+                    content: unknown[];
+                } | {
+                    /** @constant */
+                    type: "crossReference";
+                    id: string;
+                    target: {
+                        /** @constant */
+                        kind: "block";
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "component";
+                        component: string;
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "node";
+                        node: string;
+                    } | {
+                        /** @constant */
+                        kind: "entry";
+                        entry: string;
+                    };
+                    /** @enum {string} */
+                    display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                    /** @enum {string} */
+                    withoutPages?: "number" | "title" | "numberAndTitle";
+                } | {
+                    /** @constant */
+                    type: "citation";
+                    entry: string;
+                    locator?: string;
+                } | {
+                    /** @constant */
+                    type: "indexMarker";
+                    term: string;
+                    sub?: string;
+                    see?: string;
+                    seeAlso?: string[];
+                } | {
+                    /** @constant */
+                    type: "variable";
+                    name: string;
+                } | {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                } | {
+                    /** @constant */
+                    type: "messageForm";
+                    id: string;
+                    /** @constant */
+                    kind: "plural";
+                    binding: {
+                        /** @constant */
+                        type: "binding";
+                        id: string;
+                        query: string;
+                        version?: string;
+                        parameters: {
+                            [key: string]: {
+                                literal: (string | boolean | null) | (string | boolean | null)[];
+                            } | {
+                                document: string;
+                            };
+                        };
+                        /** @enum {string} */
+                        mode: "checked" | "pinned";
+                        take: {
+                            column: string;
+                        } | {
+                            key: {
+                                [key: string]: string | boolean | null;
+                            };
+                            column: string;
+                        };
+                    };
+                    arms: {
+                        [key: string]: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "messageValue";
+                        })[];
+                    };
+                } | {
+                    /** @constant */
+                    type: "image";
+                    asset: string;
+                    /** @constant */
+                    follow?: "latest";
+                    imageStyle: string;
+                    alternative: {
+                        /** @constant */
+                        kind: "own";
+                        text: string;
+                    } | {
+                        /** @constant */
+                        kind: "inherited";
+                    } | {
+                        /** @constant */
+                        kind: "decorative";
+                    };
+                })[];
+                content: components["schemas"]["createTemplateBody_schema1"][];
+            }[];
+        } | {
+            /** @constant */
+            type: "table";
+            id: string;
+            /** @default table */
+            style: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            headerRows: number;
+            headerColumns: number;
+            keyColumns?: number[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            /** @constant */
+            numbered?: false;
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+            rows: {
+                cells: {
+                    content: components["schemas"]["createTemplateBody_schema1"][];
+                    /** @default 1 */
+                    colspan: number;
+                    /** @default 1 */
+                    rowspan: number;
+                }[];
+            }[];
+        } | {
+            /** @constant */
+            type: "boundTable";
+            id: string;
+            /** @default table */
+            style: string;
+            /** @constant */
+            numbered?: false;
+            binding: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+            };
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            columns: {
+                column: string;
+                header: string;
+                unit?: {
+                    text: string;
+                    /** @enum {string} */
+                    place: "header" | "value";
+                };
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+                /** @enum {string} */
+                align?: "start" | "centre" | "end" | "decimal";
+                /** @constant */
+                wrap?: false;
+            }[];
+            headerColumn: boolean;
+            sort?: {
+                column: string;
+                /** @enum {string} */
+                direction: "ascending" | "descending";
+                /** @enum {string} */
+                nulls: "first" | "last";
+            }[];
+            groups?: {
+                column: string;
+                subtotal?: string;
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+            }[];
+            transpose?: {
+                header: string;
+            };
+            empty?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            source?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            notes?: {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            }[];
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "figure";
+            id: string;
+            asset?: string;
+            /** @constant */
+            follow?: "latest";
+            binding?: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            };
+            imageStyle: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            alternative: {
+                /** @constant */
+                kind: "own";
+                text: string;
+            } | {
+                /** @constant */
+                kind: "inherited";
+            } | {
+                /** @constant */
+                kind: "decorative";
+            };
+            /** @constant */
+            numbered?: false;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "preformatted";
+            id: string;
+            text: string;
+            language?: string;
+        } | {
+            /** @constant */
+            type: "blockquote";
+            id: string;
+            content: components["schemas"]["createTemplateBody_schema1"][];
+            attribution?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "equation";
+            id: string;
+            mathml: string;
+            latex?: string;
+            numbered: boolean;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
         };
         recordTemplateVersionBody_schema0: {
             key: string;
@@ -11166,6 +14377,3197 @@ export interface components {
             /** @enum {string} */
             pageBreak: "none" | "page" | "recto";
             children: components["schemas"]["recordTemplateVersionBody_schema0"][];
+            /** @enum {string} */
+            instantiate?: "reference" | "copy";
+        };
+        recordTemplateVersionBody_schema1: {
+            /** @constant */
+            type: "paragraph";
+            id: string;
+            /** @default body */
+            style: string;
+            content: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "list";
+            id: string;
+            /** @enum {string} */
+            kind: "ordered" | "unordered" | "definition";
+            start?: number;
+            /** @enum {string} */
+            format?: "decimal" | "alphabetic" | "roman";
+            items: {
+                term?: ({
+                    /** @constant */
+                    type: "text";
+                    value: string;
+                    /** @default [] */
+                    marks: ({
+                        /** @constant */
+                        type: "emphasis";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "strong";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "underline";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "subscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "superscript";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "inlineCode";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "quotedPhrase";
+                        id: string;
+                    } | {
+                        /** @constant */
+                        type: "definedTerm";
+                        id: string;
+                        term: string;
+                    } | {
+                        /** @constant */
+                        type: "condition";
+                        id: string;
+                        axis: string;
+                        values: string[];
+                    } | {
+                        /** @constant */
+                        type: "suggestion";
+                        id: string;
+                        /** @enum {string} */
+                        operation: "insert" | "delete" | "replace";
+                        author: string;
+                    } | {
+                        /** @constant */
+                        type: "comment";
+                        id: string;
+                        threadId: string;
+                    } | {
+                        /** @constant */
+                        type: "hyperlink";
+                        id: string;
+                        href: string;
+                        title?: string;
+                    } | {
+                        /** @constant */
+                        type: "language";
+                        id: string;
+                        tag: string;
+                    })[];
+                } | {
+                    /** @constant */
+                    type: "equation";
+                    mathml: string;
+                    latex?: string;
+                } | {
+                    /** @constant */
+                    type: "footnote";
+                    id: string;
+                    anchor: {
+                        /** @constant */
+                        kind: "span";
+                    } | {
+                        /** @constant */
+                        kind: "cell";
+                        key: string;
+                    } | {
+                        /** @constant */
+                        kind: "cellPosition";
+                        row: number;
+                        column: number;
+                    } | {
+                        /** @constant */
+                        kind: "table";
+                    } | {
+                        /** @constant */
+                        kind: "keyed";
+                        key: {
+                            [key: string]: string | boolean;
+                        };
+                        column: string;
+                    } | {
+                        /** @constant */
+                        kind: "column";
+                        column: string;
+                    };
+                    content: unknown[];
+                } | {
+                    /** @constant */
+                    type: "crossReference";
+                    id: string;
+                    target: {
+                        /** @constant */
+                        kind: "block";
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "component";
+                        component: string;
+                        block: string;
+                    } | {
+                        /** @constant */
+                        kind: "node";
+                        node: string;
+                    } | {
+                        /** @constant */
+                        kind: "entry";
+                        entry: string;
+                    };
+                    /** @enum {string} */
+                    display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                    /** @enum {string} */
+                    withoutPages?: "number" | "title" | "numberAndTitle";
+                } | {
+                    /** @constant */
+                    type: "citation";
+                    entry: string;
+                    locator?: string;
+                } | {
+                    /** @constant */
+                    type: "indexMarker";
+                    term: string;
+                    sub?: string;
+                    see?: string;
+                    seeAlso?: string[];
+                } | {
+                    /** @constant */
+                    type: "variable";
+                    name: string;
+                } | {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                } | {
+                    /** @constant */
+                    type: "messageForm";
+                    id: string;
+                    /** @constant */
+                    kind: "plural";
+                    binding: {
+                        /** @constant */
+                        type: "binding";
+                        id: string;
+                        query: string;
+                        version?: string;
+                        parameters: {
+                            [key: string]: {
+                                literal: (string | boolean | null) | (string | boolean | null)[];
+                            } | {
+                                document: string;
+                            };
+                        };
+                        /** @enum {string} */
+                        mode: "checked" | "pinned";
+                        take: {
+                            column: string;
+                        } | {
+                            key: {
+                                [key: string]: string | boolean | null;
+                            };
+                            column: string;
+                        };
+                    };
+                    arms: {
+                        [key: string]: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "messageValue";
+                        })[];
+                    };
+                } | {
+                    /** @constant */
+                    type: "image";
+                    asset: string;
+                    /** @constant */
+                    follow?: "latest";
+                    imageStyle: string;
+                    alternative: {
+                        /** @constant */
+                        kind: "own";
+                        text: string;
+                    } | {
+                        /** @constant */
+                        kind: "inherited";
+                    } | {
+                        /** @constant */
+                        kind: "decorative";
+                    };
+                })[];
+                content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+            }[];
+        } | {
+            /** @constant */
+            type: "table";
+            id: string;
+            /** @default table */
+            style: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            headerRows: number;
+            headerColumns: number;
+            keyColumns?: number[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            /** @constant */
+            numbered?: false;
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+            rows: {
+                cells: {
+                    content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+                    /** @default 1 */
+                    colspan: number;
+                    /** @default 1 */
+                    rowspan: number;
+                }[];
+            }[];
+        } | {
+            /** @constant */
+            type: "boundTable";
+            id: string;
+            /** @default table */
+            style: string;
+            /** @constant */
+            numbered?: false;
+            binding: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+            };
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            columns: {
+                column: string;
+                header: string;
+                unit?: {
+                    text: string;
+                    /** @enum {string} */
+                    place: "header" | "value";
+                };
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+                /** @enum {string} */
+                align?: "start" | "centre" | "end" | "decimal";
+                /** @constant */
+                wrap?: false;
+            }[];
+            headerColumn: boolean;
+            sort?: {
+                column: string;
+                /** @enum {string} */
+                direction: "ascending" | "descending";
+                /** @enum {string} */
+                nulls: "first" | "last";
+            }[];
+            groups?: {
+                column: string;
+                subtotal?: string;
+                format?: {
+                    /** @enum {string} */
+                    style?: "number" | "currency" | "percent" | "duration";
+                    places?: number;
+                    /** @enum {string} */
+                    rounding?: "halfAwayFromZero" | "halfEven";
+                    /** @enum {string} */
+                    negative?: "minus" | "parentheses";
+                    negativeColour?: boolean;
+                    currency?: {
+                        symbol: string;
+                        /** @enum {string} */
+                        position: "before" | "after";
+                        space: boolean;
+                    };
+                    /** @enum {string} */
+                    percent?: "fraction" | "hundred";
+                    duration?: {
+                        /** @enum {string} */
+                        from: "seconds" | "minutes";
+                        /** @enum {string} */
+                        show: "h:mm" | "h:mm:ss";
+                    };
+                    fraction?: number;
+                    null?: string;
+                };
+            }[];
+            transpose?: {
+                header: string;
+            };
+            empty?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            source?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            note?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            notes?: {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            }[];
+            /** @enum {string} */
+            wide?: "scale" | "rotate";
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "figure";
+            id: string;
+            asset?: string;
+            /** @constant */
+            follow?: "latest";
+            binding?: {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            };
+            imageStyle: string;
+            caption: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            alternative: {
+                /** @constant */
+                kind: "own";
+                text: string;
+            } | {
+                /** @constant */
+                kind: "inherited";
+            } | {
+                /** @constant */
+                kind: "decorative";
+            };
+            /** @constant */
+            numbered?: false;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
+        } | {
+            /** @constant */
+            type: "preformatted";
+            id: string;
+            text: string;
+            language?: string;
+        } | {
+            /** @constant */
+            type: "blockquote";
+            id: string;
+            content: components["schemas"]["recordTemplateVersionBody_schema1"][];
+            attribution?: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                } | {
+                    /** @constant */
+                    kind: "keyed";
+                    key: {
+                        [key: string]: string | boolean;
+                    };
+                    column: string;
+                } | {
+                    /** @constant */
+                    kind: "column";
+                    column: string;
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                } | {
+                    /** @constant */
+                    kind: "entry";
+                    entry: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                id: string;
+                query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                /** @constant */
+                follow?: "latest";
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+        } | {
+            /** @constant */
+            type: "equation";
+            id: string;
+            mathml: string;
+            latex?: string;
+            numbered: boolean;
+            conditions?: {
+                axis: string;
+                values: string[];
+            }[];
         };
     };
     responses: never;
@@ -24225,7 +30627,22 @@ export interface operations {
                      *       },
                      *       "fields": [],
                      *       "schemas": [],
-                     *       "values": {}
+                     *       "values": {},
+                     *       "origin": {
+                     *         "from": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "title": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "changedSince": false
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -24469,6 +30886,29 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description What it was copied from (REU-059); null where it was made, not copied */
+                        origin: {
+                            /** @description The component it was copied from, by its latest title; null where it was made from content its template holds, or the caller may not read it */
+                            from: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version of it the copy was made from; null where `from` is */
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The template that made the copy for a new document; null where Duplicate made it, or the caller may not read it */
+                            template: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description Whether what it was made from has a newer version now: the component, else the template */
+                            changedSince: boolean;
+                        } | null;
                     };
                 };
             };
@@ -61758,6 +68198,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -111992,6 +118433,8 @@ export interface operations {
                             mayMoveInto: boolean;
                             /** @description Whether the caller may design a template in this space; never in one archived */
                             mayDesign: boolean;
+                            /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                            defaultTemplate: string | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -112103,7 +118546,8 @@ export interface operations {
                      *       "archived": false,
                      *       "archivedAt": "example",
                      *       "archivedBy": "example",
-                     *       "language": "en"
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
                      *     }
                      */
                     "application/json": {
@@ -112116,6 +118560,8 @@ export interface operations {
                         archivedBy: string | null;
                         /** @description The language new documents and CT Studio deliveries here take; null where it names none */
                         language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
                     };
                 };
             };
@@ -112270,7 +118716,8 @@ export interface operations {
                      *       "archived": false,
                      *       "archivedAt": "example",
                      *       "archivedBy": "example",
-                     *       "language": "en"
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
                      *     }
                      */
                     "application/json": {
@@ -112283,6 +118730,8 @@ export interface operations {
                         archivedBy: string | null;
                         /** @description The language new documents and CT Studio deliveries here take; null where it names none */
                         language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
                     };
                 };
             };
@@ -118386,7 +124835,22 @@ export interface operations {
                      *       },
                      *       "fields": [],
                      *       "schemas": [],
-                     *       "values": {}
+                     *       "values": {},
+                     *       "origin": {
+                     *         "from": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "title": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "changedSince": false
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -118630,6 +125094,29 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description What it was copied from (REU-059); null where it was made, not copied */
+                        origin: {
+                            /** @description The component it was copied from, by its latest title; null where it was made from content its template holds, or the caller may not read it */
+                            from: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            } | null;
+                            /** @description The version of it the copy was made from; null where `from` is */
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The template that made the copy for a new document; null where Duplicate made it, or the caller may not read it */
+                            template: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description Whether what it was made from has a newer version now: the component, else the template */
+                            changedSince: boolean;
+                        } | null;
                     };
                 };
             };
@@ -119593,6 +126080,192 @@ export interface operations {
             };
         };
     };
+    setDefaultTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "template": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description One of the space's own templates */
+                    template: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description The space as it now is */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "archived": false,
+                     *       "archivedAt": "example",
+                     *       "archivedBy": "example",
+                     *       "language": "en",
+                     *       "defaultTemplate": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        archived: boolean;
+                        /** @description When it was archived; null while it is not */
+                        archivedAt: string | null;
+                        /** @description The principal who archived it; null while it is not archived */
+                        archivedBy: string | null;
+                        /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                        language: string | null;
+                        /** @description The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed */
+                        defaultTemplate: string | null;
+                    };
+                };
+            };
+            /** @description Not a template id */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description template_unusable: not one of the templates in this space */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     createDocument: {
         parameters: {
             query?: never;
@@ -119621,7 +126294,7 @@ export interface operations {
                     language: string;
                     /** @enum {string} */
                     direction: "ltr" | "rtl";
-                    /** @description The template to make it from, at its latest version (templates.md); without one, a blank document */
+                    /** @description The template to make it from, at its latest version (templates.md); without one, the space default (TPL-074) */
                     template?: string & (unknown & unknown);
                     /** @description A value for each of the template's parameters, by name: each in its type's canonical form, or a list of them where the parameter is a list (templates.md, "Asked for when a document is made"). A required one must be given; none for a blank document */
                     parameters?: {
@@ -122805,6 +129478,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         name: string;
+                        description?: string;
                         /** Format: uuid */
                         theme: string;
                         /** Format: uuid */
@@ -122863,6 +129537,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -122876,7 +129551,14 @@ export interface operations {
                         components?: {
                             key: string;
                             /** Format: uuid */
-                            component: string;
+                            component?: string;
+                            content?: {
+                                title: string;
+                                blocks: components["schemas"]["createTemplateBody_schema1"][];
+                            };
+                            /** @enum {string} */
+                            instantiate?: "reference" | "copy";
+                            required?: boolean;
                             mode?: {
                                 /** @constant */
                                 kind: "pinned";
@@ -125880,6 +132562,22 @@ export interface operations {
                             };
                             /** @description When its latest version was made */
                             changedAt: string;
+                            /** @description What it is for (TPL-076); null where it says none */
+                            description: string | null;
+                            /** @description Its starting sections, at every depth */
+                            sections: number;
+                            /** @description The values a document made from it is asked for */
+                            values: number;
+                            /** @description Of those, the ones it must be given */
+                            requiredValues: number;
+                            /** @description The components it places as copies the new document owns (TPL-075) */
+                            copied: number;
+                            /** @description The components it places by reference */
+                            referenced: number;
+                            /** @description Its first five top-level starting sections, by title as plain text */
+                            headings: string[];
+                            /** @description Whether it is its space's default template (TPL-074) */
+                            isDefault: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -126147,6 +132845,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         name: string;
+                        description?: string;
                         /** Format: uuid */
                         theme: string;
                         /** Format: uuid */
@@ -126205,6 +132904,7 @@ export interface operations {
                                 minimum?: string | boolean | null;
                                 maximum?: string | boolean | null;
                             };
+                            label?: string;
                             changeable: boolean;
                             feeds: {
                                 field?: string;
@@ -126218,7 +132918,14 @@ export interface operations {
                         components?: {
                             key: string;
                             /** Format: uuid */
-                            component: string;
+                            component?: string;
+                            content?: {
+                                title: string;
+                                blocks: components["schemas"]["recordTemplateVersionBody_schema1"][];
+                            };
+                            /** @enum {string} */
+                            instantiate?: "reference" | "copy";
+                            required?: boolean;
                             mode?: {
                                 /** @constant */
                                 kind: "pinned";

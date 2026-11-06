@@ -7,7 +7,12 @@ import {
 import type { MetadataSchemaDefinition } from '../metadata/schema.js';
 import { DEFAULT_PROMPT_LIBRARY_ID } from '../generation/library.js';
 
-import type { TemplateComponent, TemplateDefinition } from './definition.js';
+import {
+  instantiateOf,
+  type Instantiate,
+  type TemplateComponent,
+  type TemplateDefinition,
+} from './definition.js';
 
 /**
  * What the service found of a required component for its creator (the R9 plan, R9-C): the version its
@@ -23,10 +28,14 @@ export type FoundComponent =
     }
   | { readonly state: 'foreign' | 'unapproved' };
 
-/** A required component as resolved: the version it is placed at, and its declared mode and place. */
+/**
+ * A template component as resolved: the version it is placed at, or copied from - null for content the
+ * template holds - its declared mode and place, and whether it is placed by reference or copied (ND-C).
+ */
 export interface ResolvedComponent extends TemplateComponent {
   readonly mode: NonNullable<TemplateComponent['mode']>;
-  readonly version: string;
+  readonly version: string | null;
+  readonly instantiate: Instantiate;
 }
 
 /**
@@ -134,6 +143,12 @@ export function resolveTemplate(
   const components: ResolvedComponent[] = [];
   const querySet: string[] = [];
   for (const each of found.components === undefined ? [] : (definition.components ?? [])) {
+    const instantiate = instantiateOf(definition, each);
+    // Content the template holds is there already: nothing to find (ND-F).
+    if (each.component === undefined) {
+      components.push({ ...each, mode: { kind: 'latest' }, version: null, instantiate });
+      continue;
+    }
     const component = found.components!.get(each.key);
     if (component === undefined || component.state !== 'found') {
       unresolved.push({
@@ -146,8 +161,10 @@ export function resolveTemplate(
     }
     components.push({
       ...each,
-      mode: each.mode ?? { kind: 'approved' },
+      // A copy follows its own latest (ND-C): the mode declared is a reference's.
+      mode: instantiate === 'copy' ? { kind: 'latest' } : (each.mode ?? { kind: 'approved' }),
       version: component.version,
+      instantiate,
     });
     for (const query of component.bindings) {
       if (!found.definitions?.has(query)) {

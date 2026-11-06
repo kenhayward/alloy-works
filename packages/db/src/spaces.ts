@@ -29,6 +29,8 @@ export interface SpaceState extends Space {
   readonly archivedBy: string | null;
   /** What new documents and deliveries here take; null where it names none. */
   readonly language: string | null;
+  /** The template a document made here without one takes; null where none counts yet (ND-N). */
+  readonly defaultTemplate: string | null;
 }
 
 /** Why an act on a space is refused (SP-B, SP-D). */
@@ -96,6 +98,15 @@ async function recordSpaceEvent(
 
 // `to_jsonb`, as current code runs on old schemas in the migration tests.
 const defaultLanguage = sql<string | null>`to_jsonb(space) ->> 'default_language'`.as('language');
+
+/**
+ * The space's default template where it still counts (the ND plan, ND-N): a template, in this space.
+ * Through `to_jsonb` for the same reason.
+ */
+const defaultTemplateOf = (alias: string) =>
+  sql<string | null>`(select t.id from artifact t
+    where t.id::text = to_jsonb(${sql.table(alias)}) ->> 'default_template'
+      and t.space_id = ${sql.ref(`${alias}.id`)} and t.kind = 'template')`;
 const stateColumns = [
   'id',
   'name',
@@ -103,6 +114,7 @@ const stateColumns = [
   'archived_at',
   'archived_by',
   defaultLanguage,
+  defaultTemplateOf('space').as('default_template'),
 ] as const;
 
 function stateOf(row: {
@@ -112,6 +124,7 @@ function stateOf(row: {
   archived_at: Date | null;
   archived_by: string | null;
   language: string | null;
+  default_template: string | null;
 }): SpaceState {
   return {
     id: row.id,
@@ -120,6 +133,7 @@ function stateOf(row: {
     archivedAt: row.archived_at,
     archivedBy: row.archived_by,
     language: row.language,
+    defaultTemplate: row.default_template,
   };
 }
 
@@ -307,6 +321,8 @@ export interface SpaceForPrincipal {
   readonly mayMoveInto: boolean;
   /** Whether the caller may design a template here (the RM plan, RM-P), never one archived. */
   readonly mayDesign: boolean;
+  /** The template a document made here without one takes; null where none counts yet (ND-N). */
+  readonly defaultTemplate: string | null;
 }
 
 /**
@@ -344,6 +360,7 @@ export async function listSpacesFor(
     .selectFrom('space as s')
     .select(['s.id', 's.name', 's.archived_at'])
     .select(sql<string | null>`to_jsonb(s) ->> 'default_language'`.as('language'))
+    .select(defaultTemplateOf('s').as('default_template'))
     .select(sortColumns([sql`s.name`]))
     .where('s.id', 'in', [...spaces]);
   if (options.archived === false) inner = inner.where('s.archived_at', 'is', null);
@@ -352,6 +369,7 @@ export async function listSpacesFor(
     name: string;
     archived_at: Date | null;
     language: string | null;
+    default_template: string | null;
   }>(trx, inner, types, request.order ?? order, limit, request.after, request.language);
   const shown: SpaceForPrincipal[] = [];
   for (const row of rows) {
@@ -372,6 +390,7 @@ export async function listSpacesFor(
         (decide('create', { ...facts, scopes }).allowed ||
           administerOrAbove({ ...facts, scopes }).allowed),
       mayDesign: !archived && facts !== undefined && decide('design', { ...facts, scopes }).allowed,
+      defaultTemplate: row.default_template,
     });
   }
   return { items: shown, next, snapshot };

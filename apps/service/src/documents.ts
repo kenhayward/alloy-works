@@ -22,6 +22,7 @@ import { scopeView } from './scopes.js';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
+  ensureDefaultTemplate,
   type CreateDocumentAnswer,
   unresolvedVariables,
   documentLayout,
@@ -468,6 +469,16 @@ export async function createdView(
       },
     );
   }
+  if (answer.answer === 'values.invalid') {
+    throw refused(
+      409,
+      'values.invalid',
+      'A component its template copies holds a value its field no longer takes.',
+      {
+        failures: answer.failures,
+      },
+    );
+  }
   if (answer.answer !== 'created') throw refusedParameters(answer);
   const held = await trx
     .selectFrom('space')
@@ -563,7 +574,11 @@ export function documentHandlers(
     createDocument: async (request: FastifyRequest, authorised: Authorised) => {
       const { trx, principalId } = authorised;
       const { space } = request.params as SpaceParams;
-      const body = request.body as CreateDocumentBody;
+      const asked = request.body as CreateDocumentBody;
+      // None named, the space's default, made first where it has none (TPL-074; the ND plan, ND-B).
+      const template = asked.template ?? (await ensureDefaultTemplate(trx, space, principalId));
+      const body = { ...asked, ...(template === undefined ? {} : { template }) };
+      request.body = body;
       // A template whose required components run queries: they run first (the R9 plan, R9-E).
       const bound = boundCreation && (await boundCreation(request, authorised));
       if (bound) return bound;

@@ -78,6 +78,11 @@ refused while a required section is missing or a field its template applies is n
 | **TPL-051** | A definition's `profile` declares default values for axes and the axes a document must set; a parameter's `feeds.axis` gives its value to an axis. Making a document writes the profile, never none; a publish with a required axis unset is `profile_incomplete` ([Profile](#profile))                                                                                                                              |
 | **TPL-040** | A cohort is found again as a set: `GET /v1/cohorts` lists every cohort in a space the caller may read, each with its template, space and rows counted made, failed and waiting, and Templates' **Cohorts** opens each one's page (the R14 plan, R14-A)                                                                                                                                                               |
 | **SCH-065** | The cohort listing sorts by when asked, newest first, or by title, and filters by template and by state: complete, a row failed, or a row waiting and none failed; paged by the listing cursor (API-007)                                                                                                                                                                                                             |
+| **TPL-074** | `space.default_template`, set by `PUT /v1/spaces/{space}/default-template` with administer at the space; a create naming no template takes it at the route, making the space's **Blank** first where it has none ([Defaults and copies](#defaults-and-copies))                                                                                                                                                       |
+| **TPL-075** | A template component's `instantiate` (or its section's) is `reference`, the default, or `copy`; a copy is made in the creation's transaction from the named component's latest version or from the `content` the template holds, and is the document's own                                                                                                                                                           |
+| **TPL-076** | `description` on the definition and `label` on each parameter, shown by New document and wherever a value is asked for; a value without a label shows its key                                                                                                                                                                                                                                                        |
+| **TPL-077** | New document lists `GET /v1/templates` by space with each one's summary, the Where space first and its default chosen; values are asked for by type in a region of their own, with a count of the required ones left                                                                                                                                                                                                 |
+| **REU-059** | `artifact_origin`, insert-only, one row per copy a template or Duplicate makes: the component and version, or the template, it was made from; a component's view answers it as `origin`, with `changedSince`                                                                                                                                                                                                         |
 
 ## What this document does not own
 
@@ -167,8 +172,26 @@ type's - so a field reached through two schemas is one field, required if either
 5. **The link is recorded**: `document_template (document_id, template_id, template_version_id)`,
    insert-only (TPL-025).
 
-The document's title, language and direction are the request's, as for a blank document. Without a
-`template`, a document is made blank, as today, and records no link.
+The document's title, language and direction are the request's. Without a `template`, the route takes
+the space's default ([Defaults and copies](#defaults-and-copies)); the db's `createDocument` alone still
+makes an empty outline, for imports and reference documents.
+
+### Defaults and copies
+
+The ND plan ([ADR-0097](../decisions/0097-a-template-always-and-a-copy-records-its-origin.md)):
+
+- **A space's default** is `space.default_template`. One archived, deleted or moved away counts as none.
+  Where there is none, `ensureDefaultTemplate` makes **Blank** under a lock on the space, as the person
+  creating, and sets it: no sections, one copied component titled "Please supply a title" holding
+  "Please supply the text.", not required. Making a space makes its Blank the same way.
+- **A template component** names a `component`, or holds `content` (a title and blocks). It is placed by
+  reference unless its `instantiate`, or the nearest starting section's, says `copy`; `content` is always
+  copied. `required`, absent meaning true, keeps a required copy guarded as a required reference is.
+- **A copy** is made by Duplicate's `copyComponent` or from the content, in the document's space and
+  language, its workflow's first state, as the creator, placed `latest`, with its `artifact_origin` row.
+  Cohorts and bindings make copies through the same `createFromResolution`; a cohort's rows times its
+  copies is held to `COHORT_ROWS_MAX`.
+- **A move** to a newer template version adds no copy: a copied component new to it is reported missing.
 
 ## What the document keeps
 
@@ -471,25 +494,28 @@ As built by [the TP2 plan](../plans/2026-10-08-tp2-parameters-feeding-bindings.m
 Taken as recommended on Ken's standing instruction of 2026-09-26 ("continue through to the end of W4 ...
 and I will review all live at the end"), each open to reversal at that review.
 
-| #    | Decision                                                                                                                                                                                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TE-A | A template is a spaced kind (TPL-001), and a document may be made from any template its author may read into any space they may create in                                                                                                   |
-| TE-B | The theme, layout and schemas are referenced by artifact identifier and resolved to their latest versions where used - at instantiation and at publication - while the template version a document was made from is recorded (TPL-025)      |
-| TE-C | A starting outline holds sections only, each with a key stable across versions; no component references in T1 (TPL-014)                                                                                                                     |
-| TE-D | `changes` is template-wide - add, remove, reorder - applies to sections only, and is read from the document's recorded template version                                                                                                     |
-| TE-E | The link is an insert-only table beside the document; a section's origin is an optional outline member no act writes, at outline schema 3                                                                                                   |
-| TE-F | A template is optional: a blank document keeps the environment's default theme and layout. No tenant is seeded with a template; development's seed has one                                                                                  |
-| TE-G | A document's values are its version's `metadata_values`; a section's are its node's `values`. Each is checked field by field when written, and for required fields only at publication                                                      |
-| TE-H | Required sections and fields are checked at the publication request's door, as two refusals in that order, each naming every failure                                                                                                        |
-| TE-I | `design` on the space makes a template and on the template changes it; `read` shows it; making a document from one asks `create` in the target space and `read` on the template, an unreadable template answered as not found               |
-| TE-J | T1's interface is the template chooser in **New document** and the refusals where the page already shows them; making and changing a template is through the API, and a template's own page and editor come later                           |
-| TE-K | With TPL-056 and TPL-057 outside T1, nothing records definition versions on a document: its values are resolved and validated against the current definitions each time, which leaves MET-019 unmet for documents and sections, named above |
-| TE-L | A template is refused, when made and when versioned, unless its definition passes `checkTemplate` and every reference resolves; resolution runs again when a document is made from it, because what it names can change after it is saved   |
-| TE-M | **T2's TPL is parameters alone**; bindings at creation, a query set and variables are T4's (ADR-0043)                                                                                                                                       |
-| TE-N | **A template parameter is the query definition's `Parameter`**, plus `changeable` and `feeds`, so one declaration and one checker serve both                                                                                                |
-| TE-O | **Parameters live in the document's versions**, so who changed one and when is the version chain's record, not a second log                                                                                                                 |
-| TE-P | **A seeded field is seeded once**, at creation; afterwards it is the author's                                                                                                                                                               |
-| TE-Q | **A binding's digest is taken with its document arguments substituted**, so a changed parameter marks exactly the bindings that read it, and a binding without one keeps its digest                                                         |
+| #    | Decision                                                                                                                                                                                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TE-A | A template is a spaced kind (TPL-001), and a document may be made from any template its author may read into any space they may create in                                                                                                                        |
+| TE-B | The theme, layout and schemas are referenced by artifact identifier and resolved to their latest versions where used - at instantiation and at publication - while the template version a document was made from is recorded (TPL-025)                           |
+| TE-C | A starting outline holds sections only, each with a key stable across versions; no component references in T1 (TPL-014)                                                                                                                                          |
+| TE-D | `changes` is template-wide - add, remove, reorder - applies to sections only, and is read from the document's recorded template version                                                                                                                          |
+| TE-E | The link is an insert-only table beside the document; a section's origin is an optional outline member no act writes, at outline schema 3                                                                                                                        |
+| TE-F | Replaced by TE-R (the ND plan). Was: a template is optional, and no tenant is seeded with one                                                                                                                                                                    |
+| TE-G | A document's values are its version's `metadata_values`; a section's are its node's `values`. Each is checked field by field when written, and for required fields only at publication                                                                           |
+| TE-H | Required sections and fields are checked at the publication request's door, as two refusals in that order, each naming every failure                                                                                                                             |
+| TE-I | `design` on the space makes a template and on the template changes it; `read` shows it; making a document from one asks `create` in the target space and `read` on the template, an unreadable template answered as not found                                    |
+| TE-J | T1's interface is the template chooser in **New document** and the refusals where the page already shows them; making and changing a template is through the API, and a template's own page and editor come later. "No template means empty" is replaced by TE-R |
+| TE-K | With TPL-056 and TPL-057 outside T1, nothing records definition versions on a document: its values are resolved and validated against the current definitions each time, which leaves MET-019 unmet for documents and sections, named above                      |
+| TE-L | A template is refused, when made and when versioned, unless its definition passes `checkTemplate` and every reference resolves; resolution runs again when a document is made from it, because what it names can change after it is saved                        |
+| TE-M | **T2's TPL is parameters alone**; bindings at creation, a query set and variables are T4's (ADR-0043)                                                                                                                                                            |
+| TE-N | **A template parameter is the query definition's `Parameter`**, plus `changeable` and `feeds`, so one declaration and one checker serve both                                                                                                                     |
+| TE-O | **Parameters live in the document's versions**, so who changed one and when is the version chain's record, not a second log                                                                                                                                      |
+| TE-P | **A seeded field is seeded once**, at creation; afterwards it is the author's                                                                                                                                                                                    |
+| TE-Q | **A binding's digest is taken with its document arguments substituted**, so a changed parameter marks exactly the bindings that read it, and a binding without one keeps its digest                                                                              |
+| TE-R | **A template always** (ND-A, ND-B): each space has a default, Blank until its administrator chooses another; a create naming none takes it                                                                                                                       |
+| TE-S | **Blank is made when first needed**, as the person needing it, since a version needs an author (ND-N)                                                                                                                                                            |
+| TE-T | **A copy's origin is a table, not a relationship**: relationship types are each tenant's (ND-M)                                                                                                                                                                  |
 
 ## What was ruled out
 

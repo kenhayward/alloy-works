@@ -134,8 +134,8 @@ describe('New document', () => {
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
     await userEvent.clear(screen.getByLabelText('Language'));
     await userEvent.type(screen.getByLabelText('Language'), 'fr-CA');
-    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Right to left' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(DOCUMENT));
     expect(sent.at(-1)).toEqual({
@@ -155,13 +155,13 @@ describe('New document', () => {
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
     await screen.findByLabelText('Where');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
     expect(screen.getByRole('status')).toHaveTextContent('A document needs a title.');
 
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
     await userEvent.clear(screen.getByLabelText('Language'));
     await userEvent.type(screen.getByLabelText('Language'), 'english');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
     expect(screen.getByRole('status')).toHaveTextContent('A language tag looks like en-GB.');
 
     expect(sent.filter((request) => request.url.endsWith('/documents'))).toEqual([]);
@@ -172,7 +172,7 @@ describe('New document', () => {
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
     await screen.findByLabelText('Where');
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'You may not create a document here.',
@@ -188,12 +188,21 @@ describe('New document', () => {
         name: 'Report',
         space: { id: SPACE, name: 'General' },
         version: { id: 'ee000000-0000-4000-8000-0000000000a1', number: '0.3' },
+        changedAt: '2026-11-01T09:00:00Z',
+        description: null,
+        sections: 1,
+        values: 0,
+        requiredValues: 0,
+        copied: 0,
+        referenced: 0,
+        headings: ['Summary'],
+        isDefault: false,
       },
     ],
     next: null,
   };
 
-  it('offers Blank and the templates the caller may read, and sends the one chosen', async () => {
+  it("offers the Where space's Blank and the templates the caller may read, and sends the one chosen", async () => {
     const { fetch, sent } = spaces({
       '/v1/spaces': SPACES,
       '/v1/templates': TEMPLATES,
@@ -202,18 +211,18 @@ describe('New document', () => {
     const onCreated = vi.fn();
     render(<NewDocument client={client(fetch)} onCreated={onCreated} />);
 
-    const template = await screen.findByLabelText('Template');
-    await waitFor(() =>
-      expect([...template.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
-        'Blank',
-        'Report (General)',
-      ]),
-    );
-    // Blank is chosen until another is: a document made from nothing sends no template.
-    expect(template).toHaveValue('');
-    await userEvent.selectOptions(template, 'Report (General)');
+    const gallery = await screen.findByRole('listbox', { name: 'Template' });
+    await screen.findByRole('option', { name: 'Report' });
+    expect(
+      within(gallery)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['BlankOne component to start', 'Report1 section · 0 values']);
+    // Blank is chosen until another is: General has no default yet, so it sends no template.
+    expect(screen.getByRole('option', { name: 'Blank' })).toHaveAttribute('aria-selected', 'true');
+    await userEvent.click(screen.getByRole('option', { name: 'Report' }));
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(DOCUMENT));
     expect(sent.at(-1)).toEqual({
@@ -226,10 +235,11 @@ describe('New document', () => {
     const { fetch } = spaces({ '/v1/spaces': SPACES });
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
     expect(await screen.findByText('The templates could not be loaded.')).toBeInTheDocument();
-    const template = screen.getByLabelText('Template');
-    expect([...template.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
-      'Blank',
-    ]);
+    expect(
+      within(screen.getByRole('listbox', { name: 'Template' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['BlankOne component to start']);
   });
 
   it('says a template that no longer resolves cannot be used, and keeps the choice', async () => {
@@ -246,16 +256,14 @@ describe('New document', () => {
       });
     }) as typeof globalThis.fetch;
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
-    const template = await screen.findByLabelText('Template');
-    await screen.findByRole('option', { name: 'Report (General)' });
-    await userEvent.selectOptions(template, 'Report (General)');
+    await userEvent.click(await screen.findByRole('option', { name: 'Report' }));
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
     );
-    expect(template).toHaveValue(TEMPLATE);
+    expect(screen.getByRole('option', { name: 'Report' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('says the caller is signed out on a 401, rather than asking them to try again', async () => {
@@ -263,7 +271,7 @@ describe('New document', () => {
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
     await screen.findByLabelText('Where');
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create document' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'You are signed out. Sign in again to create a document.',

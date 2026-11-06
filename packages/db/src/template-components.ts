@@ -1,5 +1,6 @@
 import {
   bindingsIn,
+  instantiateOf,
   readContent,
   type FoundComponent,
   type TemplateDefinition,
@@ -16,7 +17,8 @@ import { latestRevisionsOf } from './workflow.js';
  * its key, at the version its mode chooses - its pin where the pin is its own, its head, or its latest
  * revision in effect - with the query definitions that version's bindings name; and which of those
  * definitions the principal may read. A component they may not read, deleted or no component at all has
- * no entry, so resolution names it missing and says no more.
+ * no entry, so resolution names it missing and says no more. One the template copies is read at its
+ * latest, as a copy is made from it (the ND plan, ND-C); content the template holds has no entry.
  */
 export async function componentReferences(
   trx: TenantTransaction,
@@ -26,7 +28,18 @@ export async function componentReferences(
   readonly components: ReadonlyMap<string, FoundComponent>;
   readonly definitions: ReadonlySet<string>;
 }> {
-  const declared = definition.components ?? [];
+  const declared = (definition.components ?? []).flatMap((each) =>
+    each.component === undefined
+      ? []
+      : [
+          {
+            key: each.key,
+            component: each.component,
+            mode:
+              instantiateOf(definition, each) === 'copy' ? { kind: 'latest' as const } : each.mode,
+          },
+        ],
+  );
   const components = new Map<string, FoundComponent>();
   if (declared.length === 0) return { components, definitions: new Set() };
   const readable = await readableComponents(

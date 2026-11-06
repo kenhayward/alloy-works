@@ -268,6 +268,8 @@ describe('finding and opening components through the service', () => {
         unsaved: null,
         // No session named, so no sequence of one.
         sequence: null,
+        // Made, not copied (REU-059).
+        origin: null,
         // Made a moment ago, so in its workflow's initial state; its author may submit it.
         state: { key: 'draft', name: 'Draft', approved: false },
         states: [

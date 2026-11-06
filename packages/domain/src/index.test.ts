@@ -462,6 +462,11 @@ describe('the domain package', () => {
         'requiredKeys',
         'planTemplateMove',
         'valueFailures',
+        // ND: a component placed by reference or copied, Blank, and a template summarised.
+        'BLANK_WORDS',
+        'blankTemplate',
+        'instantiateOf',
+        'templateSummary',
         // R2: the references a version holds, as the reference index keeps them.
         'referencesIn',
         // R5: variables, declared, resolved and printed.

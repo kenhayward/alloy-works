@@ -36,6 +36,20 @@ export const TemplateSummary = z.object({
   space: z.object({ id: z.string(), name: z.string() }),
   version: z.object({ id: z.string(), number: z.string() }),
   changedAt: z.string().describe('When its latest version was made'),
+  // What its latest definition holds, as the New document gallery shows it (the ND plan, ND-H).
+  description: z.string().nullable().describe('What it is for (TPL-076); null where it says none'),
+  sections: z.number().int().describe('Its starting sections, at every depth'),
+  values: z.number().int().describe('The values a document made from it is asked for'),
+  requiredValues: z.number().int().describe('Of those, the ones it must be given'),
+  copied: z
+    .number()
+    .int()
+    .describe('The components it places as copies the new document owns (TPL-075)'),
+  referenced: z.number().int().describe('The components it places by reference'),
+  headings: z
+    .array(z.string())
+    .describe('Its first five top-level starting sections, by title as plain text'),
+  isDefault: z.boolean().describe("Whether it is its space's default template (TPL-074)"),
 });
 export const TemplateList = z.object({
   items: z.array(TemplateSummary),

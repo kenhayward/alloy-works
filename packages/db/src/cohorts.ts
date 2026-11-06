@@ -147,6 +147,16 @@ export async function submitCohort(
   if (computed.ok && computed.querySet.length > 0) {
     return { answer: 'cohort.bound', queries: computed.querySet };
   }
+  // Each row makes its template's copies too (TPL-075; the ND plan, ND-O): those are limited alike.
+  const copies = computed.ok
+    ? computed.components.filter((each) => each.instantiate === 'copy').length
+    : 0;
+  if (input.rows.length * copies > COHORT_ROWS_MAX) {
+    return {
+      answer: 'rows.invalid',
+      detail: `more than ${COHORT_ROWS_MAX} components copied, ${copies} a row`,
+    };
+  }
   const { rows: made } = await sql<{ id: string }>`
     insert into cohort (space_id, template_id, resolution, title, language, direction, source,
                         requested_by, on_failure)

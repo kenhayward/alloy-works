@@ -1,4 +1,7 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { copyComponent } from './copies.js';
+import { createComponent } from './creation.js';
+import { recordOrigin } from './origins.js';
 import { recordWaivers, requiredRemoved } from './waivers.js';
 import { latestRevisionsOf } from './workflow.js';
 import {
@@ -139,7 +142,9 @@ export type CreateDocumentAnswer =
   | ParameterValuesRefused
   | ParametersRefused
   /** The profile its template and parameters give it names what the environment does not declare. */
-  | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] };
+  | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] }
+  /** A component its template copies holds values its type refuses now (MET-003); nothing is written. */
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] };
 
 /**
  * What one structural act answers: the version chain's own answers, or a refusal from the outline -
@@ -361,17 +366,58 @@ export async function createFromResolution(
       ),
     };
   }
-  const materialised = materialiseTemplate(
-    resolved,
-    heading,
-    input.identity?.newIdentifier ?? newNodeIdentifier,
-  );
-  const { values } = materialised;
   // Its profile, from the template's defaults and the parameters feeding axes, never undeclared
   // (TPL-051, REU-022; the R10 plan, R10-E).
   const profile = templateProfile(template.definition, parameters);
   const unknownAxes = await profileUnknown(trx, profile);
   if (unknownAxes.length > 0) return { answer: 'profile.invalid', unknown: unknownAxes };
+  // Each component the template copies, made now as the document's own (TPL-075; the ND plan, ND-C),
+  // with its origin (REU-059). A document prepared and made again (R9-E) gives each the same id.
+  const copying = resolved.components.filter((each) => each.instantiate === 'copy');
+  const copies = new Map(
+    copying.map((each) => [
+      each.key,
+      input.identity ? copyIdentity(input.identity.artifactId, each.key) : randomUUID(),
+    ]),
+  );
+  const materialised = materialiseTemplate(
+    resolved,
+    heading,
+    input.identity?.newIdentifier ?? newNodeIdentifier,
+    copies,
+  );
+  const { values } = materialised;
+  const origin = { template: { id: template.id, version: resolution.template.version } };
+  for (const each of copying) {
+    const id = copies.get(each.key)!;
+    if (each.component !== undefined && each.version !== null) {
+      const source = await readVersion(trx, each.version);
+      if (!source) throw new Error(`The component version ${each.version} is gone`);
+      const made = await copyComponent(trx, {
+        version: source,
+        id,
+        to: input.spaceId,
+        by: input.author,
+        remap: new Map(),
+        template: origin.template,
+      });
+      if (made.answer !== 'copied') return made;
+    } else if (each.content !== undefined) {
+      const made = await createComponent(trx, {
+        spaceId: input.spaceId,
+        title: each.content.title,
+        language: input.language,
+        direction: input.direction,
+        author: input.author,
+        blocks: each.content.blocks,
+        artifactId: id,
+      });
+      // Refused, not thrown: a template's content checked at write cannot fail here, but a space or
+      // its default type can go between the template's saving and this.
+      if (made.answer !== 'created') return { answer: 'content.invalid' };
+      await recordOrigin(trx, id, origin);
+    }
+  }
   const outline = {
     ...materialised.outline,
     nodes: [...materialised.outline.nodes, ...(input.nodes ?? [])],
@@ -394,6 +440,19 @@ export async function createFromResolution(
     .execute();
   await indexTemplateOf(trx, version.artifactId);
   return { answer: 'created', version };
+}
+
+/** A copy's id where its document's is chosen first (R9-E): the same each time it is made. */
+function copyIdentity(document: string, key: string): string {
+  const hex = createHash('sha256').update(`alloy-works:copy:${document}:${key}`).digest('hex');
+  // A version 4 layout, variant 10, so it reads as any other identifier does.
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `4${hex.slice(13, 16)}`,
+    `${((parseInt(hex[16]!, 16) & 3) | 8).toString(16)}${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join('-');
 }
 
 /**

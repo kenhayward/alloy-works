@@ -1,11 +1,12 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { contentDocumentSchema } from '@alloy-works/domain';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { DeclaredLanguages } from '../parts/DeclaredLanguages.js';
 import { PlaceHoldDialog } from '../lifecycle/Hold.js';
+import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { words } from '../words/words.js';
 
@@ -18,13 +19,15 @@ export interface SpaceRow {
   readonly archived: boolean;
   readonly mayCreate: boolean;
   readonly language?: string | null;
+  /** The template a document made here with none named starts from; null until chosen (TPL-074). */
+  readonly defaultTemplate?: string | null;
 }
 
 /** What is being done to a space, while its dialog is open. */
 export type SpaceAct =
   | { readonly kind: 'new' }
   | {
-      readonly kind: 'rename' | 'language' | 'archive' | 'restore' | 'hold';
+      readonly kind: 'rename' | 'language' | 'template' | 'archive' | 'restore' | 'hold';
       readonly space: SpaceRow;
     };
 
@@ -188,6 +191,115 @@ function Language({
 }
 
 /**
+ * A space's default template (TPL-074; the ND plan, ND-A): one of the space's own templates, which a
+ * document made there with none named starts from and New document offers first. Until one is
+ * chosen it is Blank, made when a document first needs it (ND-N).
+ */
+function DefaultTemplate({
+  client,
+  space,
+  onDone,
+  onClose,
+}: {
+  client: Client;
+  space: SpaceRow;
+  onDone: (said: string) => void;
+  onClose: () => void;
+}) {
+  const [templates, setTemplates] = useState<readonly { id: string; name: string }[] | null>(null);
+  const [chosen, setChosen] = useState(space.defaultTemplate ?? '');
+  const [said, setSaid] = useState('');
+  const [busy, setBusy] = useState(false);
+  const failed = words('admin.the-default-template-could-not-be-set');
+
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      try {
+        const all = await everyPage((cursor) =>
+          client.GET('/v1/templates', {
+            params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+          }),
+        );
+        if (!current) return;
+        if ('items' in all) {
+          setTemplates(
+            all.items
+              .filter((each) => each.space.id === space.id)
+              .map((each) => ({ id: each.id, name: each.name })),
+          );
+        } else setSaid(words('admin.the-templates-could-not-be-loaded'));
+      } catch {
+        if (current) setSaid(words('admin.the-templates-could-not-be-loaded'));
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client, space.id]);
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const template = templates?.find((each) => each.id === chosen);
+    if (template === undefined) return;
+    setBusy(true);
+    try {
+      const { response, error } = await client.PUT('/v1/spaces/{space}/default-template', {
+        params: { path: { space: space.id } },
+        body: { template: template.id },
+      });
+      if (response.ok) {
+        onDone(
+          words('admin.is-the-default-template-in', { template: template.name, name: space.name }),
+        );
+      } else setSaid(refusal(error, failed));
+    } catch {
+      setSaid(failed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal labelledBy="space-template-heading" onClose={onClose}>
+      <form className={styles['dialog']} onSubmit={(event) => void save(event)}>
+        <h2 id="space-template-heading">
+          {words('admin.default-template-of', { name: space.name })}
+        </h2>
+        {templates !== null && (
+          <label>
+            {words('admin.default-template')}
+            <select value={chosen} onChange={(event) => setChosen(event.target.value)}>
+              {chosen === '' && <option value="">{words('admin.blank-when-first-needed')}</option>}
+              {templates.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <p className={styles['muted']}>{words('admin.default-template-explained')}</p>
+        <p role="status">{said}</p>
+        <div className={styles['actions']}>
+          <button type="button" onClick={onClose}>
+            {words('admin.cancel')}
+          </button>
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy}
+            aria-disabled={chosen === '' || undefined}
+          >
+            {words('admin.save')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/**
  * Archiving or restoring a space, after saying what it changes and what it does not (SP-C, SP-G). A
  * refusal - the last space not archived - is said in Spaces once the dialog has gone.
  */
@@ -290,6 +402,9 @@ export function SpaceDialog({
   }
   if (act.kind === 'rename') {
     return <Naming client={client} space={act.space} onDone={onDone} onClose={onClose} />;
+  }
+  if (act.kind === 'template') {
+    return <DefaultTemplate client={client} space={act.space} onDone={onDone} onClose={onClose} />;
   }
   if (act.kind === 'language') {
     return <Language client={client} space={act.space} onDone={onDone} onClose={onClose} />;

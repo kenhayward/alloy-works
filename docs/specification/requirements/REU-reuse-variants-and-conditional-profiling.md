@@ -52,6 +52,7 @@ positioning claim, and it is the one Workiva does not have.
 | **REU-056** | A document, component or template must be duplicable under a new title into a space the caller may create in; a title already used there must be warned of, not refused                                                                                                                                                                                                                                                                    | T7         | Specified             |
 | **REU-057** | A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit                                                                                                                                                                                         | T7         | Specified             |
 | **REU-058** | A copy must keep the outline's structure and node identities, so cross-references resolve in it (**STR-046**), and its template, parameters, values, language and profile; it must carry no versions, comments, baselines, publications or grants, start in its workflow's first state, and be audited (**LIF-063**)                                                                                                                       | T7         | Specified             |
+| **REU-059** | A component copied from another component or from a template must record what it was made from and at which version, and must say whether that source has changed since (**TPL-075**, REU-056)                                                                                                                                                                                                                                             | T7         | Specified             |
 
 **REU-042 and REU-043 answer what a reader sees, which only the publish path had covered.** A
 reference to something deleted or unreadable fails a publish by name (REU-005) and, until this
@@ -379,3 +380,16 @@ copying them (issue [#1016](https://github.com/kenhayward/alloy-works/issues/101
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 55, of which 4 superseded and 1 withdrawn | 58, of which 4 superseded and 1 withdrawn |
+
+### Where a copy came from (#1025), 2026-11-06
+
+Not a review. Ken asked that a template's copied components keep a link back to their original
+([the ND plan](../../plans/2026-11-06-nd-new-document.md)).
+
+| What was found                     | Change          |
+| ---------------------------------- | --------------- |
+| A copy kept no trace of its source | **REU-059** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 58, of which 4 superseded and 1 withdrawn | 59, of which 4 superseded and 1 withdrawn |
