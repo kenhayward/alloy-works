@@ -1,3 +1,6 @@
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { inspect } from 'node:util';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -5,6 +8,7 @@ import {
   groupValues,
   MOST_GROUP_VALUES,
   ORGANISATION_SCOPES,
+  ProviderToken,
   SCOPES,
   SignInFailed,
   type ProviderSettings,
@@ -58,6 +62,7 @@ describe('the OpenID Connect client', () => {
       providerKey: null,
       // Only said where it was asked for, as a re-authentication asks (IAM-012).
       authTime: null,
+      refreshToken: null,
     });
   });
 
@@ -277,5 +282,106 @@ describe('the OpenID Connect client', () => {
       subject: 'alice',
       hostedDomain: 'example.org',
     });
+  });
+});
+
+describe('a provider asked again (the PC plan)', () => {
+  let idp: StandInProvider;
+  let organisation: ProviderSettings;
+  const oidc = createOidcClient({ allowInsecureIssuers: true });
+
+  beforeAll(async () => {
+    idp = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+    });
+    organisation = {
+      issuer: idp.issuer,
+      clientId: 'alloy',
+      clientSecret: 'stand-in-secret',
+      offlineAccess: true,
+    };
+  });
+
+  afterAll(() => idp.close());
+
+  const signIn = async (settings: ProviderSettings, user = 'ada') => {
+    const start = await oidc.start(settings, REDIRECT);
+    return oidc.finish(settings, await completeAtStandIn(start.url, user, idp.issuer), start);
+  };
+
+  it('keeps the refresh token of a sign-in granted offline access, and none of one that was not asked', async () => {
+    expect((await signIn(organisation)).refreshToken).toBeInstanceOf(ProviderToken);
+    expect((await signIn({ ...organisation, offlineAccess: false })).refreshToken).toBeNull();
+  });
+
+  it('never says the token it holds: not as JSON, a string or what a log inspects', async () => {
+    const identity = await signIn(organisation);
+    const token = identity.refreshToken!.reveal();
+    expect(token.length).toBeGreaterThan(10);
+    for (const said of [
+      JSON.stringify(identity),
+      JSON.stringify({ token: identity.refreshToken }),
+      String(identity.refreshToken),
+      `${identity.refreshToken}`,
+      inspect(identity, { depth: 5, showHidden: true }),
+    ]) {
+      expect(said).not.toContain(token);
+    }
+  });
+
+  it('IAM-010 renews a token the provider still honours, and is refused one it does not, as a disabled person is', async () => {
+    const identity = await signIn(organisation, 'grace');
+    const renewed = await oidc.refresh(organisation, identity.refreshToken!);
+    expect(renewed).toMatchObject({ outcome: 'renewed' });
+    const rotated = renewed.outcome === 'renewed' ? renewed.token : undefined;
+    expect(rotated).toBeInstanceOf(ProviderToken);
+    idp.disable('grace');
+    try {
+      expect(await oidc.refresh(organisation, rotated!)).toEqual({ outcome: 'refused' });
+    } finally {
+      idp.enable('grace');
+    }
+  });
+
+  it('is unanswered, never refused, by a provider that cannot be reached or does not answer in time', async () => {
+    const identity = await signIn(organisation);
+    const gone = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+    });
+    const unreachable = { ...organisation, issuer: gone.issuer };
+    await gone.close();
+    expect(await oidc.refresh(unreachable, identity.refreshToken!)).toEqual({
+      outcome: 'unanswered',
+    });
+
+    // Publishes where its token endpoint is, and never answers there.
+    const silent = createServer((request, response) => {
+      if (request.url === '/.well-known/openid-configuration') {
+        const at = `http://127.0.0.1:${(silent.address() as AddressInfo).port}`;
+        response.setHeader('content-type', 'application/json');
+        response.end(
+          JSON.stringify({
+            issuer: at,
+            authorization_endpoint: `${at}/auth`,
+            token_endpoint: `${at}/token`,
+            jwks_uri: `${at}/jwks`,
+          }),
+        );
+      }
+    });
+    await new Promise<void>((resolve) => silent.listen(0, '127.0.0.1', resolve));
+    try {
+      const at = `http://127.0.0.1:${(silent.address() as AddressInfo).port}`;
+      const began = Date.now();
+      expect(
+        await oidc.refresh({ ...organisation, issuer: at }, identity.refreshToken!, {
+          timeoutMs: 200,
+        }),
+      ).toEqual({ outcome: 'unanswered' });
+      expect(Date.now() - began).toBeLessThan(2000);
+    } finally {
+      silent.closeAllConnections();
+      await new Promise<void>((resolve) => silent.close(() => resolve()));
+    }
   });
 });

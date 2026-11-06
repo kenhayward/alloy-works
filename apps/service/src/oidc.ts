@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import * as client from 'openid-client';
 import { guardedProviderFetch } from './oidc-fetch.js';
 
@@ -10,6 +11,43 @@ export const SCOPES = 'openid email profile';
  * own session, refused as a leaver's is.
  */
 export const ORGANISATION_SCOPES = 'openid email profile offline_access';
+
+/**
+ * A provider's refresh token, held for a session to ask the provider again (the PC plan, PC-A). It says
+ * what it is and never its value, as JSON, a string or to a log, so carrying it past a logger or into a
+ * response gives nothing away: only `reveal`, where it is sealed or sent to the provider, reads it.
+ */
+export class ProviderToken {
+  readonly #value: string;
+  constructor(value: string) {
+    this.#value = value;
+  }
+  reveal(): string {
+    return this.#value;
+  }
+  toJSON(): string {
+    return '[a provider token]';
+  }
+  toString(): string {
+    return '[a provider token]';
+  }
+  [inspect.custom](): string {
+    return '[a provider token]';
+  }
+}
+
+/** How long a provider asked again has to answer (PC-C): a request waits on it. */
+export const PROVIDER_CHECK_TIMEOUT_MS = 3000;
+
+/**
+ * The provider's answer to a refresh token (PC-E). Only `invalid_grant` is a refusal, which is how
+ * Keycloak, Entra ID and Okta answer a disabled or deleted person; anything else, a failure to reach
+ * it or a timeout included, is no answer at all.
+ */
+export type ProviderAnswer =
+  | { readonly outcome: 'renewed'; readonly token: ProviderToken }
+  | { readonly outcome: 'refused' }
+  | { readonly outcome: 'unanswered' };
 
 export interface ProviderSettings {
   readonly issuer: string;
@@ -51,6 +89,11 @@ export interface Identity {
   readonly providerKey: string | null;
   /** When the person authenticated at the provider, in seconds, where it says (IAM-012). */
   readonly authTime: number | null;
+  /**
+   * The refresh token, where the provider granted offline access (PC-B): never otherwise, since an
+   * online token dies with the provider's own session and is refused as a leaver's is.
+   */
+  readonly refreshToken: ProviderToken | null;
 }
 
 /**
@@ -90,6 +133,16 @@ export interface OidcClient {
     callbackUrl: URL,
     expected: { readonly state: string; readonly nonce: string; readonly codeVerifier: string },
   ): Promise<Identity>;
+  /**
+   * Asks the provider whether the person may still sign in, by the refresh token a sign-in kept
+   * (IAM-010). The token it answers with is the one to keep: the same, where the provider does not
+   * rotate it. Never throws.
+   */
+  refresh(
+    provider: ProviderSettings,
+    token: ProviderToken,
+    options?: { readonly timeoutMs?: number },
+  ): Promise<ProviderAnswer>;
 }
 
 /**
@@ -218,7 +271,43 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
             ? (claims[provider.scimClaim] as string)
             : null,
         authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null,
+        refreshToken:
+          tokens.refresh_token !== undefined &&
+          (tokens.scope ?? '').split(' ').includes('offline_access')
+            ? new ProviderToken(tokens.refresh_token)
+            : null,
       };
+    },
+
+    async refresh(provider, token, options) {
+      const timeoutMs = options?.timeoutMs ?? PROVIDER_CHECK_TIMEOUT_MS;
+      let timer: NodeJS.Timeout | undefined;
+      const late = new Promise<ProviderAnswer>((resolve) => {
+        timer = setTimeout(() => resolve({ outcome: 'unanswered' }), timeoutMs);
+      });
+      const asked = (async (): Promise<ProviderAnswer> => {
+        try {
+          const config = await configuration(provider);
+          config.timeout = Math.max(1, Math.ceil(timeoutMs / 1000));
+          const tokens = await client.refreshTokenGrant(config, token.reveal());
+          keepKeys(provider, config);
+          return {
+            outcome: 'renewed',
+            token:
+              tokens.refresh_token === undefined ? token : new ProviderToken(tokens.refresh_token),
+          };
+        } catch (error) {
+          // A refusal of the grant, said by the provider in OAuth's own words, and nothing else.
+          return error instanceof client.ResponseBodyError && error.error === 'invalid_grant'
+            ? { outcome: 'refused' }
+            : { outcome: 'unanswered' };
+        }
+      })();
+      try {
+        return await Promise.race([asked, late]);
+      } finally {
+        clearTimeout(timer);
+      }
     },
   };
 }

@@ -18925,6 +18925,10 @@
         {
           "id": "IAM-032",
           "howItIsMet": "Access explains any person's permissions on any artifact, space or the environment to an administrator (IAM-029) without a session of theirs; a disabled person's every answer is refused, naming it"
+        },
+        {
+          "id": "IAM-010",
+          "howItIsMet": "For an organisation's provider that grants offline access: the session keeps the provider's refresh token, sealed, and asks the provider again with it at a request at least five minutes after it last did; a refusal (`invalid_grant`, as a disabled or deleted person gets) ends the session and the person's API tokens ([Asked again at the provider](#asked-again-at-the-provider))"
         }
       ]
     },
@@ -23722,7 +23726,7 @@
     {
       "id": "IAM-054",
       "file": "apps/service/src/google.test.ts",
-      "line": 35,
+      "line": 36,
       "kind": "title"
     },
     {
@@ -24230,21 +24234,27 @@
       "kind": "title"
     },
     {
+      "id": "IAM-010",
+      "file": "apps/service/src/oidc.test.ts",
+      "line": 332,
+      "kind": "title"
+    },
+    {
       "id": "IAM-065",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 118,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "IAM-075",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 232,
+      "line": 237,
       "kind": "title"
     },
     {
       "id": "IAM-090",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 30,
+      "line": 34,
       "kind": "title"
     },
     {
@@ -24437,6 +24447,24 @@
       "id": "GEN-059",
       "file": "apps/service/src/prompt-run-routes.test.ts",
       "line": 422,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-010",
+      "file": "apps/service/src/provider-check-routes.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-010",
+      "file": "apps/service/src/provider-check.test.ts",
+      "line": 165,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "apps/service/src/provider-check.test.ts",
+      "line": 294,
       "kind": "title"
     },
     {
@@ -24922,19 +24950,19 @@
     {
       "id": "IAM-011",
       "file": "apps/service/src/sign-in-settings.test.ts",
-      "line": 347,
+      "line": 348,
       "kind": "title"
     },
     {
       "id": "IAM-012",
       "file": "apps/service/src/sign-in-settings.test.ts",
-      "line": 207,
+      "line": 208,
       "kind": "title"
     },
     {
       "id": "IAM-038",
       "file": "apps/service/src/sign-in-settings.test.ts",
-      "line": 262,
+      "line": 263,
       "kind": "title"
     },
     {
