@@ -19,6 +19,7 @@ const example = read('internet/internet.env.example');
 const backup = read('internet/backup.sh');
 const drill = read('internet/restore-drill.sh');
 const alert = read('internet/alert.sh');
+const outside = read('internet/outside-check.sh');
 const unit = (name: string): string => read(`internet/${name}`);
 
 /** A service's block in a compose file: its own lines, up to the next service or top-level key. */
@@ -164,7 +165,18 @@ describe('the internet stack', () => {
   });
 
   it('holds no address of any machine, since this repository is public', () => {
-    for (const file of [overlay, caddy, realm, configure, deploy, example, backup, drill, alert]) {
+    for (const file of [
+      overlay,
+      caddy,
+      realm,
+      configure,
+      deploy,
+      example,
+      backup,
+      drill,
+      alert,
+      outside,
+    ]) {
       expect(file).not.toMatch(/\b(?:192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+/);
     }
   });
@@ -236,5 +248,34 @@ describe('the internet stack', () => {
     expect(alert).toMatch(/-K -/);
     expect(alert).not.toMatch(/--user\s+"?\$/);
     expect(example).toMatch(/^ALERT_EMAIL=CHANGE_ME$/m);
+  });
+  it('logs who called at the door, keeping signatures, codes and cookies out of the log', () => {
+    expect(caddy).toMatch(/^\(access\) \{\n\tlog \{\n\t\toutput stdout/m);
+    for (const name of ['X-Amz-Signature', 'X-Amz-Credential', 'code', 'state', 'session_state']) {
+      expect(caddy, name).toMatch(new RegExp(`^\t+delete ${name}$`, 'm'));
+    }
+    expect(caddy).toMatch(/request>headers>Cookie delete/);
+    expect(caddy).toMatch(/request>headers>Authorization delete/);
+    expect(caddy.match(/^\timport access$/gm)).toHaveLength(3);
+  });
+
+  it('checks from outside each thing the plan names, and stops on none of them', () => {
+    expect(outside).toMatch(/set -uo pipefail/);
+    for (const check of [
+      'headers',
+      'forged host',
+      'forged client address',
+      'blocked paths',
+      'the store',
+      'registration',
+      'published credentials',
+      'ports',
+      'from inside',
+    ]) {
+      expect(outside, check).toMatch(new RegExp(`^section '${check}'$`, 'm'));
+    }
+    // Development's published values, refused here: read from the files that publish them.
+    expect(outside).toMatch(/deploy\/compose\.yaml/);
+    expect(outside).toMatch(/deploy\/keycloak\/alloy-realm\.json/);
   });
 });

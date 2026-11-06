@@ -13,6 +13,26 @@
 	}
 }
 
+# Who called, as the proxy saw them (client_ip), to stdout and so the rotated container log. A signed link's
+# signature, a sign-in's code and state, and every cookie and credential stay out of it.
+(access) {
+	log {
+		output stdout
+		format filter {
+			request>uri query {
+				delete X-Amz-Signature
+				delete X-Amz-Credential
+				delete code
+				delete state
+				delete session_state
+			}
+			request>headers>Cookie delete
+			request>headers>Authorization delete
+			resp_headers>Set-Cookie delete
+		}
+	}
+}
+
 (upstream) {
 	reverse_proxy {args[0]} {
 		header_up X-Forwarded-For {client_ip}
@@ -23,6 +43,7 @@
 }
 
 https://{$ALLOY_APP_HOST} {
+	import access
 	tls internal
 	header {
 		Strict-Transport-Security "max-age=31536000"
@@ -36,6 +57,7 @@ https://{$ALLOY_APP_HOST} {
 
 # Keycloak's administration stays off the internet: its console is reached through ssh.
 https://{$ALLOY_IDP_HOST} {
+	import access
 	tls internal
 	header -Server
 	@administration path /admin /admin/* /realms/master /realms/master/*
@@ -45,6 +67,7 @@ https://{$ALLOY_IDP_HOST} {
 
 # Objects in the bucket, by signed link or a tenant's own credential. No listing of buckets, no IAM.
 https://{$ALLOY_STORE_HOST} {
+	import access
 	tls internal
 	header -Server
 	@elsewhere not path /{$OBJECT_STORE_BUCKET}/*

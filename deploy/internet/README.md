@@ -67,6 +67,21 @@ Migrations only go forward. To go back, restore the dump taken before the releas
 `postgres` container), then `deploy.sh <older tag>`. To recover the machine, `restic restore` the latest
 snapshots and load each dump, and the store's files into its volume, before the first deploy.
 
+## The outside check
+
+`outside-check.sh <app> <sign-in> <store>`, from a checkout on a machine outside the network, after any change
+to the stack. It asks for what a caller on the internet should not get, and exits with the number refused
+wrongly: the security headers; a forged `Host` or `X-Forwarded-Host`; Keycloak's administration, by plain and
+encoded paths; the store's listing, buckets, IAM and anonymous reads and writes; registration; and the usual
+ports. With `ALLOY_CHECK_SSH=<machine>` it also reads the door's log, where a forged `X-Forwarded-For` must not
+appear as the caller, and with `ALLOY_CHECK_LAN="<address>:<port> ..."` tries those LAN addresses from inside
+the containers. `ALLOY_CHECK_CREDENTIALS=yes` tries development's published passwords and keys at Keycloak and
+the store.
+
+Still by hand: a full port scan from outside (`nmap -Pn -p- <public address>`); a sixth wrong password locking
+an account; an administrator asked for a second factor; and a heavy publication slowing the worker while the
+machine's other work goes on.
+
 ## Not here yet
 
-Logs kept off the machine, an outside check, rate limits and a content security policy.
+Logs kept off the machine, rate limits and a content security policy.
