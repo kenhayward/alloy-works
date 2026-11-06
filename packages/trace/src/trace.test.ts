@@ -1045,7 +1045,8 @@ describe('the citations in the committed model', () => {
     // 2592 (2026-11-05): an installation's own setup invites its first administrator.
     // 2611 (2026-11-06): RM - the row menus, Duplicate and copying cite SCH-075, REU-056 to REU-058 and LIF-079.
     // 2599 (2026-11-06): EMc - notifications by email, COL-036, COL-053, COL-060, COL-064.
-    expect(model.citations).toHaveLength(2611);
+    // 2619 (2026-11-06): EMd - invitations and notices of closing, IAM-089, ADM-055, COL-064 over Mailpit.
+    expect(model.citations).toHaveLength(2619);
   });
 
   it('cites no identifier the corpus does not hold', () => {

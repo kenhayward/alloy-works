@@ -2,8 +2,8 @@
 
 How an environment tells a person something by email: that something happened, that they are invited, that their
 tenant is closing. Built by [the EM plan](../plans/2026-11-05-em-email-notifications.md), which holds the decisions;
-what is built so far is the channel, the way out (the queue, the worker's loop, the connector's
-send, a test) and notifications by email.
+all of it is built: the channel, the way out (the queue, the worker's loop, the connector's send, a
+test), notifications, invitations and notices of closing.
 
 ## The shape in one paragraph
 
@@ -60,19 +60,43 @@ or worker, over verified TLS on port 465 or 587.
 - **A failing channel is told** once to those who may configure services, by an inbox kind, `mail`, which is never
   mailed, in a savepoint; a send clears it, and the next failure tells again (EM-N).
 
+## Invitations
+
+- **Queued from the audit log** (EM-U), by a trigger on `audit_event`: `invitation.sent`, which `invite` records on
+  inviting and on renewing, and `tenant.administrator_named`, the vendor's naming of a first administrator. A share's
+  extension and a narrowing of how one may be claimed record neither, so mail nothing. This is the plan's "a trigger on
+  `invitation`" moved to where the inviting paths already agree; both restores disable it.
+- **To the invited address**, never verified until claimed, so read from `invitation.email` at sending; dropped
+  `accepted` or `expired` where it is no longer open, and gone with the invitation where it is withdrawn.
+- **One a day to an address and 100 a day a tenant** (EM-S): beyond either, queued already dropped,
+  `invitation_repeated` or `invitation_quota`, so Administration counts it.
+- **By the operator's relay where the environment's mail is off**, by its own where it is on. Its link is the
+  environment's sign-in, at its first hostname, with no token: claiming is by signing in with the address.
+
+## Notices of closing
+
+- **Queued from the audit log** (EM-V) on `tenant.closing` and `tenant.closure_cancelled`, from every path that records
+  them, and 7 days before the grace ends by the closure sweep, once a person (a unique index on the notice, the grace's end
+  and the person).
+- **To everybody who signs in in the ordinary way**: people and those from outside with an issuer, not disabled or erased.
+  Whom it may reach is decided again at sending, so an unverified address is counted among what was dropped.
+- **By the operator's relay always**, whatever the channel says, and in a closing environment's own pass, which claims
+  nothing else (EM-T). Tried to the end of the grace, or a week for a cancelling's.
+- **What is happening and by when**: the day the grace ends, and no link, since a person may no longer be let in.
+
 ## Not yet built
 
-Invitations and closure notices (EMd). One-click unsubscribe (the plan's Not in this slice).
+One-click unsubscribe (the plan's Not in this slice).
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **COL-060** | The channel is the tenant's: on or off, whose relay, the address its own relay sends from, and which kinds it mails (EM-W), permissioned, audited and in the export                                                          |
-| **COL-064** | A notification is queued by trigger, held five minutes, decided again and sent by the worker through the connector with a link and none of its content, where neither the person nor the environment has turned its kind off |
-| **IAM-089** | A trigger on the invitation queues a mail with a link to sign-in and no token, limited per tenant and per address (EM-S, EM-U)                                                                                               |
-| **ADM-055** | A trigger on the audit log and the closure sweep queue a notice to each person, by the operator's relay, whatever the channel says (EM-V)                                                                                    |
+| ID          | How it is met                                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **COL-060** | The channel is the tenant's: on or off, whose relay, the address its own relay sends from, and which kinds it mails (EM-W), permissioned, audited and in the export                                                                     |
+| **COL-064** | A notification is queued by trigger, held five minutes, decided again and sent by the worker through the connector with a link and none of its content, where neither the person nor the environment has turned its kind off            |
+| **IAM-089** | A trigger on the audit log queues a mail on inviting and renewing, the first administrator among them, to the invited address with a link to sign-in and no token, limited per tenant and per address, none once withdrawn (EM-S, EM-U) |
+| **ADM-055** | A trigger on the audit log and the closure sweep queue a notice to each person, by the operator's relay, whatever the channel says (EM-V)                                                                                               |
 
-Designed here; the channel and notifications are built, invitations and closure notices not yet. **IMP-045** waits for the rest of what it lists. **COL-061** asks for ADM-036's
+Built. **IMP-045** waits for the rest of what it lists. **COL-061** asks for ADM-036's
 diagnostics, which DG builds, and **LIF-072** for events that do not exist yet, so this slice claims neither: a failing channel
 shows in Administration, and a change to it is audited.

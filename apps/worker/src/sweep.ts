@@ -11,6 +11,7 @@ import {
   foldDigests,
   principalLabel,
   publicationsToCheckAgain,
+  queueClosureReminders,
   recordEvent,
   recordCheckGivenUp,
   recordEffected,
@@ -448,6 +449,8 @@ export async function sweepClosures(db: TenantDatabase, log: WorkerLog): Promise
   let moved = 0;
   for (const tenant of await db.closingTenants()) {
     try {
+      // The notice 7 days before the grace ends, in its own transaction, once to each (EM-V).
+      await db.withTenant(tenant, (trx) => queueClosureReminders(trx), { actorKind: 'system' });
       const state = await db.withTenant(tenant, (trx) => advanceClosure(trx, tenant), {
         actorKind: 'system',
       });

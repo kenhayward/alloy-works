@@ -1739,7 +1739,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and Administration's **Email** chooses which kinds the environment sends at all. Whether to send is
   decided again as it is sent: nothing goes to somebody disabled, unverified or no longer allowed to
   read what it is about. Those who configure services are told in their inbox, once, when the
-  environment's email starts failing. Invitations and closure notices by email come next.
+  environment's email starts failing.
+- **Invitations by email.** An invitation is emailed to the address invited, on inviting and on
+  renewing, the first administrator a vendor names among them, with a link to the environment's
+  sign-in and no code: accepting is signing in with that address. At most one a day goes to an
+  address, and 100 a day from an environment. Where the environment's own mail is off, it goes by
+  the operator's.
+- **Notices of closing by email.** When an environment starts to close, everybody who can sign in to
+  it is told by email, again 7 days before it is deleted, and if the closing is cancelled: what is
+  happening and by when, and nothing of what is in it. These go by the operator's mail whatever the
+  environment's own says.
 - **Extensions.** An administrator installs an extension, a source type someone else
   hosts, by its manifest's HTTPS URL at `/v1/extensions`: the connector fetches the manifest, and its
   preview shows what it is, the settings and secret a connection to it takes, what it can do and the

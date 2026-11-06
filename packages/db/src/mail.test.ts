@@ -128,6 +128,7 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
         },
         fromName: 'Acme news',
         notification: null,
+        closure: null,
         language: null,
         lease: expect.any(String) as string,
       },

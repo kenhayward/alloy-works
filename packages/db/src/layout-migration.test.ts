@@ -422,6 +422,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -996,6 +997,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -1283,6 +1285,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1552,6 +1555,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1760,6 +1764,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -2057,6 +2062,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2258,6 +2264,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -2525,6 +2532,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2749,6 +2757,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -3018,6 +3027,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -3229,6 +3239,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const version = (trx: TenantTransaction, number: number) =>
       trx

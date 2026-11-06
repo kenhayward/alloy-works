@@ -153,6 +153,9 @@ export {
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,
+  CLOSURE_NOTICES,
+  closureWords,
+  invitationWords,
   MAIL_DEADLINE_MS,
   MAIL_KINDS,
   MAIL_MESSAGES,
@@ -174,6 +177,7 @@ export {
   mailWords,
   TEST_MAIL,
   type ChildMailRequest,
+  type ClosureNotice,
   type MailAnswer,
   type MailCounts,
   type MailFailureCode,

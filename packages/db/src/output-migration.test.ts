@@ -358,6 +358,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

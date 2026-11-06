@@ -23,10 +23,12 @@ const OFF = {
 };
 
 /** A fake service: the channel, its password, a test and the listing, each call kept. */
-function service(over: { channel?: Record<string, unknown>; status?: number } = {}) {
+function service(
+  over: { channel?: Record<string, unknown>; status?: number; items?: unknown[] } = {},
+) {
   let channel: Record<string, unknown> = { ...OFF, ...over.channel };
   const calls: { method: string; path: string; body?: unknown }[] = [];
-  const items: unknown[] = [];
+  const items: unknown[] = [...(over.items ?? [])];
   const read = () => ({
     channel,
     platform: { offered: true, fromAddress: 'mail@operator.test' },
@@ -171,5 +173,30 @@ describe("Administration's Email (the EM plan, EMb)", () => {
         kindsOff: ['reply', 'digest'],
       }),
     );
+  });
+
+  it('names an invitation’s mail and a notice of closing, and why one was not sent', async () => {
+    const queued = (purpose: string, droppedReason: string | null, id: string) => ({
+      id,
+      purpose,
+      state: droppedReason === null ? 'pending' : 'dropped',
+      droppedReason,
+      attempts: 0,
+      createdAt: '2026-11-05T10:00:00.000Z',
+      nextAt: null,
+      last: null,
+    });
+    const { client } = service({
+      items: [
+        queued('invitation', 'invitation_repeated', '3b0a0a52-1d8e-4c55-9c39-2a5f0b0e9a02'),
+        queued('closure', null, '3b0a0a52-1d8e-4c55-9c39-2a5f0b0e9a03'),
+      ],
+    });
+    render(<Mail client={client} mayChange />);
+    const table = await screen.findByRole('table', { name: 'Mail of these 30 days' });
+    const [, invited, closing] = within(table).getAllByRole('row');
+    expect(invited).toHaveTextContent('Invitation');
+    expect(invited).toHaveTextContent('invitation_repeated');
+    expect(closing).toHaveTextContent('Notice of closing');
   });
 });
