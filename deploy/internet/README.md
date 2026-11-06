@@ -33,7 +33,8 @@ On the machine, as root, with Docker, git and restic:
    generated secret. Fill in each `CHANGE_ME`, and keep a copy elsewhere: it is the only copy of the sealing keys
    and of `RESTIC_PASSWORD`, without which no backup can be read.
 3. If the firewall drops your network's DNS server, as it will on a private one, give Docker public resolvers
-   in `/etc/docker/daemon.json`: `{"dns": ["1.1.1.1", "9.9.9.9"]}`, then restart Docker.
+   in `/etc/docker/daemon.json`: `{"dns": ["9.9.9.9", "8.8.8.8"]}`, then restart Docker. Check each answers from the
+   machine first (`dig @9.9.9.9 github.com`): one that does not costs every lookup in every container its timeout.
 4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer alloy-backup.timer`.
 5. Point the proxy's host for all three names at this machine's 443 over https, with websockets on. If it limits
    who may call, allow this machine's own address too: the stack reaches its public names through the proxy.

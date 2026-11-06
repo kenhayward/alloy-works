@@ -136,12 +136,12 @@ echo '        From inside the network this reaches the router itself; only a sca
 section 'from inside'
 if [ -n "${ALLOY_CHECK_SSH:-}" ] && [ -n "${ALLOY_CHECK_LAN:-}" ]; then
   try='const [h,p]=process.argv[1].split(":");const s=require("net").connect(+p,h);
-s.setTimeout(4000,()=>{console.log("closed");process.exit()});s.on("connect",()=>{console.log("open");process.exit()});
+s.setTimeout(12000,()=>{console.log("closed");process.exit()});s.on("connect",()=>{console.log("open");process.exit()});
 s.on("error",()=>{console.log("closed");process.exit()})'
   for service in service worker connector; do
-    for target in $ALLOY_CHECK_LAN 1.1.1.1:443; do
+    for target in $ALLOY_CHECK_LAN github.com:443; do
       got=$(remote "sudo docker exec $(container "$service") node -e '$try' $target" 2>/dev/null | tail -1)
-      if [ "$target" = 1.1.1.1:443 ]; then
+      if [ "$target" = github.com:443 ]; then
         [ "$service" = connector ] && want=closed || want=open
         expect "$service reaches the internet only if it should ($target)" "^$want$" "$got"
       else
