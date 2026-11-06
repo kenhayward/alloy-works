@@ -1,4 +1,4 @@
-# 0098 - A component group is offered, never followed
+# 0099 - A component group is offered, never followed
 
 - **Status:** Accepted
 - **Date:** 2026-11-06

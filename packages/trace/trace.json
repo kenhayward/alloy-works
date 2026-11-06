@@ -20445,7 +20445,7 @@
         },
         {
           "id": "REU-060",
-          "howItIsMet": "A `componentGroup` artifact on the component workflow; its version `{title, members: [{component, version}]}` pins each member, refuses a component twice or a group as a member, and its approval shows each member's changes ([ADR-0098](../decisions/0098-a-component-group-is-offered-never-followed.md); the CG plan, CG-A to CG-C)"
+          "howItIsMet": "A `componentGroup` artifact on the component workflow; its version `{title, members: [{component, version}]}` pins each member, refuses a component twice or a group as a member, and its approval shows each member's changes ([ADR-0099](../decisions/0099-a-component-group-is-offered-never-followed.md); the CG plan, CG-A to CG-C)"
         },
         {
           "id": "REU-061",

@@ -4472,7 +4472,7 @@ v" with whether X has changed since. New document is `apps/web/src/structure/New
 
 ## Component groups
 
-[ADR-0098](decisions/0098-a-component-group-is-offered-never-followed.md), the CG plan. A `componentGroup` artifact
+[ADR-0099](decisions/0099-a-component-group-is-offered-never-followed.md), the CG plan. A `componentGroup` artifact
 (`0212`) holds `{title, members: [{component, version}]}` (`packages/domain/src/reuse/group.ts`); a generated
 `artifact.workflow_kind`, `component` for a group, carries the workflow tables' foreign keys, so a group moves under
 the component workflow. Placing one writes ordinary pinned references, each marked `group: {id, version, placement}`;
