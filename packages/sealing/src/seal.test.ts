@@ -61,6 +61,20 @@ describe('a sealed secret', () => {
     expect(() => openSecret(key, 'source-credential', 'acme', signIn)).toThrow(SealedSecretRefused);
   });
 
+  it("IAM-075 seals a session's refresh token to its tenant and its session, so it opens for no other session and as no client secret", () => {
+    const sealed = sealSecret(key, 'session-refresh', 'acme', SECRET, 'session-a');
+    expect(openSecret(key, 'session-refresh', 'acme', sealed, 'session-a')).toBe(SECRET);
+    expect(() => openSecret(key, 'session-refresh', 'acme', sealed, 'session-b')).toThrow(
+      SealedSecretRefused,
+    );
+    expect(() => openSecret(key, 'session-refresh', 'acmedev', sealed, 'session-a')).toThrow(
+      SealedSecretRefused,
+    );
+    expect(() => openSecret(key, 'sign-in', 'acme', sealed, 'session-a')).toThrow(
+      SealedSecretRefused,
+    );
+  });
+
   it('opens an object store secret sealed by the scheme before it moved here, so no stored credential is lost', () => {
     expect(openSecret(VECTOR_KEY, 'object-store', 'acme', VECTOR)).toBe(VECTOR_SECRET);
   });
