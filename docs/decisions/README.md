@@ -83,6 +83,7 @@ exist.
 | [0093](0093-the-toolbar-stands-under-the-menus.md)                                | The formatting toolbar stands under the menus                                   | Accepted           |
 | [0094](0094-an-installation-sits-behind-a-proxy-it-does-not-run.md)               | An installation sits behind a proxy it does not run                             | Accepted           |
 | [0095](0095-a-row-offers-its-pages-acts-and-a-copy-keeps-its-identities.md)       | A row offers its page's acts, and a copy keeps its identities                   | Accepted           |
+| [0098](0098-a-component-group-is-offered-never-followed.md)                       | A component group is offered, never followed                                    | Accepted           |
 | [0097](0097-a-template-always-and-a-copy-records-its-origin.md)                   | A template always, and a copy records its origin                                | Accepted           |
 | [0096](0096-measurements-are-kept-by-each-tenant-in-fixed-buckets.md)             | Measurements are kept by each tenant, summed in the process, in fixed buckets   | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
