@@ -71,7 +71,7 @@ describe("a capability's requests measured by minute and rolled up (the DG plan,
     expect(row!.buckets).toEqual(timed(20, 40, 300, 9000));
   });
 
-  it('rolls minutes past 7 days into hours and hours past 90 into days, exactly, and forgets days past 13 months', async () => {
+  it('ADM-035 rolls minutes past 7 days into hours and hours past 90 into days, exactly, and forgets days past 13 months', async () => {
     await as((trx) => sql`delete from capability_usage`.execute(trx));
     const now = new Date('2026-11-06T12:00:00Z');
     const day = 86_400_000;

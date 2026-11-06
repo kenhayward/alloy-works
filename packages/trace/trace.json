@@ -18312,6 +18312,15 @@
       ]
     },
     {
+      "document": "diagnostics.md",
+      "owns": [
+        {
+          "id": "ADM-035",
+          "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up"
+        }
+      ]
+    },
+    {
       "document": "document-view.md",
       "owns": [
         {
@@ -31817,6 +31826,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-035",
+      "file": "packages/db/src/measurements.test.ts",
+      "line": 74,
+      "kind": "title"
+    },
+    {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
       "line": 103,
@@ -34397,6 +34412,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-035",
+      "file": "packages/domain/src/diagnostics/measure.test.ts",
+      "line": 42,
+      "kind": "title"
+    },
+    {
       "id": "LIB-032",
       "file": "packages/domain/src/extensions/manifest.test.ts",
       "line": 66,
@@ -34603,7 +34624,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1232,
+      "line": 1239,
       "kind": "title"
     },
     {

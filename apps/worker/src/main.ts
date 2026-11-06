@@ -51,6 +51,7 @@ import {
   sweepUncheckedPublications,
   sweepWebhookDeliveriesEverywhere,
   sweepMailEverywhere,
+  sweepMeasurementsEverywhere,
   sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -226,6 +227,10 @@ const sweep = setInterval(() => {
   void sweepMailEverywhere(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept old mail'))
     .catch((error: unknown) => log.error({ err: error }, 'mail sweep failed'));
+  // Each capability's measurements rolled up and forgotten on their declared timetable (the DG plan).
+  void sweepMeasurementsEverywhere(db, log).catch((error: unknown) =>
+    log.error({ err: error }, 'measurement sweep failed'),
+  );
 }, config.sweepIntervalMs);
 
 // The nightly re-check of cited entries against their sources, never overlapping itself (XR-E).

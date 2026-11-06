@@ -901,3 +901,5 @@ export {
   SetMailChannelBody,
   SetMailPasswordBody,
 } from './mail.js';
+// The tag each route is documented, and measured, under (the DG plan, DG-C).
+export { documentationFor } from './documentation.js';

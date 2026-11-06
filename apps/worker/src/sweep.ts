@@ -12,6 +12,7 @@ import {
   principalLabel,
   publicationsToCheckAgain,
   queueClosureReminders,
+  rollUpMeasurements,
   recordEvent,
   recordCheckGivenUp,
   recordEffected,
@@ -67,6 +68,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepStalePresence',
     'sweepWebhookDeliveriesEverywhere',
     'sweepMailEverywhere',
+    'sweepMeasurementsEverywhere',
   ],
 } as const;
 
@@ -570,6 +572,25 @@ export async function sweepMailEverywhere(db: TenantDatabase, log: WorkerLog): P
     }
   }
   return removed;
+}
+
+/**
+ * Measurements rolled up, in every live tenant (the DG plan, DG-B): minutes past 7 days into hours,
+ * hours past 90 into days, days past 13 months gone. A suspended tenant's wait for it to lift.
+ */
+export async function sweepMeasurementsEverywhere(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let rolled = 0;
+  for (const tenant of await db.liveTenants()) {
+    try {
+      rolled += await db.withTenant(tenant, (trx) => rollUpMeasurements(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the measurement sweep failed in a tenant');
+    }
+  }
+  return rolled;
 }
 
 /**

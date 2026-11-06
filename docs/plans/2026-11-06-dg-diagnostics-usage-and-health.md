@@ -19,13 +19,13 @@ records when it ran; jobs are visible only to the worker. Usage exists for model
 (`query_run`), with trends at `/v1/model-usage` and `/v1/data/usage`. Delivery state exists for webhooks, mail and the
 embedding index, each on its own page. Nothing re-verifies a stored hash on a schedule. No budget is registered.
 
-| PR  | Holds                                                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------- |
-| DGa | The plan, `diagnostics.md`, the ADR; measuring: each capability's requests and work, by minute, rolled up         |
-| DGb | Background work recorded: each sweep and loop per tenant, last run, next due, last failure; jobs by kind          |
-| DGc | Administration's Diagnostics: health per capability, the index, deliveries, recent work, budgets; silent failures |
-| DGd | Usage: storage, publications, assets and every external operation, by day, as trends of 13 months                 |
-| DGe | Budgets registered and measured in production; objectives declared and measured; integrity re-verified; close     |
+| PR  | Holds                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| DGa | The plan, `diagnostics.md`, ADR-0096; measuring each capability's requests by minute, rolled up                                          |
+| DGb | The worker's work measured too; background work recorded: each sweep and loop per tenant, last run, next due, last failure; jobs by kind |
+| DGc | Administration's Diagnostics: health per capability, the index, deliveries, recent work, budgets; silent failures                        |
+| DGd | Usage: storage, publications, assets and every external operation, by day, as trends of 13 months                                        |
+| DGe | Budgets registered and measured in production; objectives declared and measured; integrity re-verified; close                            |
 
 ## Ken's answers
 

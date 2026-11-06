@@ -39,7 +39,7 @@ describe('latency in fixed buckets (the DG plan, pre-flight 5)', () => {
     expect(percentileBound(over, 0.95)).toBe(Infinity);
   });
 
-  it('declares how long each precision is kept before any is measured', () => {
+  it('ADM-035 declares how long each precision is kept before any is measured', () => {
     expect(MEASUREMENT_TIERS).toEqual([
       { span: 'minute', keptDays: 7 },
       { span: 'hour', keptDays: 90 },
