@@ -1,6 +1,7 @@
 import type { ReadableSet } from '@alloy-works/domain';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { groupsPinning } from './component-groups.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { readAnyLock } from './editing.js';
 import { isHeld } from './holds.js';
@@ -142,6 +143,12 @@ export type DeletionRefusal =
       readonly named: readonly Named[];
       readonly unreadable: boolean;
     }
+  | {
+      /** A component group pins a version of it, at any version of the group (CG-J; REU-063). */
+      readonly reason: 'grouped';
+      readonly named: readonly Named[];
+      readonly unreadable: boolean;
+    }
   /** A hold on it or its space: no reason given (LIF-030). */
   | { readonly reason: 'held' }
   /** A retention keep, the longest reaching it, has yet to pass: until when (DL-G). */
@@ -239,7 +246,7 @@ async function dependants(
   const component = kind === 'component';
   const refusals: DeletionRefusal[] = [];
   const add = (
-    reason: 'baselined' | 'published' | 'publishing' | 'referenced' | 'in_review',
+    reason: 'baselined' | 'published' | 'publishing' | 'referenced' | 'grouped' | 'in_review',
     rows: readonly Row[],
   ) => {
     if (rows.length > 0) refusals.push({ reason, ...split(rows, readable) });
@@ -310,6 +317,11 @@ async function dependants(
        where jsonb_path_exists(latest.content, ${REFERENCES}::jsonpath, ${c}::jsonb)
        order by latest.content ->> 'title', latest.artifact_id`.execute(trx);
     add('referenced', documents);
+    // Each group any version of which pins it (CG-J).
+    add(
+      'grouped',
+      (await groupsPinning(trx, id)).map((row) => ({ ...row, subject: row.id })),
+    );
   }
 
   if (await isHeld(trx, id)) refusals.push({ reason: 'held' });

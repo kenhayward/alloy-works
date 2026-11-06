@@ -3,6 +3,7 @@ import { sql } from 'kysely';
 import { loadFactsFor } from './access-facts.js';
 import { artifactPlace, labelled, labels, recordEvent, type AuditLabel } from './audit.js';
 import { isArchived } from './archival.js';
+import { groupsPinning } from './component-groups.js';
 import { deletedAmong, isDeleted, shareDeletion } from './deletion.js';
 import { grantsOn, recordGrantEvent, type StoredGrant } from './grants.js';
 import { heldPlace, isHeld, spaceHeld } from './holds.js';
@@ -203,6 +204,10 @@ async function planMove(
   if (artifact.space_id !== from) return { answer: 'space.moved' };
   if (from === to) return { answer: 'unchanged' };
   if (!MOVABLE.includes(artifact.kind)) return { answer: 'artifact.not_movable' };
+  // A component a group pins moves with nothing, so not on its own (the CG plan, CG-J; REU-063).
+  if (artifact.kind === 'component' && (await groupsPinning(trx, artifactId)).length > 0) {
+    return { answer: 'artifact.not_movable' };
+  }
   if (await isArchived(trx, artifactId)) return { answer: 'artifact.archived' };
   const target = await readSpace(trx, to);
   if (!target || target.archivedAt !== null) return { answer: 'space.archived' };

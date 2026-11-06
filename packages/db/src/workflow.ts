@@ -18,6 +18,7 @@ import { revisionScopes, scopesStored } from './scopes.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
+import { workflowKindOf } from './artifact-kind.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import { notifyTenant } from './realtime.js';
@@ -593,13 +594,15 @@ export async function startWorkflow(
   trx: TenantTransaction,
   artifact: { readonly id: string; readonly kind: string; readonly by: string | null },
 ): Promise<void> {
-  if (!isKind(artifact.kind) || !(await workflowStored(trx))) return;
-  const definition = await newestDefinition(trx, artifact.kind);
+  // A group moves under the component workflow (the CG plan, CG-A).
+  const kind = workflowKindOf(artifact.kind);
+  if (!isKind(kind) || !(await workflowStored(trx))) return;
+  const definition = await newestDefinition(trx, kind);
   await trx
     .insertInto('workflow_transition')
     .values({
       artifact_id: artifact.id,
-      kind: artifact.kind,
+      kind,
       to_state: initialState(definition.body).key,
       definition_id: definition.id,
       by: artifact.by,
