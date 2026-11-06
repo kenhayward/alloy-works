@@ -54,6 +54,8 @@ designer named as a user in §5 had no area serving them.
 | **TPL-006** | Templates must be permissioned separately from the documents made from them, because designing one and writing one are different jobs                                                                                  | T1      | Specified             |
 | **TPL-046** | Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-060 and TPL-061 hold and TPL-004 always has something to resolve (**TPL-Q01**)        | T4      | Superseded by TPL-071 |
 | **TPL-071** | Where a template needs no prompt library, it must bind a declared empty default rather than nothing, so that TPL-061 holds and TPL-004 always has something to resolve                                                 | T5      | Specified             |
+| **TPL-074** | Every space must have a default template, **Blank** until its administrator chooses another of the space's templates, and a document created without naming a template must take its space's default (**TPL-Q01**)     | T7      | Specified             |
+| **TPL-076** | A template must be able to carry a description, and a label for each of its values, shown wherever a document is created from it                                                                                       | T7      | Specified             |
 
 **TPL-004 is cheap here and expensive anywhere else.** A template whose theme was deleted or whose
 query set moved is discovered either when somebody tries to create a document, or at publish time a
@@ -84,15 +86,16 @@ none of them but its starting outline.
 
 ## 5. The structure outline
 
-| ID          | Requirement                                                                                                                                                                                            | Tranche    | Status                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
-| **TPL-012** | A structure outline must declare the sections a document starts with, and their order                                                                                                                  | T1         | Specified             |
-| **TPL-013** | It must be able to mark a section as required, meaning a document may not be published without it                                                                                                      | T1         | Specified             |
-| **TPL-014** | It must be able to declare a component that every document from this template includes - shared boilerplate, a standard methodology statement                                                          | T4         | Specified             |
-| **TPL-015** | It must declare what an author may change: whether sections can be added, removed or reordered                                                                                                         | T1         | Specified             |
-| **TPL-016** | A starting outline must not be a document's outline. Once instantiated, the document owns it (**STR**)                                                                                                 | Constraint | Specified             |
-| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)                               | T4         | Superseded by TPL-073 |
-| **TPL-073** | A required component (TPL-014) must declare where it sits in the starting outline: at the start or end of a starting section, or at the start or end of the outline's front matter, body or appendices | T4         | Specified             |
+| ID          | Requirement                                                                                                                                                                                                                                                                                      | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **TPL-012** | A structure outline must declare the sections a document starts with, and their order                                                                                                                                                                                                            | T1         | Specified             |
+| **TPL-013** | It must be able to mark a section as required, meaning a document may not be published without it                                                                                                                                                                                                | T1         | Specified             |
+| **TPL-014** | It must be able to declare a component that every document from this template includes - shared boilerplate, a standard methodology statement                                                                                                                                                    | T4         | Specified             |
+| **TPL-015** | It must declare what an author may change: whether sections can be added, removed or reordered                                                                                                                                                                                                   | T1         | Specified             |
+| **TPL-016** | A starting outline must not be a document's outline. Once instantiated, the document owns it (**STR**)                                                                                                                                                                                           | Constraint | Specified             |
+| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)                                                                                                                         | T4         | Superseded by TPL-073 |
+| **TPL-073** | A required component (TPL-014) must declare where it sits in the starting outline: at the start or end of a starting section, or at the start or end of the outline's front matter, body or appendices                                                                                           | T4         | Specified             |
+| **TPL-075** | A template must place each of its components (TPL-014) either by reference or as a copy made for the new document, chosen when the template is designed and by reference unless declared; a copy may be of a component or of content the template holds, and is the document's own (**REU-059**) | T7         | Specified             |
 
 ## 6. Parameters
 
@@ -143,6 +146,7 @@ an API where wrong values arrive without a form to check them.
 | **TPL-026** | Instantiation must be available through the API as well as the interface, since creating documents is the commonest thing another system will want to do                                                                                                                                         | T2         | Specified             |
 | **TPL-050** | Creating a document must record who created it and when, on the document and in the audit log (**LIF-026**, **LIF-027**), alongside the template version TPL-025 records                                                                                                                         | T7         | Specified             |
 | **TPL-048** | A throwaway test document (TPL-005) must be discarded when the test ends and must never become reachable. Anything it produced - a binding run, a derived asset - must go with it                                                                                                                | T7         | Specified             |
+| **TPL-077** | Creating a document must show the templates the creator may use, grouped by space with a summary of each, take each value by its type, and say how many required values remain before it may be created                                                                                          | T7         | Specified             |
 
 ## 8. Divergence
 
@@ -235,7 +239,7 @@ the same guarantees.
 
 | ID          | Question                                                                                                                                                                     | What would settle it                                                                                                                     |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **TPL-Q01** | **Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here                         | Whether early users need one. The likely answer is a minimal default template rather than no template                                    |
+| **TPL-Q01** | **Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here                         | **Settled by TPL-074**: a default template for each space, Blank unless another is chosen                                                |
 | **TPL-Q02** | **Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask                                  | The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child |
 | **TPL-Q03** | **How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it                                   | Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit           |
 | **TPL-Q04** | **Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not | A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all                           |
@@ -481,3 +485,19 @@ a notice among the appendices, is a place in the outline.
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 72, of which 19 superseded and 1 withdrawn | 73, of which 20 superseded and 1 withdrawn |
+
+### A template always (#1024), 2026-11-06
+
+Not a review. Ken found a document made with no template unusable, and chose a mandatory template with a
+default for each space, and components a template copies as well as references
+([the ND plan](../../plans/2026-11-06-nd-new-document.md)).
+
+| What was found                                   | Change                                |
+| ------------------------------------------------ | ------------------------------------- |
+| A document could be made from no template at all | **TPL-074** new, settling **TPL-Q01** |
+| A template could only share its components       | **TPL-075** new                       |
+| Nothing described a template where it is chosen  | **TPL-076** and **TPL-077** new       |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 73, of which 20 superseded and 1 withdrawn | 77, of which 20 superseded and 1 withdrawn |

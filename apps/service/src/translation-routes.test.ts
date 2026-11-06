@@ -3,6 +3,7 @@ import { applyReturn, findRole } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { HOST, startHarness, type Harness } from './test/bindings-harness.js';
+import { placingNothing } from './test/placing-nothing.js';
 
 type Version = { id: string; number: string };
 
@@ -19,6 +20,7 @@ const para = (id: string, value: string) => ({
  */
 describe('translation (the TR plan, TRa)', () => {
   let h: Harness;
+  let plain = '';
 
   /** A component of Grace's in General, approved by Ada: revision 1, so translatable. */
   const approvedComponent = async (title: string) => {
@@ -81,6 +83,10 @@ describe('translation (the TR plan, TRa)', () => {
 
   beforeAll(async () => {
     h = await startHarness();
+    // A template placing nothing, so an outline starts empty (the ND plan, ND-B).
+    plain = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      placingNothing(trx, h.general, h.ids['grace']!),
+    );
     const approver = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Approver'));
     await h.allow(h.ids.ada!, approver!.id, { kind: 'space', id: h.general });
     const publisher = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Publisher'));
@@ -291,6 +297,7 @@ describe('translation (the TR plan, TRa)', () => {
       title: 'Pond survey',
       language: 'en-GB',
       direction: 'ltr',
+      template: plain,
     });
     let doc = made.json<{ id: string; version: { id: string } }>();
     for (const [position, component] of [translatedOne.id, untranslated.id].entries()) {
@@ -506,6 +513,7 @@ describe('translation (the TR plan, TRa)', () => {
       title: 'Water survey',
       language: 'en-GB',
       direction: 'ltr',
+      template: plain,
     });
     let doc = made.json<{ id: string; version: { id: string } }>();
     for (const [position, component] of [first.id, second.id].entries()) {
@@ -600,6 +608,7 @@ describe('translation (the TR plan, TRa)', () => {
       title: 'Lake survey',
       language: 'en-GB',
       direction: 'ltr',
+      template: plain,
     });
     const doc = made.json<{ id: string; version: { id: string } }>();
     const placed = await h.call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {

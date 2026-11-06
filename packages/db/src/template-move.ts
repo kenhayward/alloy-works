@@ -118,7 +118,8 @@ async function resolveMove(
     const found = await componentReferences(trx, toDefinition, input.by);
     const unresolved = (toDefinition.components ?? []).flatMap((each) => {
       const state = found.components.get(each.key);
-      return adds.has(each.key) && state?.state !== 'found'
+      // A move adds only a reference, so each it adds names a component (the ND plan, ND-P).
+      return adds.has(each.key) && each.component !== undefined && state?.state !== 'found'
         ? [
             {
               reference: 'component' as const,

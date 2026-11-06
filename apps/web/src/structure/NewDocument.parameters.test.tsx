@@ -14,6 +14,15 @@ const TEMPLATES = {
       name: 'Report',
       space: { id: SPACE, name: 'General' },
       version: { id: 'ee000000-0000-4000-8000-0000000000a1', number: '0.3' },
+      changedAt: '2026-11-01T09:00:00Z',
+      description: null,
+      sections: 2,
+      values: 8,
+      requiredValues: 2,
+      copied: 0,
+      referenced: 0,
+      headings: ['Summary', 'Results'],
+      isDefault: false,
     },
   ],
   next: null,
@@ -124,14 +133,13 @@ async function chooseReport(fetch: typeof globalThis.fetch, onCreated = vi.fn())
       <NewDocument client={client(fetch)} onCreated={onCreated} />
     </StrictMode>,
   );
-  await screen.findByRole('option', { name: 'Report (General)' });
-  await userEvent.selectOptions(screen.getByLabelText('Template'), 'Report (General)');
+  await userEvent.click(await screen.findByRole('option', { name: 'Report' }));
   await screen.findByLabelText('due (required)');
   await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
   return onCreated;
 }
 
-const create = () => screen.getByRole('button', { name: 'Create' });
+const create = () => screen.getByRole('button', { name: 'Create document' });
 
 describe("New document's parameters (the TP1 plan, TP1-I)", () => {
   it('asks for each parameter by its type: a date, a choice of its permitted values, a box, a check box, a time and a list of entries', async () => {
@@ -307,8 +315,7 @@ describe("New document's parameters (the TP1 plan, TP1-I)", () => {
     }) as typeof globalThis.fetch;
     const onCreated = vi.fn();
     render(<NewDocument client={client(declaresNone)} onCreated={onCreated} />);
-    await screen.findByRole('option', { name: 'Report (General)' });
-    await userEvent.selectOptions(screen.getByLabelText('Template'), 'Report (General)');
+    await userEvent.click(await screen.findByRole('option', { name: 'Report' }));
     await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
     await userEvent.click(create());
 
@@ -319,14 +326,14 @@ describe("New document's parameters (the TP1 plan, TP1-I)", () => {
       direction: 'ltr',
       template: TEMPLATE,
     });
-    expect(screen.queryByRole('group', { name: 'Parameters' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Values for this template' })).toBeNull();
   });
 
   it('forgets the values given when another template, or Blank, is chosen', async () => {
     const { fetch, made } = service();
     const onCreated = await chooseReport(fetch);
     await userEvent.type(screen.getByLabelText('reviewer'), 'Grace');
-    await userEvent.selectOptions(screen.getByLabelText('Template'), 'Blank');
+    await userEvent.click(screen.getByRole('option', { name: 'Blank' }));
     expect(screen.queryByLabelText('reviewer')).toBeNull();
     await userEvent.click(create());
     await waitFor(() => expect(onCreated).toHaveBeenCalled());

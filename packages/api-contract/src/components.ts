@@ -44,6 +44,13 @@ const spaceLanguage = contentDocumentSchema.shape.language
     'The language new documents and CT Studio deliveries here take; null where it names none',
   );
 
+const defaultTemplate = z
+  .string()
+  .nullable()
+  .describe(
+    'The template a document made here without naming one takes (TPL-074): Blank until its administrator chooses another; null until one is first needed',
+  );
+
 export const SpaceList = z.object({
   items: z.array(
     z.object({
@@ -64,6 +71,7 @@ export const SpaceList = z.object({
       mayDesign: z
         .boolean()
         .describe('Whether the caller may design a template in this space; never in one archived'),
+      defaultTemplate: defaultTemplate,
     }),
   ),
   next: nextCursor,
@@ -119,8 +127,15 @@ export const SpaceView = z.object({
     .nullable()
     .describe('The principal who archived it; null while it is not archived'),
   language: spaceLanguage,
+  defaultTemplate,
 });
 export type SpaceView = z.infer<typeof SpaceView>;
+
+/** Which of the space's templates is its default (TPL-074). */
+export const DefaultTemplateBody = z.strictObject({
+  template: LowercaseUuid.describe("One of the space's own templates"),
+});
+export type DefaultTemplateBody = z.infer<typeof DefaultTemplateBody>;
 
 const spaceName = z
   .string()
@@ -455,6 +470,32 @@ export const ComponentView = z.object({
   values: z
     .record(z.string(), z.unknown())
     .describe("The latest version's values, by field identifier"),
+  origin: z
+    .object({
+      from: z
+        .object({ id: z.uuid(), title: z.string() })
+        .nullable()
+        .describe(
+          'The component it was copied from, by its latest title; null where it was made from content its template holds, or the caller may not read it',
+        ),
+      version: z
+        .object({ id: z.uuid(), number: z.string() })
+        .nullable()
+        .describe('The version of it the copy was made from; null where `from` is'),
+      template: z
+        .object({ id: z.uuid(), name: z.string() })
+        .nullable()
+        .describe(
+          'The template that made the copy for a new document; null where Duplicate made it, or the caller may not read it',
+        ),
+      changedSince: z
+        .boolean()
+        .describe(
+          'Whether what it was made from has a newer version now: the component, else the template',
+        ),
+    })
+    .nullable()
+    .describe('What it was copied from (REU-059); null where it was made, not copied'),
 });
 export type ComponentView = z.infer<typeof ComponentView>;
 
@@ -546,6 +587,33 @@ export const componentRoutes = {
       409: {
         description:
           'space_name_taken: another space has that name; space_last: the last space not archived cannot be archived',
+        schema: ErrorBody,
+      },
+    },
+  },
+  setDefaultTemplate: {
+    operationId: 'setDefaultTemplate',
+    method: 'PUT',
+    path: '/v1/spaces/{space}/default-template',
+    summary: 'Make one of the space’s templates the one its new documents take by default',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
+    params: SpaceParams,
+    body: DefaultTemplateBody,
+    responses: {
+      200: { description: 'The space as it now is', schema: SpaceView },
+      400: { description: 'Not a template id', schema: ErrorBody },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the space but may not administer it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such space in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description: 'template_unusable: not one of the templates in this space',
         schema: ErrorBody,
       },
     },

@@ -293,8 +293,11 @@ describe('templates through the service', () => {
     expect(view.template).toEqual(shown);
     const opened = await call('alice', 'GET', `/v1/documents/${view.id}`);
     expect(opened.json<{ template: unknown }>().template).toEqual(shown);
-    // A blank document shows none.
-    expect((await document('alice')).json<{ template: unknown }>().template).toBeNull();
+    // One naming no template shows its space's default, Blank, which requires nothing (TPL-074).
+    expect((await document('alice')).json<{ template: unknown }>().template).toMatchObject({
+      name: 'Blank',
+      required: [],
+    });
   });
 
   it('shows and numbers a document under the layout its template binds', async () => {

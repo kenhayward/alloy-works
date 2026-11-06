@@ -100,6 +100,15 @@ describe('a copy of an outline (the RM plan, RM-I, RM-J)', () => {
     expect(counts.repointed).toBe(2);
   });
 
+  it('REU-057 repoints a required reference whose component the template placed as a copy: it is the document own', () => {
+    const { outline: copied } = copyOutline(source, replaced, new Set([A]));
+    expect(references(copied)[3]).toEqual({
+      id: id('u'),
+      component: COPY_A,
+      mode: { kind: 'pinned', version: COPY_A_VERSION },
+    });
+  });
+
   it('REU-058 keeps pinned as pinned to the copy, and makes approved latest, counted', () => {
     const pinned = outline([reference('r', A, { kind: 'pinned', version: PIN })]);
     const { outline: copied } = copyOutline(pinned, replaced);

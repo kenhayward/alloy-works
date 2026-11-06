@@ -1670,6 +1670,12 @@ export {
   type GrantInForce,
 } from './grant-limits.js';
 export {
+  defaultTemplateOf,
+  ensureDefaultTemplate,
+  setDefaultTemplate,
+  type SetDefaultAnswer,
+} from './default-template.js';
+export { originOf, type Origin } from './origins.js';
   backgroundWork,
   recordBackgroundWork,
   type BackgroundOutcome,

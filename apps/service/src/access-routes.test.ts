@@ -780,6 +780,11 @@ describe('routes that check a permission', () => {
       status: 403,
     }),
     listComponentTypes: () => ({ url: `/v1/spaces/${clinical}/component-types`, status: 404 }),
+    setDefaultTemplate: () => ({
+      url: `/v1/spaces/${clinical}/default-template`,
+      status: 404,
+      payload: { template: MISSING },
+    }),
     createComponent: () => ({
       url: `/v1/spaces/${clinical}/components`,
       status: 404,

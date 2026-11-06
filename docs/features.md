@@ -887,12 +887,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
   makes or changes one yet.
 
-- **Making a document from a template.** **New document** offers **Blank** and every template you
-  may read, named with its space; a document made from one starts with the template's sections, in
+- **Making a document from a template.** A document always starts from a template. **New document**
+  lists every template you may read by space, the space chosen for Where first, each with its counts,
+  and shows the one chosen beside them: a preview of its first headings, its description, its title,
+  its values in a region of their own that scrolls, with how many required values are left, then
+  where, language and direction, and a line saying what Create will make. Each space has a **default
+  template**, chosen first and taken by a document made through the API with none named: **Blank**,
+  one component titled "Please supply a title" to write over, until the space's administrator chooses
+  another of its templates from its row in Administration's Spaces. A template may give each new
+  document its own **copy** of a component instead of sharing it, and the copy says on it what it was
+  copied from and whether that has changed since; Duplicate's copies say so too. A template may carry
+  a description and a label for each value, set through the API. A document made from one starts with the template's sections, in
   its order, each numbered, placed and broken as the template says, and with the default values the
   template's metadata schemas give the document and each section. It records the template and the
   version it was made from, and is published, shown and numbered under that template's theme and
-  layout, at their latest versions; a blank document keeps the environment's. After that the outline
+  layout, at their latest versions. After that the outline
   is the document's own: changing it changes no template, and a template's next version changes no
   document already made. A template you may not read is answered as not there, and one naming
   something that no longer exists is refused with a sentence saying so, keeping your choice.

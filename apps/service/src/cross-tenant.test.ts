@@ -578,6 +578,7 @@ const OTHER_TENANT_IDS: Readonly<
   // A purpose is no artifact of either environment: the target is the endpoint its body names, B's.
   setModelRoute: async () => ({ purpose: 'drafting' }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
+  setDefaultTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -1103,6 +1104,7 @@ const VALID_INPUT: Readonly<
   },
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
+  setDefaultTemplate: { payload: { template: '7e1d0c5a-3b2f-4a6e-9d8c-1f0e2d3c4b5a' } },
   putBridgeSettings: {
     payload: { componentType: null, template: null, propertyMap: {}, data: false },
   },

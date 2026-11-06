@@ -25,6 +25,7 @@ export {
   SpaceListQuery,
   SpaceParams,
   SpaceView,
+  DefaultTemplateBody,
   UpdateSpaceBody,
 } from './components.js';
 export {

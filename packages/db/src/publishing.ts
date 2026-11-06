@@ -797,7 +797,8 @@ export type PublicationRequestAnswer =
   /** A component its template requires is gone and no reason was given (TPL-044). */
   | {
       readonly answer: 'component.required';
-      readonly components: readonly { readonly key: string; readonly component: string }[];
+      /** `component` null for one its template holds as content and copies (the ND plan, ND-F). */
+      readonly components: readonly { readonly key: string; readonly component: string | null }[];
     }
   /**
    * The document's values, or a section's, do not satisfy its template's fields (TPL-055): every

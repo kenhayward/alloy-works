@@ -1,4 +1,9 @@
+export { blankTemplate, BLANK_WORDS } from './blank.js';
+export type { BlankWords } from './blank.js';
+export { templateSummary } from './summary.js';
+export type { TemplateSummaryCounts } from './summary.js';
 export {
+  instantiateOf,
   MAX_TEMPLATE_COMPONENTS,
   TEMPLATE_SCHEMA_VERSION,
   startingSectionSchema,
@@ -7,6 +12,7 @@ export {
   templateDefinitionSchema,
 } from './definition.js';
 export type {
+  Instantiate,
   StartingSection,
   TemplateAssignment,
   TemplateComponent,

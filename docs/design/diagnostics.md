@@ -25,7 +25,7 @@ built so far is the measuring and background work.
 ## Background work
 
 - **Each sweep and loop records its run in every tenant** it visits (`inEachTenant`, `apps/worker/src/background.ts`)
-  to `background_work` (0210): one row per kind of work, upserted with when it last started and finished, and
+  to `background_work` (0211): one row per kind of work, upserted with when it last started and finished, and
   whether it succeeded, failed or was paused by the environment's state (a restore under review).
 - **A failure is a code** (`reasonFor`), never a message; the last is kept after it clears, beside the failures in
   a row. One tenant failing is logged and passed over, and a record that cannot be written never stops the work.

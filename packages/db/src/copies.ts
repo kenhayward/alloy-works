@@ -25,6 +25,7 @@ import { artifactPlace, recordEvent } from './audit.js';
 import { componentFieldsNow, unstorableValues } from './component-values.js';
 import { deletionStored, isDeleted, notDeletedAs } from './deletion.js';
 import { readableComponents } from './documents.js';
+import { recordOrigin, templateCopiesAmong } from './origins.js';
 import { linesStored, translationStored } from './lines.js';
 import { resolveOccurrences } from './publishing.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
@@ -205,6 +206,8 @@ interface DocumentPlan {
   readonly version: StoredVersion;
   readonly outline: OutlineDocument;
   readonly copying: readonly { readonly component: string; readonly version: StoredVersion }[];
+  /** The components its template copied for it, required or not: its own (REU-057; ND-G). */
+  readonly owned: ReadonlySet<string>;
   readonly counts: Omit<CopyCounts, 'kind' | 'titleInUse'>;
 }
 
@@ -275,12 +278,20 @@ async function planDocument(
     else each.required = true;
     placed.set(node.component, each);
   });
+  // A required one its template made as this document's copy is the document's own (REU-057; ND-G).
+  const owned = await templateCopiesAmong(
+    trx,
+    [...placed.values()].filter((each) => each.required).map((each) => each.component),
+  );
+  for (const each of placed.values()) if (owned.has(each.component)) each.candidate = true;
   for (const outcome of await resolveOccurrences(trx, outline, input.by)) {
     const node = nodes.get(outcome.node)!;
     const each = placed.get(node.component)!;
     if (outcome.outcome === 'unreadable') each.unreadable = true;
     if (outcome.outcome === 'gone') each.gone = true;
-    if (outcome.outcome === 'resolved' && !node.origin) each.shown.add(outcome.version);
+    if (outcome.outcome === 'resolved' && (!node.origin || owned.has(node.component))) {
+      each.shown.add(outcome.version);
+    }
   }
   const candidates = [...placed.values()].filter((each) => each.candidate);
   const archived = new Set<string>();
@@ -331,7 +342,7 @@ async function planDocument(
       ),
     });
   }
-  const { counts } = copyOutline(outline, replaced);
+  const { counts } = copyOutline(outline, replaced, owned);
   const reused = [...placed.values()].filter((each) => !chosen.includes(each.component));
   const left = await linesOf(
     trx,
@@ -341,6 +352,7 @@ async function planDocument(
     version,
     outline,
     copying,
+    owned,
     counts: {
       copied: chosen.length,
       reused: reused.length,
@@ -480,7 +492,7 @@ export async function copyArtifact(trx: TenantTransaction, input: CopyInput): Pr
 }
 
 /** A component's version made again as a new component's 0.1 (RM-J, RM-M), audited. */
-async function copyComponent(
+export async function copyComponent(
   trx: TenantTransaction,
   input: {
     readonly version: StoredVersion;
@@ -491,6 +503,8 @@ async function copyComponent(
     readonly by: string;
     /** Each other component copied with it, to its copy. */
     readonly remap: ReadonlyMap<string, string>;
+    /** The template version making it, where a template copies it (the ND plan, ND-C). */
+    readonly template?: { readonly id: string; readonly version: string } | undefined;
   },
 ): Promise<
   | { readonly answer: 'copied'; readonly copy: StoredVersion }
@@ -514,6 +528,11 @@ async function copyComponent(
   });
   await copyScope(trx, input.version.artifactId, copy.artifactId, 'component', input.by);
   await recordCopied(trx, copy, input.version.artifactId);
+  // What it was made from, at which version (REU-059).
+  await recordOrigin(trx, copy.artifactId, {
+    from: { id: input.version.artifactId, version: input.version.id },
+    template: input.template,
+  });
   return { answer: 'copied', copy };
 }
 
@@ -608,7 +627,7 @@ async function copyDocument(
       ),
     });
   }
-  const copied = copyOutline(plan.outline, replaced).outline;
+  const copied = copyOutline(plan.outline, replaced, plan.owned).outline;
   // Its translated titles translate the original's title, which the copy no longer holds.
   const { titles: translated, ...heading } = copied;
   void translated;
