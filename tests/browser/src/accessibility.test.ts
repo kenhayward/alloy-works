@@ -876,6 +876,23 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s Diagnostics: what needs attention, health by capability and the background work (the DG plan)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/diagnostics`);
+      const arrival: Arrival = {
+        shows: [
+          page.getByRole('region', { name: 'Needs attention' }),
+          page.getByRole('region', { name: 'Health by capability' }),
+          page.getByRole('region', { name: 'Budgets' }),
+        ],
+      };
+      await arrive(arrival);
+      await checkAxe(page, 'how the environment is doing', task.meta, arrival);
+    });
+  });
+
   it('passes axe on the inbox at its own address, with the kinds sent by email, where mail is on (the EM plan, EMc)', async ({
     task,
   }) => {

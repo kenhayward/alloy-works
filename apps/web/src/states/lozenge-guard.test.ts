@@ -37,6 +37,7 @@ const NOT_A_STATE: Readonly<Record<string, string>> = {
   'publishing.published': "a column's heading: when it was published",
   'translation.outcome-translated': "a word inside a job's sentence",
   'admin.failed': "an export's outcome: operational (D2), a Chip",
+  'admin.diag-failed': "Diagnostics' column of jobs that failed: operational (D2), a heading",
   'admin.approved': "an audit event's name, and the Workflows column for a state's flag",
   'admin.published': "an audit event's name",
   'admin.organisation-change-closed': "what became of a tenant, inside an audit event's words",

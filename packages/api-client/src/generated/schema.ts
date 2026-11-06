@@ -49218,6 +49218,8 @@ export interface operations {
                         /** @description Each connection run on in the last 24 hours */
                         connections: {
                             connection: string;
+                            /** @description Its name at its latest version; null where it has gone */
+                            name: string | null;
                             runs: number;
                             failed: number;
                             timedOut: number;

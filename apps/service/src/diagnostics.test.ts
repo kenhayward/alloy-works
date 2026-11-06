@@ -27,6 +27,7 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
   });
 
   it('gathers health per capability, background work, deliveries and data sources in one read', async () => {
+    const named = (await h.connection('Site readings')).id;
     expect((await h.call('ada', 'GET', '/v1/spaces')).statusCode).toBe(200);
     await measuring.flush();
     const now = new Date();
@@ -52,6 +53,18 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
           outcome: 'failed',
           failure: 'timeout',
         });
+        await recordQueryRun(trx, {
+          act: 'sample',
+          principal: null,
+          connection: named,
+          queryDefinition: null,
+          document: null,
+          durationMs: 40,
+          rows: 1,
+          bytes: 10,
+          outcome: 'ran',
+          failure: null,
+        });
       },
       { actorKind: 'system' },
     );
@@ -75,6 +88,10 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
       down: true,
       timedOut: 1,
       lastFailure: 'timeout',
+    });
+    expect(view.connections.find((each) => each.connection === named)).toMatchObject({
+      name: 'Site readings',
+      down: false,
     });
     expect(view.webhooks).toEqual({ subscriptions: 0, failing: 0, disabledFailing: 0 });
     expect(view.mail).toMatchObject({ enabled: false, failingSince: null });

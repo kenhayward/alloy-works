@@ -92,6 +92,7 @@ export function diagnosticsHandlers() {
       const connections = (await connectionRunsSince(trx, new Date(now.getTime() - DAY))).map(
         (each) => ({
           connection: each.connection,
+          name: each.name,
           runs: each.runs,
           failed: each.failed,
           timedOut: each.timedOut,

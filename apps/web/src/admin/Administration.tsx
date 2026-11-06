@@ -31,6 +31,7 @@ import { Overview } from './Overview.js';
 import { Outside } from './Outside.js';
 import { People } from './People.js';
 import { QueryUsage } from './QueryUsage.js';
+import { Diagnostics } from './Diagnostics.js';
 import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
@@ -246,6 +247,14 @@ const SECTIONS = [
     slug: 'retention',
     get title() {
       return words('admin.retention');
+    },
+    group: 'system',
+  },
+  // How the environment is doing: health, background work, deliveries (ADM-036; the DG plan).
+  {
+    slug: 'diagnostics',
+    get title() {
+      return words('admin.diagnostics');
     },
     group: 'system',
   },
@@ -596,6 +605,7 @@ export function Administration({
         {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}
+        {shown === 'diagnostics' && <Diagnostics client={client} />}
         {shown === 'queries' && (
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}

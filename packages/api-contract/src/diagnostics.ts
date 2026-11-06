@@ -53,6 +53,7 @@ const JobsView = z.object({
 
 const ConnectionView = z.object({
   connection: z.string(),
+  name: z.string().nullable().describe('Its name at its latest version; null where it has gone'),
   runs: z.int(),
   failed: z.int(),
   timedOut: z.int(),

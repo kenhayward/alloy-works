@@ -18447,6 +18447,18 @@
         {
           "id": "ADM-035",
           "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up"
+        },
+        {
+          "id": "ADM-036",
+          "howItIsMet": "Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets"
+        },
+        {
+          "id": "ADM-021",
+          "howItIsMet": "A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources"
+        },
+        {
+          "id": "COL-061",
+          "howItIsMet": "A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff"
         }
       ]
     },
@@ -25968,7 +25980,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1907,
+      "line": 1908,
       "kind": "title"
     },
     {
@@ -25980,7 +25992,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 2049,
+      "line": 2050,
       "kind": "title"
     },
     {
@@ -26053,6 +26065,24 @@
       "id": "TPL-074",
       "file": "apps/web/src/admin/DefaultTemplate.test.tsx",
       "line": 56,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-021",
+      "file": "apps/web/src/admin/Diagnostics.test.tsx",
+      "line": 101,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-036",
+      "file": "apps/web/src/admin/Diagnostics.test.tsx",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "COL-061",
+      "file": "apps/web/src/admin/Diagnostics.test.tsx",
+      "line": 101,
       "kind": "title"
     },
     {
@@ -37602,13 +37632,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1506,
+      "line": 1523,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1075,
+      "line": 1092,
       "kind": "title"
     },
     {
