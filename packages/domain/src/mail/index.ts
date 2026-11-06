@@ -177,6 +177,8 @@ export type ChildMailRequest = z.infer<typeof childMailRequestSchema>;
  * A test of the channel's words (EM-P): what it is, and nothing of anybody's content. Plain, with no
  * dashes, as every word the product shows.
  */
+export { MAIL_KINDS, MAIL_MESSAGES, mailWords, type MailCounts, type MailKind } from './words.js';
+
 export const TEST_MAIL = Object.freeze({
   subject: 'A test of your environment’s mail',
   text: [

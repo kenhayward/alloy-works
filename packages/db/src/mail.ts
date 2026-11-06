@@ -1,6 +1,17 @@
-import { mailBackoffSeconds, type MailFailureCode, type MailRelay } from '@alloy-works/domain';
+import {
+  decide,
+  MAIL_KINDS,
+  mailBackoffSeconds,
+  type MailCounts,
+  type MailFailureCode,
+  type MailKind,
+  type MailRelay,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { loadFacts } from './access-facts.js';
 import { recordEvent } from './audit.js';
+import { mayStillBeTold, type DigestCounts } from './inbox.js';
+import { notifyTenant } from './realtime.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -18,6 +29,8 @@ export interface MailChannel {
   /** Since when its relay has failed, cleared by a send (EM-N). */
   readonly failingSince: Date | null;
   readonly lastSuccessAt: Date | null;
+  /** The kinds it never mails, the environment's own policy (COL-060; EM-W). */
+  readonly kindsOff: readonly MailKind[];
 }
 
 /** What is left where nobody has set a channel: off, by the operator's relay (EM-D). */
@@ -32,6 +45,7 @@ export const NO_MAIL_CHANNEL: Omit<MailChannel, 'id'> = {
   hasPassword: false,
   failingSince: null,
   lastSuccessAt: null,
+  kindsOff: [],
 };
 
 type Change = 'made' | 'changed' | 'password_set' | 'enabled' | 'disabled';
@@ -57,7 +71,7 @@ export async function mailChannel(
   let query = trx
     .selectFrom('mail_channel')
     .select(['id', 'enabled', 'relay', 'host', 'port', 'username', 'from_address', 'from_name'])
-    .select(['failing_since', 'last_success_at'])
+    .select(['failing_since', 'last_success_at', 'kinds_off'])
     .select((eb) => eb('sealed_password', 'is not', null).as('has_password'));
   if (options.lock) query = query.forUpdate();
   const row = await query.executeTakeFirst();
@@ -74,6 +88,7 @@ export async function mailChannel(
     hasPassword: Boolean(row.has_password),
     failingSince: row.failing_since,
     lastSuccessAt: row.last_success_at,
+    kindsOff: MAIL_KINDS.filter((kind) => row.kinds_off.includes(kind)),
   };
 }
 
@@ -91,6 +106,8 @@ export async function setMailChannel(
     readonly username: string | null;
     readonly fromAddress: string | null;
     readonly fromName: string | null;
+    /** The kinds never mailed; those it held where not named. */
+    readonly kindsOff?: readonly MailKind[];
     readonly by: string;
   },
 ): Promise<MailChannel> {
@@ -106,6 +123,7 @@ export async function setMailChannel(
     username: input.username,
     from_address: input.fromAddress,
     from_name: input.fromName,
+    kinds_off: [...(input.kindsOff ?? held?.kindsOff ?? [])],
     updated_by: input.by,
   };
   const row = held
@@ -146,11 +164,51 @@ export async function setMailPassword(
   await recordChange(trx, id, { change: 'password_set' });
 }
 
-/** Why a mail is sent (EM-F); a test alone until EMc and EMd. */
-export type MailPurpose = 'test';
+/** Whether a person is mailed of each kind (EM-W): mailed, unless they chose not to be. */
+export async function mailChoicesOf(
+  trx: TenantTransaction,
+  principal: string,
+): Promise<Record<MailKind, boolean>> {
+  const off = await trx
+    .selectFrom('notification_email_off')
+    .select('kind')
+    .where('principal_id', '=', principal)
+    .execute();
+  return Object.fromEntries(
+    MAIL_KINDS.map((kind) => [kind, !off.some((row) => row.kind === kind)]),
+  ) as Record<MailKind, boolean>;
+}
+
+/** Changes whether a person is mailed of each kind, the kinds named alone. */
+export async function setMailChoices(
+  trx: TenantTransaction,
+  principal: string,
+  choices: { readonly [kind in MailKind]?: boolean | undefined },
+): Promise<void> {
+  for (const kind of MAIL_KINDS) {
+    const mailed = choices[kind];
+    if (mailed === undefined) continue;
+    if (mailed) {
+      await trx
+        .deleteFrom('notification_email_off')
+        .where('principal_id', '=', principal)
+        .where('kind', '=', kind)
+        .execute();
+    } else {
+      await trx
+        .insertInto('notification_email_off')
+        .values({ principal_id: principal, kind })
+        .onConflict((conflict) => conflict.doNothing())
+        .execute();
+    }
+  }
+}
+
+/** Why a mail is sent (EM-F): a test, a notification; invitations and closure notices follow (EMd). */
+export type MailPurpose = 'test' | 'notification';
 
 /** How long a mail is tried, from its first attempt, decided at claiming (EM-M). */
-const AGE: Readonly<Record<MailPurpose, string>> = { test: '1 hour' };
+const AGE: Readonly<Record<MailPurpose, string>> = { test: '1 hour', notification: '24 hours' };
 
 /** Whether a person may be mailed at all: a person, not erased or disabled, at a verified address (EM-G). */
 export async function mailableAddress(
@@ -202,16 +260,33 @@ export interface ClaimedMail {
   readonly relay: ClaimedRelay;
   /** The channel's name for the sender, or null for the tenant's own name. */
   readonly fromName: string | null;
+  /** A notification's kind, and a digest's counts of the kinds left on; null on a test. */
+  readonly notification: { readonly kind: MailKind; readonly counts?: MailCounts } | null;
+  /** The person's interface language, where they chose one (EM-E). */
+  readonly language: string | null;
   /** The lease this claim holds: an attempt is recorded only under it. */
   readonly lease: string;
 }
 
-/** Why a mail was dropped unsent at claiming (EM-G). */
-type Unsendable = 'service_identity' | 'erased' | 'disabled' | 'no_address' | 'unverified';
+/** Why a mail was dropped unsent at claiming (EM-G, EM-H, EM-W). */
+type Unsendable =
+  | 'service_identity'
+  | 'erased'
+  | 'disabled'
+  | 'no_address'
+  | 'unverified'
+  | 'channel_off'
+  | 'read'
+  | 'environment_off'
+  | 'opted_out'
+  | 'no_longer_told';
 
 interface DueRow {
   readonly id: string;
   readonly purpose: MailPurpose;
+  readonly principal_id: string;
+  readonly notification_id: string | null;
+  readonly language: string | null;
   readonly lease: string;
   readonly kind: string;
   readonly email: string | null;
@@ -268,16 +343,28 @@ export async function claimMail(
            first_attempt_at = coalesce(d.first_attempt_at, now())
       from due, principal p
      where d.id = due.id and p.id = d.principal_id
-    returning d.id, d.purpose, d.locked_until::text as lease, p.kind, p.email, p.email_verified,
-              p.erased_at is not null as erased, p.disabled_at is not null as disabled`.execute(
-    trx,
-  );
+    returning d.id, d.purpose, d.principal_id, d.notification_id, d.locked_until::text as lease,
+              p.kind, p.email, p.email_verified, p.erased_at is not null as erased,
+              p.disabled_at is not null as disabled,
+              to_jsonb(p) ->> 'interface_language' as language`.execute(trx);
+  if (rows.length === 0) return { claimed: [], dropped: 0 };
+  const channel = await trx
+    .selectFrom('mail_channel')
+    .select(['relay', 'host', 'port', 'username', 'sealed_password', 'from_address', 'from_name'])
+    .select(['enabled', 'kinds_off'])
+    .executeTakeFirst();
   let dropped = 0;
-  const sendable: DueRow[] = [];
+  const sendable: { readonly row: DueRow; readonly told: ClaimedMail['notification'] }[] = [];
   for (const row of rows) {
-    const reason = unsendable(row);
+    let reason = unsendable(row);
+    let told: ClaimedMail['notification'] = null;
+    if (reason === undefined && row.notification_id !== null) {
+      const decided = await toldOf(trx, row.notification_id, row.principal_id, channel);
+      if (typeof decided === 'string') reason = decided;
+      else told = decided;
+    }
     if (reason === undefined) {
-      sendable.push(row);
+      sendable.push({ row, told });
       continue;
     }
     dropped += 1;
@@ -288,10 +375,6 @@ export async function claimMail(
       .execute();
   }
   if (sendable.length === 0) return { claimed: [], dropped };
-  const channel = await trx
-    .selectFrom('mail_channel')
-    .select(['relay', 'host', 'port', 'username', 'sealed_password', 'from_address', 'from_name'])
-    .executeTakeFirst();
   const relay: ClaimedRelay =
     channel?.relay === 'own'
       ? {
@@ -304,16 +387,103 @@ export async function claimMail(
         }
       : { kind: 'platform' };
   return {
-    claimed: sendable.map((row) => ({
+    claimed: sendable.map(({ row, told }) => ({
       id: row.id,
       purpose: row.purpose,
       to: row.email!,
       relay,
       fromName: channel?.from_name ?? null,
+      notification: told,
+      language: row.language,
       lease: row.lease,
     })),
     dropped,
   };
+}
+
+/**
+ * A notification's mail decided again at sending (EM-G, EM-H, EM-W): the channel still on, the
+ * notification unread, its kind mailed by the environment and the person, and theirs to be told of
+ * still; a digest counting the kinds left on alone, and sent only where any is. Answers what it tells,
+ * or why it is dropped.
+ */
+async function toldOf(
+  trx: TenantTransaction,
+  notificationId: string,
+  recipient: string,
+  channel: { readonly enabled: boolean; readonly kinds_off: string[] } | undefined,
+): Promise<NonNullable<ClaimedMail['notification']> | Unsendable> {
+  if (!channel?.enabled) return 'channel_off';
+  const notification = await trx
+    .selectFrom('notification')
+    .select(['recipient', 'kind', 'thread_id', 'artifact_id', 'counts', 'read_at'])
+    .where('id', '=', notificationId)
+    .executeTakeFirstOrThrow();
+  if (notification.read_at !== null) return 'read';
+  const kind = notification.kind as MailKind;
+  if (channel.kinds_off.includes(kind)) return 'environment_off';
+  const mailed = await mailChoicesOf(trx, recipient);
+  if (!mailed[kind]) return 'opted_out';
+  if (!(await mayStillBeTold(trx, notification))) return 'no_longer_told';
+  if (kind !== 'digest') return { kind };
+  const held = notification.counts as DigestCounts;
+  const on = (each: MailKind) => mailed[each] && !channel.kinds_off.includes(each);
+  const counts: MailCounts = {
+    mention: on('mention') ? held.mention : 0,
+    reply: on('reply') ? held.reply : 0,
+    resolution: on('resolution') ? held.resolution : 0,
+    round: on('round') ? (held.round ?? 0) : 0,
+  };
+  if (counts.mention + counts.reply + counts.resolution + counts.round === 0) return 'opted_out';
+  return { kind, counts };
+}
+
+/** Drops a claimed mail unsent, as its worker decided (EM-Q): no address for the environment. */
+export async function dropMail(
+  trx: TenantTransaction,
+  deliveryId: string,
+  reason: 'no_hostname',
+  lease: string,
+): Promise<void> {
+  await trx
+    .updateTable('email_delivery')
+    .set({ state: 'dropped', dropped_reason: reason, locked_until: null })
+    .where('id', '=', deliveryId)
+    .where('state', '=', 'pending')
+    .where(sql<boolean>`locked_until::text = ${lease}`)
+    .execute();
+}
+
+/**
+ * Tells those who may configure services, once, that the channel is failing (EM-N), until a send
+ * clears it: by an inbox kind that is never mailed, in a savepoint, so the telling never undoes the
+ * attempt recorded. Candidates are those granted at the environment a role holding the permission,
+ * each decided again on their grants as every check is.
+ */
+async function tellFailing(trx: TenantTransaction): Promise<void> {
+  await sql`savepoint tell_failing`.execute(trx);
+  try {
+    const { rows: fresh } = await sql<{ id: string }>`
+      update mail_channel set told_at = now() where told_at is null returning id`.execute(trx);
+    if (fresh.length > 0) {
+      const { rows: candidates } = await sql<{ id: string }>`
+        select distinct p.id from access_grant g
+          join role r on r.id = g.role_id
+          join principal p on p.id = g.principal_id
+         where g.level = 'tenant' and g.effect = 'allow'
+           and 'configure_services' = any (r.permissions)
+           and p.kind = 'user' and p.disabled_at is null and p.erased_at is null`.execute(trx);
+      for (const { id } of candidates) {
+        const facts = await loadFacts(trx, id, { kind: 'tenant' });
+        if (facts === undefined || !decide('configure_services', facts).allowed) continue;
+        await sql`insert into notification (recipient, kind) values (${id}, 'mail')`.execute(trx);
+        await notifyTenant(trx, { kind: 'inbox', recipient: id });
+      }
+    }
+    await sql`release savepoint tell_failing`.execute(trx);
+  } catch {
+    await sql`rollback to savepoint tell_failing`.execute(trx);
+  }
 }
 
 /** How an attempt ended, as the worker saw it (EM-M). */
@@ -395,7 +565,7 @@ export async function recordMailAttempt(
   if (state === 'sent') {
     await trx
       .updateTable('mail_channel')
-      .set({ failing_since: null, last_success_at: sql<Date>`now()` })
+      .set({ failing_since: null, told_at: null, last_success_at: sql<Date>`now()` })
       .execute();
     return { relayFailed: false };
   }
@@ -409,6 +579,7 @@ export async function recordMailAttempt(
   await sql`update email_delivery set next_at = (select next_at from email_delivery where id = ${deliveryId})
      where state = 'pending' and id <> ${deliveryId}
        and next_at < (select next_at from email_delivery where id = ${deliveryId})`.execute(trx);
+  await tellFailing(trx);
   return { relayFailed: true };
 }
 

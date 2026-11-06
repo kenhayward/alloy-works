@@ -261,7 +261,7 @@ let mailing = false;
 const mails = setInterval(() => {
   if (mailer === undefined || mailing) return;
   mailing = true;
-  void sendMail(db, mailer, log)
+  void sendMail(db, mailer, log, config.mailLinks)
     .catch((error: unknown) => log.error({ err: error }, 'mail failed'))
     .finally(() => {
       mailing = false;
