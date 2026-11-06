@@ -10,13 +10,17 @@ import {
   deleteNotification,
   internalThreads,
   listInbox,
+  mailChannel,
+  mailChoicesOf,
   markRead,
   readableOf,
   setCadences,
+  setMailChoices,
   threadOn,
   titlesFor,
   type Tenant,
   type TenantDatabase,
+  type TenantTransaction,
   workflowStates,
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -26,6 +30,15 @@ import { keysetAfter, keysetCursor } from './keyset.js';
 import type { SessionPrincipal } from './sessions.js';
 
 const PAGE = 50;
+
+/** How often a person is told of each kind, whether each is mailed, and whether mail is sent here. */
+async function preferencesOf(trx: TenantTransaction, principal: string): Promise<InboxPreferences> {
+  return {
+    ...(await cadencesOf(trx, principal)),
+    email: await mailChoicesOf(trx, principal),
+    emailSent: (await mailChannel(trx))?.enabled ?? false,
+  };
+}
 
 /**
  * **A person's inbox** (COL-063; the TH plan, Task 2): their own alone, each route taking whoever is
@@ -190,14 +203,17 @@ export function inboxHandlers(
     },
 
     getInboxPreferences: async (request: FastifyRequest): Promise<InboxPreferences> =>
-      db.withTenant(tenantOf(request), (trx) => cadencesOf(trx, principalOf(request).principalId)),
+      db.withTenant(tenantOf(request), (trx) =>
+        preferencesOf(trx, principalOf(request).principalId),
+      ),
 
     setInboxPreferences: async (request: FastifyRequest): Promise<InboxPreferences> => {
-      const body = request.body as InboxPreferencesBody;
+      const { email, ...cadences } = request.body as InboxPreferencesBody;
       const principal = principalOf(request).principalId;
       return db.withTenant(tenantOf(request), async (trx) => {
-        await setCadences(trx, principal, body);
-        return cadencesOf(trx, principal);
+        await setCadences(trx, principal, cadences);
+        if (email !== undefined) await setMailChoices(trx, principal, email);
+        return preferencesOf(trx, principal);
       });
     },
   };

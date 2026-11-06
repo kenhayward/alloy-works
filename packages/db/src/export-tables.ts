@@ -186,6 +186,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   model_endpoint: kept(),
   model_route: kept(),
   notification: renumbered(),
+  notification_email_off: kept(),
   notification_held: renumbered(),
   notification_preference: kept(),
   object_store_credential: leftOut("This environment's own key to its store, made anew for each."),

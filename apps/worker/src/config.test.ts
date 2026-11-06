@@ -24,6 +24,15 @@ describe("the worker's configuration", () => {
     expect(config.workerId).toMatch(/\S/);
   });
 
+  it('links a mail to the environment by https at its default port, unless told the scheme and port (EM-Q)', () => {
+    expect(loadWorkerConfig(env).mailLinks).toEqual({ scheme: 'https' });
+    expect(
+      loadWorkerConfig({ ...env, MAIL_LINK_SCHEME: 'http', MAIL_LINK_PORT: '8088' }).mailLinks,
+    ).toEqual({ scheme: 'http', port: 8088 });
+    expect(() => loadWorkerConfig({ ...env, MAIL_LINK_SCHEME: 'ftp' })).toThrow(WorkerConfigError);
+    expect(describeWorkerConfig(loadWorkerConfig(env)).mailLinks).toBe('https');
+  });
+
   it('sizes the defaults so a check whose first attempt fails still joins its publication within five minutes of its recording', () => {
     const { leaseMs, pollIntervalMs } = loadWorkerConfig(env);
     // A check queued as its publication is recorded wakes a free worker at once. Its first attempt

@@ -491,6 +491,9 @@ export async function applyWholeRestore(
       }
     } else if (table === 'mail_channel') {
       row['enabled'] = false;
+      // Nor is it failing here, nor was anybody here told so (the EM plan's final review).
+      row['failing_since'] = null;
+      row['told_at'] = null;
     } else if (table === 'webhook_subscription') {
       row['disabled_at'] = new Date().toISOString();
       row['disabled_reason'] = 'restored';

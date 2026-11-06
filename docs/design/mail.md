@@ -2,8 +2,8 @@
 
 How an environment tells a person something by email: that something happened, that they are invited, that their
 tenant is closing. Built by [the EM plan](../plans/2026-11-05-em-email-notifications.md), which holds the decisions;
-what is built so far is the channel and the way out: the queue, the worker's loop, the connector's
-send, and a test.
+what is built so far is the channel, the way out (the queue, the worker's loop, the connector's
+send, a test) and notifications by email.
 
 ## The shape in one paragraph
 
@@ -42,20 +42,37 @@ or worker, over verified TLS on port 465 or 587.
 - **Administration's Email** sets the channel and its password, sends the test, and lists the mail of 30 days by code.
 - **Mailpit** is development's operator's relay, over STARTTLS with the development mail CA's certificate.
 
+## Notifications
+
+- **Queued by a trigger** on `notification`, so every path that tells passes through it, and a restore, which disables
+  user triggers, mails nobody (EM-F). Only while the channel is on, of the five kinds mailed (a mention, a reply, a
+  resolution, being named a reviewer, the daily digest), and never to a service identity. Its row names the notification,
+  which cascades: a notification deleted or swept takes its mail with it.
+- **Held five minutes**: one read by then is dropped `read` (EM-H). Given up 24 hours after its first attempt.
+- **Decided again at sending** (EM-G, EM-W): the channel still on, the kind not in the environment's `kinds_off` nor the
+  person's `notification_email_off`, and `mayStillBeTold` (shared reasoning with the inbox: a thread made internal, spend,
+  what they may read now). A digest counts the kinds left on alone, and is dropped where that is none.
+- **Its words** live in `packages/domain` (`mailWords`): the kind, a link to the inbox and why it came, never a title,
+  text, actor or document name (EM-E). In the person's interface language, a pseudo-locale made over as the interface's is.
+- **Its link** is `#/inbox` at the environment's first hostname in order, at `MAIL_LINK_SCHEME` and `MAIL_LINK_PORT`;
+  an environment with none drops it `no_hostname` (EM-Q). No token is in any mail. `#/inbox` opens the inbox, where each
+  person chooses, beside how often each kind is told, whether it is mailed.
+- **A failing channel is told** once to those who may configure services, by an inbox kind, `mail`, which is never
+  mailed, in a savepoint; a send clears it, and the next failure tells again (EM-N).
+
 ## Not yet built
 
-A person's choice and notifications by email (EMc); invitations and closure notices (EMd); telling those who configure
-services that the channel is failing, by an inbox kind of its own (EM-N).
+Invitations and closure notices (EMd). One-click unsubscribe (the plan's Not in this slice).
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **COL-060** | The channel is the tenant's: on or off, whose relay, the address its own relay sends from, and which kinds it mails (EM-W), permissioned, audited and in the export |
-| **COL-064** | A notification is queued by trigger and sent by the worker through the connector, where the person has not opted out                                                |
-| **IAM-089** | A trigger on the invitation queues a mail with a link to sign-in and no token, limited per tenant and per address (EM-S, EM-U)                                      |
-| **ADM-055** | A trigger on the audit log and the closure sweep queue a notice to each person, by the operator's relay, whatever the channel says (EM-V)                           |
+| ID          | How it is met                                                                                                                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **COL-060** | The channel is the tenant's: on or off, whose relay, the address its own relay sends from, and which kinds it mails (EM-W), permissioned, audited and in the export                                                          |
+| **COL-064** | A notification is queued by trigger, held five minutes, decided again and sent by the worker through the connector with a link and none of its content, where neither the person nor the environment has turned its kind off |
+| **IAM-089** | A trigger on the invitation queues a mail with a link to sign-in and no token, limited per tenant and per address (EM-S, EM-U)                                                                                               |
+| **ADM-055** | A trigger on the audit log and the closure sweep queue a notice to each person, by the operator's relay, whatever the channel says (EM-V)                                                                                    |
 
-Designed here; only the channel is built. **IMP-045** waits for the rest of what it lists. **COL-061** asks for ADM-036's
+Designed here; the channel and notifications are built, invitations and closure notices not yet. **IMP-045** waits for the rest of what it lists. **COL-061** asks for ADM-036's
 diagnostics, which DG builds, and **LIF-072** for events that do not exist yet, so this slice claims neither: a failing channel
 shows in Administration, and a change to it is audited.

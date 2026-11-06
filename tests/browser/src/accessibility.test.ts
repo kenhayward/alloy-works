@@ -836,6 +836,30 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on the inbox at its own address, with the kinds sent by email, where mail is on (the EM plan, EMc)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/email`);
+      const on = page.getByRole('checkbox', { name: 'Send mail from this environment' });
+      await on.waitFor();
+      if (!(await on.isChecked())) {
+        await on.check();
+        await page.getByRole('button', { name: 'Save' }).click();
+        await page.getByRole('status').filter({ hasText: 'Saved.' }).waitFor();
+      }
+      await page.goto(`${SERVICE}/#/inbox`);
+      const arrival: Arrival = {
+        shows: [
+          page.getByRole('dialog', { name: 'Inbox' }),
+          page.getByRole('group', { name: 'Sent to you by email' }),
+        ],
+      };
+      await arrive(arrival);
+      await checkAxe(page, 'the inbox, how often and which by email', task.meta, arrival);
+    });
+  });
+
   it('passes axe on the document themes, a paragraph and a character style being edited, the reach of a change, a theme duplicated and the styles offered (the SY plan, SYb to SYd)', async ({
     task,
   }) => {

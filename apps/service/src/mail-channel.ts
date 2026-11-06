@@ -53,6 +53,7 @@ export function mailChannelHandlers(
       fromName,
       failingSince,
       lastSuccessAt,
+      kindsOff,
     } = channel ?? NO_MAIL_CHANNEL;
     return {
       channel: {
@@ -66,6 +67,7 @@ export function mailChannelHandlers(
         hasPassword,
         failingSince: failingSince && failingSince.toISOString(),
         lastSuccessAt: lastSuccessAt && lastSuccessAt.toISOString(),
+        kindsOff: [...kindsOff],
       },
       platform: platform
         ? { offered: true, fromAddress: platform.fromAddress }
@@ -109,6 +111,7 @@ export function mailChannelHandlers(
           username,
           fromAddress: own?.fromAddress ?? null,
           fromName: body.fromName ?? null,
+          ...(body.kindsOff === undefined ? {} : { kindsOff: body.kindsOff }),
           by: principalId,
         }),
       );

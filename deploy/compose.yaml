@@ -190,6 +190,9 @@ services:
       SECRET_CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
       # And the key that opens its mail alone, the connector's CONNECTOR_MAIL_KEY (the EM plan, EM-I).
       SECRET_CONNECTOR_MAIL_KEY: ZGV2ZWxvcG1lbnQtb25seS1tYWlsLWtleS0wMDAwMDE=
+      # A notification's mail links to the environment as development reaches it (EM-Q).
+      MAIL_LINK_SCHEME: http
+      MAIL_LINK_PORT: '${SERVICE_PORT:-8088}'
       # The delivery store, as the service has it: a data package is written there by the worker.
       SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:

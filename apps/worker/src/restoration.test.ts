@@ -287,10 +287,9 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
         by: ada,
       });
       await sql`insert into mail_channel
-          (relay, host, port, username, sealed_password, from_address, enabled)
-        values ('own', 'mail.example.test', 587, 'alloy', ${MARKER}, 'documents@example.test', true)`.execute(
-        trx,
-      );
+          (relay, host, port, username, sealed_password, from_address, enabled, failing_since, told_at)
+        values ('own', 'mail.example.test', 587, 'alloy', ${MARKER}, 'documents@example.test', true,
+                now(), now())`.execute(trx);
       await sql`insert into model_credential (endpoint_id, sealed, sealed_for, set_by)
         select id, ${MARKER}, ${MARKER}, ${ada} from model_endpoint`.execute(trx);
       eventCount = (
@@ -470,16 +469,24 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
     });
   });
 
-  it('brings a mail channel back off with no password, so a copied tenant mails nobody', async () => {
+  it('brings a mail channel back off with no password, neither failing nor told so, so a copied tenant mails nobody', async () => {
     const target = await newTenant();
     const grace = await signInAs(target);
     const { id } = await uploaded(target, grace, archive);
     expect((await answered(target, id)).state).toBe('restored');
     await service.withTenant(target, async (trx) => {
       const { rows } = await sql`
-        select enabled, relay, host, sealed_password from mail_channel`.execute(trx);
+        select enabled, relay, host, sealed_password, failing_since, told_at
+          from mail_channel`.execute(trx);
       expect(rows).toEqual([
-        { enabled: false, relay: 'own', host: 'mail.example.test', sealed_password: null },
+        {
+          enabled: false,
+          relay: 'own',
+          host: 'mail.example.test',
+          sealed_password: null,
+          failing_since: null,
+          told_at: null,
+        },
       ]);
     });
   });

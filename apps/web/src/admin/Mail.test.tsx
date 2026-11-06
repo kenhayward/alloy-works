@@ -19,6 +19,7 @@ const OFF = {
   hasPassword: false,
   failingSince: null,
   lastSuccessAt: null,
+  kindsOff: [],
 };
 
 /** A fake service: the channel, its password, a test and the listing, each call kept. */
@@ -89,6 +90,7 @@ describe("Administration's Email (the EM plan, EMb)", () => {
         username: 'news',
         fromAddress: 'news@example.test',
         fromName: null,
+        kindsOff: [],
       }),
     );
     expect(await screen.findByText('Saved.')).toBeInTheDocument();
@@ -115,6 +117,7 @@ describe("Administration's Email (the EM plan, EMb)", () => {
         enabled: true,
         relay: 'platform',
         fromName: null,
+        kindsOff: [],
       }),
     );
   });
@@ -154,5 +157,19 @@ describe("Administration's Email (the EM plan, EMb)", () => {
     const { client } = service({ status: 403 });
     render(<Mail client={client} mayChange={false} />);
     expect(await screen.findByText(/can see how its mail leaves/)).toBeInTheDocument();
+  });
+
+  it('COL-060 chooses the kinds of notification this environment mails', async () => {
+    const { client, calls } = service({ channel: { enabled: true, kindsOff: ['reply'] } });
+    render(<Mail client={client} mayChange />);
+    const kinds = await screen.findByRole('group', { name: 'Notifications it mails' });
+    expect(within(kinds).getByRole('checkbox', { name: /^Replies/ })).not.toBeChecked();
+    await userEvent.click(within(kinds).getByRole('checkbox', { name: 'The daily digest' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(calls.find((each) => each.method === 'PUT')?.body).toMatchObject({
+        kindsOff: ['reply', 'digest'],
+      }),
+    );
   });
 });

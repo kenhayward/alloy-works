@@ -1042,7 +1042,8 @@ describe('the citations in the committed model', () => {
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
     // 2463 (2026-11-03): the sign-in screen's tests cite IAM-011 and ADM-051.
     // 2592 (2026-11-05): an installation's own setup invites its first administrator.
-    expect(model.citations).toHaveLength(2592);
+    // 2599 (2026-11-06): EMc - notifications by email, COL-036, COL-053, COL-060, COL-064.
+    expect(model.citations).toHaveLength(2599);
   });
 
   it('cites no identifier the corpus does not hold', () => {

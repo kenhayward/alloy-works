@@ -42,6 +42,8 @@ export interface WorkerConfig {
   readonly deliverIntervalMs: number;
   /** How often the mail loop runs, apart from the sweeps (EM-M). */
   readonly mailIntervalMs: number;
+  /** How a mail's link reaches the environment at its address (EM-Q). */
+  readonly mailLinks: { readonly scheme: 'https' | 'http'; readonly port?: number };
   /**
    * The delivery store's owner URL, `SECRET_DELIVERED_URL`, as the service has it
    * (docs/design/ct-studio-sink.md, "Data tables"); none given, a data delivery is refused
@@ -85,6 +87,8 @@ const Environment = z.object({
   SECRET_CONNECTOR_MAIL_KEY: z.string().min(1).optional(),
   DELIVER_INTERVAL_MS: z.coerce.number().int().min(500).default(5000),
   MAIL_INTERVAL_MS: z.coerce.number().int().min(500).default(10_000),
+  MAIL_LINK_SCHEME: z.enum(['https', 'http']).default('https'),
+  MAIL_LINK_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
   SECRET_DELIVERED_URL: z
     .string()
     .refine((value) => /^postgres(ql)?:\/\/.+/.test(value), { error: 'must be a postgres:// URL' })
@@ -127,6 +131,10 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     logLevel: data.LOG_LEVEL,
     deliverIntervalMs: data.DELIVER_INTERVAL_MS,
     mailIntervalMs: data.MAIL_INTERVAL_MS,
+    mailLinks: {
+      scheme: data.MAIL_LINK_SCHEME,
+      ...(data.MAIL_LINK_PORT === undefined ? {} : { port: data.MAIL_LINK_PORT }),
+    },
     ...(data.SECRET_DELIVERED_URL === undefined ? {} : { deliveredUrl: data.SECRET_DELIVERED_URL }),
     ...(data.CONNECTOR_URL === undefined
       ? {}
@@ -164,6 +172,7 @@ export function describeWorkerConfig(config: WorkerConfig): Record<string, strin
     leaseMs: config.leaseMs,
     logLevel: config.logLevel,
     connector: config.connector?.url ?? 'none',
+    mailLinks: `${config.mailLinks.scheme}${config.mailLinks.port === undefined ? '' : `:${config.mailLinks.port}`}`,
     // Whether there is one, and nothing of where: its URL holds the owner's password.
     deliveredStore: config.deliveredUrl === undefined ? 'none' : 'set',
   };

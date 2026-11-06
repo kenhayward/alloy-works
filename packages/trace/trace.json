@@ -19016,7 +19016,7 @@
         },
         {
           "id": "COL-064",
-          "howItIsMet": "A notification is queued by trigger and sent by the worker through the connector, where the person has not opted out"
+          "howItIsMet": "A notification is queued by trigger, held five minutes, decided again and sent by the worker through the connector with a link and none of its content, where neither the person nor the environment has turned its kind off"
         },
         {
           "id": "IAM-089",
@@ -23910,6 +23910,12 @@
       "kind": "title"
     },
     {
+      "id": "COL-060",
+      "file": "apps/service/src/mail-channel-routes.test.ts",
+      "line": 209,
+      "kind": "title"
+    },
+    {
       "id": "API-019",
       "file": "apps/service/src/mcp-routes.test.ts",
       "line": 119,
@@ -25580,49 +25586,49 @@
     {
       "id": "ADM-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 141,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "COL-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 236,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "COL-036",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 113,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "COL-062",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 226,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "COL-063",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 113,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "LIB-035",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 200,
+      "line": 210,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 173,
+      "line": 183,
       "kind": "title"
     },
     {
       "id": "LIF-005",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 113,
+      "line": 123,
       "kind": "title"
     },
     {
@@ -25791,6 +25797,12 @@
       "id": "AST-022",
       "file": "apps/web/src/admin/Licences.test.tsx",
       "line": 50,
+      "kind": "title"
+    },
+    {
+      "id": "COL-060",
+      "file": "apps/web/src/admin/Mail.test.tsx",
+      "line": 162,
       "kind": "title"
     },
     {
@@ -29514,6 +29526,24 @@
       "kind": "title"
     },
     {
+      "id": "COL-036",
+      "file": "apps/worker/src/mail-notifications.test.ts",
+      "line": 156,
+      "kind": "title"
+    },
+    {
+      "id": "COL-053",
+      "file": "apps/worker/src/mail-notifications.test.ts",
+      "line": 174,
+      "kind": "title"
+    },
+    {
+      "id": "COL-064",
+      "file": "apps/worker/src/mail-notifications.test.ts",
+      "line": 156,
+      "kind": "title"
+    },
+    {
       "id": "CNT-085",
       "file": "apps/worker/src/marks.test.ts",
       "line": 277,
@@ -29768,43 +29798,43 @@
     {
       "id": "ADM-054",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 458,
+      "line": 457,
       "kind": "title"
     },
     {
       "id": "AST-030",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 764,
+      "line": 771,
       "kind": "title"
     },
     {
       "id": "IMP-039",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 316,
+      "line": 315,
       "kind": "title"
     },
     {
       "id": "IMP-042",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 990,
+      "line": 997,
       "kind": "title"
     },
     {
       "id": "IMP-044",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 657,
+      "line": 664,
       "kind": "title"
     },
     {
       "id": "IMP-046",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 505,
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "IMP-052",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 316,
+      "line": 315,
       "kind": "title"
     },
     {
@@ -31623,6 +31653,18 @@
       "id": "IAM-045",
       "file": "packages/db/src/live.test.ts",
       "line": 120,
+      "kind": "title"
+    },
+    {
+      "id": "COL-053",
+      "file": "packages/db/src/mail-notifications.test.ts",
+      "line": 333,
+      "kind": "title"
+    },
+    {
+      "id": "COL-060",
+      "file": "packages/db/src/mail-notifications.test.ts",
+      "line": 298,
       "kind": "title"
     },
     {
@@ -34412,7 +34454,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1221,
+      "line": 1224,
       "kind": "title"
     },
     {
@@ -36938,13 +36980,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1442,
+      "line": 1466,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1011,
+      "line": 1035,
       "kind": "title"
     },
     {

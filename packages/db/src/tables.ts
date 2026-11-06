@@ -230,13 +230,25 @@ export interface MailChannelTable {
   updated_by: string | null;
   failing_since: Date | null;
   last_success_at: Date | null;
+  /** The kinds the environment never mails (0206; COL-060). */
+  kinds_off: Generated<string[]>;
+  /** When those who configure services were told it is failing (0206; EM-N). */
+  told_at: Date | null;
+}
+
+/** A kind a person is not mailed (0206; EM-W): no row meaning mailed. */
+export interface NotificationEmailOffTable {
+  principal_id: string;
+  kind: string;
 }
 
 /** A mail to send (0205; the EM plan, EM-F): whom to and why, never an address or a word. */
 export interface EmailDeliveryTable {
   id: Generated<string>;
-  purpose: 'test';
+  purpose: 'test' | 'notification';
   principal_id: string;
+  /** The notification it tells of (0206; EM-F). */
+  notification_id: string | null;
   state: Generated<'pending' | 'sent' | 'given_up' | 'dropped'>;
   dropped_reason: string | null;
   attempts: Generated<number>;
@@ -1470,6 +1482,7 @@ export interface TenantTables {
   mail_channel: MailChannelTable;
   email_delivery: EmailDeliveryTable;
   email_attempt: EmailAttemptTable;
+  notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;
   extension: ExtensionTable;
   extension_version: ExtensionVersionTable;
