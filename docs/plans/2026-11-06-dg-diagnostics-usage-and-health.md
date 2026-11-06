@@ -25,7 +25,8 @@ embedding index, each on its own page. Nothing re-verifies a stored hash on a sc
 | DGb  | The worker's work measured too; background work recorded: each sweep and loop per tenant, last run, next due, last failure                                               |
 | DGc  | Jobs by kind (pre-flight 8); health per capability and work (DG-F); `GET /v1/diagnostics` gathering health, the index, deliveries, recent work, data sources and budgets |
 | DGc2 | Administration's Diagnostics page; silent failures surfaced there                                                                                                        |
-| DGd  | Usage: storage, publications, assets and every external operation, by day, as trends of 13 months                                                                        |
+| DGd  | ADR-0100; usage counted by day: storage, publications, assets and every external operation that exists; `GET /v1/usage`                                                  |
+| DGd2 | Administration's Usage page: each measure as a trend of 13 months (ADM-033)                                                                                              |
 | DGe  | Budgets registered and measured in production; objectives declared and measured; integrity re-verified; silent failures told by inbox (ADM-037); close                   |
 
 ## Ken's answers

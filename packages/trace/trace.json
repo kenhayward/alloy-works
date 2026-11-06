@@ -18445,8 +18445,12 @@
           "howItIsMet": "Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)"
         },
         {
+          "id": "ADM-011",
+          "howItIsMet": "Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)"
+        },
+        {
           "id": "ADM-035",
-          "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up"
+          "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100"
         },
         {
           "id": "ADM-036",
@@ -22800,13 +22804,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 862,
+      "line": 864,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 875,
+      "line": 877,
       "kind": "title"
     },
     {
@@ -23542,6 +23546,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-011",
+      "file": "apps/service/src/diagnostics.test.ts",
+      "line": 107,
+      "kind": "title"
+    },
+    {
       "id": "DAT-030",
       "file": "apps/service/src/document-arguments.test.ts",
       "line": 132,
@@ -24265,6 +24275,12 @@
       "id": "SCH-067",
       "file": "apps/service/src/meaning-freshness-routes.test.ts",
       "line": 48,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-011",
+      "file": "apps/service/src/measure-routes.test.ts",
+      "line": 36,
       "kind": "title"
     },
     {
@@ -33526,6 +33542,18 @@
       "kind": "title"
     },
     {
+      "id": "ADM-011",
+      "file": "packages/db/src/usage.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-035",
+      "file": "packages/db/src/usage.test.ts",
+      "line": 108,
+      "kind": "title"
+    },
+    {
       "id": "REU-007",
       "file": "packages/db/src/uses.test.ts",
       "line": 150,
@@ -34816,6 +34844,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-035",
+      "file": "packages/domain/src/diagnostics/usage.test.ts",
+      "line": 5,
+      "kind": "title"
+    },
+    {
       "id": "LIB-032",
       "file": "packages/domain/src/extensions/manifest.test.ts",
       "line": 66,
@@ -35022,7 +35056,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1266,
+      "line": 1272,
       "kind": "title"
     },
     {

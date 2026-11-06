@@ -1,5 +1,6 @@
-import type { DiagnosticsView } from '@alloy-works/api-contract';
+import type { DiagnosticsView, UsageView } from '@alloy-works/api-contract';
 import {
+  countUsage,
   createMeasuring,
   recordBackgroundWork,
   recordCapabilityMinute,
@@ -100,5 +101,28 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
 
   it('is refused to somebody who does not administer the environment', async () => {
     expect((await h.call('grace', 'GET', '/v1/diagnostics')).statusCode).toBe(403);
+    expect((await h.call('grace', 'GET', '/v1/usage')).statusCode).toBe(403);
+  });
+
+  it('ADM-011 answers each measure by day over 13 months, every measure declared listed', async () => {
+    await h.tenantDb.withTenant(h.tenant, (trx) => countUsage(trx), { actorKind: 'system' });
+    const answered = await h.call('ada', 'GET', '/v1/usage');
+    expect(answered.statusCode).toBe(200);
+    const view = answered.json<UsageView>();
+    expect(Date.parse(view.to) - Date.parse(view.from)).toBe(395 * 86_400_000);
+    expect(view.measures).toHaveLength(13);
+    const database = view.measures.find((each) => each.measure === 'databaseBytes');
+    expect(database).toMatchObject({ kind: 'sample', unit: 'bytes' });
+    expect(database?.days).toEqual([{ day: view.to, amount: expect.any(Number) }]);
+    expect(view.measures.find((each) => each.measure === 'publications')?.days).toEqual([]);
+  });
+
+  it('refuses a period that ends before it starts or runs past 13 months', async () => {
+    expect((await h.call('ada', 'GET', '/v1/usage?from=2026-11-02&to=2026-11-01')).statusCode).toBe(
+      400,
+    );
+    expect((await h.call('ada', 'GET', '/v1/usage?from=2025-01-01&to=2026-11-01')).statusCode).toBe(
+      400,
+    );
   });
 });

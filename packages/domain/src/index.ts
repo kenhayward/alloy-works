@@ -175,6 +175,15 @@ export {
   type WorkHealth,
   type WorkRun,
 } from './diagnostics/health.js';
+export {
+  daysToCount,
+  MEASURED_OPERATIONS,
+  USAGE_KEPT_DAYS,
+  USAGE_MEASURES,
+  USAGE_REACH_DAYS,
+  USAGE_RECOUNT_DAYS,
+  type UsageMeasure,
+} from './diagnostics/usage.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

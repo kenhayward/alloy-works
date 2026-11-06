@@ -55,6 +55,7 @@ import {
   sweepWebhookDeliveriesEverywhere,
   sweepMailEverywhere,
   sweepMeasurementsEverywhere,
+  sweepUsageEverywhere,
   sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -243,6 +244,10 @@ const sweep = setInterval(() => {
   void sweepMeasurementsEverywhere(db, log).catch((error: unknown) =>
     log.error({ err: error }, 'measurement sweep failed'),
   );
+  // What each environment used, counted by day once a night (ADR-0100).
+  void sweepUsageEverywhere(db, log)
+    .then((counted) => counted > 0 && log.info({ counted }, 'counted usage'))
+    .catch((error: unknown) => log.error({ err: error }, 'usage count failed'));
 }, config.sweepIntervalMs);
 
 // The nightly re-check of cited entries against their sources, never overlapping itself (XR-E).

@@ -284,6 +284,13 @@ export interface CapabilityUsageTable {
 }
 
 /** A kind of background work's last run in this tenant (0211; the DG plan, DG-G). */
+/** Usage counted by day (0214; ADR-0100): a UTC day, a measure and a whole amount. */
+export interface UsageDayTable {
+  day: ColumnType<string, string, string>;
+  measure: string;
+  amount: ColumnType<string, number, number>;
+}
+
 export interface BackgroundWorkTable {
   work: string;
   started_at: Date;
@@ -1532,6 +1539,7 @@ export interface TenantTables {
   email_delivery: EmailDeliveryTable;
   capability_usage: CapabilityUsageTable;
   background_work: BackgroundWorkTable;
+  usage_day: UsageDayTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;

@@ -120,6 +120,7 @@ const WORK_NAMES: Readonly<Record<string, WordKey>> = {
   sweepImportsEverywhere: 'admin.diag-work.sweepImportsEverywhere',
   sweepMailEverywhere: 'admin.diag-work.sweepMailEverywhere',
   sweepMeasurementsEverywhere: 'admin.diag-work.sweepMeasurementsEverywhere',
+  sweepUsageEverywhere: 'admin.diag-work.sweepUsageEverywhere',
   sweepOldNotifications: 'admin.diag-work.sweepOldNotifications',
   sweepQueryEmbeddingsEverywhere: 'admin.diag-work.sweepQueryEmbeddingsEverywhere',
   sweepRestorations: 'admin.diag-work.sweepRestorations',

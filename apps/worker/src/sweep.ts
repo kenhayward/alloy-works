@@ -13,6 +13,7 @@ import {
   publicationsToCheckAgain,
   queueClosureReminders,
   rollUpMeasurements,
+  countUsage,
   recordEvent,
   recordCheckGivenUp,
   recordEffected,
@@ -70,6 +71,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepWebhookDeliveriesEverywhere',
     'sweepMailEverywhere',
     'sweepMeasurementsEverywhere',
+    'sweepUsageEverywhere',
   ],
 } as const;
 
@@ -521,6 +523,18 @@ export async function sweepMeasurementsEverywhere(
     rolled += await db.withTenant(tenant, (trx) => rollUpMeasurements(trx));
   });
   return rolled;
+}
+
+/**
+ * Usage counted by day, in every live tenant (ADR-0100; the DG plan, DG-I): once a UTC day each, at the
+ * first sweep after midnight. Answers how many tenants were counted.
+ */
+export async function sweepUsageEverywhere(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let counted = 0;
+  await inEachTenant(db, log, 'sweepUsageEverywhere', async (tenant) => {
+    if (await db.withTenant(tenant, (trx) => countUsage(trx))) counted += 1;
+  });
+  return counted;
 }
 
 /**

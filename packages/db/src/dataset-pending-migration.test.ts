@@ -303,6 +303,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0211_background_work',
       '0212_component_groups',
       '0213_session_provider_check',
+      '0214_usage_day',
     ]);
     const kept = await queryAs(
       db.adminUrl,

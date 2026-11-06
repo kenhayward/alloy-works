@@ -3,7 +3,7 @@
 How an administrator answers "is it us or is it you" without a support ticket: each capability's health, what
 background work last did, what failed silently, what the environment uses, and whether the product meets what it
 promises. Built by [the DG plan](../plans/2026-11-06-dg-diagnostics-usage-and-health.md), which holds the decisions;
-built so far is the measuring, background work, and Diagnostics' read.
+built so far is the measuring, background work, Diagnostics, and usage counted by day.
 
 ## Measuring
 
@@ -68,20 +68,36 @@ colour alone, and not `Lozenge`, which is for content's states.
 | The index lagging  | **Nobody**: an author whose new version is not yet found by meaning is not told |
 | Background work    | Nobody waits on a sweep; Diagnostics alone                                      |
 
+## Usage
+
+[ADR-0100](../decisions/0100-usage-is-counted-by-day-from-the-records-each-night.md). `USAGE_MEASURES` declares each
+measure, its kind and unit; `usage_day` holds a UTC day, a measure and an amount, for 396 days, left out of exports.
+
+- **Counted** by `sweepUsageEverywhere` once a tenant's day, at the first sweep after midnight UTC (`countUsage`): each
+  day since the last counted and the last three again, from each record's own table, never more than 30 days back.
+- **Counts**: publications made, assets stored, mail sent, webhook deliveries, translation jobs, embedding runs, query
+  time, and reference searches, which leave no row and are measured as a capability of their own
+  (`MEASURED_OPERATIONS`).
+- **Samples**: the schema's database bytes, and object bytes by kind as each owner records them.
+- **Read** at `GET /v1/usage` by whoever administers: every measure, by day, the last 13 months unless named.
+
 ## Not yet built
 
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging; usage over time (DGd);
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging; usage's page (DGd2);
 budgets, objectives, availability, backups and integrity (DGe).
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`) |
-| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up      |
-| **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets  |
-| **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                    |
-| **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff              |
+| ID          | How it is met                                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)                                          |
+| **ADM-011** | Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)                                                       |
+| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100 |
+| **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                           |
+| **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |
+| **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                       |
 
 **ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
-nobody waiting (above). The rest are claimed as each is answered in full.
+nobody waiting (above). The rest are claimed as each is answered in full. **ADM-048 is not claimed**: every chargeable
+operation that exists is counted, model runs by the Model spending page, but malware scanning does not exist yet
+(AST-Q03).
