@@ -15,6 +15,7 @@ Email: an environment chooses how its mail leaves, and people are told by email 
 - **Invitations and notices of closing by email.** An invitation is emailed to the address invited, with a link to sign in. When an environment starts to close, everybody who can sign in to it is told by email, again 7 days before it is deleted, and if the closing is cancelled.
 - **Setting up an installation.** `pnpm environment:setup` prepares a database and object store for one real environment, from settings with no defaults. It seeds nothing, refuses any secret this repository publishes, and runs on every deploy without undoing what an administrator changed.
 - **An installation on the internet.** `compose.internet.yaml` runs one environment behind a reverse proxy its owner runs, with its own Keycloak, only port 443 open, and a timer that deploys each new release after dumping the databases.
+- **Backups and alerts for an installation on the internet.** A nightly encrypted backup of every database and the object store, a drill that proves it restores, rotated logs, and a mail when a deploy or a backup fails.
 - **A first way in through any provider.** The operator's `steward provider` gives a new organisation's tenant its first sign-in through Keycloak or any OpenID Connect provider, with the client secret piped in. It works only until somebody who signed in holds access there.
 
 ### Changed
