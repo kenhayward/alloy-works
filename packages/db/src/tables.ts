@@ -245,10 +245,15 @@ export interface NotificationEmailOffTable {
 /** A mail to send (0205; the EM plan, EM-F): whom to and why, never an address or a word. */
 export interface EmailDeliveryTable {
   id: Generated<string>;
-  purpose: 'test' | 'notification';
+  purpose: 'test' | 'notification' | 'invitation' | 'closure';
   principal_id: string;
   /** The notification it tells of (0206; EM-F). */
   notification_id: string | null;
+  /** The invitation it is (0208; EM-U). */
+  invitation_id: string | null;
+  /** Which notice of a closing, and when its grace ended as it was queued (0208; EM-V). */
+  notice: 'closing' | 'seven_days' | 'cancelled' | null;
+  grace_ends_at: Date | null;
   state: Generated<'pending' | 'sent' | 'given_up' | 'dropped'>;
   dropped_reason: string | null;
   attempts: Generated<number>;

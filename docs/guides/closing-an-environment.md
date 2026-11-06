@@ -24,30 +24,31 @@ Only people holding `close_environment`, `hold`, or both export permissions can 
 the export and the legal holds. Everybody else is signed out at once. Tokens stop working. A change takes effect within
 30 seconds on every instance.
 
-| Capability               | Suspended                   | Closing or held            |
-| ------------------------ | --------------------------- | -------------------------- |
-| `signInAndApi`           | stops                       | those allowed only         |
-| `sharedPublicationLinks` | stops                       | stops                      |
-| `webhookDelivery`        | stops, kept and resumed     | stops, dropped at deletion |
-| `backgroundWork`         | stops, caught up on lifting | stops, except the export   |
-| `realtimeConnections`    | ends                        | ends                       |
-| `modelEndpoints`         | stops                       | stops                      |
-| `searchIndexes`          | stops, caught up on lifting | stops                      |
-| `notificationDelivery`   | stops, kept                 | stops                      |
-| `inFlightPublications`   | finishes within its lease   | finishes within its lease  |
+| Capability               | Suspended                          | Closing or held                          |
+| ------------------------ | ---------------------------------- | ---------------------------------------- |
+| `signInAndApi`           | stops                              | those allowed only                       |
+| `sharedPublicationLinks` | stops                              | stops                                    |
+| `webhookDelivery`        | stops, kept and resumed            | stops, dropped at deletion               |
+| `backgroundWork`         | stops, caught up on lifting        | stops, except the export                 |
+| `realtimeConnections`    | ends                               | ends                                     |
+| `modelEndpoints`         | stops                              | stops                                    |
+| `searchIndexes`          | stops, caught up on lifting        | stops                                    |
+| `notificationDelivery`   | stops, kept; mail waits to its age | stops; notices of the closing are mailed |
+| `inFlightPublications`   | finishes within its lease          | finishes within its lease                |
 
 Exports already taken are kept until deletion, whatever their usual seven days say.
 
 ## The timetable
 
-| When                            | What happens                                                                                 |
-| ------------------------------- | -------------------------------------------------------------------------------------------- |
-| Day 0                           | Closed. Those not allowed in lose their sessions.                                            |
-| Any time up to day 30           | Can be given up, and everything is as it was.                                                |
-| Day 30, nothing under a hold    | Deletion begins, and can no longer be stopped.                                               |
-| Day 30, something under a hold  | Held: everything is kept, and it can still be given up.                                      |
-| When the last hold is released  | Deletion begins, and can no longer be stopped.                                               |
-| Within 1 day of deletion begins | Its addresses, stored objects, credential, delivered tables, database schema and roles gone. |
+| When                            | What happens                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------- |
+| Day 0                           | Closed. Those not allowed in lose their sessions. Everybody who can sign in is told by email. |
+| Any time up to day 30           | Can be given up, and everything is as it was. Everybody who can sign in is told by email.     |
+| Day 23                          | Everybody who can sign in is told by email that 7 days remain.                                |
+| Day 30, nothing under a hold    | Deletion begins, and can no longer be stopped.                                                |
+| Day 30, something under a hold  | Held: everything is kept, and it can still be given up.                                       |
+| When the last hold is released  | Deletion begins, and can no longer be stopped.                                                |
+| Within 1 day of deletion begins | Its addresses, stored objects, credential, delivered tables, database schema and roles gone.  |
 
 **A legal hold keeps the whole environment**, not only what it names, because what is held depends on the rest. A
 forgotten hold therefore keeps everything, for as long as it is forgotten, and nothing releases it unasked.
@@ -66,4 +67,6 @@ The environment's own audit log goes with the rest, so **take the export if you 
   is live; a copy in an operator's backups lasts as long as their retention says. Ask them, since that is the answer
   your lawyer will want, and it is not one this deletion can give.
 - **Files somebody already took out.** Exports downloaded, publications sent and documents shared stay wherever they went.
-- **Being told.** Nobody is emailed that an environment is closing. Those who visit see it.
+- **Being told, by everybody.** The notices go by the operator's mail relay, whatever the environment's own, to those
+  who sign in with a verified address; somebody whose provider does not vouch for their address is not mailed. Where
+  the operator offers no relay, nobody is mailed. Those who visit see it either way.

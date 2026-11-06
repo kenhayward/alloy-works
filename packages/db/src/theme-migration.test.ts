@@ -501,6 +501,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
@@ -1345,6 +1346,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
@@ -1560,6 +1562,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
@@ -2404,6 +2407,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
@@ -2686,6 +2690,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
@@ -2871,6 +2876,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);

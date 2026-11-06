@@ -282,6 +282,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
     expect(applied[own.id]).toEqual([
@@ -435,6 +436,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0205_mail_queue',
       '0206_mail_notifications',
       '0207_copying',
+      '0208_mail_invitations_and_closures',
       '0209_new_document',
     ]);
 
