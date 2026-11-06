@@ -111,6 +111,8 @@ export type ComponentGroupAnswer =
   | { readonly answer: 'version.precondition'; readonly current: StoredComponentGroup }
   /** A member that is no component `author` may read, deleted, or a version not its own (CG-C). */
   | { readonly answer: 'member.invalid'; readonly index: number }
+  /** The group holds a member `author` may not read, which a version they cut would lose (the CG final review). */
+  | { readonly answer: 'members.withheld' }
   | { readonly answer: 'space.missing' }
   | { readonly answer: 'group.missing' };
 
@@ -178,7 +180,11 @@ export async function recordComponentGroupVersion(
     readonly members: readonly MemberInput[];
   },
 ): Promise<ComponentGroupAnswer> {
-  if (!(await readComponentGroup(trx, input.id))) return { answer: 'group.missing' };
+  const current = await readComponentGroup(trx, input.id);
+  if (!current) return { answer: 'group.missing' };
+  if (!(await readsEveryMember(trx, input.author, current.group))) {
+    return { answer: 'members.withheld' };
+  }
   const members = await pinnedMembers(trx, input.author, input.members);
   if (!Array.isArray(members)) return { answer: 'member.invalid', index: members.index };
   const answer = await recordVersion(trx, {
@@ -199,10 +205,24 @@ export async function recordComponentGroupVersion(
   }
 }
 
-/** One member as a group's page shows it (CG-K). */
+/**
+ * Whether `principal` may read every member of a group: only then may they cut its next version, which
+ * they could not otherwise hand back whole (the CG final review).
+ */
+export async function readsEveryMember(
+  trx: TenantTransaction,
+  principal: string,
+  group: ComponentGroup,
+): Promise<boolean> {
+  const components = group.members.map((each) => each.component);
+  const readable = await readableComponents(trx, principal, components);
+  return components.every((each) => readable.has(each));
+}
+
+/** One member as a group's page shows it (CG-K): an unreadable one's component and version withheld. */
 export interface MemberView {
   readonly component: { readonly id: string; readonly title: string } | null;
-  readonly version: { readonly id: string; readonly number: string };
+  readonly version: { readonly id: string; readonly number: string } | null;
   /** Its component's latest version, where newer than the one pinned; null where not, or unreadable. */
   readonly newest: { readonly id: string; readonly number: string } | null;
 }
@@ -223,12 +243,12 @@ export async function memberViews(
   );
   const views: MemberView[] = [];
   for (const member of group.members) {
-    const pinned = await readVersion(trx, member.version);
-    const version = { id: member.version, number: pinned ? numberOf(pinned) : '' };
     if (!readable.has(member.component)) {
-      views.push({ component: null, version, newest: null });
+      views.push({ component: null, version: null, newest: null });
       continue;
     }
+    const pinned = await readVersion(trx, member.version);
+    const version = { id: member.version, number: pinned ? numberOf(pinned) : '' };
     const latest = await latestVersion(trx, member.component);
     const title = (latest?.content as { readonly title?: unknown } | undefined)?.title;
     views.push({

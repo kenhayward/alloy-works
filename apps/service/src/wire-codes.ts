@@ -65,6 +65,7 @@ const WIRE_CODES = {
   'group.member_invalid': 'group_member_invalid',
   'group.unapproved': 'group_unapproved',
   'group.version_invalid': 'group_version_invalid',
+  'group.members_withheld': 'group_members_withheld',
   'format.unsupported': 'format_unsupported',
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',

@@ -40,17 +40,19 @@ async function groupView(
   stored: StoredComponentGroup,
   facts: AccessFacts,
 ): Promise<ComponentGroupView> {
+  const members = await memberViews(trx, principalId, stored.group);
   return {
     id: stored.id,
     title: stored.group.title,
     space: stored.space,
     version: versionView(stored.version),
-    members: (await memberViews(trx, principalId, stored.group)).map((each) => ({
+    members: members.map((each) => ({
       component: each.component && { ...each.component },
-      version: { ...each.version },
+      version: each.version && { ...each.version },
       newest: each.newest && { ...each.newest },
     })),
-    mayEdit: decide('edit', facts).allowed,
+    // Only whoever reads every member may cut a version, which would otherwise lose one (CG review).
+    mayEdit: decide('edit', facts).allowed && members.every((each) => each.component !== null),
     archived: stored.archived,
     ...(await workflowView(trx, stored.id, facts, principalId)),
   };
@@ -81,6 +83,12 @@ async function answered(
         'group.member_invalid',
         'A member is not a component you may place in a group, or not at a version of its own.',
         { index: answer.index },
+      );
+    case 'members.withheld':
+      throw refused(
+        409,
+        'group.members_withheld',
+        'This group holds a component you may not read, so only someone who may read every member can change it.',
       );
     case 'space.missing':
     case 'group.missing':

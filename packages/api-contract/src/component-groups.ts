@@ -88,7 +88,8 @@ export const ComponentGroupView = z.object({
           .describe('By its latest title; null where the caller may not read it'),
         version: z
           .object({ id: z.string(), number: z.string() })
-          .describe('The version the group pins (CG-B)'),
+          .nullable()
+          .describe('The version the group pins (CG-B); null where the caller may not read it'),
         newest: z
           .object({ id: z.string(), number: z.string() })
           .nullable()
@@ -96,7 +97,11 @@ export const ComponentGroupView = z.object({
       }),
     )
     .describe('In order'),
-  mayEdit: z.boolean().describe('Whether the caller may cut its next version: edit on it'),
+  mayEdit: z
+    .boolean()
+    .describe(
+      'Whether the caller may cut its next version: edit on it, and every member theirs to read',
+    ),
   archived: z.boolean(),
   state: WorkflowStandingView,
   states: WorkflowStatesView,
@@ -283,7 +288,7 @@ export const componentGroupRoutes = {
       404: groupNotFound,
       409: {
         description:
-          'version_precondition: the group has a newer version than the one named, answered with it',
+          'version_precondition: the group has a newer version than the one named, answered with it. group_members_withheld: it holds a member the caller may not read, which a version they cut would lose',
         schema: ComponentGroupRefusal,
       },
     },

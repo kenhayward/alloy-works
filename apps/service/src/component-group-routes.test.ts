@@ -102,6 +102,30 @@ describe('the component group routes', () => {
     ).toBe(404);
   });
 
+  it('REU-060 withholds a member the reader may not read, and lets only who reads every member cut a version', async () => {
+    const open = await h.component(h.general, 'Open notice');
+    const secret = await h.component(h.quality, 'Quality notice');
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/component-groups`, {
+      title: 'Mixed',
+      members: [{ component: open.id }, { component: secret.id }],
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const group = made.json<GroupView>();
+    // Grace edits in General but may not read Quality.
+    const seen = await h.call('grace', 'GET', `/v1/component-groups/${group.id}`);
+    expect(seen.json()).toMatchObject({
+      mayEdit: false,
+      members: [{ component: { id: open.id } }, { component: null, version: null, newest: null }],
+    });
+    const cut = await h.call('grace', 'POST', `/v1/component-groups/${group.id}/versions`, {
+      openedFrom: group.version.id,
+      title: 'Mixed',
+      members: [{ component: open.id }],
+    });
+    expect(cut.statusCode, cut.body).toBe(409);
+    expect(cut.json()).toMatchObject({ code: 'group_members_withheld' });
+  });
+
   it('REU-061 REU-062 places an approved group, offers its newer approved version, and takes it', async () => {
     const a = await h.component(h.general, 'Boilerplate');
     const b = await h.component(h.general, 'Narrative');

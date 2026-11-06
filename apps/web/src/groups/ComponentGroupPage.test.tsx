@@ -74,6 +74,32 @@ const members = () =>
     .map((each) => within(each).getByRole('link').textContent);
 
 describe('a component group', () => {
+  it('REU-060 shows a member the reader may not read without its version, and says why it cannot be changed', async () => {
+    const withheld = {
+      ...view(),
+      mayEdit: false,
+      members: [
+        member(NOTICE, 'Boilerplate', '1.0'),
+        { component: null, version: null, newest: null },
+      ],
+    };
+    const fetch = (async () => json(200, withheld)) as typeof globalThis.fetch;
+    render(
+      <ComponentGroupPage
+        client={createApiClient({ baseUrl: 'http://localhost', fetch })}
+        id={GROUP}
+      />,
+    );
+    const list = await screen.findByRole('list', { name: 'Members' });
+    const [, hidden] = within(list).getAllByRole('listitem');
+    expect(hidden).toHaveTextContent('A component you may not read');
+    expect(hidden).not.toHaveTextContent('Version');
+    expect(
+      screen.getByText('Only someone who may read every member can change this group.'),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Save as a new version' })).not.toBeInTheDocument();
+  });
+
   it('REU-060 shows its members in order, each at the version the group pins, offering a newer one', async () => {
     const { client } = service();
     render(<ComponentGroupPage client={client} id={GROUP} />);

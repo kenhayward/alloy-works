@@ -86415,20 +86415,27 @@
                             "description": "By its latest title; null where the caller may not read it"
                           },
                           "version": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "number": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number"
+                                ]
                               },
-                              "number": {
-                                "type": "string"
+                              {
+                                "type": "null"
                               }
-                            },
-                            "required": [
-                              "id",
-                              "number"
                             ],
-                            "description": "The version the group pins (CG-B)"
+                            "description": "The version the group pins (CG-B); null where the caller may not read it"
                           },
                           "newest": {
                             "anyOf": [
@@ -86464,7 +86471,7 @@
                     },
                     "mayEdit": {
                       "type": "boolean",
-                      "description": "Whether the caller may cut its next version: edit on it"
+                      "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                     },
                     "archived": {
                       "type": "boolean"
@@ -88552,20 +88559,27 @@
                             "description": "By its latest title; null where the caller may not read it"
                           },
                           "version": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "number": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number"
+                                ]
                               },
-                              "number": {
-                                "type": "string"
+                              {
+                                "type": "null"
                               }
-                            },
-                            "required": [
-                              "id",
-                              "number"
                             ],
-                            "description": "The version the group pins (CG-B)"
+                            "description": "The version the group pins (CG-B); null where the caller may not read it"
                           },
                           "newest": {
                             "anyOf": [
@@ -88601,7 +88615,7 @@
                     },
                     "mayEdit": {
                       "type": "boolean",
-                      "description": "Whether the caller may cut its next version: edit on it"
+                      "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                     },
                     "archived": {
                       "type": "boolean"
@@ -89009,20 +89023,27 @@
                                 "description": "By its latest title; null where the caller may not read it"
                               },
                               "version": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "number": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number"
+                                    ]
                                   },
-                                  "number": {
-                                    "type": "string"
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "id",
-                                  "number"
                                 ],
-                                "description": "The version the group pins (CG-B)"
+                                "description": "The version the group pins (CG-B); null where the caller may not read it"
                               },
                               "newest": {
                                 "anyOf": [
@@ -89058,7 +89079,7 @@
                         },
                         "mayEdit": {
                           "type": "boolean",
-                          "description": "Whether the caller may cut its next version: edit on it"
+                          "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                         },
                         "archived": {
                           "type": "boolean"
@@ -89439,7 +89460,7 @@
             }
           },
           "409": {
-            "description": "version_precondition: the group has a newer version than the one named, answered with it",
+            "description": "version_precondition: the group has a newer version than the one named, answered with it. group_members_withheld: it holds a member the caller may not read, which a version they cut would lose",
             "content": {
               "application/json": {
                 "schema": {
@@ -89556,20 +89577,27 @@
                                 "description": "By its latest title; null where the caller may not read it"
                               },
                               "version": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "number": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number"
+                                    ]
                                   },
-                                  "number": {
-                                    "type": "string"
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "id",
-                                  "number"
                                 ],
-                                "description": "The version the group pins (CG-B)"
+                                "description": "The version the group pins (CG-B); null where the caller may not read it"
                               },
                               "newest": {
                                 "anyOf": [
@@ -89605,7 +89633,7 @@
                         },
                         "mayEdit": {
                           "type": "boolean",
-                          "description": "Whether the caller may cut its next version: edit on it"
+                          "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                         },
                         "archived": {
                           "type": "boolean"
@@ -388196,20 +388224,27 @@
                             "description": "By its latest title; null where the caller may not read it"
                           },
                           "version": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "number": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number"
+                                ]
                               },
-                              "number": {
-                                "type": "string"
+                              {
+                                "type": "null"
                               }
-                            },
-                            "required": [
-                              "id",
-                              "number"
                             ],
-                            "description": "The version the group pins (CG-B)"
+                            "description": "The version the group pins (CG-B); null where the caller may not read it"
                           },
                           "newest": {
                             "anyOf": [
@@ -388245,7 +388280,7 @@
                     },
                     "mayEdit": {
                       "type": "boolean",
-                      "description": "Whether the caller may cut its next version: edit on it"
+                      "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                     },
                     "archived": {
                       "type": "boolean"
@@ -388653,20 +388688,27 @@
                                 "description": "By its latest title; null where the caller may not read it"
                               },
                               "version": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "number": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number"
+                                    ]
                                   },
-                                  "number": {
-                                    "type": "string"
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "id",
-                                  "number"
                                 ],
-                                "description": "The version the group pins (CG-B)"
+                                "description": "The version the group pins (CG-B); null where the caller may not read it"
                               },
                               "newest": {
                                 "anyOf": [
@@ -388702,7 +388744,7 @@
                         },
                         "mayEdit": {
                           "type": "boolean",
-                          "description": "Whether the caller may cut its next version: edit on it"
+                          "description": "Whether the caller may cut its next version: edit on it, and every member theirs to read"
                         },
                         "archived": {
                           "type": "boolean"

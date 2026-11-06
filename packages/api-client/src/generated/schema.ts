@@ -30752,18 +30752,18 @@ export interface operations {
                                 id: string;
                                 title: string;
                             } | null;
-                            /** @description The version the group pins (CG-B) */
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
                             version: {
                                 id: string;
                                 number: string;
-                            };
+                            } | null;
                             /** @description The component's latest version, where newer than the one pinned; null else */
                             newest: {
                                 id: string;
                                 number: string;
                             } | null;
                         }[];
-                        /** @description Whether the caller may cut its next version: edit on it */
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                         mayEdit: boolean;
                         archived: boolean;
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -31602,18 +31602,18 @@ export interface operations {
                                 id: string;
                                 title: string;
                             } | null;
-                            /** @description The version the group pins (CG-B) */
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
                             version: {
                                 id: string;
                                 number: string;
-                            };
+                            } | null;
                             /** @description The component's latest version, where newer than the one pinned; null else */
                             newest: {
                                 id: string;
                                 number: string;
                             } | null;
                         }[];
-                        /** @description Whether the caller may cut its next version: edit on it */
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                         mayEdit: boolean;
                         archived: boolean;
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -31727,18 +31727,18 @@ export interface operations {
                                     id: string;
                                     title: string;
                                 } | null;
-                                /** @description The version the group pins (CG-B) */
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
                                 version: {
                                     id: string;
                                     number: string;
-                                };
+                                } | null;
                                 /** @description The component's latest version, where newer than the one pinned; null else */
                                 newest: {
                                     id: string;
                                     number: string;
                                 } | null;
                             }[];
-                            /** @description Whether the caller may cut its next version: edit on it */
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                             mayEdit: boolean;
                             archived: boolean;
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -31870,7 +31870,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description version_precondition: the group has a newer version than the one named, answered with it */
+            /** @description version_precondition: the group has a newer version than the one named, answered with it. group_members_withheld: it holds a member the caller may not read, which a version they cut would lose */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -31913,18 +31913,18 @@ export interface operations {
                                     id: string;
                                     title: string;
                                 } | null;
-                                /** @description The version the group pins (CG-B) */
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
                                 version: {
                                     id: string;
                                     number: string;
-                                };
+                                } | null;
                                 /** @description The component's latest version, where newer than the one pinned; null else */
                                 newest: {
                                     id: string;
                                     number: string;
                                 } | null;
                             }[];
-                            /** @description Whether the caller may cut its next version: edit on it */
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                             mayEdit: boolean;
                             archived: boolean;
                             /** @description Its workflow state now, named by the definition deciding its next move */
@@ -130189,18 +130189,18 @@ export interface operations {
                                 id: string;
                                 title: string;
                             } | null;
-                            /** @description The version the group pins (CG-B) */
+                            /** @description The version the group pins (CG-B); null where the caller may not read it */
                             version: {
                                 id: string;
                                 number: string;
-                            };
+                            } | null;
                             /** @description The component's latest version, where newer than the one pinned; null else */
                             newest: {
                                 id: string;
                                 number: string;
                             } | null;
                         }[];
-                        /** @description Whether the caller may cut its next version: edit on it */
+                        /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                         mayEdit: boolean;
                         archived: boolean;
                         /** @description Its workflow state now, named by the definition deciding its next move */
@@ -130314,18 +130314,18 @@ export interface operations {
                                     id: string;
                                     title: string;
                                 } | null;
-                                /** @description The version the group pins (CG-B) */
+                                /** @description The version the group pins (CG-B); null where the caller may not read it */
                                 version: {
                                     id: string;
                                     number: string;
-                                };
+                                } | null;
                                 /** @description The component's latest version, where newer than the one pinned; null else */
                                 newest: {
                                     id: string;
                                     number: string;
                                 } | null;
                             }[];
-                            /** @description Whether the caller may cut its next version: edit on it */
+                            /** @description Whether the caller may cut its next version: edit on it, and every member theirs to read */
                             mayEdit: boolean;
                             archived: boolean;
                             /** @description Its workflow state now, named by the definition deciding its next move */

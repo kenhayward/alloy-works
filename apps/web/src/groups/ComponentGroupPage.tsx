@@ -218,6 +218,10 @@ export function ComponentGroupPage({ client, id }: { client: Client; id: string 
           />
         </label>
       )}
+      {!view.mayEdit && members.some((each) => each.component === null) && (
+        // Only whoever may read every member cuts a version, which would otherwise lose one.
+        <p>{words('groups.only-someone-who-may-read')}</p>
+      )}
       <h2 id="group-members">{words('groups.members')}</h2>
       <ol className={styles['members']} aria-labelledby="group-members">
         {members.map((each, index) => {
@@ -236,11 +240,13 @@ export function ComponentGroupPage({ client, id }: { client: Client; id: string 
                   {name}
                 </a>
               )}
-              <Chip>
-                {each.version === null
-                  ? words('groups.latest-when-saved')
-                  : words('groups.version-of', { number: each.version.number })}
-              </Chip>
+              {each.component !== null && (
+                <Chip>
+                  {each.version === null
+                    ? words('groups.latest-when-saved')
+                    : words('groups.version-of', { number: each.version.number })}
+                </Chip>
+              )}
               {view.mayEdit && each.newest !== null && (
                 <button
                   type="button"

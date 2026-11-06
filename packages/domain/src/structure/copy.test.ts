@@ -179,6 +179,33 @@ describe('a copied component (RM-J)', () => {
     ],
   } as ContentDocument;
 
+  it('REU-061 makes a placed group plain references where any member is copied, since the copy pins what the group never did', () => {
+    const marker = { id: COPY_B, version: COPY_B_VERSION, placement: id('p') };
+    const grouped = outline([
+      {
+        type: 'section',
+        id: id('s'),
+        title: title('References'),
+        ...base,
+        children: [
+          reference('r', A, { kind: 'pinned', version: PIN }, { group: marker }),
+          reference('t', C, { kind: 'pinned', version: PIN }, { group: marker }),
+        ],
+      },
+    ]);
+    const copied = copyOutline(grouped, replaced).outline.nodes[0]!.children;
+    expect(copied.map((node) => (node.type === 'reference' ? node.group : 'section'))).toEqual([
+      undefined,
+      undefined,
+    ]);
+    // A group none of whose members is copied stays the group it was.
+    const kept = copyOutline(grouped, new Map()).outline.nodes[0]!.children;
+    expect(kept.map((node) => (node.type === 'reference' ? node.group : 'section'))).toEqual([
+      marker,
+      marker,
+    ]);
+  });
+
   it('REU-058 remaps a component cross-reference to a copy, leaving the rest', () => {
     const { content: copied, remapped } = copyContent(content, new Map([[A, COPY_A]]));
     const targets = (copied.content[0] as { content: { target: unknown }[] }).content.map(

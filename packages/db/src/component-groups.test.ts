@@ -309,6 +309,36 @@ describe('component groups (the CG plan)', () => {
     });
   });
 
+  it('REU-060 withholds a member a reader may not read, and lets only who reads every member cut a version', async () => {
+    const open = await component('Open');
+    const secret = await component('Secret', hidden);
+    const made = await as((trx) =>
+      createComponentGroup(trx, {
+        author: grace,
+        spaceId: shared,
+        title: 'Mixed',
+        members: [{ component: open.artifactId }, { component: secret.artifactId }],
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    // Ada may edit in Shared but not read Hidden: neither the component nor its version is shown.
+    const views = await as((trx) => memberViews(trx, ada, made.group.group));
+    expect(views[1]).toEqual({ component: null, version: null, newest: null });
+    // A version she cut would lose the member she cannot hand back, so none is cut.
+    const cut = await as((trx) =>
+      recordComponentGroupVersion(trx, {
+        author: ada,
+        id: made.group.id,
+        openedFrom: made.group.version.id,
+        title: 'Mixed',
+        members: [{ component: open.artifactId }],
+      }),
+    );
+    expect(cut).toEqual({ answer: 'members.withheld' });
+    const kept = await as((trx) => readComponentGroup(trx, made.group.id));
+    expect(kept?.group.members).toHaveLength(2);
+  });
+
   it('lists the groups a reader may read, by title', async () => {
     const one = await component('Listed');
     for (const title of ['Zulu group', 'Alpha group']) {
