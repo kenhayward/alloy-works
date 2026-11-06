@@ -8,6 +8,7 @@ import { lineHandlers } from './lines.js';
 import { translationHandlers } from './translations.js';
 import { shareHandlers } from './shares.js';
 import { queryUsageHandlers } from './query-usage.js';
+import { diagnosticsHandlers } from './diagnostics.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated, Streamed } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -89,6 +90,7 @@ import { searchHandlers } from './search.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
+import { crossSiteRefusal } from './cross-site.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { sendStreamed } from './streamed.js';
@@ -447,6 +449,22 @@ export function buildApp(options: AppOptions): FastifyInstance {
     await recordRefusal(db, request, error);
   });
   void app.register(cookie);
+  // Before every route, so no write a browser sent from another site reaches one. The header is read
+  // here, as this may run before the cookie plugin's own hook.
+  app.addHook('onRequest', async (request) => {
+    const header = (name: string) => {
+      const value = request.headers[name];
+      return Array.isArray(value) ? value[0] : value;
+    };
+    const refusal = crossSiteRefusal({
+      method: request.method,
+      session: (header('cookie') ?? '').includes(`${SESSION_COOKIE}=`),
+      ownOrigin: `${request.protocol}://${request.host}`,
+      origin: header('origin'),
+      fetchSite: header('sec-fetch-site'),
+    });
+    if (refusal) throw refusal;
+  });
   if (options.rendererRoot) {
     serveRenderer(app, options.rendererRoot, rendererPolicy(options.storeOrigin));
   }
@@ -983,6 +1001,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
+    ...diagnosticsHandlers(),
     ...movingHandlers(),
     ...copyingHandlers(),
     ...templateMoveHandlers(),

@@ -230,6 +230,12 @@ The `__Host-` prefix means only this exact hostname can set or read it, so `dev.
 plant a cookie on `acme.<domain>`. An API token is sent as a bearer token. Either is checked against
 its row on every request, which is what makes revocation immediate (IAM-035, IAM-039).
 
+A write carrying that cookie is refused `403 cross_site_refused`, before any route, unless the browser
+says it came from the app itself: `Sec-Fetch-Site: same-origin`, or else an `Origin` equal to the
+request's own (`cross-site.ts`). `SameSite=Lax` alone lets through a sibling name, which is the same
+site but another origin. A request with neither header came from no browser, and a bearer or signed
+caller has no cookie to ride on, so neither is asked.
+
 **A person's own sessions** (IAM-040; the AU2 plan, SE-A to SE-C): `GET /v1/sessions` lists those
 that have not ended, newest first, each with its route, when it began, when it was last used and
 whether it is the one asking; `DELETE /v1/sessions/{id}` ends one, and `DELETE /v1/sessions` every

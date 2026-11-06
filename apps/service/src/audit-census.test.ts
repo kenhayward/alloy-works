@@ -254,6 +254,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getPublicationBindings: read,
   listPublicationShares: read,
   getQueryUsage: read,
+  getDiagnostics: read,
   getStyleUses: read,
   getQueryRunsCsv: read,
   sharePublication: writes('access.granted', 'invitation.sent'),
