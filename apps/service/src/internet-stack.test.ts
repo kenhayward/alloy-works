@@ -237,4 +237,19 @@ describe('the internet stack', () => {
     expect(alert).not.toMatch(/--user\s+"?\$/);
     expect(example).toMatch(/^ALERT_EMAIL=CHANGE_ME$/m);
   });
+
+  it('lets one machine read the backups and nothing else, as a user who is not root', () => {
+    const rsyncd = read('internet/rsyncd.conf');
+    expect(rsyncd).toMatch(/^\s*read only = yes$/m);
+    expect(rsyncd).toMatch(/^\s*write only = no$/m);
+    expect(rsyncd).toMatch(/^\s*list = no$/m);
+    expect(rsyncd).toMatch(/^\s*hosts allow = NAS_ADDRESS$/m);
+    expect(rsyncd).toMatch(/^\s*hosts deny = \*$/m);
+    expect(rsyncd).toMatch(/^\s*auth users = nas-pull$/m);
+    expect(rsyncd).toMatch(/^\s*strict modes = yes$/m);
+    expect(rsyncd).toMatch(/^\s*uid = nas-pull$/m);
+    expect(rsyncd).not.toMatch(/\b192\.168\.\d+\.\d+/);
+    // restic keeps a repository's files group-readable only if the backup's umask lets it.
+    expect(backup).toMatch(/umask 027\n[^\n]*\n?restic cat config/);
+  });
 });
