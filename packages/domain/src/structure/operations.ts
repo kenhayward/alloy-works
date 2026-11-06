@@ -20,6 +20,7 @@ import {
 import { contentDocumentSchema } from '../content/model/document.js';
 import { languageServes } from '../translation/titles.js';
 import { OVERRIDES_MAX, overrideSchema } from './overrides.js';
+import { INSIDE_RUN, insideRun } from './groups.js';
 
 // Reused rather than restated: every identifier and every switch an operation names is the same zod
 // schema the node itself carries (`sectionNodeSchema` and `referenceNodeSchema` share `positional`),
@@ -196,6 +197,47 @@ function forbidden(
     if (operation.operation === 'move' && !changes.reorder) return refuse(NOT_REORDERED);
   }
   return undefined;
+}
+
+const MEMBER_ALONE =
+  "A placed group's member moves and goes with its group, and takes its group version's pin";
+
+/**
+ * A placed group's run held together (the CG plan, CG-G; REU-061): no member moved or removed alone,
+ * none repointed, and nothing put among its members or under one. Overrides and the other switches on
+ * a member stay its document's (CG-E). A section holding a run moves and goes with it whole.
+ */
+function grouped(
+  outline: OutlineDocument,
+  operation: OutlineOperation,
+): OutlineApplied | undefined {
+  const member = (id: string | null) => {
+    if (id === null) return false;
+    const node = findNode(outline.nodes, id);
+    return node?.type === 'reference' && node.group !== undefined;
+  };
+  switch (operation.operation) {
+    case 'remove':
+      return member(operation.node) ? refuse(MEMBER_ALONE) : undefined;
+    case 'set':
+      return operation.mode !== undefined && member(operation.node)
+        ? refuse(MEMBER_ALONE)
+        : undefined;
+    case 'insert': {
+      if (member(operation.parent)) return refuse(INSIDE_RUN);
+      const children = childrenOf(outline.nodes, operation.parent);
+      return children && insideRun(children, operation.position) ? refuse(INSIDE_RUN) : undefined;
+    }
+    case 'move': {
+      if (member(operation.node)) return refuse(MEMBER_ALONE);
+      if (member(operation.parent)) return refuse(INSIDE_RUN);
+      const left = extractNode(outline.nodes, operation.node).nodes;
+      const children = childrenOf(left, operation.parent);
+      return children && insideRun(children, operation.position) ? refuse(INSIDE_RUN) : undefined;
+    }
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -534,7 +576,7 @@ export function applyOutlineOperation(
   newIdentifier: () => string,
   rules: OutlineRules = {},
 ): OutlineApplied {
-  const refused = forbidden(outline, operation, rules.changes);
+  const refused = forbidden(outline, operation, rules.changes) ?? grouped(outline, operation);
   if (refused) return refused;
   // TPL-029, TPL-044: a section or a component the template requires goes only with a reason,
   // whatever carries it.

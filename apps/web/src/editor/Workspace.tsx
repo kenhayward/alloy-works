@@ -54,6 +54,7 @@ import { documentAddress, documentLink, templateAccessAddress } from '../structu
 import { TemplateList } from '../structure/TemplateList.js';
 import { PageShown } from '../shell/Status.js';
 import { ComponentPage } from './ComponentPage.js';
+import { ComponentGroupPage } from '../groups/ComponentGroupPage.js';
 import { ComponentList } from './ComponentList.js';
 import styles from './Workspace.module.css';
 import { Notice } from '../states/Notice.js';
@@ -236,6 +237,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         />
       );
     }
+    // A component group's page (the CG plan, CG-K).
+    const group = /^#[/]component-groups[/]([0-9a-f-]{36})$/.exec(hash)?.[1];
+    if (group !== undefined) return <ComponentGroupPage key={group} client={client} id={group} />;
     const address = componentAddress(hash);
     if (address?.version) {
       return (

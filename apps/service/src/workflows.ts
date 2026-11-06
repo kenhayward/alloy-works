@@ -193,6 +193,22 @@ export async function workflowView(
   return standingAnswer(standing, facts, await isArchived(trx, id), principalId);
 }
 
+/** A handler reached only for a component group: anything else at its address is absent. */
+function groupOnly<T>(
+  handler: (request: FastifyRequest, authorised: Authorised) => Promise<T>,
+): (request: FastifyRequest, authorised: Authorised) => Promise<T> {
+  return async (request, authorised) => {
+    const { id } = request.params as TransitionParams;
+    const row = await authorised.trx
+      .selectFrom('artifact')
+      .select('kind')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (row?.kind !== 'componentGroup') throw notFound();
+    return handler(request, authorised);
+  };
+}
+
 /**
  * Workflow definitions, each read and saved on `administer` at the tenant, and moves, each decided on
  * `read` by the route and then on the transition's own permission (the WF1 plan, WF-F and WF-J).
@@ -418,6 +434,9 @@ export function workflowHandlers() {
     decideTermGate: deciding('term'),
     listTermApprovals: approvals,
     decideComponentGate: deciding('component'),
+    // A group moves under the component workflow (the CG plan, CG-A), and only a group here.
+    transitionComponentGroup: groupOnly(moving('component')),
+    decideComponentGroupGate: groupOnly(deciding('component')),
     decideDocumentGate: deciding('document'),
     listComponentApprovals: approvals,
     listDocumentApprovals: approvals,

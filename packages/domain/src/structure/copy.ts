@@ -60,21 +60,38 @@ export function copyOutline(
   let approvedToLatest = 0;
   let overridesRepointed = 0;
   let overridesDropped = 0;
+  const copiedFor = (node: OutlineNode & { type: 'reference' }) =>
+    node.origin === undefined || copies.has(node.component)
+      ? replaced.get(node.component)
+      : undefined;
+  // A placed group any of whose members is copied pins what the group never did: the whole run
+  // becomes plain references, so no later take mistakes it for the group (the CG final review).
+  const broken = new Set<string>();
+  const find = (node: OutlineNode): void => {
+    if (node.type === 'reference' && node.group !== undefined && copiedFor(node) !== undefined) {
+      broken.add(node.group.placement);
+    }
+    node.children.forEach(find);
+  };
+  outline.nodes.forEach(find);
+  const ungrouped = (node: OutlineNode & { type: 'reference' }) => {
+    if (node.group === undefined || !broken.has(node.group.placement)) return node;
+    const plain: OutlineNode & { type: 'reference' } = { ...node };
+    delete (plain as { group?: unknown }).group;
+    return plain;
+  };
   const copy = (node: OutlineNode): OutlineNode => {
     const children = node.children.map(copy);
     if (node.type === 'section') return { ...node, children };
-    const copied =
-      node.origin === undefined || copies.has(node.component)
-        ? replaced.get(node.component)
-        : undefined;
-    if (copied === undefined) return { ...node, children };
+    const copied = copiedFor(node);
+    if (copied === undefined) return { ...ungrouped(node), children };
     repointed += 1;
     if (node.mode.kind === 'approved') approvedToLatest += 1;
     const mode =
       node.mode.kind === 'pinned'
         ? { kind: 'pinned' as const, version: copied.version }
         : { kind: 'latest' as const };
-    const { overrides: was, ...rest } = node;
+    const { overrides: was, ...rest } = ungrouped(node);
     const overrides = (was ?? []).flatMap((each) => {
       if (copied.keeps(each)) {
         overridesRepointed += 1;

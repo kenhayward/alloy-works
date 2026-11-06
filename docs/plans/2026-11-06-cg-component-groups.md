@@ -5,61 +5,68 @@ document that places them: an SOP's references section, say, of boilerplate, a t
 narrative, which next gains a warning in every SOP's next draft. Today live reuse is the component alone
 (STR-004 keeps sections a document's own; Place from a document copies a section's shape once).
 
-Built after the ND plan, which it extends: a template places a group as it places a component, copied or
-referenced.
+Pre-flight reviewed (2026-11-06); Ken chose the cheaper shape it offered.
 
 ## Calls
 
 Ken's (2026-11-06):
 
 - **CG-A** a **component group** is an artifact of its own: an ordered list of components, in a space, versioned,
-  approved through its workflow as a component is. Called "Component group" in the interface.
-- **CG-B** a group version **pins each member's version**: approving it approves the shape and the text. A
-  member's change reaches documents only through a new group version, so a baseline is reproducible exactly.
-- **CG-C** **one level**: a group holds components, never another group.
-- **CG-D** listed and opened **in Components**, told apart by an icon and a Kind filter, on the component page's
-  shell. No new rail entry.
-- **CG-E** a document may **reword any member locally** (overrides, REU-011), caught at review if wrong; no member
-  is marked against it. It may not add, remove or reorder members, which only a new group version does.
+  approved through the component workflow. Called "Component group" in the interface.
+- **CG-B** a group version **pins each member's version**: approving it approves the shape and the text,
+  members' own workflow states aside, so the group's approval shows each member's changes since its last.
+- **CG-C** **one level**: a group holds components, never another group. A component **at most once**.
+- **CG-D** listed and opened **in Components**, told apart by an icon and a Kind filter. No new rail entry.
+- **CG-E** a document may **reword any member locally** (overrides, REU-011), caught at review if wrong. It may not
+  add, remove or reorder members, which only taking a group version does.
+- **CG-F** **a newer group version is offered, never followed**: placing a group writes ordinary references, one per
+  member, pinned to the version the group pins and marked with the group. A newer approved group version is
+  offered on each document holding it; taking it rewrites that run of references as the document's next version.
+  An approved document never changes by itself.
 
-Mine:
+Mine, after the pre-flight:
 
-- **CG-F** a document places a group as a **group reference**, a third outline node beside section and
-  reference, inside one of the document's own sections, never as a section: STR-004 holds. It follows the group
-  **pinned, latest or approved** (REU-050), so a group's v2 reaches every SOP tracking approved when it is
-  approved, and pinned ones are offered it as any newer version is.
-- **CG-G** each member's **occurrence has an id of its own** in each document, derived from the group reference's
-  node and the member's key, so bound tables resolve to each document's data, cross-references and overrides
-  have a target, and search, comments and baselines key it as they key a node today.
-- **CG-H** a group has **no heading of its own**: its members number inside the section holding it.
-- **CG-I** **where-used, reach and impact** (REU-005, REL-024) count a group's documents for each member; approving
-  a group asks first what it reaches, as a component's approval does.
-- **CG-J** **conditions** apply to the group reference, and to a member through the group's version, not per
-  document.
-- **CG-K** a document may **make a group its own**: its members become references (or copies, with an
-  origin record, as ND's), the shape no longer followed. One act, reported first, using Place and Duplicate's code.
-- **CG-L** baselines pin the group's version; publishing, numbering, Duplicate, moving, export and import, the
-  Part panel and the outline tree learn the group reference.
+- **CG-G** the marker on each member's reference: `group: {id, version, placement}`, `placement` one id for the
+  run. Members of one placement stay contiguous siblings in the group's order (checked on every outline write).
+  Moving or removing one member alone, changing its mode, or inserting a node inside the run is refused; the run
+  moves and is removed as one ("Remove group").
+- **CG-H** no heading of its own: the members number inside the section holding them, as references do.
+- **CG-I** **taking a version** keeps each kept member's node id and overrides (matched by component), adds new
+  members with new ids, drops removed ones, and repins all; it says first what changes.
+- **CG-J** **where-used, reach and impact**: the reference index gains document to group and group to member rows;
+  where-used names a group's documents for each member; a component a group version pins is not deletable,
+  nor movable away alone (`deletion.ts`, `moving.ts`).
+- **CG-K** reading: Components lists groups (Kind filter); the group page shows its members with their versions,
+  newer ones offered, and add, remove, reorder and "use version N", each cutting a group version. No overrides,
+  conditions or threads on the group page.
 
-## Still to settle at the pre-flight
-
-- Whether one component may appear twice in a group (proposed: no, as the outline already refuses).
-- The group page's acts: add, remove and reorder members, with each member's version shown and a newer one
-  offered.
+Deferred, each its own PR when wanted, raised as REU-064 to REU-067: templates placing groups; making a placed group
+the document's own; member conditions; search of a group as such.
 
 ## Stored shapes
 
-- `artifact` kind `component_group`; its version content `{members: [{key, component, version}]}`.
-- The outline's `groupReference` node `{id, group, mode, overrides by member key, conditions}`, additive at the
-  outline's schema; every write path checked (operations, Place, Duplicate, import, restore).
-- Migrations for the kind, its workflow, where-used rows and search.
+- `artifact` kind `componentGroup`; its version content `{title, members: [{component, version}]}`, no
+  component twice, members readable and not groups. Kind checks widened where an artifact kind is enumerated.
+- `ReferenceNode` gains optional `group: {id, version, placement}`, additive at the outline's schema; every write
+  path checked (operations, Place, Duplicate, import, restore, template materialise).
+- The reference index rows above; no new table.
+
+## Interfaces
+
+- Domain: the group shape and its checks; `placeGroup`, `takeGroupVersion` (pure, over the outline); the run
+  rule in the outline's checks; operations refusing what CG-G refuses.
+- Db and service: `componentGroup` create, read, version, list; its workflow as a component's; the index rows;
+  deletion and moving guards; where-used; `POST /v1/documents/{id}/groups` (place) and
+  `POST /v1/documents/{id}/groups/{placement}/take` with a preview.
+- Web: Components' Kind filter and New component group; the group page; Place a group in a section; a placed
+  group shown as one run in the outline tree and Part panel, with its offer.
 
 ## PRs
 
-Its own PR, after ND's, as Ken chose.
+One, as Ken asked, now that the shape needs no new outline node.
 
 ## Tests and docs
 
-Requirements raised first (REU: the group, its approval, its placement, its occurrences, making it one's own).
-An ADR for CG-A, CG-B, CG-F and CG-G. `structure.md`, `reuse` design, `features.md`, `README.md`, the contract,
-one fragment, and the browser walks over the group page and a document holding one.
+Requirements raised first (REU-060 to REU-063). An ADR for CG-B, CG-F and CG-G. `structure.md`, the reuse design,
+`features.md`, `README.md`, the contract, one fragment, and the browser walks over the group page and a document
+holding one.

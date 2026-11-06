@@ -1,4 +1,5 @@
 import type { OutlineApplied, OutlineRules } from './operations.js';
+import { INSIDE_RUN, insideRun } from './groups.js';
 import {
   parseOutlineDocument,
   walkOutline,
@@ -70,6 +71,16 @@ export function placeSection(
     return { applied: false, reason: 'The parent is not in this outline' };
   if (!Number.isInteger(input.position) || input.position < 0 || input.position > children.length) {
     return { applied: false, reason: 'The position is past the end of these children' };
+  }
+  // Never under a placed group's member nor among its run (the CG plan, CG-G).
+  let underMember = false;
+  walkOutline(outline.nodes, (node) => {
+    if (node.id === input.parent && node.type === 'reference' && node.group !== undefined) {
+      underMember = true;
+    }
+  });
+  if (underMember || insideRun(children, input.position)) {
+    return { applied: false, reason: INSIDE_RUN };
   }
   // At the top, after any front matter: the new section is body matter, which never precedes it.
   const leadingFront = outline.nodes.findIndex((node) => node.matter !== 'front');
