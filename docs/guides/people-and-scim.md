@@ -16,8 +16,12 @@ it. The person is made when they first sign in with that verified address.
 stops within two seconds, and they cannot sign in until enabled. Their name stays on what they wrote. You
 are refused where nobody who can sign in could then configure sign-in.
 
-Disabling here does not reach your identity provider, and a person removed there keeps access here until
-you disable them. That gap is what SCIM closes.
+Disabling here does not reach your identity provider. A person disabled or deleted there is signed out
+here at their next request once five minutes have passed since their session last asked the provider,
+and loses their API tokens, but only where the provider grants offline access: Alloy Works asks for the
+`offline_access` scope, and a client that may not have it (in Okta, one without the Refresh Token grant)
+leaves such a person signed in here until their session expires or you disable them. A provider that
+cannot be reached signs nobody out. SCIM closes the gap at once, and for every provider.
 
 ## With SCIM: your provider pushes people
 

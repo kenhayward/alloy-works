@@ -131,7 +131,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   signing in again has not been confirmed with a real account (IDb's plan names it). A provider may
   **provision by SCIM 2.0**, at `/scim/v2/`, through a service identity of its own: it then admits only
   those it pushed, linked by the claim it names and never by email, and anybody it sets inactive or
-  deletes is signed out at once. Its groups come from SCIM alone, applied on receipt. Neither Entra ID's
+  deletes is signed out at once. Its groups come from SCIM alone, applied on receipt. Without SCIM, a
+  session through an organisation's provider that grants offline access asks the provider again every
+  five minutes: a person it refuses, as it refuses somebody disabled or deleted there, is signed out at
+  their next request and loses their API tokens, and a provider that cannot be reached signs nobody
+  out. The Google route and a provider that will not grant offline access are not asked. Not yet tried
+  against a real Keycloak, Entra ID or Okta. Neither Entra ID's
   nor Okta's validator has been run against it yet. [Inviting, disabling and SCIM](guides/people-and-scim.md) says how. Six high-risk acts are
   permissions of their own, apart from administer: exporting the environment, exporting the audit,
   holds, rotating secrets, configuring services (Sign-in among them) and configuring webhooks.

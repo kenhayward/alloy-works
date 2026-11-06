@@ -818,17 +818,18 @@ client and a development proxy to the service.
 - **The contract**: the regenerated OpenAPI document equals the committed one.
 - **The reference**: API-062's completeness, hierarchy, versioned endpoints and explicit-token browser
   boundary are exercised as [Developer API reference, in T1](#developer-api-reference-in-t1) describes.
-- **The scopes**: sign-in requests exactly `openid email profile`.
+- **The scopes**: Google's route requests exactly `openid email profile`, and an organisation's
+  provider `openid email profile offline_access` (IAM-090).
 - **The Google route**: an uninvited account is refused; a personal account never matches a named
   Workspace domain; a hand-off code works once and not after sixty seconds; a tampered state is
   refused; and `signin.<domain>` will not redirect to a hostname the state's tenant does not own.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| New | How a user disabled at their provider loses access at once (IAM-010): OpenID Connect back-channel logout, periodic re-validation, or SCIM. Server-side sessions make each possible   |
-| New | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                           |
-| New | How many Google-route tenants one product-registered Google client can serve before Google's quotas or review expectations change, which a demonstration programme would reach first |
-| New | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                            |
-| New | Where secrets live in production, which is decided with hosting                                                                                                                      |
+| ID       | Question                                                                                                                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Answered | How a user disabled at their provider loses access at once (IAM-010): by SCIM, or by asking the provider again every five minutes with the session's offline refresh token ([identity.md](identity.md), the PC plan). Back-channel logout was left out |
+| New      | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                                                                                             |
+| New      | How many Google-route tenants one product-registered Google client can serve before Google's quotas or review expectations change, which a demonstration programme would reach first                                                                   |
+| New      | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                                                                                              |
+| New      | Where secrets live in production, which is decided with hosting                                                                                                                                                                                        |
