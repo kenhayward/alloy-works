@@ -85,6 +85,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   artifact_deletion: renumbered(),
   artifact_line: kept(),
   artifact_move: renumbered(),
+  artifact_origin: kept(),
   artifact_scope: renumbered(),
   artifact_version: kept({
     breaksCycleAt: ['line_id', 'restored_from'],
@@ -247,7 +248,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   sign_in_handoff: SIGN_IN,
   sign_in_route: SIGN_IN,
   source_change: renumbered(),
-  space: natural(['name']),
+  space: natural(['name'], { breaksCycleAt: ['default_template'] }),
   suggestion: kept(),
   suggestion_resolution: kept(),
   tenant_restore: leftOut(
