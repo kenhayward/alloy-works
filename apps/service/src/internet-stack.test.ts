@@ -240,6 +240,8 @@ describe('the internet stack', () => {
 
   it('lets one machine read the backups and nothing else, as a user who is not root', () => {
     const rsyncd = read('internet/rsyncd.conf');
+    // The repository's parent, so a machine that pairs folders pairs the repository whole.
+    expect(rsyncd).toMatch(/^\s*path = \/var\/backups\/alloy-works$/m);
     expect(rsyncd).toMatch(/^\s*read only = yes$/m);
     expect(rsyncd).toMatch(/^\s*write only = no$/m);
     expect(rsyncd).toMatch(/^\s*list = no$/m);

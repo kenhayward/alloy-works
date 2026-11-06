@@ -59,13 +59,13 @@ verified against the repository. Run it after changing the repository, and now a
 
 **A copy off the machine** is pulled, not pushed, so the machine holds no credential for the backup machine
 and reaches no LAN. `rsyncd.conf` offers the repository read only, to one address and one user who is not root.
-With `RESTIC_REPOSITORY` a local directory, once:
+With `RESTIC_REPOSITORY=/var/backups/alloy-works/restic`, once:
 
 ```sh
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin nas-pull
-sudo chgrp -R nas-pull /var/backups/alloy-restic
-sudo chmod -R g+rX /var/backups/alloy-restic
-sudo find /var/backups/alloy-restic -type d -exec chmod g+s {} +
+sudo chgrp -R nas-pull /var/backups/alloy-works
+sudo chmod -R g+rX /var/backups/alloy-works
+sudo find /var/backups/alloy-works -type d -exec chmod g+s {} +
 sudo sed 's/NAS_ADDRESS/<backup machine>/' /opt/alloy-works/src/deploy/internet/rsyncd.conf | sudo tee /etc/rsyncd.conf >/dev/null
 sudo sh -c 'read -rs p; echo "nas-pull:$p" > /etc/rsyncd.secrets; chmod 600 /etc/rsyncd.secrets'
 sudo ufw allow from <backup machine> to any port 873 proto tcp comment 'backup pull'
