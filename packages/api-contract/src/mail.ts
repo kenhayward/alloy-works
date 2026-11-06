@@ -1,4 +1,5 @@
 import {
+  MAIL_KINDS,
   mailAddressSchema,
   mailDisplayNameSchema,
   mailHostSchema,
@@ -11,6 +12,9 @@ import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody } from './schemas.js';
+
+/** The kinds of notification mailed, the digest its own (EM-W). */
+export const MailKind = z.enum(MAIL_KINDS);
 
 /** A tenant's mail channel (mail.md; the EM plan), never its password. */
 export const MailChannelView = z.strictObject({
@@ -27,6 +31,9 @@ export const MailChannelView = z.strictObject({
     .nullable()
     .describe('Since when its relay has failed, cleared by the next mail it sends'),
   lastSuccessAt: z.string().nullable().describe('When its relay last took a mail'),
+  kindsOff: z
+    .array(MailKind)
+    .describe('The kinds of notification this environment never mails, whatever a person chooses'),
 });
 export type MailChannelView = z.infer<typeof MailChannelView>;
 
@@ -48,6 +55,11 @@ export const SetMailChannelBody = z
     username: mailUsernameSchema.nullable().optional().describe('Its own relay’s, if it asks'),
     fromAddress: mailAddressSchema.optional().describe('The address its own relay sends from'),
     fromName: mailDisplayNameSchema.nullable().optional().describe('The name shown as the sender'),
+    kindsOff: z
+      .array(MailKind)
+      .max(MAIL_KINDS.length)
+      .optional()
+      .describe('The kinds never mailed; those held are kept where none are named'),
   })
   .refine(
     ({ relay, host, port, username, fromAddress }) =>
@@ -71,7 +83,7 @@ export type MailListQuery = z.infer<typeof MailListQuery>;
 
 export const MailSummary = z.strictObject({
   id: z.uuid().describe('Its own id, which it is sent with as its Message-ID'),
-  purpose: z.enum(['test']).describe('Why it is sent'),
+  purpose: z.enum(['test', 'notification']).describe('Why it is sent'),
   state: z
     .enum(['pending', 'sent', 'given_up', 'dropped'])
     .describe(
@@ -81,7 +93,7 @@ export const MailSummary = z.strictObject({
     .string()
     .nullable()
     .describe(
-      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured`',
+      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`',
     ),
   attempts: z.number().int(),
   createdAt: z.string(),

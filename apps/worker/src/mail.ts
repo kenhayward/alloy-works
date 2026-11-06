@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import {
   claimMail,
+  dropMail,
   recordMailAttempt,
   type ClaimedMail,
   type MailOutcome,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { MAIL_DEADLINE_MS, TEST_MAIL, type AuditContext } from '@alloy-works/domain';
+import { MAIL_DEADLINE_MS, mailWords, TEST_MAIL, type AuditContext } from '@alloy-works/domain';
 
 import type { Mailer } from './mailer.js';
 import type { WorkerLog } from './worker.js';
@@ -27,6 +28,12 @@ const LEASE_MS = MAILS_A_PASS * (MAIL_DEADLINE_MS + 5000) + 60_000;
 /** The name a mail shows it is from where the tenant has none of its own, nor a channel's (EM-K). */
 const PRODUCT = 'Alloy Works';
 
+/** How a mail's link reaches the environment (EM-Q): the scheme, and a port where it is not the scheme's. */
+export interface MailLinks {
+  readonly scheme: 'https' | 'http';
+  readonly port?: number;
+}
+
 /**
  * One pass of the mail loop (the EM plan, EM-M), in every live tenant, two at a time: the mails due
  * claimed with a lease, each decided again for whom it is to (EM-G), sent through the connector one
@@ -38,6 +45,7 @@ export async function sendMail(
   db: TenantDatabase,
   mailer: Mailer,
   log: WorkerLog,
+  links: MailLinks = { scheme: 'https' },
 ): Promise<number> {
   const waiting = [...(await db.liveTenants())];
   let attempted = 0;
@@ -45,7 +53,7 @@ export async function sendMail(
     Array.from({ length: Math.min(TENANTS_AT_ONCE, waiting.length) }, async () => {
       for (let next = waiting.shift(); next !== undefined; next = waiting.shift()) {
         try {
-          attempted += await sendInTenant(db, next, mailer, log);
+          attempted += await sendInTenant(db, next, mailer, log, links);
         } catch (error) {
           log.error({ tenant: next.id, err: error }, 'mail failed in a tenant');
         }
@@ -60,6 +68,7 @@ async function sendInTenant(
   tenant: Tenant,
   mailer: Mailer,
   log: WorkerLog,
+  links: MailLinks,
 ): Promise<number> {
   const { claimed, dropped } = await db.withTenant(
     tenant,
@@ -67,8 +76,25 @@ async function sendInTenant(
     SYSTEM,
   );
   if (dropped > 0) log.info({ tenant: tenant.id, dropped }, 'dropped mail nobody may be sent');
+  // Hostnames have no primary: the first in their order, read outside the tenant's transaction (EM-Q).
+  const host = claimed.some((mail) => mail.notification !== null)
+    ? (await db.hostnames(tenant.id))[0]
+    : undefined;
+  const inbox =
+    host === undefined
+      ? undefined
+      : `${links.scheme}://${host}${links.port === undefined ? '' : `:${links.port}`}/#/inbox`;
   let attempted = 0;
   for (const mail of claimed) {
+    if (mail.notification !== null && inbox === undefined) {
+      await db.withTenant(
+        tenant,
+        (trx) => dropMail(trx, mail.id, 'no_hostname', mail.lease),
+        SYSTEM,
+      );
+      log.warn({ tenant: tenant.id }, 'an environment with no address: its mail is dropped');
+      continue;
+    }
     attempted += 1;
     let outcome: MailOutcome;
     try {
@@ -79,7 +105,7 @@ async function sendInTenant(
         relay: mail.relay,
         fromName: mail.fromName ?? tenant.name ?? PRODUCT,
         to: mail.to,
-        ...wordsOf(mail),
+        ...wordsOf(mail, inbox ?? ''),
       });
       outcome =
         answer === 'busy'
@@ -125,9 +151,15 @@ async function sendInTenant(
 }
 
 /** What a mail says, in the product's words and none of anybody's content (EM-E). */
-function wordsOf(mail: ClaimedMail): { readonly subject: string; readonly text: string } {
-  switch (mail.purpose) {
-    case 'test':
-      return TEST_MAIL;
-  }
+function wordsOf(
+  mail: ClaimedMail,
+  link: string,
+): { readonly subject: string; readonly text: string } {
+  if (mail.notification === null) return TEST_MAIL;
+  return mailWords({
+    kind: mail.notification.kind,
+    language: mail.language,
+    link,
+    ...(mail.notification.counts === undefined ? {} : { counts: mail.notification.counts }),
+  });
 }

@@ -266,6 +266,24 @@ describe('the header band', () => {
     expect(await screen.findByRole('dialog', { name: 'Inbox' })).toBeInTheDocument();
   });
 
+  it('opens the inbox at its own address, where a mail links, and leaves it on closing', async () => {
+    window.location.hash = '#/inbox';
+    render(
+      <Header
+        fetch={serviceThat({
+          ...signedIn,
+          '/v1/inbox': { notifications: [], unread: 0, next: null },
+          '/v1/inbox/preferences': { mention: 'at_once', reply: 'at_once', resolution: 'daily' },
+        })}
+      />,
+    );
+    expect(await screen.findByRole('dialog', { name: 'Inbox' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(window.location.hash).toBe('#/');
+    window.location.hash = '';
+  });
+
   it('chooses Light, Dark or Auto from the Theme button while signed out, shows which is chosen, and remembers it', async () => {
     render(<Header fetch={serviceThat(signedOut)} />);
 

@@ -83298,7 +83298,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference" | "import";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference" | "import" | "mail";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -83706,7 +83706,15 @@ export interface operations {
                      *       "mention": "at_once",
                      *       "reply": "at_once",
                      *       "resolution": "at_once",
-                     *       "round": "at_once"
+                     *       "round": "at_once",
+                     *       "email": {
+                     *         "mention": false,
+                     *         "reply": false,
+                     *         "resolution": false,
+                     *         "round": false,
+                     *         "digest": false
+                     *       },
+                     *       "emailSent": false
                      *     }
                      */
                     "application/json": {
@@ -83730,6 +83738,17 @@ export interface operations {
                          * @enum {string}
                          */
                         round: "at_once" | "daily" | "never";
+                        /** @description Whether each kind is mailed as it is told, the daily digest its own: mailed unless chosen (COL-064) */
+                        email: {
+                            mention: boolean;
+                            reply: boolean;
+                            resolution: boolean;
+                            round: boolean;
+                            /** @description The daily digest, counting the kinds left on */
+                            digest: boolean;
+                        };
+                        /** @description Whether this environment mails at all; it is its administrators’ choice */
+                        emailSent: boolean;
                     };
                 };
             };
@@ -83829,6 +83848,14 @@ export interface operations {
                      * @enum {string}
                      */
                     round?: "at_once" | "daily" | "never";
+                    email?: {
+                        mention?: boolean;
+                        reply?: boolean;
+                        resolution?: boolean;
+                        round?: boolean;
+                        /** @description The daily digest, counting the kinds left on */
+                        digest?: boolean;
+                    };
                 };
             };
         };
@@ -83846,7 +83873,15 @@ export interface operations {
                      *       "mention": "at_once",
                      *       "reply": "at_once",
                      *       "resolution": "at_once",
-                     *       "round": "at_once"
+                     *       "round": "at_once",
+                     *       "email": {
+                     *         "mention": false,
+                     *         "reply": false,
+                     *         "resolution": false,
+                     *         "round": false,
+                     *         "digest": false
+                     *       },
+                     *       "emailSent": false
                      *     }
                      */
                     "application/json": {
@@ -83870,6 +83905,17 @@ export interface operations {
                          * @enum {string}
                          */
                         round: "at_once" | "daily" | "never";
+                        /** @description Whether each kind is mailed as it is told, the daily digest its own: mailed unless chosen (COL-064) */
+                        email: {
+                            mention: boolean;
+                            reply: boolean;
+                            resolution: boolean;
+                            round: boolean;
+                            /** @description The daily digest, counting the kinds left on */
+                            digest: boolean;
+                        };
+                        /** @description Whether this environment mails at all; it is its administrators’ choice */
+                        emailSent: boolean;
                     };
                 };
             };
@@ -85165,7 +85211,8 @@ export interface operations {
                      *         "fromName": "example",
                      *         "hasPassword": false,
                      *         "failingSince": "example",
-                     *         "lastSuccessAt": "example"
+                     *         "lastSuccessAt": "example",
+                     *         "kindsOff": []
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -85197,6 +85244,8 @@ export interface operations {
                             failingSince: string | null;
                             /** @description When its relay last took a mail */
                             lastSuccessAt: string | null;
+                            /** @description The kinds of notification this environment never mails, whatever a person chooses */
+                            kindsOff: ("mention" | "reply" | "resolution" | "round" | "digest")[];
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */
@@ -85308,6 +85357,8 @@ export interface operations {
                     fromAddress?: string;
                     /** @description The name shown as the sender */
                     fromName?: string | null;
+                    /** @description The kinds never mailed; those held are kept where none are named */
+                    kindsOff?: ("mention" | "reply" | "resolution" | "round" | "digest")[];
                 };
             };
         };
@@ -85332,7 +85383,8 @@ export interface operations {
                      *         "fromName": "example",
                      *         "hasPassword": false,
                      *         "failingSince": "example",
-                     *         "lastSuccessAt": "example"
+                     *         "lastSuccessAt": "example",
+                     *         "kindsOff": []
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -85364,6 +85416,8 @@ export interface operations {
                             failingSince: string | null;
                             /** @description When its relay last took a mail */
                             lastSuccessAt: string | null;
+                            /** @description The kinds of notification this environment never mails, whatever a person chooses */
+                            kindsOff: ("mention" | "reply" | "resolution" | "round" | "digest")[];
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */
@@ -85522,13 +85576,13 @@ export interface operations {
                              * @description Why it is sent
                              * @enum {string}
                              */
-                            purpose: "test";
+                            purpose: "test" | "notification";
                             /**
                              * @description `pending`: to be tried, at `nextAt`; `sent`: the relay took it; `given_up`: refused for good, or tried too long; `dropped`: never sent, for `droppedReason`
                              * @enum {string}
                              */
                             state: "pending" | "sent" | "given_up" | "dropped";
-                            /** @description Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured` */
+                            /** @description Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname` */
                             droppedReason: string | null;
                             attempts: number;
                             createdAt: string;
@@ -85683,7 +85737,8 @@ export interface operations {
                      *         "fromName": "example",
                      *         "hasPassword": false,
                      *         "failingSince": "example",
-                     *         "lastSuccessAt": "example"
+                     *         "lastSuccessAt": "example",
+                     *         "kindsOff": []
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -85715,6 +85770,8 @@ export interface operations {
                             failingSince: string | null;
                             /** @description When its relay last took a mail */
                             lastSuccessAt: string | null;
+                            /** @description The kinds of notification this environment never mails, whatever a person chooses */
+                            kindsOff: ("mention" | "reply" | "resolution" | "round" | "digest")[];
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */

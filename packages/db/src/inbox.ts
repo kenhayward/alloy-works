@@ -47,7 +47,15 @@ export interface DigestCounts {
 /** A notification as its recipient holds it (COL-063): identifiers, never the text (COL-036). */
 export interface StoredNotification {
   readonly id: string;
-  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import';
+  readonly kind:
+    | NotificationKind
+    | 'digest'
+    | 'budget'
+    | 'webhook'
+    | 'reference'
+    | 'import'
+    /** The environment's mail failing, told to those who configure services (EM-N). */
+    | 'mail';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
@@ -202,6 +210,39 @@ export async function tell(
 }
 
 /**
+ * Whether a person may still be told of a notification, decided now (the EM plan, EM-G), as their inbox
+ * would show it: from outside, nothing of a thread made internal since (COL-038); spend only while
+ * they may be told of it (G6-D); and only of what they may read now, a digest while any of what it
+ * counts is. Whether they may be mailed at all is the mail queue's.
+ */
+export async function mayStillBeTold(
+  trx: TenantTransaction,
+  notification: {
+    readonly recipient: string;
+    readonly kind: string;
+    readonly thread_id: string | null;
+    readonly artifact_id: string | null;
+    readonly counts: unknown;
+  },
+): Promise<boolean> {
+  const { recipient } = notification;
+  if (
+    notification.thread_id !== null &&
+    (await outsideOf(trx, notification.thread_id, [recipient])).has(recipient)
+  ) {
+    return false;
+  }
+  if (notification.kind === 'budget' && !(await mayBeToldOfSpend(trx, recipient))) return false;
+  const artifacts =
+    notification.kind === 'digest'
+      ? ((notification.counts as DigestCounts | null)?.artifacts ?? [])
+      : notification.artifact_id === null
+        ? []
+        : [notification.artifact_id];
+  return artifacts.length === 0 || (await readableOf(trx, recipient, artifacts)).size > 0;
+}
+
+/**
  * A page of a person's inbox, newest first (COL-063), after where the last ended, and how many are
  * unread. Their own alone: nobody reads another's.
  */
@@ -273,6 +314,7 @@ export async function listInbox(
       artifact: row.artifact_id,
       counts:
         row.kind === 'budget' ||
+        row.kind === 'mail' ||
         row.kind === 'webhook' ||
         row.kind === 'reference' ||
         row.kind === 'import'

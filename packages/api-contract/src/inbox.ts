@@ -37,6 +37,7 @@ export const NotificationView = z.object({
     'webhook',
     'reference',
     'import',
+    'mail',
   ]),
   actor: z
     .object({
@@ -119,10 +120,26 @@ export const InboxPreferences = z.strictObject({
   reply: Cadence.describe('A reply on a thread you have commented on; at once unless chosen'),
   resolution: Cadence.describe('A thread you have commented on resolved; daily unless chosen'),
   round: Cadence.describe('Named a reviewer on a round; at once unless chosen'),
+  email: z
+    .strictObject({
+      mention: z.boolean(),
+      reply: z.boolean(),
+      resolution: z.boolean(),
+      round: z.boolean(),
+      digest: z.boolean().describe('The daily digest, counting the kinds left on'),
+    })
+    .describe(
+      'Whether each kind is mailed as it is told, the daily digest its own: mailed unless chosen (COL-064)',
+    ),
+  emailSent: z
+    .boolean()
+    .describe('Whether this environment mails at all; it is its administrators’ choice'),
 });
 export type InboxPreferences = z.infer<typeof InboxPreferences>;
 
-export const InboxPreferencesBody = InboxPreferences.partial();
+export const InboxPreferencesBody = InboxPreferences.omit({ emailSent: true, email: true })
+  .extend({ email: InboxPreferences.shape.email.partial() })
+  .partial();
 export type InboxPreferencesBody = z.infer<typeof InboxPreferencesBody>;
 
 /** One thing waiting on the caller that they may resolve (home.md, Needs your attention). */

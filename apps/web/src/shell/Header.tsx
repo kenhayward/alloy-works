@@ -28,6 +28,8 @@ interface Person {
   readonly email: string | null;
 }
 
+/** Where a notification's mail links: the inbox, opened over home. */
+const INBOX = '#/inbox';
 /** One or two letters for the account chip: the first and last words of a name, else the address. */
 export function initialsOf({ displayName, email }: Person): string {
   const words = (displayName ?? '').trim().split(/\s+/).filter(Boolean);
@@ -242,6 +244,12 @@ export function Header({
   const [managingTokens, setManagingTokens] = useState(false);
   const [seeingSessions, setSeeingSessions] = useState(false);
   const [readingInbox, setReadingInbox] = useState(false);
+  // The inbox's own address, which a notification's mail links to (the EM plan, EM-Q): opened once
+  // signed in, and left for home on closing.
+  const signedIn = who !== undefined && who !== 'nobody';
+  useEffect(() => {
+    if (signedIn && here === INBOX) setReadingInbox(true);
+  }, [signedIn, here]);
   // How many of the person's notifications are unread: read when the shell opens and when the inbox
   // closes, never live (the TH plan, TH-L).
   const [unread, setUnread] = useState(0);
@@ -467,6 +475,7 @@ export function Header({
           client={client}
           onClose={() => {
             setReadingInbox(false);
+            if (window.location.hash === INBOX) window.location.hash = '#/';
             countUnread();
           }}
         />

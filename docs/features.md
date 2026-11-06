@@ -1729,8 +1729,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   code alone. A relay that fails is tried again from 30 seconds, doubling to an hour, and the page
   says since when it has failed. Every change is recorded in the audit log, naming no host, address
   or password, and a restored environment's mail arrives off. Through the API it is
-  `/v1/mail-channel`, needing configure services, and its password rotate secrets. Nothing but a
-  test is sent yet: notifications, invitations and closure notices by email come next.
+  `/v1/mail-channel`, needing configure services, and its password rotate secrets.
+- **Notifications by email.** Where an environment's mail is on, a mention, a reply, a thread
+  resolved, being named a reviewer and the daily digest are each sent by email too, five minutes
+  after the notification, unless it was read by then. A mail says only what kind of thing happened,
+  a digest only how many, with a link that opens your inbox: never a title, a comment, who did it or
+  where. Each person chooses which kinds they are sent, in the inbox beside how often each is told,
+  and Administration's **Email** chooses which kinds the environment sends at all. Whether to send is
+  decided again as it is sent: nothing goes to somebody disabled, unverified or no longer allowed to
+  read what it is about. Those who configure services are told in their inbox, once, when the
+  environment's email starts failing. Invitations and closure notices by email come next.
 - **Extensions.** An administrator installs an extension, a source type someone else
   hosts, by its manifest's HTTPS URL at `/v1/extensions`: the connector fetches the manifest, and its
   preview shows what it is, the settings and secret a connection to it takes, what it can do and the

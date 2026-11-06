@@ -127,6 +127,8 @@ describe('the mail queue (the EM plan, EM-G, EM-L, EM-M and EM-N)', () => {
           fromAddress: 'news@example.test',
         },
         fromName: 'Acme news',
+        notification: null,
+        language: null,
         lease: expect.any(String) as string,
       },
     ]);

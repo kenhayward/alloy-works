@@ -13,6 +13,14 @@ import { formats, words, wordsWith } from '../words/words.js';
 type Client = ReturnType<typeof createApiClient>;
 type Kind = 'mention' | 'reply' | 'resolution' | 'round';
 type Cadence = 'at_once' | 'daily' | 'never';
+type Mailed = Kind | 'digest';
+
+/** How a person is told: each kind's cadence, whether each is mailed, and whether mail is sent here. */
+interface Preferences {
+  readonly cadences: Record<Kind, Cadence>;
+  readonly email: Record<Mailed, boolean>;
+  readonly emailSent: boolean;
+}
 type Part = { readonly text: string } | { readonly mention: string };
 
 interface Place {
@@ -24,7 +32,7 @@ interface Place {
 
 interface Notification {
   readonly id: string;
-  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import';
+  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import' | 'mail';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round a person was named a reviewer on (RR-H). */
@@ -93,6 +101,42 @@ const KINDS: readonly { readonly kind: Kind; readonly name: string }[] = [
     },
   },
 ];
+/** The kinds a person may be mailed of, the daily digest its own (EM-W). */
+const MAILED: readonly { readonly kind: Mailed; readonly name: string }[] = [
+  ...KINDS,
+  {
+    kind: 'digest',
+    get name() {
+      return words('account.the-daily-digest');
+    },
+  },
+];
+
+/** The service's answer, as the screen holds it. */
+const preferencesOf = (answer: {
+  readonly mention: Cadence;
+  readonly reply: Cadence;
+  readonly resolution: Cadence;
+  readonly round: Cadence;
+  readonly email?: Record<Mailed, boolean>;
+  readonly emailSent?: boolean;
+}): Preferences => ({
+  cadences: {
+    mention: answer.mention,
+    reply: answer.reply,
+    resolution: answer.resolution,
+    round: answer.round,
+  },
+  email: answer.email ?? {
+    mention: true,
+    reply: true,
+    resolution: true,
+    round: true,
+    digest: true,
+  },
+  emailSent: answer.emailSent ?? false,
+});
+
 const CADENCES: Readonly<Record<Cadence, string>> = {
   get at_once() {
     return words('account.at-once');
@@ -176,6 +220,8 @@ function said(each: Notification): string {
       });
     case 'import':
       return words('account.an-import-you-have-not');
+    case 'mail':
+      return words('account.email-is-failing');
   }
 }
 
@@ -194,7 +240,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
   const [unread, setUnread] = useState(0);
   const [next, setNext] = useState<string | null>(null);
   const [opened, setOpened] = useState<{ id: string; thread: Thread | 'gone' } | null>(null);
-  const [cadences, setCadences] = useState<Record<Kind, Cadence> | null>(null);
+  const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [status, setStatus] = useState('');
   // Who a comment names, by name: read once, when a thread is first opened.
   const [names, setNames] = useState<ReadonlyMap<string, string> | null>(null);
@@ -215,7 +261,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
     void load();
     void client
       .GET('/v1/inbox/preferences')
-      .then(({ data }) => data && setCadences(data))
+      .then(({ data }) => data && setPreferences(preferencesOf(data)))
       .catch(() => undefined);
   }, [client, load]);
 
@@ -282,9 +328,15 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
   };
 
   const save = async () => {
-    if (cadences === null) return;
-    const { data, error } = await client.PUT('/v1/inbox/preferences', { body: cadences });
-    if (data) setCadences(data);
+    if (preferences === null) return;
+    const { data, error } = await client.PUT('/v1/inbox/preferences', {
+      // The person's own choices alone: whether the environment mails is its administrators'.
+      body: {
+        ...preferences.cadences,
+        ...(preferences.emailSent ? { email: preferences.email } : {}),
+      },
+    });
+    if (data) setPreferences(preferencesOf(data));
     setStatus(
       data
         ? words('account.saved-how-often-you-are')
@@ -356,6 +408,11 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                       {words('account.open-the-import')}
                     </a>
                   )}
+                  {each.kind === 'mail' && (
+                    <a href="#/admin/email" onClick={() => void markRead(each)}>
+                      {words('account.open-email')}
+                    </a>
+                  )}
                   {each.kind === 'webhook' && (
                     <a href="#/admin/webhooks" onClick={() => void markRead(each)}>
                       {words('account.open-webhooks')}
@@ -418,7 +475,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
             {words('account.show-more')}
           </button>
         )}
-        {cadences !== null && (
+        {preferences !== null && (
           <fieldset className={styles['preferences']}>
             <legend>{words('account.how-often-you-are-told')}</legend>
             {KINDS.map(({ kind, name }) => (
@@ -426,9 +483,12 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                 <label htmlFor={`${ids}-${kind}`}>{name}</label>
                 <select
                   id={`${ids}-${kind}`}
-                  value={cadences[kind]}
+                  value={preferences.cadences[kind]}
                   onChange={(event) =>
-                    setCadences({ ...cadences, [kind]: event.target.value as Cadence })
+                    setPreferences({
+                      ...preferences,
+                      cadences: { ...preferences.cadences, [kind]: event.target.value as Cadence },
+                    })
                   }
                 >
                   {(Object.keys(CADENCES) as Cadence[]).map((cadence) => (
@@ -440,6 +500,28 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
               </span>
             ))}
             <p className={styles['muted']}>{words('account.a-daily-digest-is-made')}</p>
+            {/* Offered only where the environment mails at all (the EM plan, EM-D). */}
+            {preferences.emailSent && (
+              <fieldset className={styles['mailed']}>
+                <legend>{words('account.sent-to-you-by-email')}</legend>
+                {MAILED.map(({ kind, name }) => (
+                  <label key={kind} className={styles['mailedKind']}>
+                    <input
+                      type="checkbox"
+                      checked={preferences.email[kind]}
+                      onChange={(event) =>
+                        setPreferences({
+                          ...preferences,
+                          email: { ...preferences.email, [kind]: event.target.checked },
+                        })
+                      }
+                    />
+                    {name}
+                  </label>
+                ))}
+                <p className={styles['muted']}>{words('account.email-says-only-what-kind')}</p>
+              </fieldset>
+            )}
             <button type="button" onClick={() => void save()}>
               {words('account.save')}
             </button>

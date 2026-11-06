@@ -205,4 +205,16 @@ describe('a tenant on the operator’s relay (the EM plan, EM-B, EM-K)', () => {
     });
     expect(claiming.statusCode).toBe(400);
   });
+
+  it('COL-060 keeps the kinds this environment never mails, those it held where none are named', async () => {
+    const set = await h.call('ada', 'PUT', CHANNEL, { ...OWN, kindsOff: ['digest', 'reply'] });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toMatchObject({ channel: { kindsOff: ['reply', 'digest'] } });
+    const kept = await h.call('ada', 'PUT', CHANNEL, OWN);
+    expect(kept.json()).toMatchObject({ channel: { kindsOff: ['reply', 'digest'] } });
+    expect((await h.call('ada', 'PUT', CHANNEL, { ...OWN, kindsOff: ['budget'] })).statusCode).toBe(
+      400,
+    );
+    await h.call('ada', 'PUT', CHANNEL, { ...OWN, kindsOff: [] });
+  });
 });

@@ -227,6 +227,9 @@ services:
       SECRET_CONNECTOR_DELIVER_KEY: ${SECRET_CONNECTOR_DELIVER_KEY:?}
       SECRET_CONNECTOR_REFERENCE_KEY: ${SECRET_CONNECTOR_REFERENCE_KEY:?}
       SECRET_CONNECTOR_MAIL_KEY: ${SECRET_CONNECTOR_MAIL_KEY:?}
+      # Reached through the proxy by https at its default port.
+      MAIL_LINK_SCHEME: !reset null
+      MAIL_LINK_PORT: !reset null
       SECRET_DELIVERED_URL: postgres://postgres:${DELIVERED_PASSWORD:?}@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
