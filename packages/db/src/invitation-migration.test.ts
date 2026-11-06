@@ -63,7 +63,6 @@ describe('migration 0014, over invitations made before it', () => {
       '0189_scim',
       '0208_mail_invitations_and_closures',
       '0213_session_provider_check',
-      '0214_usage_day',
     ]);
 
     const { rows } = await queryAs(
