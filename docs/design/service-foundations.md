@@ -475,6 +475,12 @@ contract routes and separately pins the documentation routes and their methods, 
 an open-ended exception for anything outside `/v1`. `/docs`, `/docs/v1/` and `/openapi/v1.json` are
 claimed before the renderer's fallback, so none can accidentally answer the application's `index.html`.
 
+The renderer itself is served under a Content Security Policy (`rendererPolicy` in `renderer.ts`): its
+own scripts alone, inline styles (ProseMirror and React set them on elements), the object store's
+public origin only where its signed links go (images, frames, uploads, media), `blob:` where the
+renderer makes a file itself, and no framing. The browser suite's console gate fails a test on any
+violation, so every walk checks it.
+
 ### One source, made complete
 
 `RouteContract` gains documentation metadata that `buildOpenApi` publishes with the schemas it already

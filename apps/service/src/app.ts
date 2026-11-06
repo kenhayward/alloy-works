@@ -176,7 +176,7 @@ import {
 } from './sessions.js';
 import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.js';
 import { signState, verifyState } from './sign-in-state.js';
-import { rendererFallback, rendererRoutes, serveRenderer } from './renderer.js';
+import { rendererFallback, rendererPolicy, rendererRoutes, serveRenderer } from './renderer.js';
 import { streamToViewer } from './stream.js';
 import {
   answersInAnyState,
@@ -252,6 +252,8 @@ export interface AppOptions extends HttpOptions {
   readonly stateCheckMs?: number;
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
+  /** The object store's public origin, which the renderer's policy lets its signed links come from. */
+  readonly storeOrigin?: string;
   readonly tenantCacheMs?: number;
   /**
    * Where the connector answers and the key it is asked with (the D1 plan, D1-F); without it every
@@ -464,7 +466,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     });
     if (refusal) throw refusal;
   });
-  if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
+  if (options.rendererRoot) {
+    serveRenderer(app, options.rendererRoot, rendererPolicy(options.storeOrigin));
+  }
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });
