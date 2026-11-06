@@ -155,6 +155,19 @@ describe('the internet stack', () => {
     expect(caddy).toMatch(/respond @elsewhere 404/);
   });
 
+  it('reaches the store inside but where a signed link is made, which carries the public address', () => {
+    // The service alone signs links; the worker and the restorer only read and write, and through
+    // the proxy each of their calls took 13 times as long.
+    expect(services.get('service')).toMatch(
+      /OBJECT_STORE_ENDPOINT: https:\/\/\$\{ALLOY_STORE_HOST:\?\}/,
+    );
+    for (const name of ['worker', 'restorer', 'setup']) {
+      expect(services.get(name), name).toMatch(
+        /OBJECT_STORE_ENDPOINT: http:\/\/seaweedfs:\$\{STORE_PORT:-8333\}/,
+      );
+    }
+  });
+
   it('has the store answer on the network the door reaches it by, and with S3 alone', () => {
     expect(services.get('seaweedfs')).toMatch(/'-s3\.ip\.bind=0\.0\.0\.0'/);
     expect(services.get('seaweedfs')).toMatch(/edge: \{\}/);

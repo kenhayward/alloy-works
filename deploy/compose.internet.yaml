@@ -241,7 +241,8 @@ services:
   worker:
     environment:
       DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
-      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      # Inside: it signs no link, so it need not go out through the proxy and back.
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
       SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
       SECRET_CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
@@ -263,7 +264,8 @@ services:
     environment:
       DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
       RESTORER_DATABASE_URL: postgres://aw_restorer:${DATABASE_PASSWORD_RESTORER:?}@postgres:5432/alloy
-      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      # Inside: it signs no link, so it need not go out through the proxy and back.
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
       SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
     cap_drop: [ALL]
