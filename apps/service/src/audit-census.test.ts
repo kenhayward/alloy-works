@@ -215,6 +215,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   recordDocumentFallback: writes('content.version_cut', 'workflow.transitioned'),
   moveToSpace: writes('artifact.moved', 'access.revoked'),
   previewMoveToSpace: read,
+  copyArtifact: writes('artifact.copied', 'content.version_cut'),
+  copyArtifactPreview: read,
   setDocumentLanguage: writes(
     'content.version_cut',
     'reference.repointed',

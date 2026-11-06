@@ -71,6 +71,7 @@ describe('the audit kinds', () => {
       'artifact.archived',
       'artifact.unarchived',
       'artifact.moved',
+      'artifact.copied',
       'artifact.deleted',
       'artifact.undeleted',
       'retention.changed',
@@ -224,6 +225,7 @@ describe('the audit kinds', () => {
       'settings.changed': { settings: ['maxRows', 'editing.lockMinutes'] },
       'content.version_cut': { kind: 'component', parent: null },
       'content.restored': { kind: 'component', from: ID },
+      'artifact.copied': { from: ID },
       'reference.repointed': {
         node: 'n-1',
         component: ID,

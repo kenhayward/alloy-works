@@ -25,7 +25,7 @@ describe('migration 0014, over invitations made before it', () => {
         !source.endsWith('0187_identity_providers.sql') &&
         !source.endsWith('0188_sign_in_settings.sql') &&
         !source.endsWith('0189_scim.sql') &&
-        !source.endsWith('0207_mail_invitations_and_closures.sql'),
+        !source.endsWith('0208_mail_invitations_and_closures.sql'),
     });
   });
 
@@ -60,7 +60,7 @@ describe('migration 0014, over invitations made before it', () => {
       '0187_identity_providers',
       '0188_sign_in_settings',
       '0189_scim',
-      '0207_mail_invitations_and_closures',
+      '0208_mail_invitations_and_closures',
     ]);
 
     const { rows } = await queryAs(

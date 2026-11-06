@@ -4438,7 +4438,7 @@ tenant's `mail_channel` (one row, off until turned on) names the operator's rela
 connector to host, port and username. `email_delivery` is the queue, holding whom and why but no address or words:
 `notification_id`, `invitation_id` or a closure's `notice`, each cascading. Triggers queue it: on `notification`
 (`0206`), and on `audit_event` for `invitation.sent`, `tenant.administrator_named`, `tenant.closing` and
-`tenant.closure_cancelled` (`0207`); restores disable both. `claimMail` (`packages/db/src/mail.ts`) decides each again
+`tenant.closure_cancelled` (`0208`); restores disable both. `claimMail` (`packages/db/src/mail.ts`) decides each again
 at sending, and picks the relay by purpose: a notice of closing always the operator's, an invitation the operator's
 while mail is off. `apps/worker/src/mail.ts` sends through the connector's `POST /v1/mail` (`apps/connector`, nodemailer
 over verified TLS), live tenants for every purpose and closing ones for notices alone; `sweepClosures` queues the 7-day

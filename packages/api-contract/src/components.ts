@@ -61,6 +61,9 @@ export const SpaceList = z.object({
         .describe(
           'Whether the caller may move content into this space: create or administer there',
         ),
+      mayDesign: z
+        .boolean()
+        .describe('Whether the caller may design a template in this space; never in one archived'),
     }),
   ),
   next: nextCursor,

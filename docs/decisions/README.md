@@ -82,6 +82,7 @@ exist.
 | [0091](0091-nobody-gives-an-administrative-permission-they-do-not-hold.md)        | Nobody gives an administrative permission they do not hold                      | Accepted           |
 | [0093](0093-the-toolbar-stands-under-the-menus.md)                                | The formatting toolbar stands under the menus                                   | Accepted           |
 | [0094](0094-an-installation-sits-behind-a-proxy-it-does-not-run.md)               | An installation sits behind a proxy it does not run                             | Accepted           |
+| [0095](0095-a-row-offers-its-pages-acts-and-a-copy-keeps-its-identities.md)       | A row offers its page's acts, and a copy keeps its identities                   | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
 | [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                       | Accepted           |
 | [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can           | Accepted           |

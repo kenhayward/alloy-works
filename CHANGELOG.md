@@ -5,7 +5,7 @@ topmost version matches `version.json`. Up to 0.132.3, every pull request had it
 
 ## 0.239.0 - 2026-11-06 (PR #1020)
 
-Email: an environment chooses how its mail leaves, and people are told by email of notifications, of being invited, and of an environment closing. An installation can also run on the internet, and nobody can give an administrative permission they do not hold.
+Email: an environment chooses how its mail leaves, and people are told by email of notifications, of being invited, and of an environment closing. An installation can also run on the internet, every row has its own actions and can be duplicated, and nobody can give an administrative permission they do not hold.
 
 ### Added
 
@@ -17,9 +17,12 @@ Email: an environment chooses how its mail leaves, and people are told by email 
 - **An installation on the internet.** `compose.internet.yaml` runs one environment behind a reverse proxy its owner runs, with its own Keycloak, only port 443 open, and a timer that deploys each new release after dumping the databases.
 - **Backups and alerts for an installation on the internet.** A nightly encrypted backup of every database and the object store, a drill that proves it restores, rotated logs, and a mail when a deploy or a backup fails.
 - **A first way in through any provider.** The operator's `steward provider` gives a new organisation's tenant its first sign-in through Keycloak or any OpenID Connect provider, with the client secret piped in. It works only until somebody who signed in holds access there.
+- **More actions on every row.** Each row of Documents, Components and Templates has a More actions menu offering what the item's own page does: Open, Publish, Copy link, its lifecycle steps, Relationships, Used in, Manage access, Move, Place a hold, Archive and Delete, as each kind has them. What you may not do is shown, unavailable.
+- **Duplicate.** A document, a component or a template can be copied under a new title into a space you choose. A document's copy can reuse its components, copy only its own or copy every one, and says how many first.
 
 ### Changed
 
+- **Documents comes first.** Documents is now listed before Components in the rail, on Home and in commands.
 - **Locks in the contents.** A part being edited shows the same coloured lock in the contents as on the document page, just before its text: one shape and colour for your own lock, another for somebody else's. Hovering says who holds it and when it is expected back, at once. This replaces the words Held by after the text.
 - **Language and direction on the part's toolbar.** The Component button and its strip are gone. Two buttons show the part's language and direction: the language opens a list of the declared languages to search and choose from, and the direction switches between LTR and RTL.
 - **Versions panel tips show at once.** Every icon in the Versions panel says what it does as soon as the pointer reaches it.

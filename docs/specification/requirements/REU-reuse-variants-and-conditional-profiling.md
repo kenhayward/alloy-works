@@ -49,6 +49,9 @@ positioning claim, and it is the one Workiva does not have.
 | **REU-045** | Transitive resolution depth must be bounded by a declared maximum, and a resolution that exceeds it must fail by name rather than expanding until something else breaks                                                                                                                                                                                                                                                                    | Constraint | Specified             |
 | **REU-046** | How much a reference pulls in - how many components, and how much content - must be reportable before it is accepted, so that a reference into a fifty-component subtree is a visible choice rather than a surprise                                                                                                                                                                                                                        | T4         | Specified             |
 | **REU-054** | An author must be able to place the components a section in another document places into their own document in one act, as references under a new section of their own. The found section must not be shared (**STR-004**); the new section must take its fields from the author's own template (**STR-060**) and copy no values; each reference must take a mode REU-050 allows; and REU-046's report must run before the act is accepted | T4         | Specified             |
+| **REU-056** | A document, component or template must be duplicable under a new title into a space the caller may create in; a title already used there must be warned of, not refused                                                                                                                                                                                                                                                                    | T7         | Specified             |
+| **REU-057** | A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit                                                                                                                                                                                         | T7         | Specified             |
+| **REU-058** | A copy must keep the outline's structure and node identities, so cross-references resolve in it (**STR-046**), and its template, parameters, values, language and profile; it must carry no versions, comments, baselines, publications or grants, start in its workflow's first state, and be audited (**LIF-063**)                                                                                                                       | T7         | Specified             |
 
 **REU-042 and REU-043 answer what a reader sees, which only the publish path had covered.** A
 reference to something deleted or unreadable fails a publish by name (REU-005) and, until this
@@ -363,3 +366,16 @@ where REU-052 already asks for them.
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 54, of which 3 superseded and 1 withdrawn | 55, of which 4 superseded and 1 withdrawn |
+
+### Duplicating, 2026-11-06
+
+Not a review. Ken asked for Duplicate on every row, a shallow copy keeping the components and a deep one
+copying them (issue [#1016](https://github.com/kenhayward/alloy-works/issues/1016); [the RM plan](../../plans/2026-11-06-rm-row-menus-and-duplicate.md)).
+
+| What was found                       | Change                                    |
+| ------------------------------------ | ----------------------------------------- |
+| Nothing said content could be copied | **REU-056**, **REU-057**, **REU-058** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 55, of which 4 superseded and 1 withdrawn | 58, of which 4 superseded and 1 withdrawn |

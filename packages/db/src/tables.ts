@@ -249,9 +249,9 @@ export interface EmailDeliveryTable {
   principal_id: string;
   /** The notification it tells of (0206; EM-F). */
   notification_id: string | null;
-  /** The invitation it is (0207; EM-U). */
+  /** The invitation it is (0208; EM-U). */
   invitation_id: string | null;
-  /** Which notice of a closing, and when its grace ended as it was queued (0207; EM-V). */
+  /** Which notice of a closing, and when its grace ended as it was queued (0208; EM-V). */
   notice: 'closing' | 'seven_days' | 'cancelled' | null;
   grace_ends_at: Date | null;
   state: Generated<'pending' | 'sent' | 'given_up' | 'dropped'>;

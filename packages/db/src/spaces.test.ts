@@ -156,6 +156,7 @@ describe('spaces and artifacts', () => {
         language: null,
         mayCreate: true,
         mayMoveInto: true,
+        mayDesign: false,
       },
       {
         id: quality.id,
@@ -164,6 +165,7 @@ describe('spaces and artifacts', () => {
         language: null,
         mayCreate: false,
         mayMoveInto: false,
+        mayDesign: false,
       },
     ]);
     // Through a token that may not create, the same spaces are listed and none may be created in.
@@ -175,6 +177,7 @@ describe('spaces and artifacts', () => {
         language: null,
         mayCreate: false,
         mayMoveInto: false,
+        mayDesign: false,
       },
       {
         id: quality.id,
@@ -183,6 +186,7 @@ describe('spaces and artifacts', () => {
         language: null,
         mayCreate: false,
         mayMoveInto: false,
+        mayDesign: false,
       },
     ]);
 

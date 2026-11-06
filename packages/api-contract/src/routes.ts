@@ -57,6 +57,7 @@ import { baselineRoutes } from './baselines.js';
 import { changesRoutes } from './changes.js';
 import { comparisonRoutes } from './comparison.js';
 import { restoreRoutes } from './restore.js';
+import { copyingRoutes } from './copying.js';
 import { movingRoutes } from './moving.js';
 import { templateMoveRoutes } from './template-moves.js';
 import { presenceRoutes } from './presence.js';
@@ -442,6 +443,7 @@ type Routes = typeof ownRoutes &
   typeof roundRoutes &
   typeof restoreRoutes &
   typeof movingRoutes &
+  typeof copyingRoutes &
   typeof templateMoveRoutes &
   typeof versionRoutes &
   typeof archivalRoutes &
@@ -529,6 +531,7 @@ export const routes: Routes = {
   ...roundRoutes,
   ...restoreRoutes,
   ...movingRoutes,
+  ...copyingRoutes,
   ...templateMoveRoutes,
   ...versionRoutes,
   ...archivalRoutes,
