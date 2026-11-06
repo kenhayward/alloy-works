@@ -1,3 +1,4 @@
+import { placingNothing } from './placing-nothing.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import {
@@ -195,8 +196,9 @@ export interface Harness {
   /** As `place`, the component's content these blocks rather than one paragraph. */
   placeBlocks(component: { id: string; version: string }, ...blocks: unknown[]): Promise<string>;
   /**
-   * A document in a space referencing these components, made by Ada through the routes: blank, or
-   * from a template with these parameters.
+   * A document in a space referencing these components, made by Ada through the routes: from a
+   * template placing nothing, so it holds only these (the ND plan, ND-B), or from a template with
+   * these parameters.
    */
   documentReferencing(
     components: readonly string[],
@@ -351,6 +353,8 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
   if (options.development) {
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
   }
+
+  const plain = await tenantDb.withTenant(tenant, (trx) => placingNothing(trx, general, ids.ada!));
 
   const harness: Harness = {
     db,
@@ -508,6 +512,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
         title: 'The readings report',
         language: 'en-GB',
         direction: 'ltr',
+        template: plain,
         ...from,
       });
       if (asked.statusCode !== 200) throw new Error(`${asked.statusCode} ${asked.body}`);

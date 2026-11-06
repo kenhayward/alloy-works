@@ -25,6 +25,7 @@ import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-i
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { placingNothing } from './test/placing-nothing.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
@@ -68,6 +69,7 @@ describe('what each occurrence contributes, through the service', () => {
   let app: FastifyInstance;
   let tenant: Tenant;
   let general: string;
+  let plain = '';
   let quality: string;
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
@@ -103,11 +105,13 @@ describe('what each occurrence contributes, through the service', () => {
       return { id: made.version.artifactId, version: recorded.version.id };
     });
 
+  // From a template placing nothing, so an outline starts empty (the ND plan, ND-B).
   const create = (title: string) =>
     call('grace', 'POST', `/v1/spaces/${general}/documents`, {
       title,
       language: 'en-GB',
       direction: 'ltr',
+      template: plain,
     }).then((made) => made.json<DocumentBody>());
 
   beforeAll(async () => {
@@ -154,6 +158,7 @@ describe('what each occurrence contributes, through the service', () => {
           .executeTakeFirstOrThrow()
       ).id;
       quality = (await createSpace(trx, 'Quality')).id;
+      plain = await placingNothing(trx, general, ids.grace!);
       const reader = await findRole(trx, 'Reader');
       const author = await findRole(trx, 'Author');
       // Alice reads General; Grace authors in General and in Quality. The seed gives Ada Author on
