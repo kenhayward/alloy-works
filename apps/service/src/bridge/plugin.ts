@@ -75,7 +75,7 @@ function read<T>(schema: Reading<T>, body: unknown): T {
   });
 }
 
-/** The tenant's slug and name, as describe's one instance and connections:test name it. */
+/** The tenant's slug and name, as describe and connections:test name it. */
 async function instanceOf(db: TenantDatabase, tenant: Tenant) {
   const profile = await db.withTenant(tenant, (trx) =>
     trx.selectFrom('profile').select('display_name').executeTakeFirst(),
@@ -230,7 +230,10 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
       const limited = { bodyLimit: BODY_LIMIT };
 
       // The tenant is admitted by its hostname before this, so an unknown address is still refused.
-      scope.get('/describe', limited, async () => describeSink());
+      scope.get('/describe', limited, async (request) => {
+        const { tenant } = admittedOf(request);
+        return describeSink((await instanceOf(db, tenant)).label);
+      });
 
       // `::` is a literal colon: the path is /connections:test.
       scope.post('/connections::test', limited, async (request): Promise<ConnectionTestResult> => {
