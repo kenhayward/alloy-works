@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { blockNodeSchema } from '../content/model/blocks.js';
+import { CURRENT_SCHEMA_VERSION, parseContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
 import { checkPermitted } from '../data/definition.js';
 import { profileSchema } from '../reuse/conditions.js';
@@ -113,6 +114,22 @@ export const templateComponentSchema = z
           .refine((title) => title.trim() !== '', 'Content needs a title'),
         blocks: z.array(blockNodeSchema).min(1),
       })
+      // Its words checked as a component's content is (identifiers, inline rules), so a document
+      // made from it never meets content it cannot store.
+      .refine((content) => {
+        try {
+          parseContentDocument({
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            title: content.title,
+            language: 'en',
+            direction: 'ltr',
+            content: content.blocks,
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Content is not a component content')
       .optional(),
     instantiate: instantiateSchema.optional(),
     required: z.boolean().optional(),

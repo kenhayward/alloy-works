@@ -412,8 +412,9 @@ export async function createFromResolution(
         blocks: each.content.blocks,
         artifactId: id,
       });
-      if (made.answer !== 'created')
-        throw new Error(`A template's content was refused: ${made.answer}`);
+      // Refused, not thrown: a template's content checked at write cannot fail here, but a space or
+      // its default type can go between the template's saving and this.
+      if (made.answer !== 'created') return { answer: 'content.invalid' };
       await recordOrigin(trx, id, origin);
     }
   }

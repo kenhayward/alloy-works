@@ -43,5 +43,11 @@ export async function originView(
     const read = await readTemplate(trx, origin.template.id);
     if (read) template = { id: read.id, name: read.definition.name };
   }
-  return { from, version, template, changedSince: origin.changedSince };
+  // Whether a source moved on says nothing of one the reader may not see.
+  return {
+    from,
+    version,
+    template,
+    changedSince: (from !== null || template !== null) && origin.changedSince,
+  };
 }

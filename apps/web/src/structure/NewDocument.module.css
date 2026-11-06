@@ -269,12 +269,25 @@
   font-size: var(--size-12);
 }
 
+/* The base style indents a label not first in its parent; these stand on their own. */
+.title,
+.narrowChoice,
+.where,
+.language {
+  margin-inline: 0;
+}
+
 .title,
 .narrowChoice {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   margin-block-start: var(--space-8);
+}
+
+.title input,
+.narrowChoice select {
+  width: 100%;
 }
 
 .title input {

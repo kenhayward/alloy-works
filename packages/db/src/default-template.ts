@@ -65,6 +65,10 @@ export async function ensureDefaultTemplate(
     .where('id', '=', space)
     .executeTakeFirst();
   if (!exists) return undefined;
+  // Locked only on a miss: a default already set needs nothing made, and every create in the space
+  // would otherwise queue behind each other's transactions.
+  const set = await defaultTemplateOf(trx, space);
+  if (set !== null) return set;
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:default-template:${space}`}, 0))`.execute(
     trx,
   );

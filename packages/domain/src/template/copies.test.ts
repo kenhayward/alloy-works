@@ -98,6 +98,14 @@ describe('a template places a component by reference or as a copy (the ND plan, 
       definition({ components: [{ key: 'x', content: { title: 'T', blocks: [] }, place }] })
         .success,
     ).toBe(false);
+    // Checked as a component's content is, so creation never meets words it cannot store.
+    expect(
+      definition({
+        components: [
+          { key: 'x', content: { title: 'T', blocks: [paragraph('a'), paragraph('b')] }, place },
+        ],
+      }).success,
+    ).toBe(false);
   });
 
   it('TPL-075 places by reference unless declared, a starting section setting the default for those under it', () => {
