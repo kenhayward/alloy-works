@@ -84,7 +84,9 @@ describe('invitations and closure notices from the mail loop (the EM plan, EM-T,
   });
 
   it('IAM-089 mails an invitation with a link to the environment’s sign-in and no token', async () => {
-    await as((trx) => invite(trx, { email: 'grace@example.test', external: false, invitedBy: ada }));
+    await as((trx) =>
+      invite(trx, { email: 'grace@example.test', external: false, invitedBy: ada }),
+    );
     expect(await sendMail(worker, mailer, quiet)).toBe(1);
     const [host] = await worker.hostnames(acme.id);
     expect(sent).toHaveLength(1);

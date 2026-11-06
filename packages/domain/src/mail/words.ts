@@ -110,21 +110,22 @@ const INVITED = {
   why: 'You were sent this because somebody invited this address. If you did not expect it, you can ignore it.',
 };
 
-const CLOSING: Readonly<Record<ClosureNotice, { readonly subject: string; readonly said: string }>> =
-  {
-    closing: {
-      subject: 'An environment you use is closing',
-      said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}.',
-    },
-    seven_days: {
-      subject: 'An environment you use closes in 7 days',
-      said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}, 7 days from now.',
-    },
-    cancelled: {
-      subject: 'An environment you use is no longer closing',
-      said: 'An environment you use in Alloy Works is no longer closing. Nothing in it will be deleted.',
-    },
-  };
+const CLOSING: Readonly<
+  Record<ClosureNotice, { readonly subject: string; readonly said: string }>
+> = {
+  closing: {
+    subject: 'An environment you use is closing',
+    said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}.',
+  },
+  seven_days: {
+    subject: 'An environment you use closes in 7 days',
+    said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}, 7 days from now.',
+  },
+  cancelled: {
+    subject: 'An environment you use is no longer closing',
+    said: 'An environment you use in Alloy Works is no longer closing. Nothing in it will be deleted.',
+  },
+};
 const CLOSING_WHY =
   'You were sent this because you can sign in to it. Its administrators can tell you more.';
 

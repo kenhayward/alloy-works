@@ -19020,7 +19020,7 @@
         },
         {
           "id": "IAM-089",
-          "howItIsMet": "A trigger on the invitation queues a mail with a link to sign-in and no token, limited per tenant and per address (EM-S, EM-U)"
+          "howItIsMet": "A trigger on the audit log queues a mail on inviting and renewing, the first administrator among them, to the invited address with a link to sign-in and no token, limited per tenant and per address, none once withdrawn (EM-S, EM-U)"
         },
         {
           "id": "ADM-055",
@@ -25802,7 +25802,7 @@
     {
       "id": "COL-060",
       "file": "apps/web/src/admin/Mail.test.tsx",
-      "line": 162,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -29526,6 +29526,18 @@
       "kind": "title"
     },
     {
+      "id": "ADM-055",
+      "file": "apps/worker/src/mail-invitations.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-089",
+      "file": "apps/worker/src/mail-invitations.test.ts",
+      "line": 86,
+      "kind": "title"
+    },
+    {
       "id": "COL-036",
       "file": "apps/worker/src/mail-notifications.test.ts",
       "line": 156,
@@ -31653,6 +31665,18 @@
       "id": "IAM-045",
       "file": "packages/db/src/live.test.ts",
       "line": 120,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-055",
+      "file": "packages/db/src/mail-invitations.test.ts",
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-089",
+      "file": "packages/db/src/mail-invitations.test.ts",
+      "line": 105,
       "kind": "title"
     },
     {
@@ -34454,7 +34478,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1224,
+      "line": 1227,
       "kind": "title"
     },
     {
@@ -34611,6 +34635,18 @@
       "id": "LIB-055",
       "file": "packages/domain/src/library/vocabulary.test.ts",
       "line": 144,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-055",
+      "file": "packages/domain/src/mail/words.test.ts",
+      "line": 64,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-089",
+      "file": "packages/domain/src/mail/words.test.ts",
+      "line": 56,
       "kind": "title"
     },
     {
@@ -37233,6 +37269,18 @@
       "id": "DAT-054",
       "file": "tests/e2e/src/extensions.test.ts",
       "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "COL-064",
+      "file": "tests/e2e/src/mail.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-089",
+      "file": "tests/e2e/src/mail.test.ts",
+      "line": 151,
       "kind": "title"
     },
     {

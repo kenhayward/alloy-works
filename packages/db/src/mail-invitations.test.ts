@@ -68,9 +68,7 @@ describe('invitations and closure notices by email (the EM plan, EM-S, EM-U and 
            from email_delivery order by created_at, id`.execute(trx),
     ).then(({ rows }) => rows);
   const claim = (purposes?: readonly ('closure' | 'invitation')[]) =>
-    as((trx) =>
-      claimMail(trx, 200, LEASE_MS, purposes === undefined ? undefined : { purposes }),
-    );
+    as((trx) => claimMail(trx, 200, LEASE_MS, purposes === undefined ? undefined : { purposes }));
   const inviting = (email: string) =>
     byAda(async (trx) => {
       const answer = await invite(trx, { email, external: false, invitedBy: ada });

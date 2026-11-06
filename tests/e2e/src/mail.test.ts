@@ -12,6 +12,7 @@ const TARGETS = e2eTargets(process.env);
 interface Listed {
   readonly ID: string;
   readonly Subject: string;
+  readonly Created: string;
   readonly To: readonly { readonly Address: string }[];
 }
 
@@ -38,18 +39,24 @@ describe('mail over the whole system', () => {
     return answer.body;
   };
 
-  /** The first mail to `to` whose subject is `subject`, waited for, with its text. */
-  const arrived = async (to: string, subject: string): Promise<{ subject: string; text: string }> => {
+  /** The first mail to `to` whose subject is `subject`, sent since `since`, waited for, with its text. */
+  const arrived = async (
+    to: string,
+    subject: string,
+    since: number,
+  ): Promise<{ subject: string; text: string }> => {
     const stop = Date.now() + 90_000;
     for (;;) {
       const listed = (await (
         await fetch(`${TARGETS.mail}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)
       ).json()) as { messages: Listed[] };
-      const found = listed.messages.find((each) => each.Subject === subject);
+      const found = listed.messages.find(
+        (each) => each.Subject === subject && Date.parse(each.Created) >= since,
+      );
       if (found) {
-        const read = (await (
-          await fetch(`${TARGETS.mail}/api/v1/message/${found.ID}`)
-        ).json()) as { Text: string };
+        const read = (await (await fetch(`${TARGETS.mail}/api/v1/message/${found.ID}`)).json()) as {
+          Text: string;
+        };
         return { subject: found.Subject, text: read.Text.replace(/\r\n/g, '\n') };
       }
       if (Date.now() > stop) throw new Error(`no mail “${subject}” arrived for ${to}`);
@@ -117,9 +124,13 @@ describe('mail over the whole system', () => {
   });
 
   it('COL-064 tells a person mentioned by email, with a link to their inbox and none of the comment', async () => {
+    const since = Date.now() - 1000;
     const grace = await signIn('grace');
     const graceId = ok(await call(grace, 'GET', '/v1/me'))['id'] as string;
-    const spaces = ok(await call(ada, 'GET', '/v1/spaces'))['items'] as { id: string; name: string }[];
+    const spaces = ok(await call(ada, 'GET', '/v1/spaces'))['items'] as {
+      id: string;
+      name: string;
+    }[];
     const general = spaces.find((space) => space.name === 'General')!.id;
     const title = `Install the printer ${Date.now()}`;
     const made = ok(
@@ -137,16 +148,21 @@ describe('mail over the whole system', () => {
       }),
     );
     dueNow();
-    const mail = await arrived('grace@example.com', 'Somebody mentioned you in a comment');
+    const mail = await arrived('grace@example.com', 'Somebody mentioned you in a comment', since);
     expect(mail.text).toMatch(/\nhttps?:\/\/[^/\s]+\/#\/inbox\n/);
     expect(`${mail.subject}\n${mail.text}`).not.toMatch(/printer|tray|jams|Ada|General/i);
-  });
+  }, 120_000);
 
   it('IAM-089 mails an invitation with a link that signs the invitee in', async () => {
+    const since = Date.now() - 1000;
     const invited = await call(ada, 'POST', '/v1/invitations', { email: 'ivy@example.com' });
-    // A retry finds the invitation made: renewing it mails nothing more the same day (EM-S).
+    // A retry finds Ivy signed in already, and the mail its first try was sent.
     expect([200, 409], JSON.stringify(invited.body)).toContain(invited.status);
-    const mail = await arrived('ivy@example.com', 'You have been invited to Alloy Works');
+    const mail = await arrived(
+      'ivy@example.com',
+      'You have been invited to Alloy Works',
+      invited.status === 200 ? since : 0,
+    );
     const link = /\n(https?:\/\/[^\s]+\/)\n/.exec(mail.text)?.[1];
     expect(link).toBeDefined();
     expect(link).not.toMatch(/[?#=]/);
@@ -159,5 +175,5 @@ describe('mail over the whole system', () => {
       acceptedAt: string | null;
     }[];
     expect(invitations.find((each) => each.email === 'ivy@example.com')?.acceptedAt).not.toBeNull();
-  });
+  }, 120_000);
 });

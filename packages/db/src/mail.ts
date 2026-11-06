@@ -445,8 +445,7 @@ export async function claimMail(
       relay: relayOf(row.purpose),
       fromName: channel?.from_name ?? null,
       notification: told,
-      closure:
-        row.notice === null ? null : { notice: row.notice, graceEndsAt: row.grace_ends_at },
+      closure: row.notice === null ? null : { notice: row.notice, graceEndsAt: row.grace_ends_at },
       language: row.language,
       lease: row.lease,
     })),

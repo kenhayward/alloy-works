@@ -90,9 +90,7 @@ async function sendInTenant(
   );
   if (dropped > 0) log.info({ tenant: tenant.id, dropped }, 'dropped mail nobody may be sent');
   // Hostnames have no primary: the first in their order, read outside the tenant's transaction (EM-Q).
-  const host = claimed.some(linked)
-    ? (await db.hostnames(tenant.id))[0]
-    : undefined;
+  const host = claimed.some(linked) ? (await db.hostnames(tenant.id))[0] : undefined;
   const origin =
     host === undefined
       ? undefined
