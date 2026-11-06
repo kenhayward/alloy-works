@@ -4500,6 +4500,10 @@ An installation on the internet serves its encrypted backups read-only over rsyn
 backup machine to pull nightly, and each deploy installs the backup, restore and alert scripts and services of the
 release it deploys (`deploy/internet/deploy.sh`).
 
+## Writes from another site
+
+A write carrying the session cookie is refused `403 cross_site_refused` before any route unless the browser says it came from the app itself, by `Sec-Fetch-Site: same-origin` or an `Origin` equal to the request's own (`apps/service/src/cross-site.ts`; [service-foundations.md](design/service-foundations.md)).
+
 ## Icons
 
 The vector masters live in `assets/brand/`; everything else is rendered from them. An icon path is

@@ -18,6 +18,7 @@ Component groups: a set of components reused as one, approved together, and offe
 - **Diagnostics, read.** Whoever administers an environment can read, through the API, how each capability is doing over the last 15 minutes, what background work last did, the last day of jobs, the search index, webhook and mail delivery, each data source's recent runs and the month's model spend against its budget. The page in Administration comes next.
 - **A copy of the backups on another machine.** A backup machine on the network can pull the encrypted backups nightly, reading them and nothing else.
 - **Each deploy brings its own scripts.** An installation on the internet takes its backup, restore and alert scripts and its services from the release it deploys, not from a copy made by hand.
+- **Changes sent from another site are refused.** A page on any other site, a sibling name included, can no longer make a signed-in person change anything in Alloy Works.
 
 ### Changed
 
