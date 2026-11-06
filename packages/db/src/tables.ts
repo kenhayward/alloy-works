@@ -263,6 +263,19 @@ export interface EmailDeliveryTable {
   created_at: Generated<Date>;
 }
 
+/** A capability's requests and work in a span (0209; the DG plan, DG-B): aggregates alone. */
+export interface CapabilityUsageTable {
+  span: 'minute' | 'hour' | 'day';
+  at: Date;
+  capability: string;
+  buckets_version: number;
+  requests: number;
+  client_errors: Generated<number>;
+  server_errors: Generated<number>;
+  refused: Generated<number>;
+  buckets: number[];
+}
+
 /** One attempt at a mail (0205; EM-N): its codes, never the relay's words. */
 export interface EmailAttemptTable {
   id: Generated<string>;
@@ -1486,6 +1499,7 @@ export interface TenantTables {
   service_identity: ServiceIdentityTable;
   mail_channel: MailChannelTable;
   email_delivery: EmailDeliveryTable;
+  capability_usage: CapabilityUsageTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;
