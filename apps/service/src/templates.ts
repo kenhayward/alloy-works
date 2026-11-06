@@ -134,6 +134,9 @@ export function templateHandlers(
             number: `${item.version.revision}.${item.version.version}`,
           },
           changedAt: item.changedAt.toISOString(),
+          ...item.summary,
+          headings: [...item.summary.headings],
+          isDefault: item.isDefault,
         })),
         next: cursorFor(
           'templates',

@@ -63,6 +63,7 @@ import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
 import { markdownReader } from './markdown.js';
+import { originView } from './origins.js';
 import { refused } from './wire-codes.js';
 import { stateOf, workflowView } from './workflows.js';
 import { languageOf } from './listing.js';
@@ -478,6 +479,8 @@ export function componentHandlers(
         unsaved: null,
         sequence: null,
         ...(await metadataView(trx, version)),
+        // Made, not copied.
+        origin: null,
       };
     },
 
@@ -642,6 +645,7 @@ export function componentHandlers(
         unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
         sequence,
         ...(await metadataView(trx, version)),
+        origin: await originView(trx, id, principalId),
       };
     },
   };

@@ -311,6 +311,7 @@ const operationTags = {
     'listSpaces',
     'createSpace',
     'updateSpace',
+    'setDefaultTemplate',
     'listComponentTypes',
     'moveToSpace',
     'previewMoveToSpace',
@@ -1017,7 +1018,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getDocument:
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:
-    'Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.',
+    'Creates a document at version 0.1 in the named space from a template: the one named, else the space’s default, which is Blank until its administrator chooses another. Each component the template copies is made as the new document’s own.',
   previewPlacement:
     "Reports what placing another document's section here would pull in, placing nothing: how many references it makes, one per occurrence of a component in the section and its subsections, each component the caller may read once with its blocks and characters at its latest version and whether it has an approved revision, and how many the caller may not read. Send the source version it names back to place. Needs edit on this document and read on the other.",
   placeSection:
@@ -1062,7 +1063,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the current version of a definition so it can be read or used as a precondition for an update.',
   recordDefinitionVersion:
     'Records the next definition version based on the version the caller opened.',
-  listTemplates: 'Lists readable templates with their name, space and latest version.',
+  listTemplates:
+    'Lists readable templates with their name, space and latest version, and what each holds: its description, its starting sections, values and components, its first headings, and whether it is its space’s default.',
   createTemplate: 'Creates a template in the named space at its first version.',
   getTemplate: 'Opens the current template version and its starting document structure.',
   recordTemplateVersion: 'Records a new template version based on the version the caller opened.',
@@ -1747,6 +1749,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Makes a space. Needs administer on the environment. The name is normalised to NFC and trimmed, and must be unique in the environment, archived spaces included.',
   updateSpace:
     'Renames a space, archives it or restores it. Needs administer on the environment. Nothing new can be made in an archived space, and nothing already in it changes; the last space not archived cannot be archived.',
+  setDefaultTemplate:
+    'Makes one of the space’s own templates its default: what a document made here without naming a template takes. Needs administer on the space. Every space starts with Blank, made the first time it is needed.',
   listComponentTypes:
     'Lists component types usable for a new component in this space, marking the default.',
   openStream:

@@ -1,9 +1,12 @@
 import {
   bootstrapCluster,
   createComponent,
+  createDocument,
   createSpace,
+  createTemplate,
   createTenant,
   DEFAULT_LAYOUT_ID,
+  DEFAULT_THEME_ID,
   defaultLayout,
   findRole,
   grant,
@@ -71,6 +74,7 @@ describe('documents through the service', () => {
   let general: string;
   let quality: string;
   let elsewhereSpace: string;
+  let plain = '';
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
 
@@ -82,8 +86,20 @@ describe('documents through the service', () => {
       ...(payload ? { payload } : {}),
     });
 
-  /** Creates a document titled so, in English, left to right - the preflight's own helper (S18). */
+  /**
+   * Creates a document titled so, in English, left to right - the preflight's own helper (S18) - from
+   * a template placing nothing, so its outline starts empty (the ND plan, ND-B).
+   */
   const create = (as: string, space: string, title: string) =>
+    call(as, 'POST', `/v1/spaces/${space}/documents`, {
+      title,
+      language: 'en-GB',
+      direction: 'ltr',
+      template: plain,
+    });
+
+  /** The same, naming no template: the space's default. */
+  const bare = (as: string, space: string, title: string) =>
     call(as, 'POST', `/v1/spaces/${space}/documents`, {
       title,
       language: 'en-GB',
@@ -178,6 +194,21 @@ describe('documents through the service', () => {
       // The seed gives Ada Author on General and nothing else, so she could not read Quality at all.
       // Administrator at the tenant lets her read it, and carries no `create` - which is the
       // read-but-not-create case the refusals below need.
+      const nothing = await createTemplate(trx, {
+        spaceId: general,
+        author: ids.ada!,
+        definition: {
+          schemaVersion: 1,
+          name: 'Nothing at all',
+          theme: DEFAULT_THEME_ID,
+          layout: DEFAULT_LAYOUT_ID,
+          schemas: [],
+          outline: { sections: [] },
+          changes: { add: true, remove: true, reorder: true },
+        },
+      });
+      if (nothing.answer !== 'created') throw new Error(nothing.answer);
+      plain = nothing.template.id;
       const administrator = await findRole(trx, 'Administrator');
       await grant(trx, {
         roleId: administrator!.id,
@@ -243,6 +274,7 @@ describe('documents through the service', () => {
   });
 
   it('STR-054 gives an outline an implicit root and lets it hold no nodes at all', async () => {
+    // From a template placing nothing: an empty outline is a valid document (the ND plan, ND-B).
     const made = await create('ada', general, 'Front matter only');
     const body = made.json<DocumentBody>();
     expect(body.outline.nodes).toEqual([]);
@@ -259,6 +291,55 @@ describe('documents through the service', () => {
         .json<{ items: { id: string }[] }>()
         .items.map((i) => i.id),
     ).toContain(body.id);
+  });
+
+  it('TPL-074 makes a document named no template from its space default, Blank, made once when first needed', async () => {
+    const made = (await bare('ada', general, 'Without a template')).json<DocumentBody>();
+    const spaces = (await call('ada', 'GET', '/v1/spaces')).json<{
+      items: { id: string; defaultTemplate: string | null }[];
+    }>();
+    const blank = spaces.items.find((each) => each.id === general)!.defaultTemplate;
+    expect(blank).not.toBeNull();
+    const templates = (await call('ada', 'GET', `/v1/templates?spaces=${general}`)).json<{
+      items: Json[];
+    }>();
+    expect(templates.items.filter((each) => each['isDefault'] === true)).toEqual([
+      expect.objectContaining({
+        id: blank,
+        name: 'Blank',
+        isDefault: true,
+        description: null,
+        sections: 0,
+        values: 0,
+        requiredValues: 0,
+        copied: 1,
+        referenced: 0,
+        headings: [],
+      }),
+    ]);
+    // Its one component copied as the document's own, asking for a title and text.
+    const [node] = made.outline.nodes as unknown as { type: string; component: string }[];
+    expect(made.outline.nodes).toHaveLength(1);
+    expect(node!.type).toBe('reference');
+    const copy = (await call('ada', 'GET', `/v1/components/${node!.component}`)).json<{
+      content: { title: string };
+      origin: Json;
+    }>();
+    expect(copy.content.title).toBe('Please supply a title');
+    expect(copy.origin).toEqual({
+      from: null,
+      version: null,
+      template: { id: blank, name: 'Blank' },
+      changedSince: false,
+    });
+    // A second is made from the same Blank, and gets a copy of its own.
+    const again = (await bare('ada', general, 'Again')).json<DocumentBody>();
+    const [second] = again.outline.nodes as unknown as { component: string }[];
+    expect(second!.component).not.toBe(node!.component);
+    const named = (await call('ada', 'GET', `/v1/templates?spaces=${general}`)).json<{
+      items: { name: string }[];
+    }>();
+    expect(named.items.filter((each) => each.name === 'Blank')).toHaveLength(1);
   });
 
   it("answers the document's layout beside its outline, the version a publish would record", async () => {
@@ -857,7 +938,21 @@ describe('documents through the service', () => {
   });
 
   it('answers a stored outline that no longer reads as a failure on our side, saying nothing of it', async () => {
-    const doc = (await create('ada', general, 'Broken')).json<DocumentBody>();
+    // Made by the store with no template, as an import makes one (the ND plan, ND-O).
+    const made = await tenantDb.withTenant(tenant, (trx) =>
+      createDocument(trx, {
+        spaceId: general,
+        title: 'Broken',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ids.ada!,
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const doc = {
+      id: made.version.artifactId,
+      outline: made.version.content as DocumentBody['outline'],
+    };
     // A version the store would never write, put there by hand: a title the schema refuses.
     const broken = await tenantDb.withTenant(tenant, (trx) =>
       trx

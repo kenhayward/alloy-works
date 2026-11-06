@@ -25,6 +25,7 @@ describe('the rule behind a refusal', () => {
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
       ['section.required', 'section_required', 'TPL-013'],
       ['component.required', 'component_required', 'TPL-044'],
+      ['template.unusable', 'template_unusable', 'TPL-074'],
       ['creation.failed', 'creation_failed', 'TPL-024'],
       ['parameter.variable', 'parameter_variable', 'TPL-069'],
       ['profile.incomplete', 'profile_incomplete', 'TPL-051'],

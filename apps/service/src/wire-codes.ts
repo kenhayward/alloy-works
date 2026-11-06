@@ -249,6 +249,8 @@ const WIRE_CODES = {
   'relationship.cardinality': 'relationship_cardinality',
   'relationship.cycle': 'relationship_cycle',
   'prompt.output_mismatch': 'prompt_output_mismatch',
+  // A default template that is not one of its space's templates (the ND plan, ND-A).
+  'template.unusable': 'template_unusable',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -287,6 +289,7 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A publication's door, for a document made from a template (templates.md, TE-H).
   'section.required': 'TPL-013',
   'component.required': 'TPL-044',
+  'template.unusable': 'TPL-074',
   'creation.failed': 'TPL-024',
   'metadata.invalid': 'TPL-055',
   // A definition checked against what uses it before it is written (definitions.md, DE-E).

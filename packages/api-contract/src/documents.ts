@@ -40,7 +40,7 @@ export const CreateDocumentBody = CreateComponentBody.pick({
   direction: true,
 }).extend({
   template: LowercaseUuid.optional().describe(
-    'The template to make it from, at its latest version (templates.md); without one, a blank document',
+    'The template to make it from, at its latest version (templates.md); without one, the space default (TPL-074)',
   ),
   parameters: z
     .record(z.string(), z.unknown())
