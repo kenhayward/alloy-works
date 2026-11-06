@@ -170,7 +170,23 @@ describe('the internet stack', () => {
 
   it('has the store answer on the network the door reaches it by, and with S3 alone', () => {
     expect(services.get('seaweedfs')).toMatch(/'-s3\.ip\.bind=0\.0\.0\.0'/);
-    expect(services.get('seaweedfs')).toMatch(/edge: \{\}/);
+    // Its gRPC port binds wherever S3 does and takes no credential, so the store sits on a network of
+    // its own, and a gate relaying S3 alone answers by its name everywhere else.
+    expect(services.get('seaweedfs')).toMatch(
+      /\n {4}networks: !override\n {6}store:\n {8}aliases: \[store-backend\]\n/,
+    );
+    expect(overlay).toMatch(/\n {2}store:\n {4}internal: true\n/);
+    const gate = services.get('store-gate')!;
+    expect(gate).toMatch(/image: alpine\/socat:[\d.]+@sha256:[0-9a-f]{64}/);
+    expect(gate).toMatch(
+      /'TCP-LISTEN:\$\{STORE_PORT:-8333\},fork,reuseaddr', 'TCP:store-backend:\$\{STORE_PORT:-8333\}'/,
+    );
+    expect(gate).toMatch(/default:\n {8}aliases: \[seaweedfs\]/);
+    expect(gate).toMatch(/edge:\n {8}aliases: \[seaweedfs\]/);
+    expect(gate).toMatch(/cap_drop: \[ALL\]/);
+    expect(gate).toMatch(/read_only: true/);
+    expect(gate).toMatch(/user: '65534:65534'/);
+    expect(outside).toMatch(/seaweedfs:18333/);
     // Its master, volume server and filer take no credential, so no other container reaches them.
     expect(services.get('seaweedfs')).toMatch(/'-ip=127\.0\.0\.1'/);
     expect(services.get('seaweedfs')).toMatch(/'-ip\.bind=127\.0\.0\.1'/);

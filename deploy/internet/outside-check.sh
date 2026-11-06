@@ -144,7 +144,7 @@ if [ -n "${ALLOY_CHECK_SSH:-}" ] && [ -n "${ALLOY_CHECK_LAN:-}" ]; then
 s.setTimeout(12000,()=>{console.log("closed");process.exit()});s.on("connect",()=>{console.log("open");process.exit()});
 s.on("error",()=>{console.log("closed");process.exit()})'
   for service in service worker connector; do
-    for target in $ALLOY_CHECK_LAN seaweedfs:8888 seaweedfs:9333 seaweedfs:8080 github.com:443; do
+    for target in $ALLOY_CHECK_LAN seaweedfs:18333 seaweedfs:8888 seaweedfs:9333 seaweedfs:8080 github.com:443; do
       got=$(remote "sudo docker exec $(container "$service") node -e '$try' $target" 2>/dev/null | tail -1)
       if [ "$target" = github.com:443 ]; then
         [ "$service" = connector ] && want=closed || want=open
