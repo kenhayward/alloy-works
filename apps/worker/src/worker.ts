@@ -1,4 +1,5 @@
-import type { Job, JobQueue, Tenant, TenantDatabase } from '@alloy-works/db';
+import type { Job, JobKind, JobQueue, Measuring, Tenant, TenantDatabase } from '@alloy-works/db';
+import { JOB_CAPABILITIES } from '@alloy-works/domain';
 import { JobRefused } from './refusal.js';
 
 /** What a kind of work knows how to do, and what to do when it has failed for the last time. */
@@ -22,10 +23,15 @@ export interface WorkerDeps {
   readonly workerId: string;
   readonly leaseMs: number;
   readonly log: WorkerLog;
+  /** Each job counted under its kind of work (the DG plan, DG-C); none, nothing counted. */
+  readonly measuring?: Pick<Measuring, 'record'>;
 }
 
+/** Every kind of job is a kind of work, checked here against the queue's list. */
+const CAPABILITY_OF: Readonly<Record<JobKind, string>> = JOB_CAPABILITIES;
+
 /** The kind of failure and nothing more: a message could carry content. */
-function reasonFor(error: unknown): string {
+export function reasonFor(error: unknown): string {
   const code = (error as { code?: unknown }).code;
   if (typeof code === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(code)) return code;
   return 'failed';
@@ -64,8 +70,16 @@ export async function processNext(deps: WorkerDeps): Promise<'idle' | 'done' | '
     return 'failed';
   }
 
+  const started = performance.now();
+  const measured = (status: number) =>
+    deps.measuring?.record(tenant, CAPABILITY_OF[job.kind as JobKind] ?? 'Other work', {
+      status,
+      ms: performance.now() - started,
+      refused: false,
+    });
   try {
     await handler.run(tenant, job);
+    measured(200);
     await deps.queue.complete(job);
     deps.log.info({ job: job.id, kind: job.kind, tenant: tenant.id }, 'job done');
     return 'done';
@@ -73,6 +87,8 @@ export async function processNext(deps: WorkerDeps): Promise<'idle' | 'done' | '
     const reason = reasonFor(error);
     // Refused on its merits: the same input fails the same way, so it is finished now (issue #146).
     const refused = error instanceof JobRefused;
+    // Refused on its input, as a route's 4xx; anything else, as the service failing.
+    measured(refused ? 422 : 500);
     const outcome = await deps.queue.fail(
       refused ? { ...job, attempts: job.maxAttempts } : job,
       reason,

@@ -509,6 +509,7 @@ describe('the domain package', () => {
         'bucketOf',
         'BUCKETS_VERSION',
         'emptyBuckets',
+        'JOB_CAPABILITIES',
         'LATENCY_BOUNDS_MS',
         'MEASUREMENT_TIERS',
         'percentileBound',

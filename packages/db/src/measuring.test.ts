@@ -1,8 +1,9 @@
-import type { CapabilityCount, Tenant } from '@alloy-works/db';
 import { bucketOf, emptyBuckets } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
-import { createMeasuring } from './measure.js';
+import type { CapabilityCount } from './measurements.js';
+import { createMeasuring } from './measuring.js';
+import type { Tenant } from './provision.js';
 
 const ACME = {
   id: 'acme',

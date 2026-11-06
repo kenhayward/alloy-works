@@ -43,6 +43,9 @@ import {
   loadFacts,
   notifyTenant,
   openSecret,
+  createMeasuring,
+  flushEveryMinute,
+  type Measuring,
   recordCapabilityMinute,
   streamScope,
   SealedSecretRefused,
@@ -58,7 +61,6 @@ import {
   ownTenantState,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { createMeasuring, flushEveryMinute, type Measuring } from './measure.js';
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,

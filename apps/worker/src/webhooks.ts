@@ -10,6 +10,7 @@ import {
 import type { AuditContext } from '@alloy-works/domain';
 
 import type { Deliverer } from './deliverer.js';
+import { inEachTenant } from './background.js';
 import type { WorkerLog } from './worker.js';
 
 const SYSTEM: AuditContext = { actorKind: 'system' };
@@ -36,13 +37,9 @@ export async function deliverWebhooks(
   log: WorkerLog,
 ): Promise<number> {
   let attempted = 0;
-  for (const tenant of await db.liveTenants()) {
-    try {
-      attempted += await deliverInTenant(db, tenant, deliverer, log);
-    } catch (error) {
-      log.error({ tenant: tenant.id, err: error }, 'webhook delivery failed in a tenant');
-    }
-  }
+  await inEachTenant(db, log, 'deliverWebhooks', async (tenant) => {
+    attempted += await deliverInTenant(db, tenant, deliverer, log);
+  });
   return attempted;
 }
 

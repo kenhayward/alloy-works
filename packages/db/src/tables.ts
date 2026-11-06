@@ -276,6 +276,18 @@ export interface CapabilityUsageTable {
   buckets: number[];
 }
 
+/** A kind of background work's last run in this tenant (0211; the DG plan, DG-G). */
+export interface BackgroundWorkTable {
+  work: string;
+  started_at: Date;
+  finished_at: Date;
+  outcome: 'succeeded' | 'failed' | 'paused';
+  failure: string | null;
+  failed_at: Date | null;
+  failures: Generated<number>;
+  next_due_at: Date | null;
+}
+
 /** One attempt at a mail (0205; EM-N): its codes, never the relay's words. */
 export interface EmailAttemptTable {
   id: Generated<string>;
@@ -1512,6 +1524,7 @@ export interface TenantTables {
   mail_channel: MailChannelTable;
   email_delivery: EmailDeliveryTable;
   capability_usage: CapabilityUsageTable;
+  background_work: BackgroundWorkTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;

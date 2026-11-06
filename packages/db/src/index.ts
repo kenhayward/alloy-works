@@ -1677,9 +1677,17 @@ export {
 } from './default-template.js';
 export { originOf, type Origin } from './origins.js';
 export {
+  backgroundWork,
+  recordBackgroundWork,
+  type BackgroundOutcome,
+  type BackgroundRun,
+  type BackgroundWork,
+} from './background-work.js';
+export {
   capabilityUsage,
   recordCapabilityMinute,
   rollUpMeasurements,
   type CapabilityCount,
   type CapabilityUsage,
 } from './measurements.js';
+export { createMeasuring, flushEveryMinute, type Measured, type Measuring } from './measuring.js';

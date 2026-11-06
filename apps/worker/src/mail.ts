@@ -18,6 +18,7 @@ import {
 } from '@alloy-works/domain';
 
 import type { Mailer } from './mailer.js';
+import { inEachTenant } from './background.js';
 import type { WorkerLog } from './worker.js';
 
 const SYSTEM: AuditContext = { actorKind: 'system' };
@@ -63,11 +64,16 @@ export async function sendMail(
   await Promise.all(
     Array.from({ length: Math.min(TENANTS_AT_ONCE, waiting.length) }, async () => {
       for (let next = waiting.shift(); next !== undefined; next = waiting.shift()) {
-        try {
-          attempted += await sendInTenant(db, next.tenant, next.closing, mailer, log, links);
-        } catch (error) {
-          log.error({ tenant: next.tenant.id, err: error }, 'mail failed in a tenant');
-        }
+        const { tenant, closing } = next;
+        await inEachTenant(
+          db,
+          log,
+          'sendMail',
+          async () => {
+            attempted += await sendInTenant(db, tenant, closing, mailer, log, links);
+          },
+          [tenant],
+        );
       }
     }),
   );
