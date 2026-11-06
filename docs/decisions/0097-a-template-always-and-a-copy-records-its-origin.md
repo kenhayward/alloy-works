@@ -1,4 +1,4 @@
-# 0096 - A template always, and a copy records its origin
+# 0097 - A template always, and a copy records its origin
 
 - **Status:** Accepted
 - **Date:** 2026-11-06

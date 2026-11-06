@@ -150,6 +150,17 @@ export {
   type WebhookEventType,
   type WebhookSealRequest,
 } from './webhooks/index.js';
+// How a capability's requests and work are measured (docs/design/diagnostics.md).
+export {
+  addBuckets,
+  bucketOf,
+  BUCKETS_VERSION,
+  emptyBuckets,
+  LATENCY_BOUNDS_MS,
+  MEASUREMENT_TIERS,
+  percentileBound,
+  type MeasurementSpan,
+} from './diagnostics/measure.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

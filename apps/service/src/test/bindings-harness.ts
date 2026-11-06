@@ -222,7 +222,7 @@ export interface HarnessOptions {
   /** Anything else the service is built with: a renderer to serve, a shorter cache of tenants. */
   readonly appOptions?: Pick<
     AppOptions,
-    'mailPlatform' | 'rendererRoot' | 'tenantCacheMs' | 'onRoute' | 'stateCheckMs'
+    'mailPlatform' | 'rendererRoot' | 'tenantCacheMs' | 'onRoute' | 'stateCheckMs' | 'measuring'
   >;
 }
 

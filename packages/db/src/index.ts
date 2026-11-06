@@ -1676,3 +1676,10 @@ export {
   type SetDefaultAnswer,
 } from './default-template.js';
 export { originOf, type Origin } from './origins.js';
+export {
+  capabilityUsage,
+  recordCapabilityMinute,
+  rollUpMeasurements,
+  type CapabilityCount,
+  type CapabilityUsage,
+} from './measurements.js';

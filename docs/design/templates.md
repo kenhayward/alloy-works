@@ -178,7 +178,7 @@ makes an empty outline, for imports and reference documents.
 
 ### Defaults and copies
 
-The ND plan ([ADR-0096](../decisions/0096-a-template-always-and-a-copy-records-its-origin.md)):
+The ND plan ([ADR-0097](../decisions/0097-a-template-always-and-a-copy-records-its-origin.md)):
 
 - **A space's default** is `space.default_template`. One archived, deleted or moved away counts as none.
   Where there is none, `ensureDefaultTemplate` makes **Blank** under a lock on the space, as the person
