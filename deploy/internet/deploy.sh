@@ -135,5 +135,26 @@ done
 
 echo "$target" >"$STATE/deployed"
 rm -f "$STATE/failed"
-install -m 755 deploy/internet/deploy.sh "$ROOT/deploy.sh"
+
+# What runs beside the stack follows it: the scripts, the units and, where a backup machine pulls, rsyncd.
+# The timers keep whatever was enabled; the firewall runs again only if a release changed its rules.
+firewall_was=$(cat "$ROOT/firewall.sh" /etc/systemd/system/alloy-firewall.service 2>/dev/null | sha256sum)
+for script in deploy/internet/*.sh; do
+  install -m 755 "$script" "$ROOT/$(basename "$script")"
+done
+install -m 644 deploy/internet/internet.env.example "$ROOT/internet.env.example"
+for unit in deploy/internet/alloy-*; do
+  install -m 644 "$unit" /etc/systemd/system/
+done
+systemctl daemon-reload
+if [ "$(cat "$ROOT/firewall.sh" /etc/systemd/system/alloy-firewall.service | sha256sum)" != "$firewall_was" ]; then
+  systemctl restart alloy-firewall.service
+fi
+pull=$(setting BACKUP_PULL_ADDRESS)
+if [ -n "$pull" ] && [ -f deploy/internet/rsyncd.conf ]; then
+  [[ $pull =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || fail "BACKUP_PULL_ADDRESS '$pull' is not an IPv4 address."
+  sed "s/NAS_ADDRESS/$pull/" deploy/internet/rsyncd.conf >/etc/rsyncd.conf.new
+  chmod 644 /etc/rsyncd.conf.new
+  mv /etc/rsyncd.conf.new /etc/rsyncd.conf
+fi
 echo "== $(date -Is) $target is up"

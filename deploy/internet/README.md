@@ -27,8 +27,8 @@ Three public names reach the same proxy host: the app, Keycloak and the store (s
 
 On the machine, as root, with Docker, git and restic:
 
-1. Copy the five `.sh` files and `internet.env.example` to `/opt/alloy-works`, and the six units to
-   `/etc/systemd/system`.
+1. Copy the `.sh` files and `internet.env.example` to `/opt/alloy-works`, and the units to
+   `/etc/systemd/system`, once: each deploy installs them afresh from the release it deployed.
 2. `/opt/alloy-works/deploy.sh settings` writes `/etc/alloy-works/internet.env` (root, 600) with every
    generated secret. Fill in each `CHANGE_ME`, and keep a copy elsewhere: it is the only copy of the sealing keys
    and of `RESTIC_PASSWORD`, without which no backup can be read.
@@ -59,6 +59,7 @@ verified against the repository. Run it after changing the repository, and now a
 
 **A copy off the machine** is pulled, not pushed, so the machine holds no credential for the backup machine
 and reaches no LAN. `rsyncd.conf` offers the repository read only, to one address and one user who is not root.
+Set `BACKUP_PULL_ADDRESS` to that address, and each deploy writes `/etc/rsyncd.conf` with it.
 With `RESTIC_REPOSITORY=/var/backups/alloy-works/restic`, once:
 
 ```sh
@@ -66,9 +67,9 @@ sudo useradd --system --no-create-home --shell /usr/sbin/nologin nas-pull
 sudo chgrp -R nas-pull /var/backups/alloy-works
 sudo chmod -R g+rX /var/backups/alloy-works
 sudo find /var/backups/alloy-works -type d -exec chmod g+s {} +
-sudo sed 's/NAS_ADDRESS/<backup machine>/' /opt/alloy-works/src/deploy/internet/rsyncd.conf | sudo tee /etc/rsyncd.conf >/dev/null
 sudo sh -c 'read -rs p; echo "nas-pull:$p" > /etc/rsyncd.secrets; chmod 600 /etc/rsyncd.secrets'
 sudo ufw allow from <backup machine> to any port 873 proto tcp comment 'backup pull'
+sudo /opt/alloy-works/deploy.sh <the deployed tag or branch>   # writes /etc/rsyncd.conf
 sudo systemctl enable --now rsync
 ```
 

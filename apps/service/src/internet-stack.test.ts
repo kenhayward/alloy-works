@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -236,6 +236,38 @@ describe('the internet stack', () => {
     expect(alert).toMatch(/-K -/);
     expect(alert).not.toMatch(/--user\s+"?\$/);
     expect(example).toMatch(/^ALERT_EMAIL=CHANGE_ME$/m);
+  });
+
+  it('installs what runs beside the stack, with the stack, once it is up', () => {
+    const after = deploy.slice(deploy.indexOf('>"$STATE/deployed"'));
+    expect(after, 'after the deploy is recorded').toMatch(/deploy\/internet\/\*\.sh/);
+    expect(after).toMatch(/"\$ROOT\/\$\(basename "\$script"\)"/);
+    expect(after).toMatch(/deploy\/internet\/alloy-\*/);
+    expect(after).toMatch(/\/etc\/systemd\/system\//);
+    expect(after).toMatch(/systemctl daemon-reload/);
+    // The firewall's rules change only when a release changes them.
+    expect(after).toMatch(/systemctl restart alloy-firewall\.service/);
+    // rsyncd only where a backup machine pulls, and only to an address.
+    expect(after).toMatch(/BACKUP_PULL_ADDRESS/);
+    expect(after).toMatch(/\[0-9\]/);
+    expect(after).toMatch(/\/etc\/rsyncd\.conf/);
+    expect(example).toMatch(/^BACKUP_PULL_ADDRESS=$/m);
+    // Every file here is installed, or read from the checkout where it is.
+    const fromCheckout = [
+      'Caddyfile',
+      'README.md',
+      'alloy-realm.json',
+      'internet.env.example',
+      'rsyncd.conf',
+    ];
+    for (const file of readdirSync(
+      fileURLToPath(new URL('../../../deploy/internet/', import.meta.url)),
+    )) {
+      expect(
+        fromCheckout.includes(file) || /^alloy-.*\.(service|timer)$|\.sh$/.test(file),
+        file,
+      ).toBe(true);
+    }
   });
 
   it('lets one machine read the backups and nothing else, as a user who is not root', () => {
