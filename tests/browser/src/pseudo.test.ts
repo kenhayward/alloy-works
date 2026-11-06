@@ -559,6 +559,36 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     },
   },
   {
+    name: 'The Place a component group dialog',
+    dialog: 'groups/PlacedGroup.tsx',
+    address: `#/documents/${grace.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      await documentDrawn(page, language).check();
+      await page
+        .getByRole('button', { name: say(language, 'groups.place-a-component-group'), exact: true })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'groups.place-a-component-group') });
+    },
+  },
+  {
+    name: 'The New component group dialog',
+    dialog: 'groups/ComponentGroupList.tsx',
+    address: '#/components',
+    regions: ['[role="dialog"]'],
+    ready: heading('editor.components'),
+    open: async (page, language) => {
+      await page
+        .getByRole('radio', { name: say(language, 'groups.component-groups'), exact: true })
+        .check();
+      await page
+        .getByRole('button', { name: say(language, 'groups.new-component-group'), exact: true })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'groups.new-component-group') });
+    },
+  },
+  {
     name: 'The Remove a part dialog',
     dialog: 'structure/PartPanel.tsx',
     address: `#/documents/${grace.document}`,

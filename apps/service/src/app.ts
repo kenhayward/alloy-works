@@ -113,6 +113,7 @@ import { bridgeSettingsHandlers } from './bridge/settings.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
+import { componentGroupHandlers } from './component-groups.js';
 import { vocabularyHandlers } from './vocabularies.js';
 import { licenceHandlers } from './licences.js';
 import { themeHandlers } from './themes.js';
@@ -946,6 +947,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
+    ...componentGroupHandlers(db, tenantOf, principalOf),
     ...vocabularyHandlers(db, tenantOf, principalOf, vocabularySource),
     ...licenceHandlers(db, tenantOf, principalOf),
     ...themeHandlers(db, tenantOf, principalOf),

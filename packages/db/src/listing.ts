@@ -56,6 +56,10 @@ export const listingSorts = {
     key: { types: ['text'], order: 'asc' },
     changed: { types: ['timestamptz'], order: 'desc' },
   },
+  // Component groups the reader may read, by title, case aside (the CG plan, CG-D).
+  componentGroups: {
+    title: { types: ['text'], order: 'asc' },
+  },
   // A space's terms, by their base preferred label, case aside, or the newest changed (TM-A).
   terms: {
     label: { types: ['text'], order: 'asc' },

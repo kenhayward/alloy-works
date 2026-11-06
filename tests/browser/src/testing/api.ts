@@ -89,6 +89,24 @@ export async function edit(
   return data;
 }
 
+/**
+ * A document as made from its space's default, emptied of what that template starts it with: Blank's one
+ * component to write in (the ND plan), so a fixture's shape is the shape it builds and no more.
+ */
+export async function emptied<T extends Pick<DocumentView, 'id' | 'version' | 'outline'>>(
+  client: Client,
+  made: T,
+): Promise<T> {
+  let document = made;
+  for (const node of [...nodesOf(made as unknown as DocumentView)]) {
+    document = (await edit(client, document as unknown as DocumentView, {
+      operation: 'remove',
+      node: node.id,
+    })) as unknown as T;
+  }
+  return document;
+}
+
 /** A title of words alone, as the outline stores one. */
 export function words(value: string): [{ type: 'text'; value: string; marks: [] }] {
   return [{ type: 'text', value, marks: [] }];
@@ -117,7 +135,7 @@ export async function makeDocument(
   });
   if (!made) throw new Error(`making a document answered ${response.status}`);
   // As made, less what only a creation answers: each edit answers the document as any view does.
-  let document: Omit<typeof made, 'unresolvedVariables'> = made;
+  let document: Omit<typeof made, 'unresolvedVariables'> = await emptied(client, made);
   for (const [position, entry] of shape.entries()) {
     const [title, ...children] = typeof entry === 'string' ? [entry] : entry;
     document = await edit(client, document, {

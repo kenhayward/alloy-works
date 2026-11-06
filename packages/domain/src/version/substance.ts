@@ -23,6 +23,7 @@ import type { Prompt } from '../generation/prompt.js';
 import type { Entry } from '../library/entry.js';
 import type { CitationStyle } from '../library/style.js';
 import type { Term } from '../library/term.js';
+import type { ComponentGroup } from '../reuse/group.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -150,8 +151,15 @@ export type CitationStyleSubstance = {
 /** A term version says its term (terms.md, "The term"; the TM plan, TM-A). */
 export type TermSubstance = { readonly kind: 'term'; readonly content: Term };
 
+/** A component group version says its title and its members, in order (the CG plan, CG-A, CG-B). */
+export type ComponentGroupSubstance = {
+  readonly kind: 'componentGroup';
+  readonly content: ComponentGroup;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
+  | ComponentGroupSubstance
   | DatasetSubstance
   | ConnectionSubstance
   | QueryDefinitionSubstance

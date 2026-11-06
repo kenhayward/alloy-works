@@ -1693,4 +1693,25 @@ export {
   type CapabilityCount,
   type CapabilityUsage,
 } from './measurements.js';
+export {
+  createComponentGroup,
+  groupsPinning,
+  listComponentGroups,
+  memberViews,
+  placeComponentGroup,
+  placedGroups,
+  previewGroupTake,
+  readComponentGroup,
+  recordComponentGroupVersion,
+  removeComponentGroup,
+  takeComponentGroup,
+  type ComponentGroupAnswer,
+  type ComponentGroupSummary,
+  type GroupActAnswer,
+  type GroupTakePreview,
+  type MemberInput,
+  type MemberView,
+  type PlacedGroupView,
+  type StoredComponentGroup,
+} from './component-groups.js';
 export { createMeasuring, flushEveryMinute, type Measured, type Measuring } from './measuring.js';

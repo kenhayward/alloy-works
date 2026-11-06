@@ -66,6 +66,16 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     ]);
   });
 
+  it('TPL-028 names a template the document keeps to, at its newest, in the Document panel and not above the panes', async () => {
+    const fake = service(
+      outline([{ ...section(METHOD, 'Method'), origin: 'method' } as OutlineNode]),
+      { template: { ...TEMPLATE, departures: { added: [], missing: [] } } },
+    );
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
+    const named = await screen.findByText('Made from Report, version 0.3');
+    expect(named.closest('[role="tabpanel"]')?.id).toMatch(/document/);
+  });
+
   it('TPL-029 asks for a reason before removing a section the template requires, and sends it', async () => {
     const fake = open();
     await userEvent.click(await screen.findByRole('treeitem', { name: /^Method/ }));

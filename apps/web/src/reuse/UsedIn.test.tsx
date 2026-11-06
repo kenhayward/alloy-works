@@ -28,14 +28,20 @@ const uses: Uses = {
       id: MANUAL,
       title: 'Pump manual',
       state: approved,
-      references: [{ node: 'n1', mode: 'latest', version: null, overridden: false }],
+      references: [{ node: 'n1', mode: 'latest', version: null, overridden: false, group: null }],
     },
     {
       id: NOTES,
       title: 'Pump notes',
       state: draft,
       references: [
-        { node: 'n2', mode: 'pinned', version: { id: 'v1', number: '0.1' }, overridden: false },
+        {
+          node: 'n2',
+          mode: 'pinned',
+          version: { id: 'v1', number: '0.1' },
+          overridden: false,
+          group: null,
+        },
       ],
     },
     {
@@ -43,12 +49,13 @@ const uses: Uses = {
       title: 'Pump report',
       state: draft,
       references: [
-        { node: 'n3', mode: 'latest', version: null, overridden: false },
-        { node: 'n4', mode: 'approved', version: null, overridden: false },
+        { node: 'n3', mode: 'latest', version: null, overridden: false, group: null },
+        { node: 'n4', mode: 'approved', version: null, overridden: false, group: null },
       ],
     },
   ],
   unreadableDocuments: true,
+  groups: { named: [], unreadable: false },
   baselines: { named: [{ id: ISSUE, name: 'Issue 1', document: REPORT }], unreadable: false },
   publications: { named: [{ id: PUBLICATION, title: 'Pump report' }], unreadable: false },
 };
@@ -98,10 +105,47 @@ describe('where a component is used', () => {
     ).toHaveAttribute('href', `#/publications/${PUBLICATION}`);
   });
 
+  it('REU-063 names the component groups holding it, apart from the documents', async () => {
+    const grouped: Uses = {
+      ...uses,
+      groups: {
+        named: [{ id: 'cc000000-0000-4000-8000-0000000000a1', title: 'SOP references' }],
+        unreadable: true,
+      },
+    };
+    render(
+      <UsedInButton
+        client={clientAnswering(() => json(200, grouped))}
+        id={STEP}
+        title="Calibrate"
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Used in' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Where Calibrate is used' });
+    const groups = within(dialog).getByRole('region', { name: 'Component groups' });
+    expect(within(groups).getByRole('link', { name: 'SOP references' })).toHaveAttribute(
+      'href',
+      '#/component-groups/cc000000-0000-4000-8000-0000000000a1',
+    );
+    expect(groups).toHaveTextContent('A group you may not read holds it too.');
+  });
+
+  it('shows no component groups where none holds it', async () => {
+    render(
+      <UsedInButton client={clientAnswering(() => json(200, uses))} id={STEP} title="Calibrate" />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Used in' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Where Calibrate is used' });
+    expect(
+      within(dialog).queryByRole('region', { name: 'Component groups' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('says so where nothing uses it, and where it could not be read', async () => {
     const none: Uses = {
       documents: [],
       unreadableDocuments: false,
+      groups: { named: [], unreadable: false },
       baselines: { named: [], unreadable: false },
       publications: { named: [], unreadable: false },
     };

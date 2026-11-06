@@ -11,11 +11,15 @@ import { withPage } from './testing/page.js';
  * space's report. Uncited: the jsdom and service tests cite what each demonstrates.
  */
 
-/** Tab pressed until `target` holds the focus: at most `most` presses. */
-async function tabTo(page: Page, target: Locator, most = 120) {
+/**
+ * Tab (or Shift+Tab, `back`) pressed until `target` holds the focus: at most `most` presses. Back
+ * reaches the component's own buttons from the page's end, past however many components the space
+ * pane lists before them.
+ */
+async function tabTo(page: Page, target: Locator, most = 120, back = false) {
   for (let pressed = 0; pressed < most; pressed++) {
     if (await target.evaluate((element) => element === document.activeElement)) return;
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(back ? 'Shift+Tab' : 'Tab');
   }
   throw new Error(`${String(target)} never took the focus`);
 }
@@ -27,7 +31,7 @@ describe('translating a component, in Chromium', () => {
       await page.goto(`${SERVICE}/#/components/${component.id}`);
       const translations = page.getByRole('button', { name: 'Translations' });
       await translations.waitFor();
-      await tabTo(page, translations);
+      await tabTo(page, translations, 40, true);
       await page.keyboard.press('Enter');
 
       const dialog = page.getByRole('dialog', { name: 'Translations' });

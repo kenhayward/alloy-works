@@ -26,6 +26,7 @@ import {
   parsePrompt,
   parseEntry,
   parseTerm,
+  parseComponentGroup,
   parseCitationStyle,
   parsePromptForWrite,
   parsePromptLibrary,
@@ -149,7 +150,8 @@ type SpacedSubstanceKind =
   | 'dataset'
   | 'prompt'
   | 'bibliographyEntry'
-  | 'term';
+  | 'term'
+  | 'componentGroup';
 
 const spacedSubstanceKinds: readonly string[] = [
   'component',
@@ -162,6 +164,7 @@ const spacedSubstanceKinds: readonly string[] = [
   'prompt',
   'bibliographyEntry',
   'term',
+  'componentGroup',
 ] satisfies readonly SpacedSubstanceKind[];
 
 /**
@@ -177,6 +180,7 @@ const archiveCheckedKinds: readonly string[] = [
   'prompt',
   'bibliographyEntry',
   'term',
+  'componentGroup',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -282,6 +286,11 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // Nor does a term: it is in a space. Its shape on every write (TM-A); the terms it names are the
     // writer's to check, with a transaction in hand.
     return { kind: 'term', content: parseTerm(substance.content) };
+  }
+  if (substance.kind === 'componentGroup') {
+    // Nor does a group: it is in a space. Its shape on every write (CG-C); that each member is a
+    // component and its version one of its own is the writer's to check, with a transaction in hand.
+    return { kind: 'componentGroup', content: parseComponentGroup(substance.content) };
   }
   if (substance.kind === 'promptLibrary') {
     // Nor does a library: it is the tenant's, identified by its artifact row (G4-F).
@@ -1135,7 +1144,8 @@ async function record(
     substance.kind === 'document' ||
     substance.kind === 'queryDefinition' ||
     substance.kind === 'prompt' ||
-    substance.kind === 'term'
+    substance.kind === 'term' ||
+    substance.kind === 'componentGroup'
   ) {
     await draftOnSave(trx, version, current.id);
   }

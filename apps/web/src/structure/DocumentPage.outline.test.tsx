@@ -1,4 +1,4 @@
-import { defaultLayout, withholdComponents } from '@alloy-works/domain';
+import { defaultLayout, withholdComponents, type OutlineNode } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
@@ -1172,6 +1172,45 @@ describe('a drag started before the panel has settled', () => {
       </StrictMode>,
     );
     expect(await screen.findByText('Move to the end of the document')).toBeInTheDocument();
+  });
+});
+
+describe('a placed component group in the outline', () => {
+  it('REU-061 describes each member of a placed group by its group, as one run', () => {
+    const marker = {
+      id: 'cc000000-0000-4000-8000-0000000000a1',
+      version: 'cc000000-0000-4000-8000-0000000000a2',
+      placement: 'n-run',
+    };
+    const pinned = (id: string, component: string): OutlineNode =>
+      ({
+        ...reference(id, 'latest'),
+        component,
+        mode: { kind: 'pinned', version: 'cc000000-0000-4000-8000-0000000000b1' },
+        group: marker,
+      }) as OutlineNode;
+    render(
+      <OutlinePanel
+        outline={withholdComponents(
+          outline([
+            section(INTRODUCTION, 'Introduction', [
+              pinned('n-one', 'cc000000-0000-4000-8000-000000000001'),
+              pinned('n-two', 'cc000000-0000-4000-8000-000000000002'),
+            ]),
+          ]),
+          () => true,
+        )}
+        editable={false}
+        scheme={defaultLayout.scheme}
+        onOperation={vi.fn()}
+        notice={null}
+        groupTitles={new Map([['n-run', 'SOP references']])}
+      />,
+    );
+    const [, one, two] = screen.getAllByRole('treeitem');
+    expect(one).toHaveAccessibleDescription(expect.stringContaining('In the group SOP references'));
+    expect(two).toHaveAccessibleDescription(expect.stringContaining('In the group SOP references'));
+    expect(one).toHaveAttribute('data-group-run', 'n-run');
   });
 });
 

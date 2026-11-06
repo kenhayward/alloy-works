@@ -9,7 +9,13 @@ export interface IndexedReference {
     | {
         readonly artifact: string;
         readonly kind:
-          'component' | 'queryDefinition' | 'connection' | 'dataset' | 'bibliographyEntry' | 'term';
+          | 'component'
+          | 'componentGroup'
+          | 'queryDefinition'
+          | 'connection'
+          | 'dataset'
+          | 'bibliographyEntry'
+          | 'term';
       }
     | { readonly version: string; readonly kind: 'asset' };
   /** `latest` follows each version, `approved` each approved revision, `pinned` one version. */
@@ -44,6 +50,27 @@ function* objectsIn(value: unknown): Generator<Json> {
 export function referencesIn(kind: string, content: unknown): IndexedReference[] {
   const found: IndexedReference[] = [];
   if (kind === 'document') {
+    // Each group it places, once a placement, by the placement's id and the group version placed
+    // (the CG plan, CG-J).
+    const placements = new Set<string>();
+    for (const node of objectsIn(content)) {
+      const group = node['group'];
+      if (node['type'] !== 'reference' || !isObject(group)) continue;
+      const [id, version, placement] = [
+        text(group['id']),
+        text(group['version']),
+        text(group['placement']),
+      ];
+      if (id === undefined || version === undefined || placement === undefined) continue;
+      if (placements.has(placement)) continue;
+      placements.add(placement);
+      found.push({
+        node: placement,
+        target: { artifact: id, kind: 'componentGroup' },
+        mode: 'pinned',
+        version,
+      });
+    }
     for (const node of objectsIn(content)) {
       const component = text(node['component']);
       if (node['type'] !== 'reference' || component === undefined || !isObject(node['mode'])) {
@@ -106,6 +133,20 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
           mode: 'latest',
         });
       }
+    }
+  } else if (kind === 'componentGroup' && isObject(content) && Array.isArray(content['members'])) {
+    // Each member at the version the group pins (CG-J).
+    for (const member of content['members'] as unknown[]) {
+      if (!isObject(member)) continue;
+      const component = text(member['component']);
+      const version = text(member['version']);
+      if (component === undefined || version === undefined) continue;
+      found.push({
+        node: null,
+        target: { artifact: component, kind: 'component' },
+        mode: 'pinned',
+        version,
+      });
     }
   } else if (kind === 'queryDefinition' && isObject(content)) {
     const connection = text(content['connection']);

@@ -4459,6 +4459,51 @@ database and store from settings with no defaults, seeding nothing and refusing 
 `deploy/compose.internet.yaml` runs it behind its owner's reverse proxy with its own Keycloak, and `deploy/internet`
 holds the deploy timer. The steward's `provider` command gives a new organisation's tenant its first way in.
 
+## A template always, and copies
+
+[ADR-0097](decisions/0097-a-template-always-and-a-copy-records-its-origin.md), the ND plan. Each space's
+`default_template` (`0210`) is Blank until its administrator chooses another; `ensureDefaultTemplate`
+(`packages/db/src/default-template.ts`) makes Blank when first needed, as whoever needs it. A create naming no template
+takes the default at the service route; the db's `createDocument` still makes an empty outline for imports. A template
+component is referenced or copied (`instantiate`), or holds its words inline, always copied. Each copy, by a template or
+by Duplicate, writes one insert-only `artifact_origin` row (`packages/db/src/origins.ts`), read as "Copied from X at
+v" with whether X has changed since. New document is `apps/web/src/structure/NewDocument.tsx`, a gallery over
+`GET /v1/templates`.
+
+## Component groups
+
+[ADR-0099](decisions/0099-a-component-group-is-offered-never-followed.md), the CG plan. A `componentGroup` artifact
+(`0212`) holds `{title, members: [{component, version}]}` (`packages/domain/src/reuse/group.ts`); a generated
+`artifact.workflow_kind`, `component` for a group, carries the workflow tables' foreign keys, so a group moves under
+the component workflow. Placing one writes ordinary pinned references, each marked `group: {id, version, placement}`;
+`refuseBrokenRuns` (`packages/domain/src/structure/outline.ts`) holds a run together on every parse, and `grouped`
+(`operations.ts`) and `placeSection` refuse what would break it. `placeGroup`, `takeGroupVersion` and
+`removeGroup` (`structure/groups.ts`) are pure; `packages/db/src/component-groups.ts` stores and guards them, and
+the reference index's group rows feed where-used and the deletion and moving guards. A duplicate repointing any member
+ungroups its run (`copy.ts`). The web is `apps/web/src/groups/`: the list under Components' Kind filter, the
+group's page, Place a component group, and a placed group's Take version and Remove group in the Part panel.
+
+## Diagnostics, measured
+
+The DG plan, [ADR-0096](decisions/0096-measurements-are-kept-by-each-tenant-in-fixed-buckets.md). The service counts
+each request by capability, its errors and its time, a minute at a time, into `capability_usage` (`0209`;
+`packages/db/src/measuring.ts`, `measurements.ts`), folded to hours after a week and days after 90 days, kept 13
+months (`MEASUREMENT_TIERS`, `packages/domain/src/diagnostics/measure.ts`). The worker records each sweep's and loop's
+last run, outcome and next due in `background_work` (`0211`; `apps/worker/src/background.ts`) and counts its jobs by
+kind. `GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`) reads health per capability over 15 minutes
+(`health.ts`), background work, the last day of jobs, the search index, webhook and mail delivery, data sources' runs
+and the month's model spend. The page in Administration is still to come.
+
+## Backups pulled
+
+An installation on the internet serves its encrypted backups read-only over rsync (`deploy/internet/rsyncd.conf`) for a
+backup machine to pull nightly, and each deploy installs the backup, restore and alert scripts and services of the
+release it deploys (`deploy/internet/deploy.sh`).
+
+## Writes from another site
+
+A write carrying the session cookie is refused `403 cross_site_refused` before any route unless the browser says it came from the app itself, by `Sec-Fetch-Site: same-origin` or an `Origin` equal to the request's own (`apps/service/src/cross-site.ts`; [service-foundations.md](design/service-foundations.md)).
+
 ## Icons
 
 The vector masters live in `assets/brand/`; everything else is rendered from them. An icon path is

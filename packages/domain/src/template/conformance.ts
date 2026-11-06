@@ -121,6 +121,9 @@ export function departures(
     }
   };
   walkKeys(definition.outline.sections);
+  // A template that starts no section, as Blank does, asks nothing of a document's shape: nothing
+  // a document adds departs from it (the ND plan's final walks).
+  if (definition.outline.sections.length === 0) return { added: [], missing: [] };
   const origins = new Set<string>();
   const added: { node: string; title: string }[] = [];
   walkOutline(outline.nodes, (node) => {

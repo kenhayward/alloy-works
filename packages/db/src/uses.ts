@@ -19,6 +19,8 @@ export interface UsingReference {
   readonly version: { readonly id: string; readonly number: string } | null;
   /** Whether it carries local overrides in its document (REU-013; the R4 plan, R4-E). */
   readonly overridden: boolean;
+  /** The group whose placement made it, by id, or null (the CG plan, CG-J; REU-063). */
+  readonly group: string | null;
 }
 
 export interface UsingDocument {
@@ -43,6 +45,8 @@ export interface ComponentUses {
   /** Live references: each document whose latest version places it, which a change may reach. */
   readonly documents: readonly UsingDocument[];
   readonly unreadableDocuments: boolean;
+  /** The groups whose latest version holds it (CG-J; REU-063): each of their documents is above. */
+  readonly groups: Pins<{ readonly id: string; readonly title: string }>;
   /** Pins a change never reaches (REU-052's distinction). */
   readonly baselines: Pins<{
     readonly id: string;
@@ -55,6 +59,7 @@ export interface ComponentUses {
 const NONE: ComponentUses = {
   documents: [],
   unreadableDocuments: false,
+  groups: { named: [], unreadable: false },
   baselines: { named: [], unreadable: false },
   publications: { named: [], unreadable: false },
 };
@@ -118,6 +123,7 @@ export async function componentUses(
             ? { id: mode.version, number: numbers.get(mode.version) ?? '' }
             : null,
         overridden: (node.overrides?.length ?? 0) > 0,
+        group: node.group?.id ?? null,
       });
     });
     const state = states.get(id);
@@ -129,6 +135,17 @@ export async function componentUses(
     };
   });
   documents.sort((a, b) => compare(a.title, b.title) || compare(a.id, b.id));
+
+  // The groups holding it at their latest version, from the index (CG-J).
+  const { rows: groups } = await sql<{ id: string; space_id: string; title: string | null }>`
+    select * from (
+      select distinct a.id, a.space_id, v.content ->> 'title' as title
+        from reference r
+        join artifact a on a.id = r.from_id and a.kind = 'componentGroup'
+        join artifact_version v on v.id = r.from_version
+       where r.to_id = ${componentId}) held
+     order by held.title ${await collated(trx, language)}, held.id`.execute(trx);
+  const seenGroups = await readableAmong(trx, readable, groups);
 
   // Pins a change never reaches: a baseline's, and a publication's inputs.
   const { rows: baselines } = await sql<{
@@ -160,6 +177,10 @@ export async function componentUses(
     documents,
     // An outline that does not read is flagged, never dropped silently: a version may reach it.
     unreadableDocuments: outlines.length < shown.total,
+    groups: {
+      named: seenGroups.map(({ id, title }) => ({ id, title: title ?? '' })),
+      unreadable: seenGroups.length < seenGroups.total,
+    },
     baselines: {
       named: seenBaselines.map(({ id, name, document }) => ({ id, name, document })),
       unreadable: seenBaselines.length < seenBaselines.total,
