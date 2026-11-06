@@ -2985,6 +2985,9 @@ export function DocumentPage({
                   people={people}
                   busy={busy}
                   onOperation={(operation) => apply(operation, false)}
+                  groupTitles={
+                    new Map(document.groups.map((each) => [each.placement, each.group.title]))
+                  }
                   placeFrom={
                     <>
                       {/* Another document's section placed here (REU-054; the R2 plan, R2-F). */}

@@ -364,6 +364,8 @@ export interface OutlinePanelProps {
   readonly onOperation: (operation: OutlineOperation) => Promise<Answered>;
   /** Place from a document, offered under the toolbar to whoever may edit (the R2 plan, R2-F). */
   readonly placeFrom?: ReactNode;
+  /** Each placed component group's title, by placement, that its members' rows are described by (REU-061). */
+  readonly groupTitles?: ReadonlyMap<string, string>;
   /**
    * The one status sentence, which the page announces through the status bar (interface slice 15).
    * The panel reads it to know what its own last word was.
@@ -511,6 +513,7 @@ export function OutlinePanel({
   busy = false,
   onOperation,
   placeFrom,
+  groupTitles,
   notice,
   onNotice = () => {},
   canUndo = false,
@@ -916,6 +919,10 @@ export function OutlinePanel({
     if (focus) items.current.get(id)?.focus();
   };
 
+  // The placement a reference was placed by as a group's member (the CG plan, CG-G), shown as one run.
+  const groupRun = (node: OutlineViewNode): string | undefined =>
+    node.type === 'reference' ? node.group?.placement : undefined;
+
   const openAdding = (kind: 'section' | 'component') => {
     setAdding({ kind, after: current });
     setNewTitle('');
@@ -1151,12 +1158,14 @@ export function OutlinePanel({
               conditionsWords(node.conditions, conditionAxes, standings.get(node.id)) === null
                 ? null
                 : `${labelId}-conditions`,
+              groupRun(node) === undefined ? null : `${labelId}-group`,
             ]
               .filter((each) => each !== null)
               .join(' ') || undefined
           }
           tabIndex={node.id === tabStop ? 0 : -1}
           data-node={node.id}
+          data-group-run={groupRun(node)}
           draggable={may}
           ref={(element) => {
             if (element) items.current.set(node.id, element);
@@ -1219,6 +1228,12 @@ export function OutlinePanel({
             {conditionsWords(node.conditions, conditionAxes, standings.get(node.id)) !== null && (
               <span id={`${labelId}-conditions`} className={styles['nodeMarks']}>
                 {conditionsWords(node.conditions, conditionAxes, standings.get(node.id))}
+              </span>
+            )}
+            {groupRun(node) !== undefined && (
+              <span id={`${labelId}-group`} className={styles['groupMark']}>
+                <Icon name="Component group" size={12} />
+                <GroupWords title={groupTitles?.get(groupRun(node)!)} />
               </span>
             )}
           </div>
@@ -1501,6 +1516,21 @@ export function OutlinePanel({
           </Suspense>,
           layer,
         )}
+    </>
+  );
+}
+
+/** "In the group X", its title marked as content rather than words (the pseudo walk). */
+function GroupWords({ title }: { title: string | undefined }) {
+  if (title === undefined)
+    return <>{say('groups.in-the-group', { title: say('groups.a-component-group') })}</>;
+  const mark = String.fromCharCode(0);
+  const [before, after] = say('groups.in-the-group', { title: mark }).split(mark);
+  return (
+    <>
+      {before}
+      <span data-content>{title}</span>
+      {after}
     </>
   );
 }

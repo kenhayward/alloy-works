@@ -6317,5 +6317,7 @@
   "groups.the-group-could-not-be-removed": "The group could not be removed.",
   "groups.placed-the-group": "Placed the group.",
   "groups.took-the-version": "Took the group version.",
-  "groups.removed-the-group": "Removed the group."
+  "groups.removed-the-group": "Removed the group.",
+  "groups.in-the-group": "In the group {title}",
+  "groups.a-component-group": "a component group"
 }
