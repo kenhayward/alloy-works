@@ -28,13 +28,27 @@ export interface MaterialisedTemplate {
  * Each required component is placed as a reference carrying its key as `origin`, with its mode (TPL-014;
  * the R9 plan, R9-B): at the start or end of its starting section, or at the top level's, where the
  * start follows the front matter and the end precedes the appendices that close the outline.
+ *
+ * A copied one (TPL-075; ND-C) is placed the same way, as a reference to its copy, made beforehand and
+ * named by key in `copies`, followed at its latest.
  */
 export function materialiseTemplate(
   template: Extract<ResolvedTemplate, { ok: true }>,
   heading: Pick<OutlineDocument, 'title' | 'language' | 'direction'>,
   newIdentifier: () => string,
+  copies: ReadonlyMap<string, string> = new Map(),
 ): MaterialisedTemplate {
-  const reference = (component: ResolvedComponent) => requiredReference(component, newIdentifier);
+  const reference = (component: ResolvedComponent) => {
+    if (component.instantiate === 'reference' && component.component !== undefined) {
+      return requiredReference({ ...component, component: component.component }, newIdentifier);
+    }
+    const copy = copies.get(component.key);
+    if (copy === undefined) throw new Error(`The copy of ${component.key} was not made`);
+    return requiredReference(
+      { ...component, component: copy, mode: { kind: 'latest' } },
+      newIdentifier,
+    );
+  };
   const placed = (section: string | null, at: 'start' | 'end') =>
     template.components
       .filter((each) => each.place.section === section && each.place.at === at)
@@ -80,7 +94,8 @@ export function materialiseTemplate(
  * adds it (#660).
  */
 export function requiredReference(
-  component: Pick<ResolvedComponent, 'component' | 'key' | 'place'> & {
+  component: Pick<ResolvedComponent, 'key' | 'place'> & {
+    readonly component: string;
     readonly mode?: ResolvedComponent['mode'] | undefined;
   },
   newIdentifier: () => string,

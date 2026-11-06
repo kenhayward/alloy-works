@@ -9,7 +9,7 @@ import {
   type OutlineNode,
 } from '../structure/outline.js';
 
-import type { StartingSection, TemplateDefinition } from './definition.js';
+import { instantiateOf, type StartingSection, type TemplateDefinition } from './definition.js';
 import { requiredReference } from './materialise.js';
 import { placeAtTop } from './placement.js';
 
@@ -212,10 +212,16 @@ function withRequired(
   walk(to.definition.outline.sections, null);
   tree = placeAtTop(tree, top);
   top.length = 0;
+  // A copy is never added (the ND plan, ND-P): it would be a new component made by a move, so a
+  // required one is left missing, as `missingComponents` reports it; one not required is not added.
   for (const each of to.definition.components ?? []) {
-    if (skip(each.key)) continue;
+    if (skip(each.key) || each.required === false) continue;
+    if (instantiateOf(to.definition, each) === 'copy' || each.component === undefined) continue;
     adding.push({ kind: 'component', key: each.key, title: each.key });
-    const node = requiredReference(each, input.newIdentifier) as unknown as OutlineNode;
+    const node = requiredReference(
+      { ...each, component: each.component },
+      input.newIdentifier,
+    ) as unknown as OutlineNode;
     const into = each.place.section === null ? undefined : sectionBy(each.place.section);
     if (into) {
       const children = into.children as OutlineNode[];

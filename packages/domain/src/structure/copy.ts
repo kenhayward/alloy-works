@@ -47,11 +47,14 @@ export interface CopyCounts {
  * `node` cross-reference and a section title resolve in the copy unchanged; each reference to a
  * copied component repointed to the copy, `pinned` to its version, `latest` kept and `approved` made
  * `latest`; each override repointed where its block is unchanged there, else dropped. A reference the
- * template requires (`origin`) is never repointed (RM-K). Pure; the outline given is not changed.
+ * template requires (`origin`) is never repointed (RM-K), unless its component is one of `copies`, a copy
+ * the template made for this document and so its own (REU-057; the ND plan, ND-G). Pure; the outline
+ * given is not changed.
  */
 export function copyOutline(
   outline: OutlineDocument,
   replaced: ReadonlyMap<string, CopiedComponent>,
+  copies: ReadonlySet<string> = new Set(),
 ): { readonly outline: OutlineDocument; readonly counts: CopyCounts } {
   let repointed = 0;
   let approvedToLatest = 0;
@@ -60,7 +63,10 @@ export function copyOutline(
   const copy = (node: OutlineNode): OutlineNode => {
     const children = node.children.map(copy);
     if (node.type === 'section') return { ...node, children };
-    const copied = node.origin === undefined ? replaced.get(node.component) : undefined;
+    const copied =
+      node.origin === undefined || copies.has(node.component)
+        ? replaced.get(node.component)
+        : undefined;
     if (copied === undefined) return { ...node, children };
     repointed += 1;
     if (node.mode.kind === 'approved') approvedToLatest += 1;
