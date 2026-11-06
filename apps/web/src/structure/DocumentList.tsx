@@ -17,6 +17,7 @@ import {
 } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
 import { ContentRowMenu } from '../listing/ContentRowMenu.js';
+import { DuplicateDialog } from '../listing/DuplicateDialog.js';
 import { DeletedList } from '../lifecycle/Deleted.js';
 import { Lozenge, StateLozenge, stateWord } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
@@ -457,6 +458,20 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
           </div>
         )}
         <More listing={listing} failed={words('document.more-failed')} />
+        {duplicating !== null && (
+          <DuplicateDialog
+            client={client}
+            kind="document"
+            id={duplicating.id}
+            title={duplicating.title}
+            onDone={(said) => {
+              setDuplicating(null);
+              setNotice(said);
+              void listing.load(null);
+            }}
+            onClose={() => setDuplicating(null)}
+          />
+        )}
       </section>
     </ListLayout>
   );

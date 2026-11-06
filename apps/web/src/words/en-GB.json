@@ -6195,5 +6195,20 @@
   "rows.duplicate": "Duplicate...",
   "rows.deleted": "Deleted {title}.",
   "rows.publish-title": "Publish {title}",
-  "rows.actions": "Actions"
+  "rows.actions": "Actions",
+  "rows.copy-of": "{title} (copy)",
+  "rows.copy-failed": "The copy could not be made. Try again.",
+  "rows.duplicated": "Duplicated as {title}.",
+  "rows.copy-needs-a-title": "A copy needs a title.",
+  "rows.duplicate-title": "Duplicate {title}",
+  "rows.title-in-use": "Something in that space already has this title. You can still use it.",
+  "rows.components": "Components",
+  "rows.reuse-every-component": "Reuse every component",
+  "rows.copy-its-own-components": "Copy only its own components, and reuse those other documents place",
+  "rows.copy-every-component": "Copy every component",
+  "rows.it-copies": "{count, plural, =0 {It copies no components.} one {It copies # component.} other {It copies # components.}}",
+  "rows.what-the-space-costs": "What going to that space costs",
+  "rows.copying": "Copying",
+  "rows.copying-count": "{count, plural, one {Copying # component} other {Copying # components}}",
+  "rows.duplicate-act": "Duplicate"
 }

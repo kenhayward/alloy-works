@@ -24,6 +24,7 @@ import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
 import { ContentRowMenu } from '../listing/ContentRowMenu.js';
+import { DuplicateDialog } from '../listing/DuplicateDialog.js';
 import { TranslationChips } from '../translation/Translations.js';
 import { words } from '../words/words.js';
 
@@ -435,6 +436,20 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
               </button>
             </div>
           )
+        )}
+        {duplicating !== null && (
+          <DuplicateDialog
+            client={client}
+            kind="component"
+            id={duplicating.id}
+            title={duplicating.title}
+            onDone={(said) => {
+              setDuplicating(null);
+              setNotice(said);
+              void load(null);
+            }}
+            onClose={() => setDuplicating(null)}
+          />
         )}
       </section>
     </ListLayout>

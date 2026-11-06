@@ -7,6 +7,7 @@ import { ListLayout } from '../layouts/ListLayout.js';
 import { Facet, More, SortChooser, toggled, type SortOption } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
 import { ContentRowMenu } from '../listing/ContentRowMenu.js';
+import { DuplicateDialog } from '../listing/DuplicateDialog.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
@@ -216,6 +217,20 @@ export function TemplateList({ client }: { readonly client: Client }) {
           </div>
         )}
         <More listing={listing} failed={words('document.more-templates-failed')} />
+        {duplicating !== null && (
+          <DuplicateDialog
+            client={client}
+            kind="template"
+            id={duplicating.id}
+            title={duplicating.title}
+            onDone={(said) => {
+              setDuplicating(null);
+              setNotice(said);
+              void listing.load(null);
+            }}
+            onClose={() => setDuplicating(null)}
+          />
+        )}
       </section>
       {generating !== null && (
         <GenerateDialog
