@@ -355,3 +355,110 @@ describe('a stand-in behind a proxy that ends TLS', () => {
     }
   });
 });
+
+describe('a stand-in asked for offline access', () => {
+  const clients = [
+    { clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] },
+  ];
+
+  async function signIn(idp: StandInProvider, scope: string, user = 'ada') {
+    const config = await client.discovery(
+      new URL(idp.issuer),
+      'alloy',
+      'stand-in-secret',
+      undefined,
+      { execute: [client.allowInsecureRequests] },
+    );
+    const codeVerifier = client.randomPKCECodeVerifier();
+    const state = client.randomState();
+    const nonce = client.randomNonce();
+    const url = client.buildAuthorizationUrl(config, {
+      redirect_uri: REDIRECT,
+      scope,
+      // As the service asks: no consent prompt, which a real provider grants offline access without.
+      prompt: 'select_account',
+      code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
+      code_challenge_method: 'S256',
+      state,
+      nonce,
+      login_hint: user,
+    });
+    const back = await completeAtStandIn(url.href, user, idp.issuer);
+    const tokens = await client.authorizationCodeGrant(config, back, {
+      pkceCodeVerifier: codeVerifier,
+      expectedState: state,
+      expectedNonce: nonce,
+    });
+    return { config, tokens };
+  }
+
+  it('grants it without a consent prompt, as Keycloak does, and a refresh token that renews', async () => {
+    const idp = await startStandInProvider({ clients });
+    try {
+      const { config, tokens } = await signIn(idp, 'openid email profile offline_access');
+      expect(tokens.scope?.split(' ')).toContain('offline_access');
+      expect(tokens.refresh_token).toEqual(expect.any(String));
+      const renewed = await client.refreshTokenGrant(config, tokens.refresh_token!);
+      expect(renewed.refresh_token).toEqual(expect.any(String));
+    } finally {
+      await idp.close();
+    }
+  });
+
+  it('issues no refresh token where offline access is not asked for', async () => {
+    const idp = await startStandInProvider({ clients });
+    try {
+      const { tokens } = await signIn(idp, 'openid email profile');
+      expect(tokens.refresh_token).toBeUndefined();
+    } finally {
+      await idp.close();
+    }
+  });
+
+  it("refuses a disabled person's refresh token with invalid_grant, as a provider refuses a leaver's, and renews it once they are enabled", async () => {
+    const idp = await startStandInProvider({ clients });
+    try {
+      const { config, tokens } = await signIn(idp, 'openid email profile offline_access');
+      idp.disable('ada');
+      await expect(client.refreshTokenGrant(config, tokens.refresh_token!)).rejects.toMatchObject({
+        error: 'invalid_grant',
+      });
+      idp.enable('ada');
+      await expect(client.refreshTokenGrant(config, tokens.refresh_token!)).resolves.toHaveProperty(
+        'access_token',
+      );
+    } finally {
+      await idp.close();
+    }
+  });
+
+  it('is disabled and enabled over HTTP where its controls are on, as the browser suite does it', async () => {
+    const idp = await startStandInProvider({ clients, controls: true });
+    const closed = await startStandInProvider({ clients });
+    try {
+      const { config, tokens } = await signIn(idp, 'openid email profile offline_access');
+      const disabled = await fetch(new URL('/stand-in/people/ada/disabled', idp.boundTo), {
+        method: 'PUT',
+      });
+      expect(disabled.status).toBe(204);
+      await expect(client.refreshTokenGrant(config, tokens.refresh_token!)).rejects.toMatchObject({
+        error: 'invalid_grant',
+      });
+      const enabled = await fetch(new URL('/stand-in/people/ada/disabled', idp.boundTo), {
+        method: 'DELETE',
+      });
+      expect(enabled.status).toBe(204);
+      const nobody = await fetch(new URL('/stand-in/people/nobody/disabled', idp.boundTo), {
+        method: 'PUT',
+      });
+      expect(nobody.status).toBe(404);
+      const off = await fetch(new URL('/stand-in/people/ada/disabled', closed.boundTo), {
+        method: 'PUT',
+      });
+      expect(off.status).toBe(404);
+    } finally {
+      await idp.close();
+      await closed.close();
+    }
+  });
+});
