@@ -4575,6 +4575,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/mail-channel/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This environment’s mail, newest first, kept 30 days
+         * @description Lists this environment’s mail of the last 30 days, newest first: why each was sent, whether it was sent, waits, was given up or dropped and why, and its last attempt by code and SMTP code. Never an address, a word of a mail or a word the relay answered. Needs configure_services, with a session.
+         */
+        get: operations["listMail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/mail-channel/password": {
         parameters: {
             query?: never;
@@ -4589,6 +4609,26 @@ export interface paths {
          */
         put: operations["setMailPassword"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mail-channel/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test of this environment’s mail to your own address
+         * @description Queues a test of this environment’s mail, by the relay it has chosen, whether or not mail is turned on, to your own address alone and only where your provider has verified it. Its result is listed with the rest, by code alone. Needs configure_services, with a session.
+         */
+        post: operations["testMailChannel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -84501,7 +84541,9 @@ export interface operations {
                      *         "username": "example",
                      *         "fromAddress": "example",
                      *         "fromName": "example",
-                     *         "hasPassword": false
+                     *         "hasPassword": false,
+                     *         "failingSince": "example",
+                     *         "lastSuccessAt": "example"
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -84529,6 +84571,10 @@ export interface operations {
                             fromName: string | null;
                             /** @description Whether a password is held; it is never answered */
                             hasPassword: boolean;
+                            /** @description Since when its relay has failed, cleared by the next mail it sends */
+                            failingSince: string | null;
+                            /** @description When its relay last took a mail */
+                            lastSuccessAt: string | null;
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */
@@ -84662,7 +84708,9 @@ export interface operations {
                      *         "username": "example",
                      *         "fromAddress": "example",
                      *         "fromName": "example",
-                     *         "hasPassword": false
+                     *         "hasPassword": false,
+                     *         "failingSince": "example",
+                     *         "lastSuccessAt": "example"
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -84690,6 +84738,10 @@ export interface operations {
                             fromName: string | null;
                             /** @description Whether a password is held; it is never answered */
                             hasPassword: boolean;
+                            /** @description Since when its relay has failed, cleared by the next mail it sends */
+                            failingSince: string | null;
+                            /** @description When its relay last took a mail */
+                            lastSuccessAt: string | null;
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */
@@ -84802,6 +84854,169 @@ export interface operations {
             };
         };
     };
+    listMail: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of its mail, and what waits */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "counts": {
+                     *         "waiting": -9007199254740991,
+                     *         "sent": -9007199254740991,
+                     *         "givenUp": -9007199254740991,
+                     *         "dropped": {}
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /**
+                             * Format: uuid
+                             * @description Its own id, which it is sent with as its Message-ID
+                             */
+                            id: string;
+                            /**
+                             * @description Why it is sent
+                             * @enum {string}
+                             */
+                            purpose: "test";
+                            /**
+                             * @description `pending`: to be tried, at `nextAt`; `sent`: the relay took it; `given_up`: refused for good, or tried too long; `dropped`: never sent, for `droppedReason`
+                             * @enum {string}
+                             */
+                            state: "pending" | "sent" | "given_up" | "dropped";
+                            /** @description Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured` */
+                            droppedReason: string | null;
+                            attempts: number;
+                            createdAt: string;
+                            nextAt: string | null;
+                            /** @description Its last attempt, never the relay’s words, which can quote an address */
+                            last: {
+                                at: string;
+                                /** @description Why it was not sent, by code: `auth_failed`, `tls_failed` and the like */
+                                failure: string | null;
+                                /** @description What the relay answered, by its code alone */
+                                smtpCode: number | null;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description These 30 days */
+                        counts: {
+                            waiting: number;
+                            sent: number;
+                            givenUp: number;
+                            /** @description By reason */
+                            dropped: {
+                                [key: string]: number;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     setMailPassword: {
         parameters: {
             query?: never;
@@ -84844,7 +85059,9 @@ export interface operations {
                      *         "username": "example",
                      *         "fromAddress": "example",
                      *         "fromName": "example",
-                     *         "hasPassword": false
+                     *         "hasPassword": false,
+                     *         "failingSince": "example",
+                     *         "lastSuccessAt": "example"
                      *       },
                      *       "platform": {
                      *         "offered": false
@@ -84872,6 +85089,10 @@ export interface operations {
                             fromName: string | null;
                             /** @description Whether a password is held; it is never answered */
                             hasPassword: boolean;
+                            /** @description Since when its relay has failed, cleared by the next mail it sends */
+                            failingSince: string | null;
+                            /** @description When its relay last took a mail */
+                            lastSuccessAt: string | null;
                         };
                         platform: {
                             /** @description Whether the operator offers a relay here */
@@ -84964,6 +85185,122 @@ export interface operations {
             };
             /** @description connector_unavailable: it cannot be sealed now */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    testMailChannel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Queued; it is sent within a minute */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description The test’s own id, which it is sent with as its Message-ID
+                         */
+                        id: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description mail_no_verified_address: your own address is not one your provider has verified */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

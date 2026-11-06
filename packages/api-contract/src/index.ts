@@ -886,6 +886,10 @@ export {
   MailChannelRead,
   MailChannelView,
   mailChannelRoutes,
+  MailList,
+  MailListQuery,
+  MailSummary,
+  MailTestQueued,
   SetMailChannelBody,
   SetMailPasswordBody,
 } from './mail.js';

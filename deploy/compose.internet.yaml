@@ -117,6 +117,12 @@ services:
     scale: 0
     ports: !reset []
 
+  # Nor development's mail catcher: no operator's relay yet, so mail leaves by a tenant's own relay
+  # alone (the EM plan).
+  mailpit:
+    scale: 0
+    ports: !reset []
+
   postgres:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
@@ -197,6 +203,7 @@ services:
       GOOGLE_CLIENT_ID: !reset null
       SECRET_GOOGLE: !reset null
       SIGN_IN_HOST: !reset null
+      MAIL_PLATFORM_FROM: !reset null
     ports: !reset []
     networks:
       - edge
@@ -219,6 +226,7 @@ services:
       SECRET_CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
       SECRET_CONNECTOR_DELIVER_KEY: ${SECRET_CONNECTOR_DELIVER_KEY:?}
       SECRET_CONNECTOR_REFERENCE_KEY: ${SECRET_CONNECTOR_REFERENCE_KEY:?}
+      SECRET_CONNECTOR_MAIL_KEY: ${SECRET_CONNECTOR_MAIL_KEY:?}
       SECRET_DELIVERED_URL: postgres://postgres:${DELIVERED_PASSWORD:?}@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
@@ -269,6 +277,12 @@ services:
       CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
       CONNECTOR_DELIVER_KEY: ${SECRET_CONNECTOR_DELIVER_KEY:?}
       CONNECTOR_REFERENCE_KEY: ${SECRET_CONNECTOR_REFERENCE_KEY:?}
+      CONNECTOR_MAIL_KEY: ${SECRET_CONNECTOR_MAIL_KEY:?}
+      ALLOY_SMTP_HOST: !reset null
+      ALLOY_SMTP_PORT: !reset null
+      ALLOY_SMTP_USERNAME: !reset null
+      ALLOY_SMTP_PASSWORD: !reset null
+      ALLOY_SMTP_FROM: !reset null
       CONNECTOR_CA_FILE: !reset null
     volumes: !reset []
     security_opt: ['no-new-privileges:true']

@@ -152,16 +152,29 @@ export {
 } from './webhooks/index.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
+  childMailRequestSchema,
+  MAIL_DEADLINE_MS,
+  MAIL_SUBJECT_MOST,
+  MAIL_TEXT_MOST,
   mailAddressSchema,
+  mailAnswerSchema,
+  mailBackoffSeconds,
   mailCredentialContext,
   mailDisplayNameSchema,
+  mailFailureCodes,
   mailHostSchema,
   mailPasswordSchema,
   mailPortSchema,
   mailRelaySchema,
+  mailRequestSchema,
   mailSealRequestSchema,
   mailUsernameSchema,
+  TEST_MAIL,
+  type ChildMailRequest,
+  type MailAnswer,
+  type MailFailureCode,
   type MailRelay,
+  type MailRequest,
   type MailSealRequest,
 } from './mail/index.js';
 

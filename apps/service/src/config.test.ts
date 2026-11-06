@@ -143,4 +143,14 @@ describe('configuration', () => {
       expect(message, wrong).not.toContain(wrong);
     }
   });
+
+  it('offers the operator’s mail relay only where it is told the address it sends from', () => {
+    expect(loadConfig({ DATABASE_URL: url }).mailPlatform).toBeUndefined();
+    const config = loadConfig({ DATABASE_URL: url, MAIL_PLATFORM_FROM: 'mail@operator.test' });
+    expect(config.mailPlatform).toEqual({ fromAddress: 'mail@operator.test' });
+    expect(describeConfig(config)).toMatchObject({ mailPlatform: 'mail@operator.test' });
+    expect(() => loadConfig({ DATABASE_URL: url, MAIL_PLATFORM_FROM: 'not an address' })).toThrow(
+      /MAIL_PLATFORM_FROM must be an email address/,
+    );
+  });
 });

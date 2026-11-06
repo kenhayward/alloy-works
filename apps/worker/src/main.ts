@@ -25,6 +25,8 @@ import { nightDue, recheckEntries } from './rechecks.js';
 import { connectorReferencer } from './referencer.js';
 import { connectorEmbedder } from './embedder.js';
 import { deliverWebhooks } from './webhooks.js';
+import { sendMail } from './mail.js';
+import { connectorMailer } from './mailer.js';
 import { checkJob } from './jobs/check.js';
 import { deriveJob } from './jobs/derive.js';
 import { ingestJob } from './jobs/ingest.js';
@@ -48,6 +50,7 @@ import {
   sweepStalePresence,
   sweepUncheckedPublications,
   sweepWebhookDeliveriesEverywhere,
+  sweepMailEverywhere,
   sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -91,6 +94,11 @@ const deliverer =
   config.connector?.deliverKey === undefined
     ? undefined
     : connectorDeliverer({ url: config.connector.url, key: config.connector.deliverKey });
+// Mail through the connector's mail route alone (the EM plan, EM-I).
+const mailer =
+  config.connector?.mailKey === undefined
+    ? undefined
+    : connectorMailer({ url: config.connector.url, key: config.connector.mailKey });
 // Re-checks through the connector's reference route alone (the XR plan, XR-E).
 const referencer =
   config.connector?.referenceKey === undefined
@@ -214,6 +222,10 @@ const sweep = setInterval(() => {
   void sweepWebhookDeliveriesEverywhere(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept old webhook deliveries'))
     .catch((error: unknown) => log.error({ err: error }, 'webhook delivery sweep failed'));
+  // Mail done with, past 30 days (the EM plan, EM-M).
+  void sweepMailEverywhere(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept old mail'))
+    .catch((error: unknown) => log.error({ err: error }, 'mail sweep failed'));
 }, config.sweepIntervalMs);
 
 // The nightly re-check of cited entries against their sources, never overlapping itself (XR-E).
@@ -244,11 +256,24 @@ const deliveries = setInterval(() => {
     });
 }, config.deliverIntervalMs);
 
+// The mail loop, on its own interval and never overlapping itself (the EM plan, EM-M).
+let mailing = false;
+const mails = setInterval(() => {
+  if (mailer === undefined || mailing) return;
+  mailing = true;
+  void sendMail(db, mailer, log)
+    .catch((error: unknown) => log.error({ err: error }, 'mail failed'))
+    .finally(() => {
+      mailing = false;
+    });
+}, config.mailIntervalMs);
+
 const stop = async (signal: string) => {
   running = false;
   wake();
   clearInterval(sweep);
   clearInterval(deliveries);
+  clearInterval(mails);
   clearInterval(rechecks);
   log.info({ signal }, 'stopping');
   await listener.end();

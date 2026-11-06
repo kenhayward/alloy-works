@@ -93,6 +93,8 @@ flowchart TB
     service -- "one request, one answer;<br/>a private network" --> connector
     connector -- "its own network,<br/>no route to the platform" --> sources
     connector -- "the same network;<br/>a streamed answer (ADR-0064)" --> models
+    workers -- "a mail at a time,<br/>with a key of its own" --> connector
+    connector -- "SMTP over verified TLS<br/>(ADR-0092)" --> relays["Mail relays<br/>the operator's, or a tenant's own"]
 ```
 
 | Container          | Technology                                             | Does                                                                                                                                                           | Decided in                                                                                         |

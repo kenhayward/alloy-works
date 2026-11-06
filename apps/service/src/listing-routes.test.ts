@@ -21,6 +21,7 @@ import {
   recordDatasetVersion,
   requestTenantExport,
   createImport,
+  queueTestMail,
   createAssetUpload,
   receiveAssetBytes,
   recordAsset,
@@ -657,6 +658,10 @@ describe('the listings through the service', () => {
         if (begun.answer !== 'begun') throw new Error(begun.answer);
       });
     }
+    // Two tests queued, so the environment's mail has pages to turn (the EM plan, EMb).
+    await tenantDb.withTenant(tenant, async (trx) => {
+      for (let each = 0; each < 2; each += 1) await queueTestMail(trx, asker);
+    });
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
@@ -693,6 +698,7 @@ describe('the listings through the service', () => {
       listTokens: '/v1/tokens',
       listServiceIdentities: '/v1/service-identities',
       listWebhooks: '/v1/webhooks',
+      listMail: '/v1/mail-channel/mail',
       listExtensions: '/v1/extensions',
       listWebhookDeliveries: `/v1/webhooks/${feeds[0]}/deliveries`,
       listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,

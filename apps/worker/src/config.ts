@@ -35,9 +35,13 @@ export interface WorkerConfig {
     readonly deliverKey?: string;
     /** The key that opens its re-checks alone (the XR plan, XR-E). */
     readonly referenceKey?: string;
+    /** The key that opens its mail alone (the EM plan, EM-I). */
+    readonly mailKey?: string;
   };
   /** How often the webhook delivery loop runs, apart from the sweeps (WB-I). */
   readonly deliverIntervalMs: number;
+  /** How often the mail loop runs, apart from the sweeps (EM-M). */
+  readonly mailIntervalMs: number;
   /**
    * The delivery store's owner URL, `SECRET_DELIVERED_URL`, as the service has it
    * (docs/design/ct-studio-sink.md, "Data tables"); none given, a data delivery is refused
@@ -78,7 +82,9 @@ const Environment = z.object({
   SECRET_CONNECTOR_EMBED_KEY: z.string().min(1).optional(),
   SECRET_CONNECTOR_DELIVER_KEY: z.string().min(1).optional(),
   SECRET_CONNECTOR_REFERENCE_KEY: z.string().min(1).optional(),
+  SECRET_CONNECTOR_MAIL_KEY: z.string().min(1).optional(),
   DELIVER_INTERVAL_MS: z.coerce.number().int().min(500).default(5000),
+  MAIL_INTERVAL_MS: z.coerce.number().int().min(500).default(10_000),
   SECRET_DELIVERED_URL: z
     .string()
     .refine((value) => /^postgres(ql)?:\/\/.+/.test(value), { error: 'must be a postgres:// URL' })
@@ -96,10 +102,11 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
   const keyed =
     data.SECRET_CONNECTOR_EMBED_KEY !== undefined ||
     data.SECRET_CONNECTOR_DELIVER_KEY !== undefined ||
-    data.SECRET_CONNECTOR_REFERENCE_KEY !== undefined;
+    data.SECRET_CONNECTOR_REFERENCE_KEY !== undefined ||
+    data.SECRET_CONNECTOR_MAIL_KEY !== undefined;
   if ((data.CONNECTOR_URL === undefined) === keyed) {
     throw new WorkerConfigError(
-      'The worker cannot start:\n  CONNECTOR_URL is given with SECRET_CONNECTOR_EMBED_KEY, SECRET_CONNECTOR_DELIVER_KEY or SECRET_CONNECTOR_REFERENCE_KEY, or none of them',
+      'The worker cannot start:\n  CONNECTOR_URL is given with SECRET_CONNECTOR_EMBED_KEY, SECRET_CONNECTOR_DELIVER_KEY, SECRET_CONNECTOR_REFERENCE_KEY or SECRET_CONNECTOR_MAIL_KEY, or none of them',
     );
   }
   return {
@@ -119,6 +126,7 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     sweepIntervalMs: data.SWEEP_INTERVAL_MS,
     logLevel: data.LOG_LEVEL,
     deliverIntervalMs: data.DELIVER_INTERVAL_MS,
+    mailIntervalMs: data.MAIL_INTERVAL_MS,
     ...(data.SECRET_DELIVERED_URL === undefined ? {} : { deliveredUrl: data.SECRET_DELIVERED_URL }),
     ...(data.CONNECTOR_URL === undefined
       ? {}
@@ -134,6 +142,9 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
             ...(data.SECRET_CONNECTOR_REFERENCE_KEY === undefined
               ? {}
               : { referenceKey: data.SECRET_CONNECTOR_REFERENCE_KEY }),
+            ...(data.SECRET_CONNECTOR_MAIL_KEY === undefined
+              ? {}
+              : { mailKey: data.SECRET_CONNECTOR_MAIL_KEY }),
           },
         }),
   };

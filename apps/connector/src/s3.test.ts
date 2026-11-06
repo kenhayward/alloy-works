@@ -383,13 +383,13 @@ describe("S3's checksums", () => {
     expect(all.holds({ 'x-amz-checksum-sha1': 'not base64!' })).toBe(false);
   });
 
-  it('the compose CA bundle holds both development source CAs', () => {
+  it('the compose CA bundle holds the development source CAs and the mail CA', () => {
     const at = (path: string) =>
       readFileSync(
         fileURLToPath(new URL(`../../../deploy/sources/${path}`, import.meta.url)),
         'utf8',
       );
-    expect(at('ca-bundle.pem')).toBe(`${at('http/ca.pem')}${at('s3/ca.pem')}`);
+    expect(at('ca-bundle.pem')).toBe(`${at('http/ca.pem')}${at('s3/ca.pem')}${at('mail/ca.pem')}`);
     expect(SOURCES_CA).toBe(at('ca-bundle.pem'));
   });
 });

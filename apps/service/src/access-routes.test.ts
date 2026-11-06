@@ -2057,6 +2057,8 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { password: 'not-a-real-password' },
     }),
+    testMailChannel: () => ({ url: '/v1/mail-channel/test', status: 403 }),
+    listMail: () => ({ url: '/v1/mail-channel/mail', status: 403 }),
     removeWebhook: () => ({ url: `/v1/webhooks/${MISSING}`, status: 403 }),
     listWebhookDeliveries: () => ({ url: `/v1/webhooks/${MISSING}/deliveries`, status: 403 }),
     getWebhookDelivery: () => ({

@@ -24,7 +24,7 @@ function importsOf(path: string): string[] {
 }
 
 describe("the connector's one caller", () => {
-  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker reaches it to embed and to deliver webhooks alone', () => {
+  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker reaches it to embed, to deliver webhooks and to send mail alone', () => {
     // In the service, the client is imported by the connection routes, the model endpoint routes and
     // the assistant's run and a prompt's, each a person's ask (and its own test; the G1 plan, G1-L;
     // the G2 plan; the G4 plan).
@@ -95,9 +95,9 @@ describe("the connector's one caller", () => {
         .sort(),
     ).toEqual(['setModelEndpointKey', 'testModelEndpoint']);
 
-    // The worker imports nothing of the connector's. Two modules of its own reach it: `embedder.ts`
-    // at `/v1/embed` (the G7 plan, G7-E) and `deliverer.ts` at `/v1/deliver` (the WB plan, WB-F), each
-    // with the key that opens that route alone; its configuration names the connector's address and
+    // The worker imports nothing of the connector's. Modules of its own reach it: `embedder.ts` at
+    // `/v1/embed` (the G7 plan, G7-E), `deliverer.ts` at `/v1/deliver` (the WB plan, WB-F) and
+    // `mailer.ts` at `/v1/mail` (the EM plan, EM-I), each with the key that opens that route alone; its configuration names the connector's address and
     // those keys, and nothing more of it.
     for (const file of sources(worker)) {
       const text = readFileSync(join(worker, file), 'utf8');
@@ -110,9 +110,9 @@ describe("the connector's one caller", () => {
       }
       if (
         !file.endsWith('.test.ts') &&
-        !['embedder.ts', 'deliverer.ts', 'referencer.ts'].includes(file)
+        !['embedder.ts', 'deliverer.ts', 'referencer.ts', 'mailer.ts'].includes(file)
       ) {
-        expect(text, file).not.toMatch(/\/v1\/(?!embed\b|deliver\b|reference\b)\w+/);
+        expect(text, file).not.toMatch(/\/v1\/(?!embed\b|deliver\b|reference\b|mail\b)\w+/);
       }
     }
     const embedder = readFileSync(join(worker, 'embedder.ts'), 'utf8');
@@ -122,6 +122,10 @@ describe("the connector's one caller", () => {
     const deliverer = readFileSync(join(worker, 'deliverer.ts'), 'utf8');
     expect([...new Set([...deliverer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
       '/v1/deliver',
+    ]);
+    const mailer = readFileSync(join(worker, 'mailer.ts'), 'utf8');
+    expect([...new Set([...mailer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
+      '/v1/mail',
     ]);
     const referencer = readFileSync(join(worker, 'referencer.ts'), 'utf8');
     expect([...new Set([...referencer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
@@ -136,6 +140,7 @@ describe("the connector's one caller", () => {
       'CONNECTOR_URL',
       'SECRET_CONNECTOR_DELIVER_KEY',
       'SECRET_CONNECTOR_EMBED_KEY',
+      'SECRET_CONNECTOR_MAIL_KEY',
       'SECRET_CONNECTOR_REFERENCE_KEY',
     ]);
   });

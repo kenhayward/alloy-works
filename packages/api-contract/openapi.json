@@ -243838,6 +243838,20 @@
                         "hasPassword": {
                           "type": "boolean",
                           "description": "Whether a password is held; it is never answered"
+                        },
+                        "failingSince": {
+                          "description": "Since when its relay has failed, cleared by the next mail it sends",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lastSuccessAt": {
+                          "description": "When its relay last took a mail",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -243848,7 +243862,9 @@
                         "username",
                         "fromAddress",
                         "fromName",
-                        "hasPassword"
+                        "hasPassword",
+                        "failingSince",
+                        "lastSuccessAt"
                       ]
                     },
                     "platform": {
@@ -243882,7 +243898,9 @@
                     "username": "example",
                     "fromAddress": "example",
                     "fromName": "example",
-                    "hasPassword": false
+                    "hasPassword": false,
+                    "failingSince": "example",
+                    "lastSuccessAt": "example"
                   },
                   "platform": {
                     "offered": false
@@ -244203,6 +244221,20 @@
                         "hasPassword": {
                           "type": "boolean",
                           "description": "Whether a password is held; it is never answered"
+                        },
+                        "failingSince": {
+                          "description": "Since when its relay has failed, cleared by the next mail it sends",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lastSuccessAt": {
+                          "description": "When its relay last took a mail",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -244213,7 +244245,9 @@
                         "username",
                         "fromAddress",
                         "fromName",
-                        "hasPassword"
+                        "hasPassword",
+                        "failingSince",
+                        "lastSuccessAt"
                       ]
                     },
                     "platform": {
@@ -244247,7 +244281,9 @@
                     "username": "example",
                     "fromAddress": "example",
                     "fromName": "example",
-                    "hasPassword": false
+                    "hasPassword": false,
+                    "failingSince": "example",
+                    "lastSuccessAt": "example"
                   },
                   "platform": {
                     "offered": false
@@ -244472,6 +244508,405 @@
         }
       }
     },
+    "/v1/mail-channel/mail": {
+      "get": {
+        "operationId": "listMail",
+        "summary": "This environment’s mail, newest first, kept 30 days",
+        "description": "Lists this environment’s mail of the last 30 days, newest first: why each was sent, whether it was sent, waits, was given up or dropped and why, and its last attempt by code and SMTP code. Never an address, a word of a mail or a word the relay answered. Needs configure_services, with a session.",
+        "tags": [
+          "Mail"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "configure_services",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of its mail, and what waits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "Its own id, which it is sent with as its Message-ID"
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "test"
+                            ],
+                            "description": "Why it is sent"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "sent",
+                              "given_up",
+                              "dropped"
+                            ],
+                            "description": "`pending`: to be tried, at `nextAt`; `sent`: the relay took it; `given_up`: refused for good, or tried too long; `dropped`: never sent, for `droppedReason`"
+                          },
+                          "droppedReason": {
+                            "description": "Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured`",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "nextAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "last": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "failure": {
+                                    "description": "Why it was not sent, by code: `auth_failed`, `tls_failed` and the like",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "smtpCode": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "What the relay answered, by its code alone"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "failure",
+                                  "smtpCode"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its last attempt, never the relay’s words, which can quote an address"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "purpose",
+                          "state",
+                          "droppedReason",
+                          "attempts",
+                          "createdAt",
+                          "nextAt",
+                          "last"
+                        ]
+                      }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "waiting": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "sent": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "givenUp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "dropped": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "description": "By reason"
+                        }
+                      },
+                      "required": [
+                        "waiting",
+                        "sent",
+                        "givenUp",
+                        "dropped"
+                      ],
+                      "description": "These 30 days"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next",
+                    "counts"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "next": "example",
+                  "counts": {
+                    "waiting": -9007199254740991,
+                    "sent": -9007199254740991,
+                    "givenUp": -9007199254740991,
+                    "dropped": {}
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/mail-channel/password": {
       "put": {
         "operationId": "setMailPassword",
@@ -244591,6 +245026,20 @@
                         "hasPassword": {
                           "type": "boolean",
                           "description": "Whether a password is held; it is never answered"
+                        },
+                        "failingSince": {
+                          "description": "Since when its relay has failed, cleared by the next mail it sends",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lastSuccessAt": {
+                          "description": "When its relay last took a mail",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -244601,7 +245050,9 @@
                         "username",
                         "fromAddress",
                         "fromName",
-                        "hasPassword"
+                        "hasPassword",
+                        "failingSince",
+                        "lastSuccessAt"
                       ]
                     },
                     "platform": {
@@ -244635,7 +245086,9 @@
                     "username": "example",
                     "fromAddress": "example",
                     "fromName": "example",
-                    "hasPassword": false
+                    "hasPassword": false,
+                    "failingSince": "example",
+                    "lastSuccessAt": "example"
                   },
                   "platform": {
                     "offered": false
@@ -244818,6 +245271,233 @@
           },
           "503": {
             "description": "connector_unavailable: it cannot be sealed now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mail-channel/test": {
+      "post": {
+        "operationId": "testMailChannel",
+        "summary": "Send a test of this environment’s mail to your own address",
+        "description": "Queues a test of this environment’s mail, by the relay it has chosen, whether or not mail is turned on, to your own address alone and only where your provider has verified it. Its result is listed with the rest, by code alone. Needs configure_services, with a session.",
+        "tags": [
+          "Mail"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "configure_services",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queued; it is sent within a minute",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "The test’s own id, which it is sent with as its Message-ID"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: a session is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "mail_no_verified_address: your own address is not one your provider has verified",
             "content": {
               "application/json": {
                 "schema": {

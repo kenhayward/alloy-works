@@ -2,8 +2,16 @@ import { createHash, X509Certificate } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { BlockList } from 'node:net';
 
-import { REFERENCE_CONTACT } from '@alloy-works/domain';
+import {
+  mailAddressSchema,
+  mailHostSchema,
+  mailPasswordSchema,
+  mailUsernameSchema,
+  REFERENCE_CONTACT,
+} from '@alloy-works/domain';
 import { sealingKey } from '@alloy-works/sealing';
+
+import type { PlatformRelay } from './supervisor.js';
 
 /**
  * What the guard refuses whatever the deployment says (the D1 plan, D1-G): loopback, link-local, this
@@ -35,6 +43,10 @@ export interface ConnectorConfig {
   readonly deliverKeyDigest?: Buffer;
   /** SHA-256 of the key the worker presents to re-check entries, which opens `/v1/reference`'s `check` alone (XR-E). */
   readonly referenceKeyDigest?: Buffer;
+  /** SHA-256 of the key the worker presents to send mail, which opens `/v1/mail` alone (EM-I). */
+  readonly mailKeyDigest?: Buffer;
+  /** The operator's relay, where this deployment offers one (EM-B): its password is held here alone. */
+  readonly platformRelay?: PlatformRelay;
   /**
    * Whether a webhook may reach a private address: never in production, where the reply an
    * administrator reads would read an internal service (the WB plan, WB-F); development's and the
@@ -148,6 +160,11 @@ export function loadConnectorConfig(
       'CONNECTOR_REFERENCE_KEY',
       'must not be the same key as CONNECTOR_KEY, CONNECTOR_SEALING_KEY, CONNECTOR_EMBED_KEY or CONNECTOR_DELIVER_KEY',
     );
+  // The worker's, for mail alone (the EM plan, EM-I): optional, and never any other.
+  const mail = env.CONNECTOR_MAIL_KEY ? key(env, 'CONNECTOR_MAIL_KEY') : undefined;
+  if (mail && [service, sealing, embed, deliver, reference].some((each) => each?.equals(mail)))
+    refuse('CONNECTOR_MAIL_KEY', 'must not be the same key as any other of the connector’s keys');
+  const platformRelay = relayOf(env);
   const webhookPrivate = env.CONNECTOR_WEBHOOK_PRIVATE ?? 'deny';
   if (!['deny', 'allow'].includes(webhookPrivate))
     refuse('CONNECTOR_WEBHOOK_PRIVATE', 'must be deny or allow');
@@ -197,12 +214,50 @@ export function loadConnectorConfig(
             .update(env.CONNECTOR_REFERENCE_KEY!, 'utf8')
             .digest(),
         }),
+    ...(mail === undefined
+      ? {}
+      : { mailKeyDigest: createHash('sha256').update(env.CONNECTOR_MAIL_KEY!, 'utf8').digest() }),
+    ...(platformRelay === undefined ? {} : { platformRelay }),
     webhookPrivate: webhookPrivate === 'allow',
     referencePrivate: referencePrivate === 'allow',
     sealingKey: sealing,
     deny,
     maxChildren: integer(env, 'CONNECTOR_MAX_CHILDREN', 8, [1, 64]),
     logLevel: logLevel as LogLevel,
+  };
+}
+
+/**
+ * The operator's relay (the EM plan, EM-B), where `ALLOY_SMTP_HOST` names one: its port 465 or 587,
+ * an address it sends from, a username and password together or neither, and the most a tenant sends
+ * through it an hour.
+ */
+function relayOf(env: Readonly<Record<string, string | undefined>>): PlatformRelay | undefined {
+  const named = Object.keys(env).filter((each) => each.startsWith('ALLOY_SMTP_') && env[each]);
+  if (named.length === 0) return undefined;
+  const host = env.ALLOY_SMTP_HOST;
+  if (!host) return refuse('ALLOY_SMTP_HOST', 'is required where any ALLOY_SMTP_ is set');
+  if (!mailHostSchema.safeParse(host).success) refuse('ALLOY_SMTP_HOST', 'must be a host name');
+  const port = integer(env, 'ALLOY_SMTP_PORT', 587, [1, 65535]);
+  if (port !== 465 && port !== 587) refuse('ALLOY_SMTP_PORT', 'must be 465 or 587');
+  const from = env.ALLOY_SMTP_FROM;
+  if (!from || !mailAddressSchema.safeParse(from).success)
+    refuse('ALLOY_SMTP_FROM', 'must be the address the relay sends from');
+  const username = env.ALLOY_SMTP_USERNAME || null;
+  const password = env.ALLOY_SMTP_PASSWORD || null;
+  if (username !== null && !mailUsernameSchema.safeParse(username).success)
+    refuse('ALLOY_SMTP_USERNAME', 'must hold no control characters');
+  if ((username === null) !== (password === null))
+    refuse('ALLOY_SMTP_PASSWORD', 'must be set with ALLOY_SMTP_USERNAME, and only with it');
+  if (password !== null && !mailPasswordSchema.safeParse(password).success)
+    refuse('ALLOY_SMTP_PASSWORD', 'must hold no control characters');
+  return {
+    host,
+    port: port as 465 | 587,
+    username,
+    password,
+    fromAddress: from!,
+    hourly: integer(env, 'ALLOY_SMTP_HOURLY', 200, [1, 100_000]),
   };
 }
 
@@ -254,6 +309,8 @@ export function takeConnectorConfig(env: Record<string, string | undefined>): Co
     delete env.CONNECTOR_EMBED_KEY;
     delete env.CONNECTOR_DELIVER_KEY;
     delete env.CONNECTOR_REFERENCE_KEY;
+    delete env.CONNECTOR_MAIL_KEY;
+    delete env.ALLOY_SMTP_PASSWORD;
   }
 }
 

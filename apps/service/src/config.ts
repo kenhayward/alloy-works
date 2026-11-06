@@ -30,6 +30,11 @@ export interface Config {
    */
   readonly connectorUrl?: string;
   /**
+   * The operator's mail relay, where one is offered (the EM plan, EM-B): only the address it sends
+   * from, which an administrator is shown; its host and password are the connector's alone.
+   */
+  readonly mailPlatform?: { readonly fromAddress: string };
+  /**
    * The addresses or ranges of a proxy whose X-Forwarded-Proto and X-Forwarded-Host are believed:
    * development's TLS proxy for other machines (deploy/compose.lan.yaml). Without it, none is.
    */
@@ -96,6 +101,7 @@ const Environment = z
         error: 'must be an http or https address, with no credentials in it',
       })
       .optional(),
+    MAIL_PLATFORM_FROM: z.email({ error: 'must be an email address' }).optional(),
     TRUST_PROXY: z
       .string()
       .regex(PROXY_ADDRESSES, { error: 'must be addresses or ranges, separated by commas' })
@@ -144,6 +150,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     OBJECT_STORE_REGION,
     RENDERER_ROOT,
     CONNECTOR_URL,
+    MAIL_PLATFORM_FROM,
     TRUST_PROXY,
   } = result.data;
   return {
@@ -166,6 +173,9 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       : {}),
     ...(RENDERER_ROOT !== undefined ? { rendererRoot: RENDERER_ROOT } : {}),
     ...(CONNECTOR_URL !== undefined ? { connectorUrl: CONNECTOR_URL } : {}),
+    ...(MAIL_PLATFORM_FROM !== undefined
+      ? { mailPlatform: { fromAddress: MAIL_PLATFORM_FROM } }
+      : {}),
     ...(TRUST_PROXY !== undefined ? { trustProxy: TRUST_PROXY } : {}),
   };
 }
@@ -185,5 +195,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     rendererRoot: config.rendererRoot ?? 'none',
     connector: config.connectorUrl === undefined ? 'none' : new URL(config.connectorUrl).host,
     trustProxy: config.trustProxy ?? 'none',
+    mailPlatform: config.mailPlatform?.fromAddress ?? 'none',
   };
 }

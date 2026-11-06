@@ -672,7 +672,7 @@ const operationTags = {
     'removeExtension',
     'setExtensionSecret',
   ],
-  Mail: ['getMailChannel', 'setMailChannel', 'setMailPassword'],
+  Mail: ['getMailChannel', 'setMailChannel', 'setMailPassword', 'testMailChannel', 'listMail'],
   Webhooks: [
     'listWebhooks',
     'createWebhook',
@@ -1523,6 +1523,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Turns this environment’s mail on or off and chooses its relay: the operator’s, or its own on port 465 or 587, always over verified TLS. Moving its own relay to another host, port or username drops the password, which must be set again before it can be turned on. Needs configure_services, with a session.',
   setMailPassword:
     'Sets the password of this environment’s own relay. It is sealed to that host, port and username, opens for no other, and is never answered. Needs rotate_secrets, with a session.',
+  testMailChannel:
+    'Queues a test of this environment’s mail, by the relay it has chosen, whether or not mail is turned on, to your own address alone and only where your provider has verified it. Its result is listed with the rest, by code alone. Needs configure_services, with a session.',
+  listMail:
+    'Lists this environment’s mail of the last 30 days, newest first: why each was sent, whether it was sent, waits, was given up or dropped and why, and its last attempt by code and SMTP code. Never an address, a word of a mail or a word the relay answered. Needs configure_services, with a session.',
   listWebhooks:
     'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs configure_webhooks at the environment, with a signed-in session.',
   createWebhook:

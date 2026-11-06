@@ -61,12 +61,14 @@ describe("the connector's package", () => {
         // The XLSX reader's inflate and XML parser (D6-I).
         'fflate',
         'saxes',
+        // The SMTP client, its values checked first (the EM plan, EM-J).
+        'nodemailer',
         'pg',
         'zod',
       ].sort(),
     );
 
-    // Nothing the connector ships imports anything but Node's own modules, its own files and the eight,
+    // Nothing the connector ships imports anything but Node's own modules, its own files and the nine,
     // or an entry point one of them exports, such as `csv-parse/sync`.
     const allowed = new Set(Object.keys(manifest.dependencies ?? {}));
     const files = sourceFiles(join(root, 'src'));

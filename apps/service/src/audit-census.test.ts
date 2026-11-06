@@ -47,6 +47,8 @@ const REASONS = {
     "A translation job's file kept for the worker to read (XL-F), which writes translation.job_returned as it applies it; nothing of the content changes here",
   preference:
     "A person's own interface language (UI-E): how the product speaks to them, nothing of the tenant's content or access",
+  mailTest:
+    "A test of the mail channel to the caller's own address: queued, and its outcome listed with the rest of the mail, by code",
   started:
     "A reviewer saying they have started (RR-A): kept on the round's own rows, which its readers read, and no change to the tenant's content",
 } as const;
@@ -640,6 +642,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getMailChannel: read,
   setMailChannel: writes('mail_channel.changed'),
   setMailPassword: writes('mail_channel.changed'),
+  testMailChannel: { none: 'mailTest' },
+  listMail: read,
   listWebhookDeliveries: read,
   getWebhookDelivery: read,
   listServiceIdentities: read,
@@ -745,6 +749,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepDates: writes('revision.effective', 'review.lapsed', 'workflow.transitioned'),
     // Deliveries done with past 30 days, which the attempts they held go with (the WB plan, WB-I).
     sweepWebhookDeliveriesEverywhere: { none: 'derived' },
+    // Mail done with past 30 days, and its attempts (the EM plan, EM-M).
+    sweepMailEverywhere: { none: 'derived' },
     // A proposal left 30 days abandoned as the system, its importer told seven days before (IM-F).
     sweepImportsEverywhere: writes('import.abandoned'),
   },

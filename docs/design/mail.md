@@ -2,7 +2,8 @@
 
 How an environment tells a person something by email: that something happened, that they are invited, that their
 tenant is closing. Built by [the EM plan](../plans/2026-11-05-em-email-notifications.md), which holds the decisions;
-what is built so far is the channel, its first PR.
+what is built so far is the channel and the way out: the queue, the worker's loop, the connector's
+send, and a test.
 
 ## The shape in one paragraph
 
@@ -23,10 +24,28 @@ or worker, over verified TLS on port 465 or 587.
 - **Exported without its password, and arriving off** after a whole restore, so a copied tenant mails nobody. A part leaves
   this tenant's channel alone, as any setting.
 
+## The way out
+
+- **A row a mail**, `email_delivery`: whom it is to and why, never an address or a word, so erasing a person or their
+  address leaves nothing to send. Its id is its `Message-ID` and `X-Alloy-Event-Id`, kept across retries (EM-L).
+- **The worker claims and sends** every ten seconds, two environments at a time, each's mail one after another, so a
+  black-holed relay holds up only its own (EM-M). Each is decided again as it is claimed: a disabled, erased or unverified
+  person, or a service identity, is dropped with the reason (EM-G). A suspended environment's mail waits.
+- **Through the connector**, `POST /v1/mail` with a key of its own, a child each, two at once. The operator's relay is
+  named by the connector, from its own address with the environment's name, within each environment's hour (EM-S); an
+  environment's own relay by the password sealed to it. The host is guarded and dialled at the address checked, TLS
+  required and verified by name before AUTH, and every value refused a line break before `nodemailer` sees it (EM-J).
+- **Retried** from 30 seconds doubling to an hour; a test is given up an hour after its first attempt. A recipient refused
+  for good gives up that mail alone; any other failure marks the channel failing until a send clears it (EM-N). Each
+  attempt keeps its code and the relay's SMTP code, never its words. Kept 30 days.
+- **A test** goes to the caller's own verified address alone, by the relay saved, whether or not mail is on (EM-P).
+- **Administration's Email** sets the channel and its password, sends the test, and lists the mail of 30 days by code.
+- **Mailpit** is development's operator's relay, over STARTTLS with the development mail CA's certificate.
+
 ## Not yet built
 
-Sending, retries and failures (EMb); a person's choice and notifications by email (EMc); invitations and closure notices
-(EMd).
+A person's choice and notifications by email (EMc); invitations and closure notices (EMd); telling those who configure
+services that the channel is failing, by an inbox kind of its own (EM-N).
 
 ## Requirements owned
 

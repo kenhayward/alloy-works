@@ -153,6 +153,8 @@ describe('what each route checks', () => {
         'getMailChannel',
         'setMailChannel',
         'setMailPassword',
+        'testMailChannel',
+        'listMail',
         'removeWebhook',
         'listExtensions',
         'previewExtension',

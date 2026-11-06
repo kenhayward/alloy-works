@@ -116,11 +116,58 @@ describe('a tenant’s mail channel through the API (the EM plan)', () => {
     }
   });
 
+  const asTenant = <T>(work: Parameters<Harness['tenantDb']['withTenant']>[1]) =>
+    h.tenantDb.withTenant(h.tenant, work, { actorKind: 'system' }) as Promise<T>;
+
+  it('sends a test only to the caller’s own address, and lists it with none of its words', async () => {
+    await asTenant(async (trx) => {
+      await trx
+        .updateTable('principal')
+        .set({ email: 'ada@example.test', email_verified: true })
+        .where('id', '=', h.ids.ada!)
+        .execute();
+    });
+    const queued = await h.call('ada', 'POST', `${CHANNEL}/test`);
+    expect(queued.statusCode, queued.body).toBe(200);
+    const { id } = queued.json<{ id: string }>();
+    const row = await asTenant<{ principal_id: string; purpose: string }>((trx) =>
+      trx
+        .selectFrom('email_delivery')
+        .select(['principal_id', 'purpose'])
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ principal_id: h.ids.ada, purpose: 'test' });
+    const listed = await h.call('ada', 'GET', `${CHANNEL}/mail`);
+    expect(listed.statusCode, listed.body).toBe(200);
+    expect(listed.json()).toMatchObject({
+      items: [{ id, purpose: 'test', state: 'pending', attempts: 0, last: null }],
+      next: null,
+      counts: { waiting: 1, sent: 0, givenUp: 0, dropped: {} },
+    });
+    expect(listed.body).not.toContain('@');
+  });
+
+  it('sends no test to a caller whose own address is not verified', async () => {
+    await asTenant(async (trx) => {
+      await trx
+        .updateTable('principal')
+        .set({ email_verified: false })
+        .where('id', '=', h.ids.ada!)
+        .execute();
+    });
+    const refused = await h.call('ada', 'POST', `${CHANNEL}/test`);
+    expect(refused.statusCode).toBe(409);
+    expect(code(refused)).toBe('mail_no_verified_address');
+  });
+
   it('refuses anybody without the permission', async () => {
     expect((await h.call('grace', 'GET', CHANNEL)).statusCode).toBe(403);
     expect((await h.call('grace', 'PUT', CHANNEL, OWN)).statusCode).toBe(403);
     const password = await h.call('grace', 'PUT', `${CHANNEL}/password`, { password: PASSWORD });
     expect(password.statusCode).toBe(403);
+    expect((await h.call('grace', 'POST', `${CHANNEL}/test`)).statusCode).toBe(403);
+    expect((await h.call('grace', 'GET', `${CHANNEL}/mail`)).statusCode).toBe(403);
   });
 });
 

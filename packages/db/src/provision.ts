@@ -10,6 +10,8 @@ export interface Tenant {
   readonly role: string;
   /** Where it was resolved from a hostname; an organisation's own tenant holds no content (TL-K). */
   readonly kind?: 'content' | 'organisation';
+  /** Its name, where a sweep read it: what the operator's relay shows mail from (EM-K). */
+  readonly name?: string;
 }
 
 export interface NewTenant {

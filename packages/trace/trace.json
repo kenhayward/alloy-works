@@ -22544,13 +22544,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 833,
+      "line": 839,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 846,
+      "line": 852,
       "kind": "title"
     },
     {
@@ -23828,7 +23828,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 383,
+      "line": 384,
       "kind": "title"
     },
     {
@@ -34412,7 +34412,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1212,
+      "line": 1221,
       "kind": "title"
     },
     {
@@ -36938,13 +36938,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1417,
+      "line": 1442,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 986,
+      "line": 1011,
       "kind": "title"
     },
     {
