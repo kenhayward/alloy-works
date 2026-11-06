@@ -40,8 +40,8 @@ Mine, after the pre-flight:
   newer ones offered, and add, remove, reorder and "use version N", each cutting a group version. No overrides,
   conditions or threads on the group page.
 
-Deferred, each its own PR when wanted: templates placing groups; making a placed group the document's own;
-member conditions; search of a group as such.
+Deferred, each its own PR when wanted, raised as REU-064 to REU-067: templates placing groups; making a placed group
+the document's own; member conditions; search of a group as such.
 
 ## Stored shapes
 

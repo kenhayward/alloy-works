@@ -57,6 +57,10 @@ positioning claim, and it is the one Workiva does not have.
 | **REU-061** | Placing a group must place each member as a reference to the version the group pins, kept together and in the group's order; a document may reword a member locally (REU-011) but must not add, remove or reorder members except by taking a group version                                                                                                                                                                                 | T7         | Specified             |
 | **REU-062** | A newer approved version of a group a document places must be offered on that document, never applied by itself; taking it must say first what changes, become the document's next version, and keep each kept member's local rewording                                                                                                                                                                                                    | T7         | Specified             |
 | **REU-063** | Where-used must name the documents placing a group for each of its members (REU-052), and a component a group version pins must not be deletable or movable away on its own                                                                                                                                                                                                                                                                | T7         | Specified             |
+| **REU-064** | A template must be able to place a component group in a section it defines, pinned to a group version the template version names, so every document made from it places the group as REU-061 does. A group the template declares required must be held as a required component is (TPL-044), and a newer group version must reach those documents by REU-062's offer or by a move to a newer template version, never by itself.            | T7         | Specified             |
+| **REU-065** | An author must be able to make a placed group the document's own: its members become ordinary references at the versions they pin, keeping their rewordings and conditions, free to be moved, removed or repinned, and no newer group version is offered for them again. It must say first what it gives up, be the document's next version, be audited, and be refused for a group the template requires.                                 | T7         | Specified             |
+| **REU-066** | A group version must be able to give each member conditions (REU-021) that its placement applies to the member's reference, so a member shown only in one profile is approved as part of the group's shape. A document must not change the conditions a group gives, except by taking another group version or making the group its own; conditions a document adds of its own stay its own.                                               | T7         | Specified             |
+| **REU-067** | Search must find a component group the reader may read by its title, shown as a component group apart from components and documents and filterable by that kind, and must name the groups holding a component found (REU-063). A group must never be found through a member the reader may not read.                                                                                                                                       | T7         | Specified             |
 
 **REU-042 and REU-043 answer what a reader sees, which only the publish path had covered.** A
 reference to something deleted or unreadable fails a publish by name (REU-005) and, until this
@@ -410,3 +414,16 @@ version is offered on each document rather than followed ([the CG plan](../../pl
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 59, of which 4 superseded and 1 withdrawn | 63, of which 4 superseded and 1 withdrawn |
+
+### What component groups deferred (#1036 to #1039), 2026-11-06
+
+What the CG plan deferred, raised so it is not lost (#1036 to #1039): a template placing a group, a placed group made the
+document's own, conditions a group carries, and search finding groups.
+
+| What was found                                   | Change                         |
+| ------------------------------------------------ | ------------------------------ |
+| The CG plan deferred four parts of a group's use | **REU-064** to **REU-067** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 63, of which 4 superseded and 1 withdrawn | 67, of which 4 superseded and 1 withdrawn |

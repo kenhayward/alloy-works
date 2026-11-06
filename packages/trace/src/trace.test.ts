@@ -115,8 +115,8 @@ describe('the committed trace.json', () => {
     // 1634, from 1633 (2026-11-03): GEN-062, the assistant proposes outline changes
     // 1642, from 1639 (2026-11-04): IAM-085, IAM-086 and IAM-087 (TL).
     // 1654, from 1649 (2026-11-06): SCH-075, REU-056 to REU-058 and LIF-079 (RM).
-    // 1663, from 1659 (2026-11-06): REU-060 to REU-063 (CG). 1659, from 1654: TPL-074 to TPL-077 and REU-059 (ND).
-    expect(model.requirements).toHaveLength(1663);
+    // 1667, from 1663 (2026-11-06): REU-064 to REU-067, what CG deferred. 1663, from 1659 (2026-11-06): REU-060 to REU-063 (CG). 1659, from 1654: TPL-074 to TPL-077 and REU-059 (ND).
+    expect(model.requirements).toHaveLength(1667);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
