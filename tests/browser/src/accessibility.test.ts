@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { DEFAULT_THEME_ID } from '@alloy-works/db';
 import type { Locator, Page } from 'playwright-core';
 import { describe, expect, it, vi, type TaskMeta } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
@@ -7,7 +8,7 @@ import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
 import { generalSpace, makeComponent, squarePng, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, fromMenu, withPage } from './testing/page.js';
-import { approvedTerm, translatedComponent } from './testing/fixtures.js';
+import { approvedTerm, makeTemplate, translatedComponent } from './testing/fixtures.js';
 import { pondSurvey } from './testing/word.js';
 
 /**
@@ -278,6 +279,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     const held = await heldChanges(api(), 'Changes held');
     const earlier = await earlierWord(api());
     const thread = await threadWord(api());
+    // A document and a template whose rows' menus are walked (SCH-075), on a stack that may have none.
+    const stamp = new Date().toISOString();
+    const rowDocument = await makeDocument(api(), 'Row menu walked', ['Scope']);
+    const rowTemplate = `Row menu walked ${stamp}`;
+    await makeTemplate(api(), rowTemplate, DEFAULT_THEME_ID);
     await withPage(async (page) => {
       const check = async (state: string, arrival: Arrival) => {
         await arrive(arrival);
@@ -365,15 +371,14 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('Escape');
       await leave(page.getByRole('menuitem', { name: 'Archive', exact: true }));
       // A document's and a template's, each as its kind has it (SCH-075).
-      for (const [list, first] of [
-        ['documents', 'Copy link'],
-        ['templates', 'Generate documents...'],
+      for (const [list, first, subject] of [
+        ['documents', 'Copy link', rowDocument.outline.title],
+        ['templates', 'Generate documents...', rowTemplate],
       ] as const) {
         await page.goto(`${SERVICE}/#/${list}`);
-        await page
-          .getByRole('button', { name: /^More actions for / })
-          .first()
-          .click();
+        // Newest first, so a stack holding many still lists it on the first page.
+        await page.getByLabel('Sort by').selectOption({ label: 'Newest changed first' });
+        await page.getByRole('button', { name: `More actions for ${subject}` }).click();
         await check(`a ${list.slice(0, -1)} row's menu (SCH-075)`, {
           shows: page.getByRole('menuitem', { name: first, exact: true }),
         });
@@ -382,11 +387,13 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       }
       // Duplicate's dialog, counted before anything is made, and cancelled (REU-057).
       await page.goto(`${SERVICE}/#/documents`);
+      await page.getByLabel('Sort by').selectOption({ label: 'Newest changed first' });
       await page
-        .getByRole('button', { name: /^More actions for / })
-        .first()
+        .getByRole('button', { name: `More actions for ${rowDocument.outline.title}` })
         .click();
-      await page.getByRole('menuitem', { name: 'Duplicate...', exact: true }).click();
+      const duplicating = page.getByRole('menuitem', { name: 'Duplicate...', exact: true });
+      await expect.poll(() => duplicating.getAttribute('aria-disabled')).toBe('false');
+      await duplicating.click();
       const duplicate = page.getByRole('dialog');
       await check("Duplicate's dialog (REU-057)", {
         shows: [
