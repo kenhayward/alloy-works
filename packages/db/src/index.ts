@@ -1676,6 +1676,7 @@ export {
   type SetDefaultAnswer,
 } from './default-template.js';
 export { originOf, type Origin } from './origins.js';
+export {
   backgroundWork,
   recordBackgroundWork,
   type BackgroundOutcome,
