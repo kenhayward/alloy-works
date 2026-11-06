@@ -9,8 +9,39 @@ import { apiNotFound } from './http.js';
  * cookie belongs to the same address the renderer calls, which is what lets the desktop window load
  * the service rather than a file from disk (ADR-0022).
  */
-export function serveRenderer(app: FastifyInstance, root: string): void {
-  void app.register(fastifyStatic, { root, wildcard: false });
+export function serveRenderer(app: FastifyInstance, root: string, policy: string): void {
+  void app.register(fastifyStatic, {
+    root,
+    wildcard: false,
+    setHeaders: (reply) => {
+      void reply.header('Content-Security-Policy', policy);
+    },
+  });
+}
+
+/**
+ * What the renderer's page may load: its own scripts and nothing else, so an injected one does not
+ * run. Styles may be inline, as ProseMirror and React set them on elements. The object store's origin
+ * is let in where its signed links go (an image, a preview's frame, a download's frame, an upload),
+ * and `blob:` where the renderer makes a file itself. Nothing may frame the page.
+ */
+export function rendererPolicy(storeOrigin: string | undefined): string {
+  const store = storeOrigin === undefined ? '' : ` ${storeOrigin}`;
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: blob:${store}`,
+    "font-src 'self' data:",
+    `connect-src 'self'${store}`,
+    `frame-src 'self' blob:${store}`,
+    `media-src 'self' blob:${store}`,
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
 }
 
 /** The routes `serveRenderer` adds, one per file, as Fastify names them. */

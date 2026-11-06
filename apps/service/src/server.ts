@@ -27,6 +27,7 @@ const app = buildApp({
   ...(config.google ? { google: config.google } : {}),
   ...(objects ? { objects } : {}),
   ...(config.rendererRoot ? { rendererRoot: config.rendererRoot } : {}),
+  ...(config.objectStore ? { storeOrigin: new URL(config.objectStore.endpoint).origin } : {}),
   ...(connector ? { connector } : {}),
   ...(config.trustProxy ? { trustProxy: config.trustProxy } : {}),
   ...(config.mailPlatform ? { mailPlatform: config.mailPlatform } : {}),
