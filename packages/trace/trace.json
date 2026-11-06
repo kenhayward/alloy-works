@@ -10648,13 +10648,40 @@
       "line": 51
     },
     {
+      "id": "REU-056",
+      "area": "REU",
+      "statement": "A document, component or template must be duplicable under a new title into a space the caller may create in; a title already used there must be warned of, not refused",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 52
+    },
+    {
+      "id": "REU-057",
+      "area": "REU",
+      "statement": "A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 53
+    },
+    {
+      "id": "REU-058",
+      "area": "REU",
+      "statement": "A copy must keep the outline's structure and node identities, so cross-references resolve in it (**STR-046**), and its template, parameters, values, language and profile; it must carry no versions, comments, baselines, publications or grants, start in its workflow's first state, and be audited (**LIF-063**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 54
+    },
+    {
       "id": "REU-006",
       "area": "REU",
       "statement": "\"Where is this used\" must be a first-class query over components, assets, query definitions, styles, terms and templates",
       "tranche": "T4",
       "status": "Superseded by REU-055",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 76
+      "line": 79
     },
     {
       "id": "REU-055",
@@ -10663,7 +10690,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 77
+      "line": 80
     },
     {
       "id": "REU-007",
@@ -10672,7 +10699,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 78
+      "line": 81
     },
     {
       "id": "REU-008",
@@ -10681,7 +10708,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 79
+      "line": 82
     },
     {
       "id": "REU-009",
@@ -10690,7 +10717,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 80
+      "line": 83
     },
     {
       "id": "REU-010",
@@ -10699,7 +10726,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 81
+      "line": 84
     },
     {
       "id": "REU-052",
@@ -10708,7 +10735,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 82
+      "line": 85
     },
     {
       "id": "REU-011",
@@ -10717,7 +10744,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 102
+      "line": 105
     },
     {
       "id": "REU-012",
@@ -10726,7 +10753,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 103
+      "line": 106
     },
     {
       "id": "REU-013",
@@ -10735,7 +10762,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 104
+      "line": 107
     },
     {
       "id": "REU-014",
@@ -10744,7 +10771,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 105
+      "line": 108
     },
     {
       "id": "REU-015",
@@ -10753,7 +10780,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 106
+      "line": 109
     },
     {
       "id": "REU-016",
@@ -10762,7 +10789,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 117
+      "line": 120
     },
     {
       "id": "REU-017",
@@ -10771,7 +10798,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 118
+      "line": 121
     },
     {
       "id": "REU-018",
@@ -10780,7 +10807,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 119
+      "line": 122
     },
     {
       "id": "REU-019",
@@ -10789,7 +10816,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 120
+      "line": 123
     },
     {
       "id": "REU-036",
@@ -10798,7 +10825,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 121
+      "line": 124
     },
     {
       "id": "REU-037",
@@ -10807,7 +10834,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 122
+      "line": 125
     },
     {
       "id": "REU-038",
@@ -10816,7 +10843,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 123
+      "line": 126
     },
     {
       "id": "REU-020",
@@ -10825,7 +10852,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 138
+      "line": 141
     },
     {
       "id": "REU-021",
@@ -10834,7 +10861,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 139
+      "line": 142
     },
     {
       "id": "REU-022",
@@ -10843,7 +10870,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 140
+      "line": 143
     },
     {
       "id": "REU-023",
@@ -10852,7 +10879,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-048",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 141
+      "line": 144
     },
     {
       "id": "REU-024",
@@ -10861,7 +10888,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 142
+      "line": 145
     },
     {
       "id": "REU-025",
@@ -10870,7 +10897,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 143
+      "line": 146
     },
     {
       "id": "REU-026",
@@ -10879,7 +10906,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 144
+      "line": 147
     },
     {
       "id": "REU-027",
@@ -10888,7 +10915,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 145
+      "line": 148
     },
     {
       "id": "REU-053",
@@ -10897,7 +10924,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 146
+      "line": 149
     },
     {
       "id": "REU-048",
@@ -10906,7 +10933,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 147
+      "line": 150
     },
     {
       "id": "REU-047",
@@ -10915,7 +10942,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 148
+      "line": 151
     },
     {
       "id": "REU-028",
@@ -10924,7 +10951,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 175
+      "line": 178
     },
     {
       "id": "REU-029",
@@ -10933,7 +10960,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 176
+      "line": 179
     },
     {
       "id": "REU-030",
@@ -10942,7 +10969,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 177
+      "line": 180
     },
     {
       "id": "REU-039",
@@ -10951,7 +10978,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 178
+      "line": 181
     },
     {
       "id": "REU-040",
@@ -10960,7 +10987,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 179
+      "line": 182
     },
     {
       "id": "REU-031",
@@ -10969,7 +10996,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 199
+      "line": 202
     },
     {
       "id": "REU-032",
@@ -10978,7 +11005,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 200
+      "line": 203
     },
     {
       "id": "REU-033",
@@ -10987,7 +11014,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 201
+      "line": 204
     },
     {
       "id": "REU-034",
@@ -10996,7 +11023,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 202
+      "line": 205
     },
     {
       "id": "REU-035",
@@ -11005,7 +11032,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 203
+      "line": 206
     },
     {
       "id": "REU-051",
@@ -11014,7 +11041,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 204
+      "line": 207
     },
     {
       "id": "REU-041",
@@ -11023,7 +11050,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-051",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 205
+      "line": 208
     },
     {
       "id": "REU-049",
@@ -11032,7 +11059,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 206
+      "line": 209
     },
     {
       "id": "SCH-001",
@@ -11476,13 +11503,22 @@
       "line": 141
     },
     {
+      "id": "SCH-075",
+      "area": "SCH",
+      "statement": "A listing of documents, components or templates must offer on each row what can be done to it without opening it, as a menu of the acts its own page offers that apply from a list, read for the caller when the menu opens; an act the caller may not take must be shown as unavailable rather than hidden",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 142
+    },
+    {
       "id": "SCH-020",
       "area": "SCH",
       "statement": "A search or a listing must be saveable, nameable and shareable, subject to the recipient's own permissions",
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "SCH-021",
@@ -11491,7 +11527,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "SCH-022",
@@ -11500,7 +11536,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "SCH-034",
@@ -11509,7 +11545,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-073",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "SCH-073",
@@ -11518,7 +11554,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "SCH-044",
@@ -11527,7 +11563,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "SCH-046",
@@ -11536,7 +11572,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "SCH-068",
@@ -11545,7 +11581,7 @@
       "tranche": "T3",
       "status": "Superseded by SCH-070",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "SCH-070",
@@ -11554,7 +11590,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "SCH-069",
@@ -11563,7 +11599,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "SCH-023",
@@ -11572,7 +11608,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "SCH-024",
@@ -11581,7 +11617,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "SCH-025",
@@ -11590,7 +11626,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "SCH-026",
@@ -11599,7 +11635,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "SCH-043",
@@ -11608,7 +11644,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "SCH-048",
@@ -11617,7 +11653,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "SCH-027",
@@ -11626,7 +11662,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-050",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "SCH-028",
@@ -11635,7 +11671,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "SCH-029",
@@ -11644,7 +11680,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "SCH-030",
@@ -11653,7 +11689,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "SCH-031",
@@ -11662,7 +11698,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "SCH-050",
@@ -11671,7 +11707,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-066",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "SCH-066",
@@ -11680,7 +11716,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "SCH-067",
@@ -11689,7 +11725,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "SCH-049",
@@ -11698,7 +11734,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "STR-001",
@@ -15369,55 +15405,55 @@
       "id": "REU-N01",
       "statement": "**No copying content to reuse it.** A reference resolves; it does not duplicate",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 224
+      "line": 227
     },
     {
       "id": "REU-N02",
       "statement": "**No overrides that live on the component.** An override belongs to one reference (REU-012)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 225
+      "line": 228
     },
     {
       "id": "REU-N03",
       "statement": "**No inferred inclusion.** A condition axis a profile does not set excludes (REU-024)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 226
+      "line": 229
     },
     {
       "id": "REU-N04",
       "statement": "**No conditional content in an output, hidden.** Excluded means absent, and every publication is scanned to prove it (REU-048, which superseded REU-023)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 227
+      "line": 230
     },
     {
       "id": "REU-N05",
       "statement": "**No ambient input to resolution.** What a document resolves to is a function of its components, profile, parameters and overrides, and of nothing else - no clock, no execution order, no identity of whoever pressed the button (REU-039)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 228
+      "line": 231
     },
     {
       "id": "SCH-N01",
       "statement": "**No search across tenants**, for any purpose including support",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "SCH-N02",
       "statement": "**No index-time permission baking.** Permissions change; an index cannot be re-written every time they do (SCH-005)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "SCH-N03",
       "statement": "**No relevance tuning per user.** Two users with the same permissions must see the same results in the same order",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "SCH-N04",
       "statement": "**Not an analytics surface.** Counting what exists is a report, not a search (**ADM**)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "STR-N01",
@@ -16272,77 +16308,77 @@
       "question": "**Does the override mechanism actually hold (section 5)?** The spike's case 6 was never run, and it is the case where the discarded alternative is stronger",
       "settledBy": "Running case 6: one component in two documents where one needs a single word different",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 234
+      "line": 237
     },
     {
       "id": "REU-Q02",
       "question": "**May a condition apply to a whole component reference, as well as to content inside one?** \"Include this section only for the regulator\" is an obvious want",
       "settledBy": "Whether it is expressible as an outline-node condition in **STR** instead, which may be cleaner",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 235
+      "line": 238
     },
     {
       "id": "REU-Q03",
       "question": "**How many profiles does one document have in practice?** Two is easy; twelve makes preview, comparison and publication counts awkward",
       "settledBy": "Real customer profiles. It affects whether publishing per profile is a routine act or a batch job",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 236
+      "line": 239
     },
     {
       "id": "REU-Q04",
       "question": "**Can conditions nest or combine with logic?** \"UK and not draft\" is asked for the moment two axes exist",
       "settledBy": "Whether simple set membership survives a real house style. Boolean conditions are easy to add and very hard to review",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 237
+      "line": 240
     },
     {
       "id": "REU-Q05",
       "question": "**May a parameter set be declared per profile, so that variables rather than conditions carry per-profile wording?** REU-047 makes conditional alternatives the documented path; parameters would make it a table instead",
       "settledBy": "Real house wording differences. Conditions suit a sentence that differs; parameters suit a value that differs, and customers will have both",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 238
+      "line": 241
     },
     {
       "id": "SCH-Q01",
       "question": "**Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice",
       "settledBy": "**Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "SCH-Q02",
       "question": "**How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale",
       "settledBy": "**Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../spikes/Search_Spike_Findings.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "SCH-Q03",
       "question": "**Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed",
       "settledBy": "Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "SCH-Q04",
       "question": "**Does semantic search need its own permission story?**",
       "settledBy": "**Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "SCH-Q05",
       "question": "**Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "settledBy": "Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "SCH-Q06",
       "question": "**How much fuzzy matching (SCH-041), and where does it stop?** An edit distance that finds a typo also finds a different word, and in a regulated corpus a near miss presented as a match is worse than nothing",
       "settledBy": "Real queries against real content. The requirement is that approximation is stated where it happens; the distance itself is a number to tune",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "STR-Q01",

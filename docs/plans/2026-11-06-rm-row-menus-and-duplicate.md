@@ -50,7 +50,7 @@ Mine, from the storage map:
 - `packages/db/src/copies.ts`: `previewDocumentCopy`, `copyDocument`, `copyComponent`, `copyTemplate`,
   each through `createArtifact`; a migration adding `content.copied`.
 - Contract: `GET /v1/documents/{id}/copies?space&title&components` (counts, title in use), `POST
-  /v1/documents/{id}/copies`, `POST /v1/components/{id}/copies`, `POST /v1/templates/{id}/copies`.
+/v1/documents/{id}/copies`, `POST /v1/components/{id}/copies`, `POST /v1/templates/{id}/copies`.
   Read on the original, `create` (`design` for a template) on the space. `copy_too_large`,
   `copy_unreadable`.
 - `apps/web/src/listing/RowMenu.tsx`: `ContentRowMenu` by kind; `DuplicateDialog`.
