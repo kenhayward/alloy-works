@@ -93,6 +93,12 @@ import { dataState } from './dataStates.js';
 import type { NodeLock, NodeMarks, Titling } from './OutlinePanel.js';
 import { heldBack, TitleField } from './PartPanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
+import {
+  groupsIn,
+  PlaceGroupButton,
+  PlacedGroup,
+  type PlacedGroupView,
+} from '../groups/PlacedGroup.js';
 import { OverrideDialog } from './OverrideDialog.js';
 import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
 import { useLiveDocument, type LiveDocument, type LiveLock } from './live.js';
@@ -235,6 +241,8 @@ interface Opened {
   readonly templated: boolean;
   /** The template it was made from, with what it requires and the departures from it (WF6-A). */
   readonly template: TemplateInfo | null;
+  /** The component groups it places, each with a newer approved version where there is one (REU-061). */
+  readonly groups: readonly PlacedGroupView[];
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -355,6 +363,7 @@ function documentIn(data: unknown): Read {
     parameters: isRecord(parameters) ? parameters : {},
     templated: isRecord(template),
     template: templateIn(template),
+    groups: groupsIn(data.groups),
   };
 }
 
@@ -2274,6 +2283,38 @@ export function DocumentPage({
   // An author updating a document reads what was said of it: the threads stand beside the text in
   // Authoring too, marked where they stand. A thread is started from Review, on what is selected there.
   const threadsShown = reviewing || authoring;
+  // A group placed, taken or removed (the CG plan, CG-F, CG-I): the document at its next version. An
+  // act with no inverse here, as Place from a document is: the undo stack ends.
+  const groupAnswered = (answer: unknown, said: string) => {
+    const after = documentIn(answer);
+    if (after === undefined || after === 'unreadable') {
+      setAttempt((count) => count + 1);
+      return;
+    }
+    show(after);
+    setUndo([]);
+    setNotice(said);
+  };
+  // The group a reference was placed by, beside it in the Part panel (REU-061, REU-062).
+  const placedGroupOf = (node: OutlineViewNode) => {
+    const marker = node.type === 'reference' ? node.group : undefined;
+    const placed = document.groups.find((each) => each.placement === marker?.placement);
+    return placed === undefined ? null : (
+      <PlacedGroup
+        client={client}
+        documentId={document.id}
+        openedFrom={document.version.id}
+        placed={placed}
+        editable={document.mayEdit && authoring}
+        onAnswer={(answer, act) =>
+          groupAnswered(
+            answer,
+            act === 'taken' ? say('groups.took-the-version') : say('groups.removed-the-group'),
+          )
+        }
+      />
+    );
+  };
   // Suggest changes: from the Part panel on its part, and from the Review menu on the part chosen.
   const suggestIn = (node: string) => {
     setDrafting(node);
@@ -2822,34 +2863,37 @@ export function DocumentPage({
                   titling={titling}
                   standing={(node) =>
                     node.type === 'reference' ? (
-                      <PartRows
-                        node={node}
-                        standing={{
-                          names,
-                          changed: changedNodes,
-                          movedParts: document.movedParts,
-                          resolved,
-                          revisions: revisionByNode,
-                          lines: lineByNode,
-                          diverged: divergedByNode,
-                          translated: translatedByNode,
-                          pastReview: pastReviewNodes,
-                          overridesOf: overridesByNode,
-                          editable: editableNow,
-                          openComponent:
-                            editing === null ? null : (componentOfNode.get(editing) ?? null),
-                          present: presentIn,
-                          ...(threadsShown ? { threadCounts } : {}),
-                        }}
-                        acts={{
-                          drafting,
-                          overridesInHead: overridesOffered(node),
-                          ...(document.mayEdit && authoring ? { choosing } : {}),
-                          ...(reviewing && principalId !== undefined
-                            ? { onSuggest: suggestIn }
-                            : {}),
-                        }}
-                      />
+                      <>
+                        {placedGroupOf(node)}
+                        <PartRows
+                          node={node}
+                          standing={{
+                            names,
+                            changed: changedNodes,
+                            movedParts: document.movedParts,
+                            resolved,
+                            revisions: revisionByNode,
+                            lines: lineByNode,
+                            diverged: divergedByNode,
+                            translated: translatedByNode,
+                            pastReview: pastReviewNodes,
+                            overridesOf: overridesByNode,
+                            editable: editableNow,
+                            openComponent:
+                              editing === null ? null : (componentOfNode.get(editing) ?? null),
+                            present: presentIn,
+                            ...(threadsShown ? { threadCounts } : {}),
+                          }}
+                          acts={{
+                            drafting,
+                            overridesInHead: overridesOffered(node),
+                            ...(document.mayEdit && authoring ? { choosing } : {}),
+                            ...(reviewing && principalId !== undefined
+                              ? { onSuggest: suggestIn }
+                              : {}),
+                          }}
+                        />
+                      </>
                     ) : null
                   }
                   overridesFor={(node) => {
@@ -2942,23 +2986,33 @@ export function DocumentPage({
                   busy={busy}
                   onOperation={(operation) => apply(operation, false)}
                   placeFrom={
-                    // Another document's section placed here (REU-054; the R2 plan, R2-F).
-                    <PlaceSectionButton
-                      client={client}
-                      documentId={document.id}
-                      openedFrom={document.version.id}
-                      onPlaced={(answer) => {
-                        const after = documentIn(answer);
-                        if (after === undefined || after === 'unreadable') {
-                          setAttempt((count) => count + 1);
-                          return;
-                        }
-                        show(after);
-                        // An act with no inverse here, as a removal is: the stack ends.
-                        setUndo([]);
-                        setNotice(say('document.placed-under-a-new-section'));
-                      }}
-                    />
+                    <>
+                      {/* Another document's section placed here (REU-054; the R2 plan, R2-F). */}
+                      <PlaceSectionButton
+                        client={client}
+                        documentId={document.id}
+                        openedFrom={document.version.id}
+                        onPlaced={(answer) => {
+                          const after = documentIn(answer);
+                          if (after === undefined || after === 'unreadable') {
+                            setAttempt((count) => count + 1);
+                            return;
+                          }
+                          show(after);
+                          // An act with no inverse here, as a removal is: the stack ends.
+                          setUndo([]);
+                          setNotice(say('document.placed-under-a-new-section'));
+                        }}
+                      />
+                      {/* A component group placed at the end of a section (REU-061; the CG plan, CG-F). */}
+                      <PlaceGroupButton
+                        client={client}
+                        documentId={document.id}
+                        openedFrom={document.version.id}
+                        sections={sectionsOf(document.outline.nodes, names)}
+                        onPlaced={(answer) => groupAnswered(answer, say('groups.placed-the-group'))}
+                      />
+                    </>
                   }
                   notice={notice}
                   onNotice={setNotice}
@@ -3829,6 +3883,21 @@ export function DocumentPage({
 }
 
 /** How many sections and component references an outline holds, at every depth. */
+/** The document's sections in order, each named and counted, for where a group is placed (REU-061). */
+function sectionsOf(
+  nodes: readonly OutlineViewNode[],
+  names: Names,
+): { id: string; title: string; children: number }[] {
+  return nodes.flatMap((node) =>
+    node.type === 'section'
+      ? [
+          { id: node.id, title: nodeName(node, names), children: node.children.length },
+          ...sectionsOf(node.children, names),
+        ]
+      : [],
+  );
+}
+
 function counted(nodes: readonly OutlineViewNode[]): { sections: number; components: number } {
   let sections = 0;
   let components = 0;

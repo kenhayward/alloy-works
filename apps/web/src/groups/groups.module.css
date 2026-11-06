@@ -1,0 +1,126 @@
+/* Component groups (the CG plan): the group page, its list in Components, and a placed group's acts. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-width: 760px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.head h1 {
+  margin: 0;
+}
+
+.tile {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-8);
+  background: var(--chrome);
+  color: var(--accent-text);
+}
+
+.kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.titleField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+}
+
+.acts {
+  display: inline-flex;
+  gap: var(--space-4);
+}
+
+.adding,
+.save {
+  display: flex;
+  align-items: end;
+  gap: var(--space-8);
+}
+
+.adding label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.save p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-8);
+  border-block-end: 1px solid var(--border);
+  text-align: start;
+}
+
+.placed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.placed p {
+  flex: 1;
+  margin: 0;
+}
+
+.preview {
+  margin: 0;
+  padding-inline-start: var(--space-16);
+}
