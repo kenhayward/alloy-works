@@ -456,6 +456,23 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'workflow.transitioned',
   ),
   listTermApprovals: read,
+  // Component groups (the CG plan): a version cut, and the component workflow's moves and gates.
+  listComponentGroups: read,
+  createComponentGroup: writes('content.version_cut'),
+  getComponentGroup: read,
+  recordComponentGroupVersion: writes('content.version_cut', 'workflow.transitioned'),
+  transitionComponentGroup: writes('workflow.transitioned'),
+  decideComponentGroupGate: writes(
+    'approval.given',
+    'gate.rejected',
+    'revision.designated',
+    'workflow.transitioned',
+  ),
+  // Placing, taking and removing one is the document's next version, as placing a section is.
+  placeComponentGroup: writes('content.version_cut', 'workflow.transitioned'),
+  previewComponentGroupTake: read,
+  takeComponentGroup: writes('content.version_cut', 'reference.repointed', 'workflow.transitioned'),
+  removeComponentGroup: writes('content.version_cut', 'workflow.transitioned'),
   placeHold: writes('hold.applied'),
   releaseHold: writes('hold.removed'),
   createAssetUpload: { none: 'upload' },

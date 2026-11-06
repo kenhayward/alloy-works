@@ -17,6 +17,9 @@ const UsingReference = z.object({
   overridden: z
     .boolean()
     .describe('Whether it carries local overrides in its document, which no other document has'),
+  group: LowercaseUuid.nullable().describe(
+    'The component group whose placement made it, by id; null for a reference of its own (REU-063)',
+  ),
 });
 
 const UsingDocument = z.object({
@@ -44,6 +47,14 @@ export const ComponentUsesView = z.object({
     .boolean()
     .describe(
       'Whether a document the caller may not read places it too: never how many, nor which',
+    ),
+  groups: z
+    .object({
+      named: z.array(z.object({ id: LowercaseUuid, title: z.string() })),
+      unreadable: z.boolean(),
+    })
+    .describe(
+      'The component groups whose latest version holds it: each document placing one is among `documents` (REU-063)',
     ),
   baselines: z
     .object({

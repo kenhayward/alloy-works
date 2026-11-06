@@ -21,6 +21,7 @@ import {
   mayReference,
   newNodeIdentifier,
   readableComponents,
+  recordRepoints,
   REFERENCE_REFUSED,
   type OutlineAnswer,
 } from './documents.js';
@@ -248,7 +249,11 @@ export interface ComponentGroupSummary {
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
   readonly members: number;
   readonly changedAt: Date;
-  readonly state: { readonly key: string; readonly name: string; readonly approved: boolean } | null;
+  readonly state: {
+    readonly key: string;
+    readonly name: string;
+    readonly approved: boolean;
+  } | null;
 }
 
 /**
@@ -547,7 +552,7 @@ export async function takeComponentGroup(
   }
   const taken = takeGroupVersion(opened.outline, input.placement, found.group, newNodeIdentifier);
   if (!taken.applied) return { answer: 'outline.invalid', reason: taken.reason };
-  return next(
+  const recorded = await next(
     trx,
     input.documentId,
     input.openedFrom,
@@ -555,6 +560,11 @@ export async function takeComponentGroup(
     opened.version,
     taken.outline,
   );
+  // Each kept member repinned is a re-point, as the outline's own is (CNT-182).
+  if (recorded.answer === 'recorded') {
+    await recordRepoints(trx, recorded.version, opened.outline, taken.outline);
+  }
+  return recorded;
 }
 
 /** A placed group removed as one, as the document's next version (CG-G, "Remove group"). */

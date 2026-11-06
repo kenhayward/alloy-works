@@ -1381,6 +1381,47 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { transition: 'approve', version: MISSING, decision: 'approved' },
     }),
+    createComponentGroup: () => ({
+      url: `/v1/spaces/${clinical}/component-groups`,
+      status: 404,
+      payload: { title: 'Probe', members: [{ component: MISSING }] },
+    }),
+    getComponentGroup: () => ({ url: `/v1/component-groups/${MISSING}`, status: 404 }),
+    recordComponentGroupVersion: () => ({
+      url: `/v1/component-groups/${MISSING}/versions`,
+      status: 404,
+      payload: { openedFrom: MISSING, title: 'Probe', members: [{ component: MISSING }] },
+    }),
+    transitionComponentGroup: () => ({
+      url: `/v1/component-groups/${MISSING}/transitions`,
+      status: 404,
+      payload: { transition: 'submit', from: 'draft' },
+    }),
+    decideComponentGroupGate: () => ({
+      url: `/v1/component-groups/${MISSING}/approvals`,
+      status: 404,
+      payload: { transition: 'approve', version: MISSING, decision: 'approved' },
+    }),
+    placeComponentGroup: () => ({
+      url: `/v1/documents/${report}/groups`,
+      status: 404,
+      payload: { openedFrom: MISSING, group: MISSING, parent: null, position: 0 },
+    }),
+    previewComponentGroupTake: () => ({
+      url: `/v1/documents/${report}/groups/${'a'.repeat(26)}/take/preview`,
+      status: 404,
+      payload: { version: MISSING },
+    }),
+    takeComponentGroup: () => ({
+      url: `/v1/documents/${report}/groups/${'a'.repeat(26)}/take`,
+      status: 404,
+      payload: { openedFrom: MISSING, version: MISSING },
+    }),
+    removeComponentGroup: () => ({
+      url: `/v1/documents/${report}/groups/${'a'.repeat(26)}/remove`,
+      status: 404,
+      payload: { openedFrom: MISSING },
+    }),
     listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
     setReferenceSource: () => ({
       url: '/v1/reference-sources',

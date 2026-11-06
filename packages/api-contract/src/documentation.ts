@@ -342,6 +342,10 @@ const operationTags = {
     'undeleteComponent',
     'getComponentUses',
     'getStyleUses',
+    'listComponentGroups',
+    'createComponentGroup',
+    'getComponentGroup',
+    'recordComponentGroupVersion',
   ],
   Documents: [
     'listDocuments',
@@ -361,6 +365,10 @@ const operationTags = {
     'setDocumentLanguage',
     'previewPlacement',
     'placeSection',
+    'placeComponentGroup',
+    'previewComponentGroupTake',
+    'takeComponentGroup',
+    'removeComponentGroup',
     'getDocumentTexts',
     'recordDocumentValues',
     'getDocumentParameters',
@@ -778,6 +786,8 @@ const operationTags = {
     'transitionTerm',
     'decideTermGate',
     'listTermApprovals',
+    'transitionComponentGroup',
+    'decideComponentGroupGate',
     'setComponentDates',
     'setDocumentDates',
     'setComponentScope',
@@ -1642,6 +1652,26 @@ const descriptions: Readonly<Record<string, string>> = {
     "Moves a term along a transition from its state, named as the caller saw it, needing the transition's permission on the term and a reason where the transition asks for one: as seeded, deprecating an approved term, reinstating a deprecated one, or reopening one to draft. Saving an approved term moves it back to draft on its own. Audited.",
   decideTermGate:
     'Approves or rejects a term at a gate from its state, against the version the approver saw, needing approve on the term. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version documents print; a rejection needs a reason. Audited.',
+  transitionComponentGroup:
+    "Moves a component group along a transition of the component workflow from its state, named as the caller saw it, needing the transition's permission on the group and a reason where the transition asks for one. Cutting a version of an approved group moves it back to draft on its own. Audited.",
+  decideComponentGroupGate:
+    'Approves or rejects a component group at a gate of the component workflow, against the version the approver saw, needing approve on the group. Approving it approves its members in order at the versions it pins, whatever their own states. The gate passes once enough distinct approvers approve, and designates a revision: the version a document placing the group is offered. Audited.',
+  listComponentGroups:
+    'Lists the component groups the caller may read, by title, a page at a time, each with its space, latest version, how many members it holds and its workflow state. Narrow it to one space with `space`. It needs a signed-in session.',
+  createComponentGroup:
+    'Makes a component group in a space at version 0.1, in the component workflow’s first state: a title and its members in order, each a component the caller may read, at most once, pinned at the version named or its latest now. A group never holds another group. It needs create in the space. Audited.',
+  getComponentGroup:
+    'Returns a component group at its latest version: its members in order, each at the version the group pins with the newest version of it where that is newer, its workflow state and the transitions and gates the caller may take, and whether the caller may cut its next version. A member the caller may not read is shown without its component.',
+  recordComponentGroupVersion:
+    'Cuts the next version of a component group from the version the caller opened: its title and its members whole, so adding, removing, reordering a member or taking a newer version of one are each a version. Refused with the group as it stands when a newer version was cut since. It needs edit on the group. Audited.',
+  placeComponentGroup:
+    'Places a component group in a section of a document, or at its top, as the document’s next version: one ordinary reference per member, in its order, pinned to the version the group version pins, each marked with the group and one placement id. The group’s latest approved version unless one is named. The members stay together: none moves or goes alone, and nothing is put among them. It needs edit on the document. Audited.',
+  previewComponentGroupTake:
+    'Says what taking another version of a group placed in a document’s latest version would change, before anything is recorded: the members it adds and drops, how many it keeps with their local rewording, and how many local rewordings go with the dropped. It needs read on the document.',
+  takeComponentGroup:
+    'Takes another version of a group placed in a document, as the document’s next version: each kept member keeps its node and its local rewording, new members are added, dropped ones go, and every member is pinned as the version taken pins it. A document never takes one by itself. It needs edit on the document. Audited.',
+  removeComponentGroup:
+    'Removes a group placed in a document, its members as one, as the document’s next version. It needs edit on the document. Audited.',
   listTermApprovals:
     'Lists every approval and rejection of a term at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the term.',
   setRetention:

@@ -394,7 +394,12 @@ describe('component groups (the CG plan)', () => {
     );
     expect(rows.rows).toEqual(
       expect.arrayContaining([
-        { from_id: doc.artifactId, to_id: made.group.id, to_kind: 'componentGroup', node: placement },
+        {
+          from_id: doc.artifactId,
+          to_id: made.group.id,
+          to_kind: 'componentGroup',
+          node: placement,
+        },
         { from_id: made.group.id, to_id: a.artifactId, to_kind: 'component', node: null },
       ]),
     );
@@ -420,13 +425,16 @@ describe('component groups (the CG plan)', () => {
         placement,
         group: { id: made.group.id, title: 'Run' },
         version: { id: made.group.version.id, number: '0.1' },
-        newer: { id: second.group.version.id, number: second.group.version.revision + '.' + second.group.version.version },
+        newer: {
+          id: second.group.version.id,
+          number: second.group.version.revision + '.' + second.group.version.version,
+        },
       },
     ]);
     // An approved document never changes by itself (CG-F): the run still pins the first.
-    expect(members((await as((trx) => latestVersion(trx, doc.artifactId)))!)[0]!.group!.version).toBe(
-      made.group.version.id,
-    );
+    expect(
+      members((await as((trx) => latestVersion(trx, doc.artifactId)))!)[0]!.group!.version,
+    ).toBe(made.group.version.id);
 
     const preview = await as((trx) =>
       previewGroupTake(trx, {

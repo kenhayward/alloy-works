@@ -26,6 +26,7 @@ describe('the rule behind a refusal', () => {
       ['section.required', 'section_required', 'TPL-013'],
       ['component.required', 'component_required', 'TPL-044'],
       ['template.unusable', 'template_unusable', 'TPL-074'],
+      ['group.member_invalid', 'group_member_invalid', 'REU-060'],
       ['creation.failed', 'creation_failed', 'TPL-024'],
       ['parameter.variable', 'parameter_variable', 'TPL-069'],
       ['profile.incomplete', 'profile_incomplete', 'TPL-051'],
@@ -129,6 +130,10 @@ describe('the rule behind a refusal', () => {
       // guards (TM-A).
       'term.invalid',
       'term.used',
+      // A group with no approved version to place, and a version not its own: the CG plan's own
+      // guards (CG-F).
+      'group.unapproved',
+      'group.version_invalid',
       // The vocabulary an import would make, refused by its shape: the VO plan's own guard (VO-I).
       'vocabulary.invalid',
       // A refresh with no source, or one that cannot be read or run: the VO plan's own guards (VO-J).

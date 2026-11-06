@@ -61,6 +61,10 @@ const WIRE_CODES = {
   'group.member_missing': 'group_member_missing',
   'group.member_erased': 'group_member_erased',
   'group.last_holder': 'group_last_holder',
+  // A component group's (the CG plan): a member refused, none approved to place, a version not its own.
+  'group.member_invalid': 'group_member_invalid',
+  'group.unapproved': 'group_unapproved',
+  'group.version_invalid': 'group_version_invalid',
   'format.unsupported': 'format_unsupported',
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',
@@ -290,6 +294,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'section.required': 'TPL-013',
   'component.required': 'TPL-044',
   'template.unusable': 'TPL-074',
+  // A group's member that is no component, or not once (REU-060; the CG plan, CG-C).
+  'group.member_invalid': 'REU-060',
   'creation.failed': 'TPL-024',
   'metadata.invalid': 'TPL-055',
   // A definition checked against what uses it before it is written (definitions.md, DE-E).

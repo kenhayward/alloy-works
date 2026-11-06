@@ -85,7 +85,7 @@ const refusals = {
   },
   409: {
     description:
-      'space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once',
+      'space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset, or a component group pins it; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once',
     schema: ErrorBody,
   },
 } as const;
