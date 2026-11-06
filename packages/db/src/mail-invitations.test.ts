@@ -114,7 +114,7 @@ describe('invitations and closure notices by email (the EM plan, EM-S, EM-U and 
     await inviting('grace@example.test');
     // Renewed a day later, it is mailed again.
     await as((trx) =>
-      sql`update email_delivery set created_at = now() - interval '25 hours'`.execute(trx),
+      sql`update email_delivery set created_at = created_at - interval '25 hours'`.execute(trx),
     );
     await inviting('grace@example.test');
     // A share's extension moves the expiry alone, as `extendGrant` does: no mail.
