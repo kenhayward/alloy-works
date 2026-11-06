@@ -53,6 +53,10 @@ positioning claim, and it is the one Workiva does not have.
 | **REU-057** | A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit                                                                                                                                                                                         | T7         | Specified             |
 | **REU-058** | A copy must keep the outline's structure and node identities, so cross-references resolve in it (**STR-046**), and its template, parameters, values, language and profile; it must carry no versions, comments, baselines, publications or grants, start in its workflow's first state, and be audited (**LIF-063**)                                                                                                                       | T7         | Specified             |
 | **REU-059** | A component copied from another component or from a template must record what it was made from and at which version, and must say whether that source has changed since (**TPL-075**, REU-056)                                                                                                                                                                                                                                             | T7         | Specified             |
+| **REU-060** | A set of components must be reusable as one unit, a **component group**: versioned, approved as a whole, its version pinning each member's version, holding components only and each at most once                                                                                                                                                                                                                                          | T7         | Specified             |
+| **REU-061** | Placing a group must place each member as a reference to the version the group pins, kept together and in the group's order; a document may reword a member locally (REU-011) but must not add, remove or reorder members except by taking a group version                                                                                                                                                                                 | T7         | Specified             |
+| **REU-062** | A newer approved version of a group a document places must be offered on that document, never applied by itself; taking it must say first what changes, become the document's next version, and keep each kept member's local rewording                                                                                                                                                                                                    | T7         | Specified             |
+| **REU-063** | Where-used must name the documents placing a group for each of its members (REU-052), and a component a group version pins must not be deletable or movable away on its own                                                                                                                                                                                                                                                                | T7         | Specified             |
 
 **REU-042 and REU-043 answer what a reader sees, which only the publish path had covered.** A
 reference to something deleted or unreadable fails a publish by name (REU-005) and, until this
@@ -393,3 +397,16 @@ Not a review. Ken asked that a template's copied components keep a link back to 
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 58, of which 4 superseded and 1 withdrawn | 59, of which 4 superseded and 1 withdrawn |
+
+### Component groups (#1031), 2026-11-06
+
+Not a review. Ken asked for components reused, approved and changed as one unit, and chose that a group's new
+version is offered on each document rather than followed ([the CG plan](../../plans/2026-11-06-cg-component-groups.md)).
+
+| What was found                                | Change                         |
+| --------------------------------------------- | ------------------------------ |
+| Reuse stopped at the component; STR-004 holds | **REU-060** to **REU-063** new |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 59, of which 4 superseded and 1 withdrawn | 63, of which 4 superseded and 1 withdrawn |
