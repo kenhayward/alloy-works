@@ -78,7 +78,7 @@ if [ "$mode" = auto ] && [ "$target" = "$failed" ]; then
 fi
 
 exec 9>"$STATE/lock"
-flock -n 9 || fail "Another deploy is running."
+flock -w 3600 9 || fail "Another deploy or a backup held the lock for an hour."
 
 echo "== $(date -Is) deploying $target over ${deployed:-nothing}"
 [ -d "$SRC/.git" ] || git clone --quiet --no-checkout "$SOURCE_REPO" "$SRC"

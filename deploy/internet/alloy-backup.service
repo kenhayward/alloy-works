@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up Alloy Works's databases and object store
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+OnFailure=alloy-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/alloy-works/backup.sh

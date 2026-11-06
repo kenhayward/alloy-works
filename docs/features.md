@@ -229,7 +229,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   It configures sign-in once, then leaves it to Administration. [The settings](../deploy/README.md).
 - **An installation on the internet.** `compose.internet.yaml` runs one environment on a Linux machine behind a reverse
   proxy its owner runs, with its own Keycloak in production mode, only port 443 open, and deploys of each published release
-  on a timer, the databases dumped first. [Installing it](../deploy/internet/README.md).
+  on a timer, the databases dumped first. Nightly, restic backs up every database and the object store, encrypted, and a
+  drill proves the latest restores; a failed deploy or backup is mailed. [Installing it](../deploy/internet/README.md).
 - **Closing an environment.** Someone holding `close_environment` and both export permissions closes one
   from Administration's **Export**: a recent sign-in, its name typed, and a whole export from the last 24
   hours or that one is declined, recorded. For 30 days only those holding `close_environment` or `hold`, or

@@ -1,0 +1,6 @@
+[Unit]
+Description=Mail the operator that %i failed
+
+[Service]
+Type=oneshot
+ExecStart=/opt/alloy-works/alert.sh %i
