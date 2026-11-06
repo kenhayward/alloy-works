@@ -10,7 +10,12 @@ PROXY=$(sed -n 's/^PROXY_ADDRESS=//p' "${ALLOY_SETTINGS:-/etc/alloy-works/intern
   echo 'PROXY_ADDRESS is not set' >&2
   exit 1
 }
-OUTSIDE=${ALLOY_OUTSIDE_INTERFACE:-eth0}
+# The interface of the default route, unless named: rules on an interface that is not there match nothing.
+OUTSIDE=${ALLOY_OUTSIDE_INTERFACE:-$(ip route show default | awk '{ print $5; exit }')}
+[ -n "$OUTSIDE" ] && [ -e "/sys/class/net/$OUTSIDE" ] || {
+  echo "No outside interface '$OUTSIDE': set ALLOY_OUTSIDE_INTERFACE" >&2
+  exit 1
+}
 
 iptables -N DOCKER-USER 2>/dev/null || true
 iptables -F DOCKER-USER

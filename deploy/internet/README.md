@@ -33,7 +33,8 @@ On the machine, as root, with Docker, git and restic:
    generated secret. Fill in each `CHANGE_ME`, and keep a copy elsewhere: it is the only copy of the sealing keys
    and of `RESTIC_PASSWORD`, without which no backup can be read.
 3. If the firewall drops your network's DNS server, as it will on a private one, give Docker public resolvers
-   in `/etc/docker/daemon.json`: `{"dns": ["1.1.1.1", "9.9.9.9"]}`, then restart Docker.
+   in `/etc/docker/daemon.json`: `{"dns": ["9.9.9.9", "8.8.8.8"]}`, then restart Docker. Check each answers from the
+   machine first (`dig @9.9.9.9 github.com`): one that does not costs every lookup in every container its timeout.
 4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer alloy-backup.timer`.
 5. Point the proxy's host for all three names at this machine's 443 over https, with websockets on. If it limits
    who may call, allow this machine's own address too: the stack reaches its public names through the proxy.
@@ -86,6 +87,21 @@ Migrations only go forward. To go back, restore the dump taken before the releas
 `postgres` container), then `deploy.sh <older tag>`. To recover the machine, `restic restore` the latest
 snapshots and load each dump, and the store's files into its volume, before the first deploy.
 
+## The outside check
+
+`outside-check.sh <app> <sign-in> <store>`, from a checkout on a machine outside the network, after any change
+to the stack. It asks for what a caller on the internet should not get, and exits with the number refused
+wrongly: the security headers; a forged `Host` or `X-Forwarded-Host`; Keycloak's administration, by plain and
+encoded paths; the store's listing, buckets, IAM and anonymous reads and writes; registration; and the usual
+ports. With `ALLOY_CHECK_SSH=<machine>` it also reads the door's log, where a forged `X-Forwarded-For` must not
+appear as the caller, and with `ALLOY_CHECK_LAN="<address>:<port> ..."` tries those LAN addresses from inside
+the containers. `ALLOY_CHECK_CREDENTIALS=yes` tries development's published passwords and keys at Keycloak and
+the store.
+
+Still by hand: a full port scan from outside (`nmap -Pn -p- <public address>`); a sixth wrong password locking
+an account; an administrator asked for a second factor; and a heavy publication slowing the worker while the
+machine's other work goes on.
+
 ## Not here yet
 
-Logs kept off the machine, an outside check, rate limits and a content security policy.
+Logs kept off the machine, rate limits and a content security policy.

@@ -19,6 +19,7 @@ const example = read('internet/internet.env.example');
 const backup = read('internet/backup.sh');
 const drill = read('internet/restore-drill.sh');
 const alert = read('internet/alert.sh');
+const outside = read('internet/outside-check.sh');
 const unit = (name: string): string => read(`internet/${name}`);
 
 /** A service's block in a compose file: its own lines, up to the next service or top-level key. */
@@ -59,7 +60,8 @@ describe('the internet stack', () => {
       .filter(([, block]) => /\n {4}ports:\n/.test(block))
       .map(([name, block]) => [name, [...block.matchAll(/^ {6}- '(.+)'$/gm)].map((m) => m[1])]);
     expect(published).toEqual([
-      ['public-proxy', ['443:443']],
+      // IPv4 alone: an IPv6 caller would reach the door without the proxy, and the firewall is iptables.
+      ['public-proxy', ['0.0.0.0:443:443']],
       ['keycloak', ['127.0.0.1:${KEYCLOAK_CONSOLE_PORT:-9090}:9090']],
     ]);
   });
@@ -135,12 +137,17 @@ describe('the internet stack', () => {
     }
   });
 
-  it('keeps administration off the internet at the door', () => {
-    expect(caddy).toMatch(
-      /@administration path \/admin \/admin\/\* \/realms\/master \/realms\/master\/\*/,
-    );
-    expect(caddy).toMatch(/respond @administration 404/);
+  it('keeps administration off the internet at the door, letting through the one realm alone', () => {
+    // An allowlist, since Keycloak drops what follows a ';' in a segment: /admin;x/ reached a denylist's
+    // Keycloak (the step 5 review).
+    expect(caddy).toMatch(/@elsewhere not path \/realms\/alloy\/\* \/resources\/\*/);
+    expect(caddy).toMatch(/@matrix path_regexp ;/);
+    expect(caddy).toMatch(/respond @matrix 404/);
+    expect(caddy).not.toMatch(/@administration/);
     expect(caddy).toMatch(/admin off/);
+    expect(JSON.parse(realm)).toMatchObject({ realm: 'alloy' });
+    expect(outside).toMatch(/\/admin;x\/master\/console\//);
+    expect(outside).toMatch(/\/realms\/master;x\/protocol\/openid-connect\/token/);
   });
 
   it('answers on the store for objects in the bucket and nothing else', () => {
@@ -148,9 +155,45 @@ describe('the internet stack', () => {
     expect(caddy).toMatch(/respond @elsewhere 404/);
   });
 
-  it('has the store answer on the network the door reaches it by', () => {
+  it('reaches the store inside but where a signed link is made, which carries the public address', () => {
+    // The service alone signs links; the worker and the restorer only read and write, and through
+    // the proxy each of their calls took 13 times as long.
+    expect(services.get('service')).toMatch(
+      /OBJECT_STORE_ENDPOINT: https:\/\/\$\{ALLOY_STORE_HOST:\?\}/,
+    );
+    for (const name of ['worker', 'restorer', 'setup']) {
+      expect(services.get(name), name).toMatch(
+        /OBJECT_STORE_ENDPOINT: http:\/\/seaweedfs:\$\{STORE_PORT:-8333\}/,
+      );
+    }
+  });
+
+  it('has the store answer on the network the door reaches it by, and with S3 alone', () => {
     expect(services.get('seaweedfs')).toMatch(/'-s3\.ip\.bind=0\.0\.0\.0'/);
-    expect(services.get('seaweedfs')).toMatch(/edge: \{\}/);
+    // Its gRPC port binds wherever S3 does and takes no credential, so the store sits on a network of
+    // its own, and a gate relaying S3 alone answers by its name everywhere else.
+    expect(services.get('seaweedfs')).toMatch(
+      /\n {4}networks: !override\n {6}store:\n {8}aliases: \[store-backend\]\n/,
+    );
+    expect(overlay).toMatch(/\n {2}store:\n {4}internal: true\n/);
+    const gate = services.get('store-gate')!;
+    expect(gate).toMatch(/image: alpine\/socat:[\d.]+@sha256:[0-9a-f]{64}/);
+    expect(gate).toMatch(
+      /'TCP-LISTEN:\$\{STORE_PORT:-8333\},fork,reuseaddr', 'TCP:store-backend:\$\{STORE_PORT:-8333\}'/,
+    );
+    expect(gate).toMatch(/default:\n {8}aliases: \[seaweedfs\]/);
+    expect(gate).toMatch(/edge:\n {8}aliases: \[seaweedfs\]/);
+    expect(gate).toMatch(/cap_drop: \[ALL\]/);
+    expect(gate).toMatch(/read_only: true/);
+    expect(gate).toMatch(/user: '65534:65534'/);
+    expect(outside).toMatch(/seaweedfs:18333/);
+    // Its master, volume server and filer take no credential, so no other container reaches them.
+    expect(services.get('seaweedfs')).toMatch(/'-ip=127\.0\.0\.1'/);
+    expect(services.get('seaweedfs')).toMatch(/'-ip\.bind=127\.0\.0\.1'/);
+    expect(services.get('seaweedfs')).toMatch(
+      /image: chrislusf\/seaweedfs:[\d.]+@sha256:[0-9a-f]{64}/,
+    );
+    expect(outside).toMatch(/seaweedfs:8888/);
   });
 
   it('believes only the proxy, and decides what the service is told', () => {
@@ -164,7 +207,18 @@ describe('the internet stack', () => {
   });
 
   it('holds no address of any machine, since this repository is public', () => {
-    for (const file of [overlay, caddy, realm, configure, deploy, example, backup, drill, alert]) {
+    for (const file of [
+      overlay,
+      caddy,
+      realm,
+      configure,
+      deploy,
+      example,
+      backup,
+      drill,
+      alert,
+      outside,
+    ]) {
       expect(file).not.toMatch(/\b(?:192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+/);
     }
   });
@@ -236,6 +290,47 @@ describe('the internet stack', () => {
     expect(alert).toMatch(/-K -/);
     expect(alert).not.toMatch(/--user\s+"?\$/);
     expect(example).toMatch(/^ALERT_EMAIL=CHANGE_ME$/m);
+  });
+  it('logs who called at the door, keeping signatures, codes and cookies out of the log', () => {
+    expect(caddy).toMatch(/^\(access\) \{\n\tlog \{\n\t\toutput stdout/m);
+    for (const name of ['X-Amz-Signature', 'X-Amz-Credential', 'code', 'state', 'session_state']) {
+      expect(caddy, name).toMatch(new RegExp(`^\t+delete ${name}$`, 'm'));
+    }
+    expect(caddy).toMatch(/request>headers>Cookie delete/);
+    expect(caddy).toMatch(/request>headers>Authorization delete/);
+    expect(caddy.match(/^\timport access$/gm)).toHaveLength(3);
+  });
+
+  it('deploys a release only by its tag, never a branch of the same name', () => {
+    expect(deploy).toMatch(/auto \| latest\)\s*\n\s*fail "\$target has no tag/);
+  });
+
+  it('finds the outside interface rather than assuming one, and says when the firewall fails', () => {
+    const firewall = read('internet/firewall.sh');
+    expect(firewall).toMatch(/ip route show default/);
+    expect(firewall).toMatch(/\/sys\/class\/net\/\$OUTSIDE/);
+    expect(firewall).not.toMatch(/:-eth0\}/);
+    expect(unit('alloy-firewall.service')).toMatch(/^OnFailure=alloy-alert@%n\.service$/m);
+  });
+
+  it('checks from outside each thing the plan names, and stops on none of them', () => {
+    expect(outside).toMatch(/set -uo pipefail/);
+    for (const check of [
+      'headers',
+      'forged host',
+      'forged client address',
+      'blocked paths',
+      'the store',
+      'registration',
+      'published credentials',
+      'ports',
+      'from inside',
+    ]) {
+      expect(outside, check).toMatch(new RegExp(`^section '${check}'$`, 'm'));
+    }
+    // Development's published values, refused here: read from the files that publish them.
+    expect(outside).toMatch(/deploy\/compose\.yaml/);
+    expect(outside).toMatch(/deploy\/keycloak\/alloy-realm\.json/);
   });
 
   it('installs what runs beside the stack, with the stack, once it is up', () => {

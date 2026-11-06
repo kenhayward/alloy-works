@@ -27,7 +27,7 @@ services:
       - ./internet/Caddyfile:/etc/caddy/Caddyfile:ro
       - public-proxy-data:/data
     ports:
-      - '443:443'
+      - '0.0.0.0:443:443'
     networks:
       public: {}
       edge:
@@ -145,27 +145,65 @@ services:
     logging: *logs
 
   seaweedfs:
-    # As compose.yaml's, and answering on `edge` too: it binds only its first network otherwise.
+    image: chrislusf/seaweedfs:4.46@sha256:08d516132314207d10c8e37cbffc1f32b147d870169688734cc61c6231625b62
+    # As compose.yaml's, with S3 on every address of its own network, for the gate to reach. Its
+    # master, volume server and filer take no credential, so they answer inside the container alone.
     command:
       [
         'server',
         '-dir=/data',
         '-volume.max=200',
         '-master.volumeSizeLimitMB=64',
+        '-ip=127.0.0.1',
+        '-ip.bind=127.0.0.1',
         '-s3',
         '-s3.port=${STORE_PORT:-8333}',
         '-s3.iam.readOnly=false',
         '-s3.ip.bind=0.0.0.0',
+        '-s3.port.iceberg=0',
+        '-s3.port.lance=0',
       ]
     environment:
       AWS_ACCESS_KEY_ID: ${OBJECT_STORE_ADMIN_KEY:?}
       AWS_SECRET_ACCESS_KEY: ${OBJECT_STORE_ADMIN_SECRET:?}
     ports: !reset []
-    networks:
-      edge: {}
+    # A network of its own: its S3 gRPC port binds wherever S3 does and takes no credential, so only
+    # store-gate reaches it, and every other container reaches S3 alone, through the gate.
+    networks: !override
+      store:
+        aliases: [store-backend]
     security_opt: ['no-new-privileges:true']
     mem_limit: 3g
     cpus: 2
+    restart: unless-stopped
+    logging: *logs
+
+  # The store's one way in: S3's port relayed, nothing else. It answers as `seaweedfs` on the
+  # networks the store left, so the door, the service and the worker call it as before.
+  store-gate:
+    image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
+    command:
+      ['TCP-LISTEN:${STORE_PORT:-8333},fork,reuseaddr', 'TCP:store-backend:${STORE_PORT:-8333}']
+    user: '65534:65534'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    networks:
+      default:
+        aliases: [seaweedfs]
+      edge:
+        aliases: [seaweedfs]
+      store: {}
+    healthcheck:
+      test: ['CMD', 'socat', '-u', 'OPEN:/dev/null', 'TCP:127.0.0.1:${STORE_PORT:-8333}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 256m
+    cpus: 1
     restart: unless-stopped
     logging: *logs
 
@@ -235,7 +273,8 @@ services:
   worker:
     environment:
       DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
-      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      # Inside: it signs no link, so it need not go out through the proxy and back.
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
       SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
       SECRET_CONNECTOR_EMBED_KEY: ${SECRET_CONNECTOR_EMBED_KEY:?}
@@ -257,7 +296,8 @@ services:
     environment:
       DATABASE_URL: postgres://aw_worker:${DATABASE_PASSWORD_WORKER:?}@postgres:5432/alloy
       RESTORER_DATABASE_URL: postgres://aw_restorer:${DATABASE_PASSWORD_RESTORER:?}@postgres:5432/alloy
-      OBJECT_STORE_ENDPOINT: https://${ALLOY_STORE_HOST:?}
+      # Inside: it signs no link, so it need not go out through the proxy and back.
+      OBJECT_STORE_ENDPOINT: http://seaweedfs:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET:?}
       SECRET_OBJECT_STORE_KEY: ${SECRET_OBJECT_STORE_KEY:?}
     cap_drop: [ALL]
@@ -331,6 +371,9 @@ networks:
       config:
         - subnet: 10.213.72.0/24
   keycloak:
+    internal: true
+  # The store and its gate.
+  store:
     internal: true
 
 volumes:
