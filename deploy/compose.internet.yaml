@@ -5,6 +5,13 @@
 # Every published port and value of compose.yaml is taken back here, and every setting has no default.
 # One door: Caddy, on 443. It alone is on `public`, and reaches the service, Keycloak and the store over
 # `edge` from one fixed address, the only one any of them believes about who is calling.
+# A few files of each container's output, rotated, so logs never fill the disk.
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: '20m'
+    max-file: '5'
+
 services:
   public-proxy:
     image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
@@ -31,6 +38,7 @@ services:
     mem_limit: 512m
     cpus: 1
     restart: unless-stopped
+    logging: *logs
 
   # Production mode, on a database of its own. Its console answers on this machine alone, by ssh.
   keycloak:
@@ -67,6 +75,7 @@ services:
     mem_limit: 2g
     cpus: 2
     restart: unless-stopped
+    logging: *logs
 
   keycloak-postgres:
     image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -87,6 +96,7 @@ services:
     mem_limit: 1g
     cpus: 1
     restart: unless-stopped
+    logging: *logs
 
   # Runs at every start: what a realm file must not hold, and the first administrator once.
   keycloak-configure:
@@ -111,6 +121,7 @@ services:
       keycloak:
         condition: service_started
     restart: 'no'
+    logging: *logs
 
   # None of it: this stack has no stand-in.
   stand-in-idp:
@@ -131,6 +142,7 @@ services:
     mem_limit: 4g
     cpus: 4
     restart: unless-stopped
+    logging: *logs
 
   seaweedfs:
     # As compose.yaml's, and answering on `edge` too: it binds only its first network otherwise.
@@ -155,6 +167,7 @@ services:
     mem_limit: 3g
     cpus: 2
     restart: unless-stopped
+    logging: *logs
 
   setup:
     command: ['pnpm', 'environment:setup']
@@ -185,6 +198,7 @@ services:
       DEV_DATABASE_URL: !reset null
       STAND_IN_ISSUER: !reset null
       DEV_EXTRA_HOSTNAME: !reset null
+    logging: *logs
 
   service:
     environment:
@@ -216,6 +230,7 @@ services:
     mem_limit: 3g
     cpus: 4
     restart: unless-stopped
+    logging: *logs
 
   worker:
     environment:
@@ -236,6 +251,7 @@ services:
     mem_limit: 6g
     cpus: 4
     restart: unless-stopped
+    logging: *logs
 
   restorer:
     environment:
@@ -249,6 +265,7 @@ services:
     mem_limit: 2g
     cpus: 2
     restart: unless-stopped
+    logging: *logs
 
   steward:
     environment:
@@ -256,6 +273,7 @@ services:
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
     mem_limit: 1g
+    logging: *logs
 
   steward-process:
     environment:
@@ -271,6 +289,7 @@ services:
     mem_limit: 1g
     cpus: 1
     restart: unless-stopped
+    logging: *logs
 
   # Still no route out: no webhooks, no re-checks of cited entries, no outside source.
   connector:
@@ -291,6 +310,7 @@ services:
     security_opt: ['no-new-privileges:true']
     mem_limit: 3g
     restart: unless-stopped
+    logging: *logs
 
   delivered-postgres:
     environment:
@@ -299,6 +319,7 @@ services:
     mem_limit: 1g
     cpus: 1
     restart: unless-stopped
+    logging: *logs
 
 networks:
   # Caddy's alone, carrying the published port and nothing else.

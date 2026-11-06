@@ -16,6 +16,10 @@ const realm = read('internet/alloy-realm.json');
 const configure = read('internet/configure.sh');
 const deploy = read('internet/deploy.sh');
 const example = read('internet/internet.env.example');
+const backup = read('internet/backup.sh');
+const drill = read('internet/restore-drill.sh');
+const alert = read('internet/alert.sh');
+const unit = (name: string): string => read(`internet/${name}`);
 
 /** A service's block in a compose file: its own lines, up to the next service or top-level key. */
 function serviceBlocks(file: string): Map<string, string> {
@@ -160,7 +164,7 @@ describe('the internet stack', () => {
   });
 
   it('holds no address of any machine, since this repository is public', () => {
-    for (const file of [overlay, caddy, realm, configure, deploy, example]) {
+    for (const file of [overlay, caddy, realm, configure, deploy, example, backup, drill, alert]) {
       expect(file).not.toMatch(/\b(?:192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+/);
     }
   });
@@ -180,8 +184,57 @@ describe('the internet stack', () => {
     expect(configure).not.toMatch(/ssoSessionMaxLifespan=15/);
   });
 
-  it('never removes a volume when it deploys', () => {
-    expect(deploy).not.toMatch(/down\s+[^\n]*-v|--volumes|volume\s+(rm|prune)|system\s+prune/);
-    expect(deploy).toMatch(/set -euo pipefail/);
+  it('never removes a volume when it deploys, backs up or drills a restore', () => {
+    for (const script of [deploy, backup, drill]) {
+      expect(script).not.toMatch(/down\s+[^\n]*-v|--volumes|volume\s+(rm|prune)|system\s+prune/);
+      expect(script).toMatch(/set -euo pipefail/);
+    }
+  });
+
+  it('keeps every container to a few rotated log files', () => {
+    expect(overlay).toMatch(
+      /^x-logs: &logs\n {2}driver: json-file\n {2}options:\n {4}max-size: '\d+m'\n {4}max-file: '\d+'$/m,
+    );
+    for (const [name, block] of services) {
+      if (/scale: 0/.test(block)) continue;
+      expect(block, name).toMatch(/\n {4}logging: \*logs/);
+    }
+    for (const [name, block] of baseServices) {
+      if (block.includes(String.fromCharCode(10) + '    profiles:')) continue;
+      expect(services.has(name), name).toBe(true);
+    }
+  });
+
+  it('backs up all four stores, encrypted, and keeps a week, a month and half a year', () => {
+    for (const store of ['postgres', 'delivered-postgres', 'keycloak-postgres']) {
+      expect(backup, store).toMatch(new RegExp(`dump ${store} [a-z]+$`, 'm'));
+    }
+    expect(backup).toMatch(/pg_dumpall/);
+    expect(backup).toMatch(/seaweedfs/);
+    expect(backup).toMatch(/restic backup/);
+    expect(backup).toMatch(
+      /restic forget[^\n]*--keep-daily 7[^\n]*--keep-weekly 4[^\n]*--keep-monthly 6/,
+    );
+    expect(example).toMatch(/^RESTIC_REPOSITORY=CHANGE_ME$/m);
+    expect(example).toMatch(/^RESTIC_PASSWORD=GENERATE$/m);
+  });
+
+  it('drills a restore into containers of its own, with no network and no volume of the stack', () => {
+    expect(drill).toMatch(/restic restore/);
+    expect(drill).toMatch(/--network none/);
+    expect(drill).toMatch(/--rm/);
+    expect(drill).not.toMatch(/compose[^\n]* up|-v [a-z-]*-data:/);
+  });
+
+  it('mails the operator when a deploy or a backup fails, never putting the password on a command line', () => {
+    for (const name of ['alloy-deploy.service', 'alloy-backup.service']) {
+      expect(unit(name), name).toMatch(/^OnFailure=alloy-alert@%n\.service$/m);
+    }
+    expect(unit('alloy-alert@.service')).toMatch(/alert\.sh %i/);
+    expect(unit('alloy-backup.timer')).toMatch(/OnCalendar=/);
+    expect(alert).toMatch(/--ssl-reqd/);
+    expect(alert).toMatch(/-K -/);
+    expect(alert).not.toMatch(/--user\s+"?\$/);
+    expect(example).toMatch(/^ALERT_EMAIL=CHANGE_ME$/m);
   });
 });

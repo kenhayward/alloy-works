@@ -21,19 +21,20 @@ Three public names reach the same proxy host: the app, Keycloak and the store (s
   secret and the first administrator, who must change the password and enrol an authenticator at first sign-in.
 - **`pnpm environment:setup`** ([the settings](../README.md#an-installations-own-setup-pnpm-environmentsetup))
   makes the one environment on every deploy.
-- Limits on memory, CPUs and privileges on every container.
+- Limits on memory, CPUs and privileges on every container, and its logs rotated: five files of 20 MB.
 
 ## Installing
 
-On the machine, as root, with Docker and git:
+On the machine, as root, with Docker, git and restic:
 
-1. Copy `deploy.sh`, `firewall.sh` and `internet.env.example` to `/opt/alloy-works`, and the three units to
+1. Copy the five `.sh` files and `internet.env.example` to `/opt/alloy-works`, and the six units to
    `/etc/systemd/system`.
 2. `/opt/alloy-works/deploy.sh settings` writes `/etc/alloy-works/internet.env` (root, 600) with every
-   generated secret. Fill in each `CHANGE_ME`, and keep a copy elsewhere: it is the only copy of the sealing keys.
+   generated secret. Fill in each `CHANGE_ME`, and keep a copy elsewhere: it is the only copy of the sealing keys
+   and of `RESTIC_PASSWORD`, without which no backup can be read.
 3. If the firewall drops your network's DNS server, as it will on a private one, give Docker public resolvers
    in `/etc/docker/daemon.json`: `{"dns": ["1.1.1.1", "9.9.9.9"]}`, then restart Docker.
-4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer`.
+4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer alloy-backup.timer`.
 5. Point the proxy's host for all three names at this machine's 443 over https, with websockets on. If it limits
    who may call, allow this machine's own address too: the stack reaches its public names through the proxy.
 
@@ -46,11 +47,26 @@ minutes; `deploy.sh <tag or branch>` deploys one by hand. Each deploy dumps the 
 `KEYCLOAK_FIRST_ADMIN_PASSWORD`. They hold no content permissions, so they give themselves Author and
 Publisher from Administration's Overview, under Access to the whole environment.
 
+## Backups and alerts
+
+`alloy-backup.timer` runs `backup.sh` nightly: `pg_dumpall` of the three databases (the platform, delivery and
+Keycloak), then those and the object store's files, paused for the seconds it takes, to `RESTIC_REPOSITORY`,
+encrypted. It keeps 7 days, 4 weeks and 6 months, then checks the repository.
+
+`restore-drill.sh` proves the latest backup restores without touching the stack: each dump goes into a container
+of its own with no network, and must arrive with the running store's databases and tables; the store's files are
+verified against the repository. Run it after changing the repository, and now and then.
+
+A failed deploy or backup runs `alert.sh`, which mails `ALERT_EMAIL` the unit's last lines through the SMTP
+settings. Watching that the service is up is for a monitor elsewhere: `https://<app>/health` answers 200 with
+`{"status":"ok"}`.
+
 ## Going back
 
 Migrations only go forward. To go back, restore the dump taken before the release (`psql -U postgres` in the
-`postgres` container), then `deploy.sh <older tag>`.
+`postgres` container), then `deploy.sh <older tag>`. To recover the machine, `restic restore` the latest
+snapshots and load each dump, and the store's files into its volume, before the first deploy.
 
 ## Not here yet
 
-Backups off the machine, alerts, an outside check, rate limits and a content security policy.
+Logs kept off the machine, an outside check, rate limits and a content security policy.

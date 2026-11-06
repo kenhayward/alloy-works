@@ -488,9 +488,9 @@ product, stays a variable, `SECRET_GOOGLE`.
 ## What is not here yet
 
 - **No hosted deployment**, and so no registry, no secret store and no monitoring. Everything above runs on
-  one machine; [`internet/`](internet/README.md) puts one behind a reverse proxy, with backups kept on it alone.
+  one machine; [`internet/`](internet/README.md) puts one behind a reverse proxy, with nightly backups.
 - **No release process.** Images are built on every pull request and thrown away; the desktop
   installer is built locally and is unsigned.
   [`docs/ci-and-releases.md`](../docs/ci-and-releases.md) is where that will be written down.
-- **No backup or rollback for an installation that has data.** `pnpm environment:setup` migrates it,
-  and migrations only go forward.
+- **No rollback for an installation that has data.** `pnpm environment:setup` migrates it, and migrations
+  only go forward; [`internet/`](internet/README.md) backs one up and restores from that.
