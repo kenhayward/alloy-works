@@ -83,6 +83,26 @@
   align-self: flex-start;
 }
 
+.mailed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-8) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.mailed > legend {
+  padding: 0;
+}
+
+.mailedKind {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

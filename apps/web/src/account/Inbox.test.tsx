@@ -17,7 +17,7 @@ const GONE = 'tttttttt-0000-4000-8000-000000000002';
 const id = (n: number) => `nnnnnnnn-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 /** The inbox routes, answered from notifications the test holds. */
-function service(only?: Record<string, unknown>[]) {
+function service(only?: Record<string, unknown>[], emailSent = false) {
   const held = [
     {
       id: id(1),
@@ -62,14 +62,22 @@ function service(only?: Record<string, unknown>[]) {
   ];
   const rows = (only ?? held) as typeof held;
   let cadences = { mention: 'at_once', reply: 'at_once', resolution: 'daily' };
+  let email = { mention: true, reply: true, resolution: true, round: true, digest: true };
+  const bodies: unknown[] = [];
   const asked: string[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     asked.push(`${request.method} ${url.pathname}`);
     if (url.pathname === '/v1/inbox/preferences') {
-      if (request.method === 'PUT') cadences = { ...cadences, ...(await request.json()) };
-      return json(200, cadences);
+      if (request.method === 'PUT') {
+        const body = (await request.json()) as { email?: typeof email };
+        bodies.push(body);
+        const { email: mailed, ...told } = body;
+        cadences = { ...cadences, ...told };
+        email = { ...email, ...mailed };
+      }
+      return json(200, { ...cadences, email, emailSent });
     }
     if (url.pathname === '/v1/inbox') {
       return json(200, {
@@ -106,6 +114,8 @@ function service(only?: Record<string, unknown>[]) {
     client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }),
     asked,
     cadences: () => cadences,
+    email: () => email,
+    bodies,
   };
 }
 
@@ -244,5 +254,57 @@ describe('the inbox, from the account chip', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Saved how often you are told.');
     expect(cadences()).toEqual({ mention: 'daily', reply: 'at_once', resolution: 'never' });
+  });
+
+  it('COL-064 chooses which kinds are sent by email, where the environment mails', async () => {
+    const { client, email, bodies } = service(undefined, true);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const mailed = await screen.findByRole('group', { name: 'Sent to you by email' });
+    await userEvent.click(
+      within(mailed).getByRole('checkbox', { name: 'When a comment names you' }),
+    );
+    await userEvent.click(within(mailed).getByRole('checkbox', { name: 'The daily digest' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Saved how often you are told.');
+    expect(email()).toEqual({
+      mention: false,
+      reply: true,
+      resolution: true,
+      round: true,
+      digest: false,
+    });
+    // Its own choices alone: whether the environment mails is not the person's to send.
+    expect(bodies[0]).not.toHaveProperty('emailSent');
+  });
+
+  it('offers no choice of email where the environment sends none', async () => {
+    const { client } = service();
+    render(<Inbox client={client} onClose={() => undefined} />);
+    await screen.findByLabelText('When a comment names you');
+    expect(screen.queryByRole('group', { name: 'Sent to you by email' })).toBeNull();
+  });
+
+  it('tells those who configure services that the environment’s email is failing, and opens Email', async () => {
+    const { client } = service([
+      {
+        id: id(7),
+        kind: 'mail',
+        actor: null,
+        thread: null,
+        on: null,
+        counts: null,
+        at: '2026-11-06T10:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const row = (await screen.findByText(/email is failing/)).closest('li')!;
+    expect(row).toHaveTextContent(
+      'Your environment’s email is failing: mail waits until its relay answers.',
+    );
+    expect(within(row).getByRole('link', { name: 'Open Email' })).toHaveAttribute(
+      'href',
+      '#/admin/email',
+    );
   });
 });

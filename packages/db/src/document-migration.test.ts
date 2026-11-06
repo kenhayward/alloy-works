@@ -278,7 +278,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0203_creating_tenants',
       '0204_mail_channel',
       '0205_mail_queue',
-'0206_mail_notifications',
+      '0206_mail_notifications',
     ]);
 
     // The component and its version are as they were.
@@ -548,7 +548,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0203_creating_tenants',
       '0204_mail_channel',
       '0205_mail_queue',
-'0206_mail_notifications',
+      '0206_mail_notifications',
     ]);
 
     const { rows } = await queryAs(

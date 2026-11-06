@@ -295,7 +295,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0203_creating_tenants',
       '0204_mail_channel',
       '0205_mail_queue',
-'0206_mail_notifications',
+      '0206_mail_notifications',
     ]);
     const kept = await queryAs(
       db.adminUrl,

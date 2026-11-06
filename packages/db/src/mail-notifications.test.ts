@@ -251,7 +251,9 @@ describe('notifications by email (the EM plan, EM-F, EM-G, EM-H, EM-N and EM-W)'
     await channelOn();
     const one = await mentioning(grace, ivy);
     await as(async (trx) => {
-      await sql`update principal set disabled_at = now(), disabled_by = 'person' where id = ${grace}`.execute(trx);
+      await sql`update principal set disabled_at = now(), disabled_by = 'person' where id = ${grace}`.execute(
+        trx,
+      );
       await sql`insert into thread_internal (thread_id, marked_by) values (${one.thread}, ${ada})`.execute(
         trx,
       );
@@ -371,7 +373,9 @@ describe('notifications by email (the EM plan, EM-F, EM-G, EM-H, EM-N and EM-W)'
         grantedBy: ada,
       }),
     );
-    await as((trx) => sql`update principal set disabled_at = null, disabled_by = null`.execute(trx));
+    await as((trx) =>
+      sql`update principal set disabled_at = null, disabled_by = null`.execute(trx),
+    );
     const fail = async () => {
       await mentioning(grace);
       await due();

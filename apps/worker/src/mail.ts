@@ -87,7 +87,11 @@ async function sendInTenant(
   let attempted = 0;
   for (const mail of claimed) {
     if (mail.notification !== null && inbox === undefined) {
-      await db.withTenant(tenant, (trx) => dropMail(trx, mail.id, 'no_hostname', mail.lease), SYSTEM);
+      await db.withTenant(
+        tenant,
+        (trx) => dropMail(trx, mail.id, 'no_hostname', mail.lease),
+        SYSTEM,
+      );
       log.warn({ tenant: tenant.id }, 'an environment with no address: its mail is dropped');
       continue;
     }

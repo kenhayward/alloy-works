@@ -239219,7 +239219,8 @@
                               "budget",
                               "webhook",
                               "reference",
-                              "import"
+                              "import",
+                              "mail"
                             ]
                           },
                           "actor": {
@@ -240364,20 +240365,63 @@
                         "never"
                       ],
                       "description": "Named a reviewer on a round; at once unless chosen"
+                    },
+                    "email": {
+                      "type": "object",
+                      "properties": {
+                        "mention": {
+                          "type": "boolean"
+                        },
+                        "reply": {
+                          "type": "boolean"
+                        },
+                        "resolution": {
+                          "type": "boolean"
+                        },
+                        "round": {
+                          "type": "boolean"
+                        },
+                        "digest": {
+                          "type": "boolean",
+                          "description": "The daily digest, counting the kinds left on"
+                        }
+                      },
+                      "required": [
+                        "mention",
+                        "reply",
+                        "resolution",
+                        "round",
+                        "digest"
+                      ],
+                      "description": "Whether each kind is mailed as it is told, the daily digest its own: mailed unless chosen (COL-064)"
+                    },
+                    "emailSent": {
+                      "type": "boolean",
+                      "description": "Whether this environment mails at all; it is its administrators’ choice"
                     }
                   },
                   "required": [
                     "mention",
                     "reply",
                     "resolution",
-                    "round"
+                    "round",
+                    "email",
+                    "emailSent"
                   ]
                 },
                 "example": {
                   "mention": "at_once",
                   "reply": "at_once",
                   "resolution": "at_once",
-                  "round": "at_once"
+                  "round": "at_once",
+                  "email": {
+                    "mention": false,
+                    "reply": false,
+                    "resolution": false,
+                    "round": false,
+                    "digest": false
+                  },
+                  "emailSent": false
                 }
               }
             },
@@ -240582,6 +240626,28 @@
                       "never"
                     ],
                     "description": "Named a reviewer on a round; at once unless chosen"
+                  },
+                  "email": {
+                    "type": "object",
+                    "properties": {
+                      "mention": {
+                        "type": "boolean"
+                      },
+                      "reply": {
+                        "type": "boolean"
+                      },
+                      "resolution": {
+                        "type": "boolean"
+                      },
+                      "round": {
+                        "type": "boolean"
+                      },
+                      "digest": {
+                        "type": "boolean",
+                        "description": "The daily digest, counting the kinds left on"
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": false
@@ -240633,20 +240699,63 @@
                         "never"
                       ],
                       "description": "Named a reviewer on a round; at once unless chosen"
+                    },
+                    "email": {
+                      "type": "object",
+                      "properties": {
+                        "mention": {
+                          "type": "boolean"
+                        },
+                        "reply": {
+                          "type": "boolean"
+                        },
+                        "resolution": {
+                          "type": "boolean"
+                        },
+                        "round": {
+                          "type": "boolean"
+                        },
+                        "digest": {
+                          "type": "boolean",
+                          "description": "The daily digest, counting the kinds left on"
+                        }
+                      },
+                      "required": [
+                        "mention",
+                        "reply",
+                        "resolution",
+                        "round",
+                        "digest"
+                      ],
+                      "description": "Whether each kind is mailed as it is told, the daily digest its own: mailed unless chosen (COL-064)"
+                    },
+                    "emailSent": {
+                      "type": "boolean",
+                      "description": "Whether this environment mails at all; it is its administrators’ choice"
                     }
                   },
                   "required": [
                     "mention",
                     "reply",
                     "resolution",
-                    "round"
+                    "round",
+                    "email",
+                    "emailSent"
                   ]
                 },
                 "example": {
                   "mention": "at_once",
                   "reply": "at_once",
                   "resolution": "at_once",
-                  "round": "at_once"
+                  "round": "at_once",
+                  "email": {
+                    "mention": false,
+                    "reply": false,
+                    "resolution": false,
+                    "round": false,
+                    "digest": false
+                  },
+                  "emailSent": false
                 }
               }
             },
@@ -243852,6 +243961,20 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "kindsOff": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "mention",
+                              "reply",
+                              "resolution",
+                              "round",
+                              "digest"
+                            ]
+                          },
+                          "description": "The kinds of notification this environment never mails, whatever a person chooses"
                         }
                       },
                       "required": [
@@ -243864,7 +243987,8 @@
                         "fromName",
                         "hasPassword",
                         "failingSince",
-                        "lastSuccessAt"
+                        "lastSuccessAt",
+                        "kindsOff"
                       ]
                     },
                     "platform": {
@@ -243900,7 +244024,8 @@
                     "fromName": "example",
                     "hasPassword": false,
                     "failingSince": "example",
-                    "lastSuccessAt": "example"
+                    "lastSuccessAt": "example",
+                    "kindsOff": []
                   },
                   "platform": {
                     "offered": false
@@ -244139,6 +244264,21 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "kindsOff": {
+                    "description": "The kinds never mailed; those held are kept where none are named",
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "mention",
+                        "reply",
+                        "resolution",
+                        "round",
+                        "digest"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -244235,6 +244375,20 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "kindsOff": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "mention",
+                              "reply",
+                              "resolution",
+                              "round",
+                              "digest"
+                            ]
+                          },
+                          "description": "The kinds of notification this environment never mails, whatever a person chooses"
                         }
                       },
                       "required": [
@@ -244247,7 +244401,8 @@
                         "fromName",
                         "hasPassword",
                         "failingSince",
-                        "lastSuccessAt"
+                        "lastSuccessAt",
+                        "kindsOff"
                       ]
                     },
                     "platform": {
@@ -244283,7 +244438,8 @@
                     "fromName": "example",
                     "hasPassword": false,
                     "failingSince": "example",
-                    "lastSuccessAt": "example"
+                    "lastSuccessAt": "example",
+                    "kindsOff": []
                   },
                   "platform": {
                     "offered": false
@@ -244577,7 +244733,8 @@
                           "purpose": {
                             "type": "string",
                             "enum": [
-                              "test"
+                              "test",
+                              "notification"
                             ],
                             "description": "Why it is sent"
                           },
@@ -244592,7 +244749,7 @@
                             "description": "`pending`: to be tried, at `nextAt`; `sent`: the relay took it; `given_up`: refused for good, or tried too long; `dropped`: never sent, for `droppedReason`"
                           },
                           "droppedReason": {
-                            "description": "Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity` or `relay_not_configured`",
+                            "description": "Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`",
                             "type": [
                               "string",
                               "null"
@@ -245040,6 +245197,20 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "kindsOff": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "mention",
+                              "reply",
+                              "resolution",
+                              "round",
+                              "digest"
+                            ]
+                          },
+                          "description": "The kinds of notification this environment never mails, whatever a person chooses"
                         }
                       },
                       "required": [
@@ -245052,7 +245223,8 @@
                         "fromName",
                         "hasPassword",
                         "failingSince",
-                        "lastSuccessAt"
+                        "lastSuccessAt",
+                        "kindsOff"
                       ]
                     },
                     "platform": {
@@ -245088,7 +245260,8 @@
                     "fromName": "example",
                     "hasPassword": false,
                     "failingSince": "example",
-                    "lastSuccessAt": "example"
+                    "lastSuccessAt": "example",
+                    "kindsOff": []
                   },
                   "platform": {
                     "offered": false

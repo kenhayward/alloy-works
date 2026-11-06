@@ -238,6 +238,8 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
       reply: 'at_once',
       resolution: 'daily',
       round: 'at_once',
+      email: { mention: true, reply: true, resolution: true, round: true, digest: true },
+      emailSent: false,
     });
     const set = await call('PUT', '/v1/inbox/preferences', 'ivy', { mention: 'never' });
     expect(set.json<InboxPreferences>()).toEqual({
@@ -245,6 +247,8 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
       reply: 'at_once',
       resolution: 'daily',
       round: 'at_once',
+      email: { mention: true, reply: true, resolution: true, round: true, digest: true },
+      emailSent: false,
     });
     const before = (await inbox('ivy')).notifications.length;
     await mentioning('ivy');
@@ -252,6 +256,29 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
     expect(
       (await call('PUT', '/v1/inbox/preferences', 'ivy', { mention: 'hourly' })).statusCode,
     ).toBe(400);
+  });
+
+  it('COL-064 reads and chooses which kinds are mailed, each left as it was, and says whether this environment mails', async () => {
+    const set = await call('PUT', '/v1/inbox/preferences', 'ivy', {
+      email: { mention: false, digest: false },
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json<InboxPreferences>()).toMatchObject({
+      email: { mention: false, reply: true, resolution: true, round: true, digest: false },
+      emailSent: false,
+    });
+    expect(
+      (await call('GET', '/v1/inbox/preferences', 'ivy')).json<InboxPreferences>(),
+    ).toMatchObject({
+      email: { mention: false, digest: false },
+    });
+    expect(
+      (await call('PUT', '/v1/inbox/preferences', 'ivy', { email: { budget: false } })).statusCode,
+    ).toBe(400);
+    expect(
+      (await call('PUT', '/v1/inbox/preferences', 'ivy', { emailSent: true })).statusCode,
+    ).toBe(400);
+    await call('PUT', '/v1/inbox/preferences', 'ivy', { email: { mention: true, digest: true } });
   });
 
   it('refuses a token: the inbox is a signed-in person’s, whose scopes a token could not keep', async () => {

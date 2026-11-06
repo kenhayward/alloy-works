@@ -21,7 +21,20 @@ interface Channel {
   readonly hasPassword: boolean;
   readonly failingSince: string | null;
   readonly lastSuccessAt: string | null;
+  /** The kinds of notification it never mails (COL-060); absent from a service before EMc. */
+  readonly kindsOff?: readonly MailKind[];
 }
+
+type MailKind = 'mention' | 'reply' | 'resolution' | 'round' | 'digest';
+
+/** Each kind of notification an environment may mail, in the order a person chooses among them. */
+const MAIL_KINDS: readonly { readonly kind: MailKind; readonly name: () => string }[] = [
+  { kind: 'mention', name: () => words('admin.email-kind-mention') },
+  { kind: 'reply', name: () => words('admin.email-kind-reply') },
+  { kind: 'resolution', name: () => words('admin.email-kind-resolution') },
+  { kind: 'round', name: () => words('admin.email-kind-round') },
+  { kind: 'digest', name: () => words('admin.email-kind-digest') },
+];
 
 interface Read {
   readonly channel: Channel;
@@ -30,7 +43,7 @@ interface Read {
 
 interface Sent {
   readonly id: string;
-  readonly purpose: 'test';
+  readonly purpose: 'test' | 'notification';
   readonly state: 'pending' | 'sent' | 'given_up' | 'dropped';
   readonly droppedReason: string | null;
   readonly attempts: number;
@@ -60,6 +73,7 @@ interface Draft {
   username: string;
   fromAddress: string;
   fromName: string;
+  kindsOff: readonly MailKind[];
 }
 
 const draftOf = ({ channel }: Read): Draft => ({
@@ -70,6 +84,7 @@ const draftOf = ({ channel }: Read): Draft => ({
   username: channel.username ?? '',
   fromAddress: channel.fromAddress ?? '',
   fromName: channel.fromName ?? '',
+  kindsOff: channel.kindsOff ?? [],
 });
 
 const STATES: Readonly<Record<Sent['state'], string>> = {
@@ -163,6 +178,7 @@ export function Mail({ client, mayChange }: { client: Client; mayChange: boolean
               }
             : {}),
           fromName: draft.fromName.trim() === '' ? null : draft.fromName.trim(),
+          kindsOff: [...draft.kindsOff],
         },
       });
       if (data) {
@@ -369,6 +385,27 @@ export function Mail({ client, mayChange }: { client: Client; mayChange: boolean
             {words('admin.email-from-name-hint')}
           </span>
         </div>
+        <fieldset className={styles['settings']}>
+          <legend className={styles['strong']}>{words('admin.email-kinds')}</legend>
+          {MAIL_KINDS.map(({ kind, name }) => (
+            <label key={kind} className={styles['setting']}>
+              <input
+                type="checkbox"
+                checked={!draft.kindsOff.includes(kind)}
+                disabled={!mayChange}
+                onChange={(event) =>
+                  set({
+                    kindsOff: MAIL_KINDS.map((each) => each.kind).filter((each) =>
+                      each === kind ? !event.target.checked : draft.kindsOff.includes(each),
+                    ),
+                  })
+                }
+              />
+              {name()}
+            </label>
+          ))}
+          <p className={styles['muted']}>{words('admin.email-kinds-hint')}</p>
+        </fieldset>
         <p role="status">{said}</p>
         {mayChange ? (
           <div>
@@ -476,7 +513,11 @@ function Recent({ listed, label }: { listed: Listed | 'failed' | null; label: st
           <tbody>
             {listed.items.map((each) => (
               <tr key={each.id}>
-                <td>{words('admin.email-purpose-test')}</td>
+                <td>
+                  {each.purpose === 'test'
+                    ? words('admin.email-purpose-test')
+                    : words('admin.email-purpose-notification')}
+                </td>
                 <td className={styles['wraps']}>
                   {STATES[each.state]}
                   {each.droppedReason !== null && (
