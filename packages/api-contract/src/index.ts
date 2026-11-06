@@ -121,6 +121,7 @@ export {
   shareRoutes,
 } from './shares.js';
 export { QueryUsageQuery, QueryUsageView, queryUsageRoutes } from './query-usage.js';
+export { DiagnosticsView, diagnosticsRoutes } from './diagnostics.js';
 export {
   DatasetSourceList,
   DatasetSourceQuery,

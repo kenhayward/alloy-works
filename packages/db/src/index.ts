@@ -1545,6 +1545,7 @@ export {
   type AttemptOutcome,
   type ClaimedDelivery,
   listWebhookSubscriptions,
+  webhookCounts,
   removeWebhookSubscription,
   rotateWebhookSecret,
   subscribableIdentity,
@@ -1676,6 +1677,8 @@ export {
   type SetDefaultAnswer,
 } from './default-template.js';
 export { originOf, type Origin } from './origins.js';
+export { ownJobs, type OwnJobs, type QueueState } from './own-jobs.js';
+export { connectionRunsSince, type ConnectionRuns } from './connection-runs.js';
 export {
   backgroundWork,
   recordBackgroundWork,

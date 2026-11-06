@@ -2459,6 +2459,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/diagnostics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How the environment's capabilities, background work and deliveries are doing
+         * @description Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.
+         */
+        get: operations["getDiagnostics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents": {
         parameters: {
             query?: never;
@@ -47336,6 +47356,234 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getDiagnostics: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The diagnostics */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "at": "example",
+                     *       "capabilities": [],
+                     *       "work": [],
+                     *       "jobs": [],
+                     *       "index": {
+                     *         "serving": "example",
+                     *         "pending": {
+                     *           "model": "example",
+                     *           "missing": -9007199254740991,
+                     *           "confirmed": false
+                     *         },
+                     *         "p95LagSeconds": 0,
+                     *         "maxLagSeconds": 0
+                     *       },
+                     *       "webhooks": {
+                     *         "subscriptions": -9007199254740991,
+                     *         "failing": -9007199254740991,
+                     *         "disabledFailing": -9007199254740991
+                     *       },
+                     *       "mail": {
+                     *         "enabled": false,
+                     *         "failingSince": "example",
+                     *         "waiting": -9007199254740991,
+                     *         "givenUp": -9007199254740991
+                     *       },
+                     *       "connections": [],
+                     *       "budgets": {
+                     *         "model": {
+                     *           "currency": "example",
+                     *           "spentMicros": "example",
+                     *           "limitMicros": "example"
+                     *         },
+                     *         "queryRunsAtOnce": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description An ISO 8601 time */
+                        at: string;
+                        /** @description Each capability with requests in the window */
+                        capabilities: {
+                            /** @description A route tag of this API, or one of the worker's kinds of work, such as Indexing */
+                            capability: string;
+                            /**
+                             * @description Over the last 15 minutes: failing when most answered requests failed on the server, degraded when 5% did or the 95th percentile passed its budget, idle with none answered
+                             * @enum {string}
+                             */
+                            health: "healthy" | "degraded" | "failing" | "idle";
+                            requests: number;
+                            /** @description Server errors over the requests answered; null with none */
+                            errorRate: number | null;
+                            /** @description The 95th percentile, as the bucket bound holding it; null with none */
+                            p95Ms: number | null;
+                        }[];
+                        /** @description Each sweep and loop that has run here */
+                        work: {
+                            /** @description The sweep or loop, by name */
+                            work: string;
+                            /**
+                             * @description Failing when its last run failed or it has not run for twice its cadence; paused while the environment is held
+                             * @enum {string}
+                             */
+                            health: "healthy" | "failing" | "paused";
+                            /** @enum {string} */
+                            outcome: "succeeded" | "failed" | "paused";
+                            /** @description An ISO 8601 time */
+                            lastStartedAt: string;
+                            /** @description An ISO 8601 time */
+                            lastFinishedAt: string;
+                            /** @description Read from its own cadence; null after one run */
+                            nextDueAt: string | null;
+                            /** @description The last failure, as a code, kept after it clears */
+                            failure: string | null;
+                            failedAt: string | null;
+                            /** @description Failures in a row */
+                            failures: number;
+                        }[];
+                        /** @description The last 24 hours of jobs, and those still to do */
+                        jobs: {
+                            kind: string;
+                            /** @description The kind of work it is measured as */
+                            capability: string;
+                            /** @enum {string} */
+                            state: "waiting" | "running" | "done" | "failed";
+                            jobs: number;
+                            /** @description An ISO 8601 time */
+                            firstAt: string;
+                            /** @description An ISO 8601 time */
+                            lastAt: string;
+                            /** @description The latest failed job's code */
+                            lastError: string | null;
+                        }[];
+                        index: {
+                            /** @description The embedding model searches are served by */
+                            serving: string | null;
+                            /** @description A model being changed to, and the texts it has still to embed */
+                            pending: {
+                                model: string;
+                                missing: number;
+                                confirmed: boolean;
+                            } | null;
+                            /** @description A version's wait to be searchable by meaning, over the last 7 days */
+                            p95LagSeconds: number | null;
+                            maxLagSeconds: number | null;
+                        };
+                        webhooks: {
+                            subscriptions: number;
+                            /** @description Enabled, and failing since an attempt not yet succeeded */
+                            failing: number;
+                            /** @description Turned off after three days of failing */
+                            disabledFailing: number;
+                        };
+                        mail: {
+                            enabled: boolean;
+                            failingSince: string | null;
+                            waiting: number;
+                            givenUp: number;
+                        };
+                        /** @description Each connection run on in the last 24 hours */
+                        connections: {
+                            connection: string;
+                            runs: number;
+                            failed: number;
+                            timedOut: number;
+                            /** @description An ISO 8601 time */
+                            lastRunAt: string;
+                            /** @description Its latest run failed: as far as the product knows, the source is down */
+                            down: boolean;
+                            lastFailure: string | null;
+                        }[];
+                        budgets: {
+                            /** @description The month's model spend against its budget; null with no budget set */
+                            model: {
+                                currency: string;
+                                /** @description This month so far, in millionths, as a decimal string */
+                                spentMicros: string;
+                                limitMicros: string;
+                            } | null;
+                            /** @description How many query runs may run at once */
+                            queryRunsAtOnce: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer the environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
