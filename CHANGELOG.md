@@ -19,6 +19,7 @@ Component groups: a set of components reused as one, approved together, and offe
 - **A copy of the backups on another machine.** A backup machine on the network can pull the encrypted backups nightly, reading them and nothing else.
 - **Each deploy brings its own scripts.** An installation on the internet takes its backup, restore and alert scripts and its services from the release it deploys, not from a copy made by hand.
 - **Changes sent from another site are refused.** A page on any other site, a sibling name included, can no longer make a signed-in person change anything in Alloy Works.
+- **The app runs only its own scripts.** Alloy Works' pages now tell the browser what they may load, so a script slipped into content could not run, and no other site can show the app inside its own page.
 
 ### Changed
 
