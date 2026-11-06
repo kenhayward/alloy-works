@@ -19,8 +19,8 @@ Ken's (2026-11-06):
 - **CG-C** **one level**: a group holds components, never another group.
 - **CG-D** listed and opened **in Components**, told apart by an icon and a Kind filter, on the component page's
   shell. No new rail entry.
-- **CG-E** a document may **reword a member locally** (overrides, REU-011), caught at review if wrong; it may not
-  add, remove or reorder members, which only a new group version does.
+- **CG-E** a document may **reword any member locally** (overrides, REU-011), caught at review if wrong; no member
+  is marked against it. It may not add, remove or reorder members, which only a new group version does.
 
 Mine:
 
@@ -41,9 +41,8 @@ Mine:
 - **CG-L** baselines pin the group's version; publishing, numbering, Duplicate, moving, export and import, the
   Part panel and the outline tree learn the group reference.
 
-## Questions still open
+## Still to settle at the pre-flight
 
-- Whether a member may be marked required within the group (TPL-style), so even its override is refused.
 - Whether one component may appear twice in a group (proposed: no, as the outline already refuses).
 - The group page's acts: add, remove and reorder members, with each member's version shown and a newer one
   offered.
@@ -57,7 +56,7 @@ Mine:
 
 ## PRs
 
-One PR, as Ken prefers, unless the pre-flight review finds it too large to review; then the service first.
+Its own PR, after ND's, as Ken chose.
 
 ## Tests and docs
 
