@@ -43,7 +43,7 @@ interface Read {
 
 interface Sent {
   readonly id: string;
-  readonly purpose: 'test' | 'notification';
+  readonly purpose: 'test' | 'notification' | 'invitation' | 'closure';
   readonly state: 'pending' | 'sent' | 'given_up' | 'dropped';
   readonly droppedReason: string | null;
   readonly attempts: number;
@@ -86,6 +86,21 @@ const draftOf = ({ channel }: Read): Draft => ({
   fromName: channel.fromName ?? '',
   kindsOff: channel.kindsOff ?? [],
 });
+
+const PURPOSES: Readonly<Record<Sent['purpose'], string>> = {
+  get test() {
+    return words('admin.email-purpose-test');
+  },
+  get notification() {
+    return words('admin.email-purpose-notification');
+  },
+  get invitation() {
+    return words('admin.email-purpose-invitation');
+  },
+  get closure() {
+    return words('admin.email-purpose-closure');
+  },
+};
 
 const STATES: Readonly<Record<Sent['state'], string>> = {
   get pending() {
@@ -515,11 +530,7 @@ function Recent({ listed, label }: { listed: Listed | 'failed' | null; label: st
           <tbody>
             {listed.items.map((each) => (
               <tr key={each.id}>
-                <td>
-                  {each.purpose === 'test'
-                    ? words('admin.email-purpose-test')
-                    : words('admin.email-purpose-notification')}
-                </td>
+                <td>{PURPOSES[each.purpose]}</td>
                 <td className={styles['wraps']}>
                   {STATES[each.state]}
                   {each.droppedReason !== null && (

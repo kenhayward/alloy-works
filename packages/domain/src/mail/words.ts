@@ -99,6 +99,73 @@ export function mailWords(input: {
   };
 }
 
+/** The notices of a closing (EM-V): on its starting, 7 days before its grace ends, on its cancelling. */
+export const CLOSURE_NOTICES = ['closing', 'seven_days', 'cancelled'] as const;
+export type ClosureNotice = (typeof CLOSURE_NOTICES)[number];
+
+const INVITED = {
+  subject: 'You have been invited to Alloy Works',
+  said: 'You have been invited to an environment in Alloy Works.',
+  open: 'To accept, sign in with this address here:',
+  why: 'You were sent this because somebody invited this address. If you did not expect it, you can ignore it.',
+};
+
+const CLOSING: Readonly<Record<ClosureNotice, { readonly subject: string; readonly said: string }>> =
+  {
+    closing: {
+      subject: 'An environment you use is closing',
+      said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}.',
+    },
+    seven_days: {
+      subject: 'An environment you use closes in 7 days',
+      said: 'An environment you use in Alloy Works is closing. Unless the closing is cancelled, it and everything in it will be deleted after {date}, 7 days from now.',
+    },
+    cancelled: {
+      subject: 'An environment you use is no longer closing',
+      said: 'An environment you use in Alloy Works is no longer closing. Nothing in it will be deleted.',
+    },
+  };
+const CLOSING_WHY =
+  'You were sent this because you can sign in to it. Its administrators can tell you more.';
+
+/** A day as a person reads it, in UTC, the time of day left out. */
+function dayOf(at: Date): string {
+  return new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(at);
+}
+
+/**
+ * An invitation's subject and text (IAM-089): `link` the environment's sign-in, and no token, since
+ * claiming is by signing in with the invited address. Nobody who invited is named.
+ */
+export function invitationWords(input: {
+  readonly language: string | null;
+  readonly link: string;
+}): { readonly subject: string; readonly text: string } {
+  const say = catalogueOf(input.language);
+  return {
+    subject: say(INVITED.subject),
+    text: [say(INVITED.said), '', say(INVITED.open), input.link, '', say(INVITED.why)].join('\n'),
+  };
+}
+
+/**
+ * A closing's notice (ADM-055): what is happening and by when, and nothing of the environment's: no
+ * link, since a person may no longer be let in to it.
+ */
+export function closureWords(input: {
+  readonly notice: ClosureNotice;
+  readonly language: string | null;
+  readonly graceEndsAt: Date | null;
+}): { readonly subject: string; readonly text: string } {
+  const say = catalogueOf(input.language);
+  const words = CLOSING[input.notice];
+  const said = say(words.said).replace(
+    '{date}',
+    input.graceEndsAt === null ? '' : dayOf(input.graceEndsAt),
+  );
+  return { subject: say(words.subject), text: [said, '', say(CLOSING_WHY)].join('\n') };
+}
+
 /** Every English message, for the checks every word the product shows passes. */
 export const MAIL_MESSAGES: readonly string[] = [
   ...Object.values(ENGLISH.subject),
@@ -106,4 +173,7 @@ export const MAIL_MESSAGES: readonly string[] = [
   ...Object.values(ENGLISH.counted),
   ENGLISH.open,
   ENGLISH.why,
+  ...Object.values(INVITED),
+  ...Object.values(CLOSING).flatMap((each) => [each.subject, each.said]),
+  CLOSING_WHY,
 ];

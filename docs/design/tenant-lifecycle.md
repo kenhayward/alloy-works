@@ -34,7 +34,7 @@ a purge: the product keeps none (`deploy/README.md`), so IAM-086 states its reac
 hold backups to the timetable. A customer's lawyer will ask, so the guide says this outright. **IAM-070** also names
 support access, which ADM-042 has yet to build; suspension and closure take their permissions here. Usage and cost for
 an organisation are DG's: IAM-069 limits what it may see, and TL shows only state and configuration. Telling a person
-by email that their tenant is closing waits for EM.
+by email that their tenant is closing is [mail.md](mail.md)'s (ADM-055).
 
 ## Decisions
 
@@ -199,7 +199,7 @@ As built: each stage repeats. It runs under the steward's own login (`createrole
 `aw_tenant`; spike S1), migrating that tenant alone as its owner. A request is refused while no provider is shared, since
 its first administrator could not sign in (IAM-059). The address is attached last, and until the request is done the tenant
 appears only as a request. After ten attempts the request fails and forgets the address; the half-made tenant stays, with
-no address, for the operator. There is no email until EM: the invitation is claimed by signing in.
+no address, for the operator. The invitation is emailed ([mail.md](mail.md), IAM-089), and claimed by signing in.
 
 **TL-O. Kinds.** `tenant.suspended`, `tenant.resumed`, `tenant.closing`, `tenant.closure_cancelled`, `tenant.retained`,
 `tenant.closed` (declared in audit.md, emitted as deletion begins), `organisation.changed` (declared), `tenant.created`.

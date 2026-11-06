@@ -294,6 +294,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0204_mail_channel',
       '0205_mail_queue',
       '0206_mail_notifications',
+      '0207_mail_invitations_and_closures',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

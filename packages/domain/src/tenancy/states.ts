@@ -43,7 +43,7 @@ const SUSPENDED: Effects = {
   realtimeConnections: 'ends',
   modelEndpoints: 'stops',
   searchIndexes: 'stops, caught up on lifting',
-  notificationDelivery: 'stops, kept',
+  notificationDelivery: 'stops, kept; mail waits to its age',
   inFlightPublications: FINISHES,
 };
 
@@ -55,7 +55,7 @@ const CLOSING: Effects = {
   realtimeConnections: 'ends',
   modelEndpoints: 'stops',
   searchIndexes: 'stops',
-  notificationDelivery: 'stops',
+  notificationDelivery: 'stops; notices of the closing are mailed',
   inFlightPublications: FINISHES,
 };
 

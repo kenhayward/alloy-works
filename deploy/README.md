@@ -367,21 +367,21 @@ themes written straight into the database - and none of it can be taken back fro
 neither suite has a default address.** Each refuses to start, before its first request, until every
 one of its targets is set, and names the ones that are not:
 
-| Suite               | Variables it needs                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pnpm test:e2e`     | `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`, `ALLOY_E2E_COMPOSE_PROJECT`       |
-| `pnpm test:browser` | `ALLOY_BROWSER_SERVICE`, `ALLOY_BROWSER_API`, `ALLOY_BROWSER_IDP`, `ALLOY_BROWSER_DATABASE`, `ALLOY_BROWSER_STORE_AT` |
+| Suite               | Variables it needs                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test:e2e`     | `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`, `ALLOY_E2E_COMPOSE_PROJECT`, `ALLOY_E2E_MAIL` |
+| `pnpm test:browser` | `ALLOY_BROWSER_SERVICE`, `ALLOY_BROWSER_API`, `ALLOY_BROWSER_IDP`, `ALLOY_BROWSER_DATABASE`, `ALLOY_BROWSER_STORE_AT`             |
 
 **Point them at a stack of your own, never at the one you work in.** A stack you are using keeps
 everything the suites make in it. Bring up a second stack, as above, and name it in full:
 
 ```bash
-SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 MAILPIT_PORT=8125 \
   docker compose -p aw-suites -f deploy/compose.yaml --profile sources up -d --build --wait
 
 ALLOY_E2E_SERVICE=http://127.0.0.1:8188 ALLOY_E2E_IDP=http://127.0.0.1:9190 \
   ALLOY_E2E_IDP_ISSUER=http://idp.localhost:9190 ALLOY_E2E_STORE_AT=127.0.0.1 \
-  ALLOY_E2E_COMPOSE_PROJECT=aw-suites pnpm test:e2e
+  ALLOY_E2E_COMPOSE_PROJECT=aw-suites ALLOY_E2E_MAIL=http://127.0.0.1:8125 pnpm test:e2e
 
 ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://127.0.0.1:8188 \
   ALLOY_BROWSER_IDP=http://idp.localhost:9190 ALLOY_BROWSER_STORE_AT=127.0.0.1 \

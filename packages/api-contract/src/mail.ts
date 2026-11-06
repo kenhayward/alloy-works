@@ -83,7 +83,9 @@ export type MailListQuery = z.infer<typeof MailListQuery>;
 
 export const MailSummary = z.strictObject({
   id: z.uuid().describe('Its own id, which it is sent with as its Message-ID'),
-  purpose: z.enum(['test', 'notification']).describe('Why it is sent'),
+  purpose: z
+    .enum(['test', 'notification', 'invitation', 'closure'])
+    .describe('Why it is sent: a test, a notification, an invitation, or a notice of closing'),
   state: z
     .enum(['pending', 'sent', 'given_up', 'dropped'])
     .describe(
@@ -93,7 +95,7 @@ export const MailSummary = z.strictObject({
     .string()
     .nullable()
     .describe(
-      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`',
+      'Why it was never sent: `unverified`, `no_address`, `disabled`, `erased`, `service_identity`, `relay_not_configured`; for a notification, `channel_off`, `read` within its hold, `environment_off`, `opted_out`, `no_longer_told` or `no_hostname`; for an invitation, `accepted`, `expired`, `no_hostname`, `invitation_repeated` within a day of the last to its address, or `invitation_quota` past 100 in a day',
     ),
   attempts: z.number().int(),
   createdAt: z.string(),

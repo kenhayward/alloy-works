@@ -1549,6 +1549,7 @@ export {
   mailChoicesOf,
   mailCounts,
   NO_MAIL_CHANNEL,
+  queueClosureReminders,
   queueTestMail,
   recordMailAttempt,
   setMailChannel,

@@ -14,6 +14,7 @@ export const E2E_TARGETS = [
   'ALLOY_E2E_IDP_ISSUER',
   'ALLOY_E2E_STORE_AT',
   'ALLOY_E2E_COMPOSE_PROJECT',
+  'ALLOY_E2E_MAIL',
 ] as const;
 
 export interface E2eTargets {
@@ -30,6 +31,8 @@ export interface E2eTargets {
    * labels: never assumed to be the development stack's.
    */
   readonly composeProject: string;
+  /** Mailpit's API, as Node reaches it, where the suite reads what the stack mailed (the EM plan). */
+  readonly mail: string;
 }
 
 /** Reads every target from `env`, or throws once naming every one that is missing or empty. */
@@ -50,5 +53,6 @@ export function e2eTargets(env: Readonly<Record<string, string | undefined>>): E
     idpIssuer: at('ALLOY_E2E_IDP_ISSUER'),
     storeAt: at('ALLOY_E2E_STORE_AT'),
     composeProject: at('ALLOY_E2E_COMPOSE_PROJECT'),
+    mail: at('ALLOY_E2E_MAIL'),
   };
 }

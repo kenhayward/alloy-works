@@ -690,17 +690,17 @@ on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
 service, a worker, the database, the object store and the sign-in provider, all in containers.
 
 ```bash
-SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 MAILPIT_PORT=8125 \
   docker compose -p aw-suites -f deploy/compose.yaml --profile sources up -d --build --wait
 ALLOY_E2E_SERVICE=http://127.0.0.1:8188 ALLOY_E2E_IDP=http://127.0.0.1:9190 \
   ALLOY_E2E_IDP_ISSUER=http://idp.localhost:9190 ALLOY_E2E_STORE_AT=127.0.0.1 \
-  ALLOY_E2E_COMPOSE_PROJECT=aw-suites pnpm test:e2e
+  ALLOY_E2E_COMPOSE_PROJECT=aw-suites ALLOY_E2E_MAIL=http://127.0.0.1:8125 pnpm test:e2e
 docker compose -p aw-suites -f deploy/compose.yaml --profile sources down -v
 ```
 
 **It has no default address, and refuses to run until it is given every one** (issue #363): an
 unset environment once ran it against a developer's own stack, where it signed in and made content
-that could not be taken back. `src/targets.ts` reads the five variables, and the suite's global setup,
+that could not be taken back. `src/targets.ts` reads the six variables, and the suite's global setup,
 `src/refuse-unset-targets.ts`, calls it before any test file is collected, so a run missing any of
 them stops before its first request and names each one missing:
 
@@ -711,6 +711,7 @@ them stops before its first request and names each one missing:
 | `ALLOY_E2E_IDP_ISSUER`      | `http://idp.localhost:9090` | What the provider calls itself, which the service sends a browser to                     |
 | `ALLOY_E2E_STORE_AT`        | `127.0.0.1`                 | Where Node follows a link the object store signed, its name kept in `Host`               |
 | `ALLOY_E2E_COMPOSE_PROJECT` | `alloy-works`               | The compose project the stack runs as, whose containers the connector's tests reach into |
+| `ALLOY_E2E_MAIL`            | `http://127.0.0.1:8025`     | Mailpit's API, where the mail tests read what the stack sent                             |
 
 **Point it at a stack of your own, never at the one you work in** - a second one, as above, under a
 project name and ports of its own ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).

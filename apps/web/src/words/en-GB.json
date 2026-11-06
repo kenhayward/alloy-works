@@ -3931,6 +3931,8 @@
   "admin.email-purpose": "Why",
   "admin.email-purpose-test": "Test",
   "admin.email-purpose-notification": "Notification",
+  "admin.email-purpose-invitation": "Invitation",
+  "admin.email-purpose-closure": "Notice of closing",
   "admin.email-kinds": "Notifications it mails",
   "admin.email-kinds-hint": "Each person chooses among these for themselves, in their inbox. A mail says only what kind of thing happened, with a link.",
   "admin.email-kind-mention": "Mentions of a person",
