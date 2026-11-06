@@ -62,7 +62,11 @@ export function TemplateList({ client }: { readonly client: Client }) {
   const [generating, setGenerating] = useState<Item | null>(null);
   // What a row's menu last said (SCH-075), and the template Duplicate was chosen for (REU-056).
   const [notice, setNotice] = useState<string | null>(null);
-  const [duplicating, setDuplicating] = useState<{ id: string; title: string } | null>(null);
+  const [duplicating, setDuplicating] = useState<{
+    id: string;
+    title: string;
+    space: string;
+  } | null>(null);
   const fetchPage = useCallback(
     (cursor: string | null) =>
       client.GET('/v1/templates', {
@@ -206,7 +210,9 @@ export function TemplateList({ client }: { readonly client: Client }) {
                           setNotice(said);
                           if (changed) void listing.load(null);
                         }}
-                        onDuplicate={() => setDuplicating({ id: item.id, title: item.name })}
+                        onDuplicate={() =>
+                          setDuplicating({ id: item.id, title: item.name, space: item.space.id })
+                        }
                         onGenerate={() => setGenerating(item)}
                       />
                     </td>
@@ -223,6 +229,7 @@ export function TemplateList({ client }: { readonly client: Client }) {
             kind="template"
             id={duplicating.id}
             title={duplicating.title}
+            space={duplicating.space}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

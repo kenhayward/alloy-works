@@ -6219,5 +6219,7 @@
   "rows.copy-newest-shown": "{count, plural, one {1 component placed at two versions is copied at the newest.} other {# components placed at two versions are copied at the newest.}}",
   "rows.copy-overrides-dropped": "{count, plural, one {1 local rewording is dropped, as its paragraph has changed.} other {# local rewordings are dropped, as their paragraphs have changed.}}",
   "rows.copy-lines": "{count, plural, one {1 line or translation of what is copied is not copied.} other {# lines and translations of what is copied are not copied.}}",
-  "admin.copied-artifact": "Duplicated"
+  "admin.copied-artifact": "Duplicated",
+  "rows.copy-needs-a-space": "Choose a space you may make it in.",
+  "rows.copy-counting": "Counting what it copies."
 }

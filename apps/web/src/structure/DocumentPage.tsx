@@ -7,16 +7,12 @@ import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
-  conditions,
   incomingReferences,
   layoutWordsSchema,
-  number,
   numberingSchemeSchema,
   parseContentDocument,
   readContent,
   readOutlineView,
-  resolve,
-  sectionNumbers,
   walkOutline,
   cellRevisable,
   formatsFor,

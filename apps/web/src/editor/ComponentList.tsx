@@ -92,7 +92,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
   // The component Duplicate was chosen for (REU-056).
-  const [duplicating, setDuplicating] = useState<{ id: string; title: string } | null>(null);
+  const [duplicating, setDuplicating] = useState<{
+    id: string;
+    title: string;
+    space: string;
+  } | null>(null);
   // The row shown in the panel beside the list, and each row's button, to give the focus back to.
   const [shown, setShown] = useState<string | null>(null);
   const showButtons = useRef(new Map<string, HTMLButtonElement>());
@@ -412,7 +416,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                           setNotice(said);
                           if (changed) void load(null);
                         }}
-                        onDuplicate={() => setDuplicating({ id: item.id, title: item.title })}
+                        onDuplicate={() =>
+                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                        }
                       />
                     </td>
                   </tr>
@@ -443,6 +449,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
             kind="component"
             id={duplicating.id}
             title={duplicating.title}
+            space={duplicating.space}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

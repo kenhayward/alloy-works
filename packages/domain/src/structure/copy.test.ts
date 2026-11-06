@@ -75,7 +75,7 @@ describe('a copy of an outline (the RM plan, RM-I, RM-J)', () => {
   it('REU-058 keeps every node identity, section and value, and parses as an outline', () => {
     const { outline: copied } = copyOutline(source, replaced);
     const ids: string[] = [];
-    const walk = (nodes: OutlineDocument['nodes']) =>
+    const walk = (nodes: readonly OutlineDocument['nodes'][number][]) =>
       nodes.forEach((node) => {
         ids.push(node.id);
         walk(node.children);
@@ -202,7 +202,7 @@ describe('which components a document copy copies (RM-G, RM-H, RM-K)', () => {
     expect(chosenCopies('all', placed)).toEqual([A, B]);
   });
 
-  it('REU-057 holds a copy to COPY_MAX components, as a placement is held to PLACE_MAX', () => {
+  it('sets COPY_MAX at 200, as PLACE_MAX holds a placement', () => {
     expect(COPY_MAX).toBe(200);
   });
 });

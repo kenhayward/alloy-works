@@ -94,6 +94,7 @@ export function DuplicateDialog({
   kind,
   id,
   title,
+  space,
   onDone,
   onClose,
 }: {
@@ -101,6 +102,8 @@ export function DuplicateDialog({
   kind: RowKind;
   id: string;
   title: string;
+  /** The original's space: where the copy goes unless another is chosen (RM-F). */
+  space: string;
   onDone: (said: string) => void;
   onClose: () => void;
 }) {
@@ -109,6 +112,13 @@ export function DuplicateDialog({
     client,
     kind === 'template' ? 'mayDesign' : 'mayCreate',
   );
+  // The original's space once the spaces are read, where the caller may make one there.
+  const [placed, setPlaced] = useState(false);
+  useEffect(() => {
+    if (placed || spaces === null) return;
+    setPlaced(true);
+    if (spaces.some((each) => each.id === space)) setWhere(space);
+  }, [placed, spaces, space, setWhere]);
   const [named, setNamed] = useState(words('rows.copy-of', { title }));
   const [components, setComponents] = useState<Components>('own');
   const [previewed, setPreviewed] = useState<Previewed | null>(null);
@@ -122,6 +132,8 @@ export function DuplicateDialog({
 
   // Asked again as the choice changes, a moment after typing stops.
   useEffect(() => {
+    // What was counted for another choice is not this one's.
+    setPreviewed(null);
     if (where === '' || named.trim() === '') return undefined;
     let current = true;
     const wait = setTimeout(() => {
@@ -150,7 +162,11 @@ export function DuplicateDialog({
   const reason =
     named.trim() === ''
       ? words('rows.copy-needs-a-title')
-      : (previewed?.refused ?? null);
+      : where === ''
+        ? words('rows.copy-needs-a-space')
+        : previewed === null
+          ? words('rows.copy-counting')
+          : previewed.refused;
   const name = `${heading}-components`;
   const choice = (value: Components, label: string) => (
     <label>
@@ -171,7 +187,11 @@ export function DuplicateDialog({
       <h2 id={heading}>{words('rows.duplicate-title', { title })}</h2>
       <label>
         {words('document.title')}
-        <input value={named} disabled={copying} onChange={(event) => setNamed(event.target.value)} />
+        <input
+          value={named}
+          disabled={copying}
+          onChange={(event) => setNamed(event.target.value)}
+        />
       </label>
       {previewed?.titleInUse === true && <p>{words('rows.title-in-use')}</p>}
       <label>

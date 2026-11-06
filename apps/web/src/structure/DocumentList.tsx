@@ -206,7 +206,11 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   const [importing, setImporting] = useState(false);
   // What a row's menu last said (SCH-075), and the document Duplicate was chosen for (REU-056).
   const [notice, setNotice] = useState<string | null>(null);
-  const [duplicating, setDuplicating] = useState<{ id: string; title: string } | null>(null);
+  const [duplicating, setDuplicating] = useState<{
+    id: string;
+    title: string;
+    space: string;
+  } | null>(null);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
     async (cursor: string | null) => {
@@ -448,7 +452,9 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                           setNotice(said);
                           if (changed) void listing.load(null);
                         }}
-                        onDuplicate={() => setDuplicating({ id: item.id, title: item.title })}
+                        onDuplicate={() =>
+                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                        }
                       />
                     </td>
                   </tr>
@@ -464,6 +470,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             kind="document"
             id={duplicating.id}
             title={duplicating.title}
+            space={duplicating.space}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

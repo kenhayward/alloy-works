@@ -1,4 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
+import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -27,7 +28,13 @@ const view = (may: boolean) => ({
   id: MANUAL,
   space: { id: GENERAL, name: 'General' },
   version: { id: 'v1', number: '1.2' },
-  outline: { title: 'Operator manual', language: 'en-GB', direction: 'ltr', nodes: [] },
+  outline: {
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'Operator manual',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [],
+  },
   mayEdit: may,
   mayPublish: may,
   mayRetire: true,
@@ -48,7 +55,10 @@ function client(may = true, kind = 'documents') {
       return json(200, view(may));
     }
     if (pathname === `/v1/${kind}/${MANUAL}/transitions`) {
-      return json(200, { ...standing, state: { key: 'review', name: 'In review', approved: false } });
+      return json(200, {
+        ...standing,
+        state: { key: 'review', name: 'In review', approved: false },
+      });
     }
     if (pathname === '/v1/access') return json(200, { permissions: [] });
     return json(404, {});
@@ -65,7 +75,9 @@ const open = async (title = 'Operator manual') => {
   return user;
 };
 const rows = () =>
-  within(screen.getByRole('menu')).getAllByRole('menuitem').map((each) => each.textContent);
+  within(screen.getByRole('menu'))
+    .getAllByRole('menuitem')
+    .map((each) => each.textContent);
 const row = (name: string) => screen.getByRole('menuitem', { name });
 
 afterEach(() => {
@@ -118,7 +130,12 @@ describe('a row of content', () => {
     );
     await open();
     await waitFor(() => expect(row('Archive')).toHaveAttribute('aria-disabled', 'false'));
-    for (const name of ['Publish...', 'Move to another space...', 'Place a hold', 'Manage access']) {
+    for (const name of [
+      'Publish...',
+      'Move to another space...',
+      'Place a hold',
+      'Manage access',
+    ]) {
       expect(row(name)).toHaveAttribute('aria-disabled', 'true');
     }
     expect(row('Open')).toHaveAttribute('aria-disabled', 'false');
@@ -215,7 +232,12 @@ describe('a row of content', () => {
     );
     const user = await open();
     await waitFor(() => expect(row('Duplicate...')).toHaveAttribute('aria-disabled', 'false'));
-    expect(rows()).toEqual(['Generate documents...', 'Relationships', 'Duplicate...', 'Manage access']);
+    expect(rows()).toEqual([
+      'Generate documents...',
+      'Relationships',
+      'Duplicate...',
+      'Manage access',
+    ]);
     await user.click(row('Generate documents...'));
     expect(onGenerate).toHaveBeenCalledOnce();
   });

@@ -67,6 +67,7 @@ describe('Duplicate', () => {
         kind="document"
         id={MANUAL}
         title="Operator manual"
+        space={GENERAL}
         onDone={onDone}
         onClose={vi.fn()}
       />,
@@ -79,7 +80,10 @@ describe('Duplicate', () => {
     expect(
       await screen.findByText('It would copy more than 10 components. Reuse some of them instead.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Duplicate' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Duplicate' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(screen.getByRole('list', { name: 'What the copy reuses and leaves' })).toHaveTextContent(
       '1 component its template requires is reused, never copied.',
     );
@@ -87,14 +91,16 @@ describe('Duplicate', () => {
     expect(await screen.findByText('It copies no components.')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Duplicate' }));
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith('Duplicated as Operator manual (copy).'));
+    await waitFor(() =>
+      expect(onDone).toHaveBeenCalledWith('Duplicated as Operator manual (copy).'),
+    );
     expect(bodies.at(-1)).toEqual({
       path: `/v1/artifacts/${MANUAL}/copy`,
       body: { to: GENERAL, title: 'Operator manual (copy)', components: 'reuse' },
     });
   });
 
-  it('REU-056 warns of a title already used in that space, and still duplicates', async () => {
+  it('REU-056 copies into its own space by default, warning of a title already used there, and still duplicates', async () => {
     const user = userEvent.setup();
     const { client } = service({ inUse: true });
     const onDone = vi.fn();
@@ -104,13 +110,18 @@ describe('Duplicate', () => {
         kind="component"
         id={MANUAL}
         title="Operator manual"
+        space={TRAINING}
         onDone={onDone}
         onClose={vi.fn()}
       />,
     );
     expect(
-      await screen.findByText('Something in that space already has this title. You can still use it.'),
+      await screen.findByText(
+        'Something in that space already has this title. You can still use it.',
+      ),
     ).toBeInTheDocument();
+    // Its own space, not the first listed (RM-F).
+    expect(screen.getByRole('combobox', { name: 'Where' })).toHaveValue(TRAINING);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Duplicate' }));
     await waitFor(() => expect(onDone).toHaveBeenCalled());
@@ -124,6 +135,7 @@ describe('Duplicate', () => {
         kind="template"
         id={MANUAL}
         title="Operator manual"
+        space={GENERAL}
         onDone={vi.fn()}
         onClose={vi.fn()}
       />,
@@ -148,6 +160,7 @@ describe('Duplicate', () => {
         kind="document"
         id={MANUAL}
         title="Operator manual"
+        space={GENERAL}
         onDone={onDone}
         onClose={onClose}
       />,

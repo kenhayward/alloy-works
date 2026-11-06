@@ -52,11 +52,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
 const strings = (value: unknown, otherwise: readonly string[]): readonly string[] =>
-  Array.isArray(value) ? value.filter((each): each is string => typeof each === 'string') : otherwise;
+  Array.isArray(value)
+    ? value.filter((each): each is string => typeof each === 'string')
+    : otherwise;
 
 function readIn(data: unknown): Read | null {
   if (!isRecord(data) || !isRecord(data.space) || typeof data.space.id !== 'string') return null;
-  const version = isRecord(data.version) && typeof data.version.id === 'string' ? data.version.id : '';
+  const version =
+    isRecord(data.version) && typeof data.version.id === 'string' ? data.version.id : '';
   const outline =
     typeof data.id === 'string' && data.outline !== undefined
       ? readOutlineView(data.outline, { artifact: data.id, version })
@@ -229,8 +232,8 @@ export function ContentRowMenu({
   const load = useCallback(() => {
     void client
       .GET(`/v1/${PATH[kind]}/{id}` as '/v1/documents/{id}', { params: { path: { id } } })
-      .then(({ data }) => setRead(readIn(data)))
-      .catch(() => setRead(null));
+      .then(({ data }) => setRead((now) => readIn(data) ?? now))
+      .catch(() => undefined);
     void administersAt(client, `artifact:${id}`).then(setAdministers);
   }, [client, kind, id]);
 
@@ -251,13 +254,24 @@ export function ContentRowMenu({
     const known = read !== null;
     const own: MenuEntry[] =
       kind === 'template'
-        ? [item('generate', words('rows.generate-documents'), onGenerate !== undefined, () => onGenerate?.())]
+        ? [
+            item('generate', words('rows.generate-documents'), onGenerate !== undefined, () =>
+              onGenerate?.(),
+            ),
+          ]
         : [
             item('open', words('editor.open'), true, () => {
               window.location.hash = linkOf(kind, id);
             }),
             ...(kind === 'document'
-              ? [item('publish', words('rows.publish'), read?.mayPublish === true, () => setPublishing(true))]
+              ? [
+                  item(
+                    'publish',
+                    words('rows.publish'),
+                    read?.mayPublish === true && read.publish !== null,
+                    () => setPublishing(true),
+                  ),
+                ]
               : []),
             item('copy-link', words('editor.copy-link'), true, copyLink),
             {
@@ -290,7 +304,12 @@ export function ContentRowMenu({
       ...(kind === 'template'
         ? []
         : [
-            item('move', words('moving.move-to-another-space-menu'), read?.mayMove === true, call(moveAct)),
+            item(
+              'move',
+              words('moving.move-to-another-space-menu'),
+              read?.mayMove === true,
+              call(moveAct),
+            ),
             item('hold', words('menu.place-a-hold'), read?.mayHold === true, call(holdAct)),
             item(
               'archive',
@@ -338,7 +357,13 @@ export function ContentRowMenu({
           {flyout}
         </WithActs>
       )}
-      <RelationshipsButton act={relationshipsAct} client={client} id={id} kind={kind} title={title} />
+      <RelationshipsButton
+        act={relationshipsAct}
+        client={client}
+        id={id}
+        kind={kind}
+        title={title}
+      />
       {kind === 'component' && (
         <UsedInButton act={usedInAct} client={client} id={id} title={title} />
       )}
@@ -392,7 +417,9 @@ export function ContentRowMenu({
             document={id}
             version={read.version}
             mayPublish={read.mayPublish}
-            placeOf={(node) => placeInOutline(read.publish!.outline, node, null, read.publish!.scheme)}
+            placeOf={(node) =>
+              placeInOutline(read.publish!.outline, node, null, read.publish!.scheme)
+            }
             formats={read.publish.formats}
             language={read.publish.outline.language}
             languages={read.publish.languages}

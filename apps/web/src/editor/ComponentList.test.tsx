@@ -295,7 +295,10 @@ describe('the components list', () => {
 
     await user.click(screen.getByRole('button', { name: 'More actions for Replace the toner' }));
     await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Open' })).toBeInTheDocument());
-    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     await user.keyboard('{Escape}');
 
     await user.click(screen.getByRole('button', { name: 'More actions for Install the printer' }));
