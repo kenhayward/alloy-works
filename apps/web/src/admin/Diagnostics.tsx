@@ -7,6 +7,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { formats, words, type WordKey } from '../words/words.js';
 import styles from './Administration.module.css';
+import diagnostics from './Diagnostics.module.css';
 import { amountOf } from './Usage.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -224,14 +225,14 @@ function measuredAt(budget: Reading): string {
 function PerformanceTable({ view }: { view: DiagnosticsView }) {
   const name = words('admin.diag-performance');
   return (
-    <table aria-label={name} className={styles['table']}>
+    <table aria-label={name} className={`${styles['table']} ${diagnostics['budgets']}`}>
       <thead>
         <tr>
           <th scope="col">{words('admin.perf-budget')}</th>
           <th scope="col">{words('admin.perf-times')}</th>
           <th scope="col">{words('admin.perf-held-heading')}</th>
           <th scope="col">{words('admin.perf-measured')}</th>
-          <th scope="col">{words('admin.diag-state')}</th>
+          <th scope="col">{words('admin.perf-state')}</th>
         </tr>
       </thead>
       <tbody>
@@ -242,15 +243,17 @@ function PerformanceTable({ view }: { view: DiagnosticsView }) {
           return (
             <tr key={each.budget}>
               <td className={styles['strong']}>{each.requirement}</td>
-              <td>{named === undefined ? each.budget : words(named)}</td>
-              <td>
+              <td className={styles['wraps']}>
+                {named === undefined ? each.budget : words(named)}
+              </td>
+              <td className={styles['wraps']}>
                 {heldTo(each)}
                 {each.provisional && (
                   <span className={styles['muted']}> {words('admin.perf-provisional')}</span>
                 )}
               </td>
-              <td>{measuredAt(each)}</td>
-              <td>
+              <td className={styles['wraps']}>{measuredAt(each)}</td>
+              <td className={styles['wraps']}>
                 <Chip tone={tone}>
                   <Icon name={icon} size={12} /> {words(`admin.perf-verdict.${each.verdict}`)}
                 </Chip>

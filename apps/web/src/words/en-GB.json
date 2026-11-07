@@ -6457,6 +6457,7 @@
   "admin.perf-times": "What it times",
   "admin.perf-held-heading": "Held to",
   "admin.perf-measured": "Measured",
+  "admin.perf-state": "State",
   "admin.perf-no-time": "No time stated yet",
   "admin.perf-within": "Within {within}",
   "admin.perf-held": "{percent, number, percent} within {within}",
