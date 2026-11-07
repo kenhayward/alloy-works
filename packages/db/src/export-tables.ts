@@ -250,7 +250,9 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   sign_in_failure_tally: SIGN_IN,
   sign_in_handoff: SIGN_IN,
   sign_in_route: SIGN_IN,
-  silent_failure_told: leftOut('Which failures administrators were told of, told afresh in a copy.'),
+  silent_failure_told: leftOut(
+    'Which failures administrators were told of, told afresh in a copy.',
+  ),
   source_change: renumbered(),
   space: natural(['name'], { breaksCycleAt: ['default_template'] }),
   suggestion: kept(),

@@ -17,6 +17,12 @@ export type SilentFailureKind =
   | 'capability_failing'
   | 'integrity_failing';
 
+/** The kinds administrators are told of by inbox: the rest are shown in Diagnostics or tell their own. */
+export type SilentFailureToldKind = Exclude<
+  SilentFailureKind,
+  'query_timeout' | 'webhook_failing' | 'mail_failing'
+>;
+
 /** Where a telling is, as a file and text found in it. */
 interface Cited {
   readonly file: string;
@@ -160,7 +166,7 @@ export interface SilentReadings {
 
 /** One failure now: its kind and what it is of (a capability, work, job kind, source or class). */
 export interface SilentFailureNow {
-  readonly kind: SilentFailureKind;
+  readonly kind: SilentFailureToldKind;
   readonly subject: string;
 }
 
@@ -168,7 +174,7 @@ export const silentFailureKey = (failure: SilentFailureNow) => `${failure.kind}:
 
 /** The failures administrators are told of by inbox, read now; webhooks and mail tell their own. */
 export function silentFailuresNow(readings: SilentReadings): SilentFailureNow[] {
-  const failing = (kind: SilentFailureKind, subjects: readonly string[]) =>
+  const failing = (kind: SilentFailureToldKind, subjects: readonly string[]) =>
     [...new Set(subjects)].map((subject) => ({ kind, subject }));
   return [
     ...failing(

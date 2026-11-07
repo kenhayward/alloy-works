@@ -223,6 +223,7 @@ export {
   silentFailuresToTell,
   type SilentFailure,
   type SilentFailureKind,
+  type SilentFailureToldKind,
   type SilentFailureNow,
   type SilentReadings,
 } from './diagnostics/silent.js';
