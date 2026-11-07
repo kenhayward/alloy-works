@@ -9,7 +9,7 @@ import { listInbox } from './inbox.js';
 import { setMailChannel } from './mail.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { findRole } from './roles.js';
+import { createRole, findRole } from './roles.js';
 import { silentFailuresOf, tellSilentFailures } from './silent-failures.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
@@ -149,6 +149,27 @@ describe('silent failures told (diagnostics.md, "Who else is told"; the DG plan,
     await work('failed');
     expect(await sweep()).toBe(1);
     expect(await told(ada)).toHaveLength(2);
+  });
+
+  it('tells whoever reads Diagnostics, and not who administers without reading it (the SA plan, SAa)', async () => {
+    const holding = (name: string, held: readonly string[], who: string) =>
+      as(async (trx) => {
+        const made = await createRole(trx, name, held);
+        if (!('role' in made)) throw new Error(`role refused: ${made.refused}`);
+        await grant(trx, {
+          roleId: made.role.id,
+          subject: { principal: who },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+      });
+    await holding('Diagnostics reader', ['read', 'read_diagnostics'], grace);
+    await holding('Administers blind', ['read', 'administer'], ada);
+    await work('failed');
+    expect(await sweep()).toBe(1);
+    expect(await told(grace)).toEqual([{ kind: 'work_failing', subject: 'sweepDates' }]);
+    expect(await told(ada)).toEqual([]);
   });
 
   it('keeps the telling for later where nobody administers', async () => {

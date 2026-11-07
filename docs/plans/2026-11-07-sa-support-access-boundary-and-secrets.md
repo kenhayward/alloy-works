@@ -39,6 +39,14 @@ tenant's own secrets and the operator's is named.
 | SAd | Secrets: SCIM overlap, the extension secret under `rotate_secrets`, `GET /v1/secrets` with consumers, a break told once                                   |
 | SAe | The boundary declared: `OUTBOUND`, `GET /v1/boundary`, Administration's What leaves; the close                                                            |
 
+**From SAa's review**, for the PRs that own them:
+
+- **SAb:** a support grant to some spaces must not see titles from others through the diagnostics reads (query usage
+  and its CSV name documents and definitions everywhere; Diagnostics names connections): filter them to the granted
+  spaces. The unscoped stream ignores `permissions` frames, so a revocation must end it too.
+- **SAc:** pages that join a diagnostics read with an `administer` one (Model spending's budget and limits, the
+  embedding panel) ask the service per panel, so a reader of Diagnostics alone sees what they may.
+
 ## Ken's answers
 
 | ID   | Question                        | Answer                                                                                                                                       |

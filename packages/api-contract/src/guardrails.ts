@@ -53,7 +53,7 @@ export const guardrailRoutes = {
     path: '/v1/guardrails',
     summary: 'The environment’s guardrails',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: administer,
     query: GuardrailListQuery,
     responses: {
@@ -68,7 +68,7 @@ export const guardrailRoutes = {
     path: '/v1/guardrails',
     summary: 'Forbid a phrase in what a model is sent, what it returns, or both',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: administer,
     body: GuardrailBody,
     responses: {
@@ -87,7 +87,7 @@ export const guardrailRoutes = {
     path: '/v1/guardrails/{id}/retirement',
     summary: 'Retire a guardrail, kept as the reason any run it refused was',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: administer,
     params: GuardrailParams,
     responses: {

@@ -77,7 +77,7 @@ waiting is told, or why nobody waits, and how administrators are; a test finds e
   minutes (`indexLagging`). A search that used meaning meanwhile answers `meaningBehind`, and Search says new
   content may not be found by meaning yet; Diagnostics says so in Needs attention.
 - **Administrators are told** by `sweepSilentFailuresEverywhere` (`silentFailuresOf`, `tellSilentFailures`): each
-  failure read from the records Diagnostics reads, and told once to those who administer at the environment, each
+  failure read from the records Diagnostics reads, and told once to those who read Diagnostics (`read_diagnostics`) at the environment, each
   decided again on their grants, by the inbox kind `diagnostics`, never mailed, as a failing mail channel is (EM-N).
   `silent_failure_told` (0216) keeps what was told, left out of exports; a failure cleared is forgotten, so its
   return tells again, and one told to nobody is told when somebody may be.

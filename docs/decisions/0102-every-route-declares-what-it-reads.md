@@ -37,5 +37,5 @@ Field values, version notes and approval reasons count as content too (SA-B exte
 ## Consequences
 
 - Enforcing it is SAb's: the service's route hook refuses a support principal a route its scope does not reach.
-- 183 routes read content, 254 metadata and 56 none, at 0102. A route's class is reviewed with its schema: a new
+- 209 routes read content, 229 metadata and 55 none, at 0102. A route's class is reviewed with its schema: a new
   field that is content moves its route.

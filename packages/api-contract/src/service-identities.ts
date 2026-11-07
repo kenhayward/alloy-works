@@ -83,7 +83,7 @@ export const serviceIdentityRoutes = {
     path: '/v1/service-identities',
     summary: "The environment's service identities, a page at a time",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: ADMINISTER,
     query: ServiceIdentityListQuery,
     responses: {
@@ -102,7 +102,7 @@ export const serviceIdentityRoutes = {
     path: '/v1/service-identities',
     summary: 'Make a service identity: a principal of its own, never a person, with no roles yet',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: ADMINISTER,
     body: CreateServiceIdentityBody,
     responses: {
@@ -118,7 +118,7 @@ export const serviceIdentityRoutes = {
     path: '/v1/service-identities/{id}',
     summary: 'Rename a service identity or change what it says it is for',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: ADMINISTER,
     params: ServiceIdentityParams,
     body: ChangeServiceIdentityBody,
@@ -136,7 +136,7 @@ export const serviceIdentityRoutes = {
     path: '/v1/service-identities/{id}/disablement',
     summary: 'Disable a service identity: its tokens are refused at their next request',
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: ADMINISTER,
     params: ServiceIdentityParams,
     responses: {

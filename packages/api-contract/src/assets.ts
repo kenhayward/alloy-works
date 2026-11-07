@@ -491,7 +491,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/rights',
     summary: "An image's source and licence, and every change to them",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: AssetParams,
     responses: {
@@ -510,7 +510,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/rights',
     summary: "Record an image's source and licence, as a change of its own",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: AssetParams,
     body: SetAssetRightsBody,

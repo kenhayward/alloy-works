@@ -295,7 +295,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation',
     summary: "The environment's policy for publishing in a language",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: { check: 'session' },
     responses: {
       200: { description: 'The translation settings', schema: TranslationSettings },
@@ -308,7 +308,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation',
     summary: "Change the environment's policy for publishing in a language",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: TranslationSettingsBody,
     responses: {
@@ -327,7 +327,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation/history',
     summary: "Every change to the environment's policy for publishing in a language",
     tenantScoped: true,
-    reads: 'metadata',
+    reads: 'content',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: TranslationSettingsHistoryQuery,
     responses: {

@@ -7,6 +7,34 @@ import { allRoutes } from './routes.js';
  * a caption, a field value, a version note, an approval reason, SQL, a delivery's contents or bytes.
  */
 const DOUBTFUL_CONTENT = [
+  // Typed by a person beside a name: values, credits, phrases, descriptions, wording, notes (SAa's review).
+  'getVocabulary',
+  'refreshVocabulary',
+  'importVocabulary',
+  'getAssetRights',
+  'setAssetRights',
+  'listGuardrails',
+  'setGuardrail',
+  'retireGuardrail',
+  'listWebhooks',
+  'getWebhook',
+  'createWebhook',
+  'changeWebhook',
+  'rotateWebhookSecret',
+  'listServiceIdentities',
+  'createServiceIdentity',
+  'changeServiceIdentity',
+  'disableServiceIdentity',
+  'listLicences',
+  'getLicence',
+  'getTranslationSettings',
+  'setTranslationSettings',
+  'getTranslationSettingsHistory',
+  // A source's own failure message, which can echo its rows.
+  'testConnection',
+  'checkBindings',
+  'resolveBindings',
+  'setConnectionCredential',
   // Search: snippets.
   'search',
   'searchImportParts',

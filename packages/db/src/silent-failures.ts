@@ -86,12 +86,12 @@ export async function tellSilentFailures(
       left join group_member m on m.group_id = g.group_id
       join principal p on p.id = coalesce(g.principal_id, m.principal_id)
      where g.level = 'tenant' and g.effect = 'allow'
-       and 'administer' = any (r.permissions)
+       and 'read_diagnostics' = any (r.permissions)
        and p.kind = 'user' and p.disabled_at is null and p.erased_at is null`.execute(trx);
   const recipients: string[] = [];
   for (const { id } of candidates) {
     const facts = await loadFacts(trx, id, { kind: 'tenant' });
-    if (facts !== undefined && decide('administer', facts).allowed) recipients.push(id);
+    if (facts !== undefined && decide('read_diagnostics', facts).allowed) recipients.push(id);
   }
   if (recipients.length === 0) return 0;
   for (const failure of tell) {

@@ -55479,7 +55479,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "read",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -55961,7 +55961,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "edit",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -114423,7 +114423,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "rotate_secrets",
-        "x-alloy-reads": "none",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -120115,7 +120115,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "use_connection",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -163275,7 +163275,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "read",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -178482,7 +178482,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "edit",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -278068,7 +278068,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -278306,7 +278306,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -278622,7 +278622,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -294378,7 +294378,7 @@
           "Licences"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -294640,7 +294640,7 @@
           "Licences"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -355240,7 +355240,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -355539,7 +355539,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -355855,7 +355855,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -356223,7 +356223,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -359953,7 +359953,7 @@
           "Settings"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -360146,7 +360146,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -360507,7 +360507,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "administer",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -431099,7 +431099,7 @@
           "Vocabularies"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -431701,7 +431701,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "manage_definitions",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -432832,7 +432832,7 @@
         ],
         "x-alloy-token-enabled": true,
         "x-alloy-permission": "manage_definitions",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -433597,7 +433597,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "configure_webhooks",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -433942,7 +433942,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "configure_webhooks",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -434650,7 +434650,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "configure_webhooks",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -434991,7 +434991,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "configure_webhooks",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
@@ -436208,7 +436208,7 @@
         ],
         "x-alloy-token-enabled": false,
         "x-alloy-permission": "rotate_secrets",
-        "x-alloy-reads": "metadata",
+        "x-alloy-reads": "content",
         "security": [
           {
             "session": []
