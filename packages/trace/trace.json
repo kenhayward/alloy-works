@@ -16969,6 +16969,10 @@
           "howItIsMet": "A bound value revised and an asset ingested are kinds of their own"
         },
         {
+          "id": "LIF-072",
+          "howItIsMet": "An asset replaced or re-licensed, support granted, used and revoked, and the mail channel (the only notification channel) changed are kinds of their own"
+        },
+        {
           "id": "LIF-070",
           "howItIsMet": "A relationship made, changed and removed, and an access to a shared publication, are kinds of their own, each written by its act's design"
         },
@@ -20764,6 +20768,14 @@
         {
           "id": "IAM-070",
           "howItIsMet": "`grant_support`, the last of its eight acts, granted through a role and explained like the rest"
+        },
+        {
+          "id": "ADM-025",
+          "howItIsMet": "`GET /v1/support-access` answers what is active and what it covers at any time, and every administrator sees it at the top of Administration"
+        },
+        {
+          "id": "ADM-026",
+          "howItIsMet": "Content is read only with `Support-Read` at the API; the renderer withholds it beyond the scope and asks before any is read, then says why"
         }
       ]
     },
@@ -25313,19 +25325,19 @@
     {
       "id": "ADM-022",
       "file": "apps/service/src/support-routes.test.ts",
-      "line": 257,
+      "line": 260,
       "kind": "title"
     },
     {
       "id": "ADM-023",
       "file": "apps/service/src/support-routes.test.ts",
-      "line": 385,
+      "line": 388,
       "kind": "title"
     },
     {
       "id": "ADM-024",
       "file": "apps/service/src/support-routes.test.ts",
-      "line": 289,
+      "line": 292,
       "kind": "title"
     },
     {
@@ -26103,9 +26115,15 @@
       "kind": "title"
     },
     {
+      "id": "ADM-025",
+      "file": "apps/web/src/admin/Administration.test.tsx",
+      "line": 2100,
+      "kind": "title"
+    },
+    {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1909,
+      "line": 1911,
       "kind": "title"
     },
     {
@@ -26117,7 +26135,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 2051,
+      "line": 2053,
       "kind": "title"
     },
     {
@@ -26237,13 +26255,13 @@
     {
       "id": "GEN-044",
       "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
-      "line": 46,
+      "line": 72,
       "kind": "title"
     },
     {
       "id": "SCH-067",
       "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
-      "line": 64,
+      "line": 90,
       "kind": "title"
     },
     {
@@ -26309,25 +26327,25 @@
     {
       "id": "ADM-013",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 139,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "ADM-014",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 139,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "GEN-034",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 139,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "GEN-035",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 174,
+      "line": 188,
       "kind": "title"
     },
     {
@@ -26400,6 +26418,12 @@
       "id": "LIF-019",
       "file": "apps/web/src/admin/Retention.test.tsx",
       "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-042",
+      "file": "apps/web/src/admin/SupportAccess.test.tsx",
+      "line": 92,
       "kind": "title"
     },
     {
@@ -28464,6 +28488,12 @@
       "id": "IAM-069",
       "file": "apps/web/src/shell/SignInScreen.test.tsx",
       "line": 97,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-026",
+      "file": "apps/web/src/shell/SupportView.test.tsx",
+      "line": 94,
       "kind": "title"
     },
     {
@@ -30813,6 +30843,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-026",
+      "file": "packages/api-client/src/support-read.test.ts",
+      "line": 8,
+      "kind": "title"
+    },
+    {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 200,
@@ -30995,19 +31031,25 @@
     {
       "id": "DAT-007",
       "file": "packages/db/src/audit-content.test.ts",
-      "line": 325,
+      "line": 327,
       "kind": "title"
     },
     {
       "id": "LIF-027",
       "file": "packages/db/src/audit-content.test.ts",
-      "line": 143,
+      "line": 145,
       "kind": "title"
     },
     {
       "id": "LIF-069",
       "file": "packages/db/src/audit-content.test.ts",
-      "line": 445,
+      "line": 447,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-072",
+      "file": "packages/db/src/audit-content.test.ts",
+      "line": 505,
       "kind": "title"
     },
     {
@@ -34181,11 +34223,17 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 302,
+      "line": 318,
       "kind": "title"
     },
     {
       "id": "LIF-070",
+      "file": "packages/domain/src/audit/kinds.test.ts",
+      "line": 295,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-072",
       "file": "packages/domain/src/audit/kinds.test.ts",
       "line": 279,
       "kind": "title"
