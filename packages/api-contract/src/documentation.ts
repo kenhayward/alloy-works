@@ -237,6 +237,11 @@ export const documentationGroups = [
       { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
       {
+        name: 'Secrets',
+        description:
+          'See every secret the environment holds, what uses each and when it was last replaced, before replacing one.',
+      },
+      {
         name: 'Support access',
         description:
           'Let somebody from outside look at Diagnostics, or at metadata or content in named spaces, for a purpose and until a stated time, and see and end it.',
@@ -726,6 +731,7 @@ const operationTags = {
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
   'Support access': ['listSupportAccess', 'grantSupportAccess', 'revokeSupportAccess'],
+  Secrets: ['listSecrets'],
   'Sign-in settings': [
     'getSignInSettings',
     'addProvider',
@@ -1550,7 +1556,7 @@ const descriptions: Readonly<Record<string, string>> = {
   removeExtension:
     'Removes an extension once no connection uses it but a retired one, and a reference extension once it is switched off as a reference source; kept, so what used it still names it, and the bibliography entries obtained from it untouched, though no longer re-checked. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
   setExtensionSecret:
-    'Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+    'Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs rotate_secrets at the environment, with a signed-in session.',
   getMailChannel:
     'Returns whether this environment sends mail, by whose relay and from what address, and whether the operator offers a relay. A relay’s password is never answered, only whether one is held. Needs configure_services, with a session.',
   setMailChannel:
@@ -1588,7 +1594,7 @@ const descriptions: Readonly<Record<string, string>> = {
   disconnectCtStudio:
     'Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs configure_services at the environment, with a signed-in session.',
   issueCtStudioToken:
-    'Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.',
+    'Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token is still accepted for 24 hours, so CT Studio moves without a gap, and one replaced before it ends now. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:
@@ -1711,6 +1717,8 @@ const descriptions: Readonly<Record<string, string>> = {
   setGroupMembers:
     'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.',
   listInvitations: 'Lists waiting and accepted invitations in stable cursor pages.',
+  listSecrets:
+    'Lists every secret this environment holds: its kind, what it belongs to, when it was last replaced, until when the value it replaced is still accepted, how it is replaced and with what permission, and everything here that uses it, resolved now: a model key every purpose routed to its endpoint, the guardrails and the translation policy; a connection the query definitions naming it and their datasets; a webhook its subscription; the mail relay its deliveries; a SCIM token its provisioning; a shared provider its member environments. Never a value or a hash. Needs rotate_secrets at the environment.',
   listSupportAccess:
     'Lists the support grants, active and ended, the newest 200 first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it (nobody, where the environment’s cap on outside access was lowered past it), and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.',
   grantSupportAccess:
@@ -1734,7 +1742,7 @@ const descriptions: Readonly<Record<string, string>> = {
   turnScimOff:
     'Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.',
   issueScimToken:
-    "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
+    "Makes the bearer token a provider's SCIM client presents, answered this once. The token before it is still accepted for 24 hours, so the client moves without a gap, and any older ends now: two at most are accepted. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
   setGoogleSignIn:
     "Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.",
   setSessionSettings:

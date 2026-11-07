@@ -248,6 +248,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   their access reaches on every page and is offered only Diagnostics, Usage, Query usage and Model
   spending in Administration; under content access they are asked before any content opens, and then
   each read says why, while beyond their scope a page says it is withheld.
+- **Secrets.** Administration's **Secrets**, or `GET /v1/secrets`, to whoever holds rotate secrets:
+  every secret the environment holds (sign-in, connection, delivery store, model key, webhook,
+  extension, mail relay, SCIM, CT Studio and service identity tokens), what uses each, resolved now,
+  when it was last replaced and until when an old value still works, each linked to where it is
+  replaced; never a value. A new SCIM or CT Studio token leaves the one before it working for 24 hours
+  and ends any older at once, as a webhook's signing secret does; everything else is replaced at once.
+  Setting an extension's secret needs rotate secrets. After a replacement, the first failure to
+  authenticate by a connection, model endpoint, webhook or the mail relay is told once to whoever
+  reads Diagnostics, naming everything that uses the secret, and shows in Needs attention. A refused
+  token or sign-in secret cannot be told apart, so is not told. The object store's credential is the
+  operator's, and nothing rotates it.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the
   publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,

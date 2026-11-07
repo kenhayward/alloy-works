@@ -1840,6 +1840,7 @@ describe('routes that check a permission', () => {
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
     listSupportAccess: () => ({ url: '/v1/support-access', status: 403 }),
+    listSecrets: () => ({ url: '/v1/secrets', status: 403 }),
     grantSupportAccess: () => ({
       url: '/v1/support-access',
       status: 403,

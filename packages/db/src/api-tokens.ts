@@ -1,5 +1,6 @@
 // packages/db/src/api-tokens.ts
-import { isPermission, type Permission } from '@alloy-works/domain';
+import { isPermission, SECRET_OVERLAP_HOURS, type Permission } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { labelled, labels, principalLabel, recordEvent, setAuditContext } from './audit.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
@@ -120,6 +121,8 @@ export async function findApiToken(
     .select(['t.id', 't.name', 't.scopes', 'p.id as principal_id', 'p.email', 'p.display_name'])
     .where('t.token_hash', '=', tokenHash)
     .where('t.expires_at', '>', now)
+    // A replaced token is accepted until its end, and not after (SA-I).
+    .where((eb) => eb.or([eb('t.ends_at', 'is', null), eb('t.ends_at', '>', now)]))
     .executeTakeFirst();
   if (!row) return undefined;
   // Recorded by the one request whose update lands (the AU1 plan, AU1-G): a concurrent one waits on
@@ -197,4 +200,71 @@ export async function revokeApiToken(
   await recordTokenEvent(trx, 'token.revoked', held, principalId);
   const removed = await trx.deleteFrom('api_token').where('id', '=', id).executeTakeFirst();
   return removed.numDeletedRows > 0n;
+}
+
+/**
+ * Before a principal is issued a token in place of its last (the SA plan, SA-I; ADM-007): its newest
+ * token is accepted for 24 hours more, never past its expiry, and every older one ends now, so two at
+ * most are ever accepted. An end once set stands. Answers the tokens revoked, for the caller to tell
+ * every replica. With `replacing`, that token is the one that overlaps, and only those already ending
+ * end now: an identity's other tokens are not this rotation's.
+ */
+export async function overlapTokens(
+  trx: TenantTransaction,
+  principalId: string,
+  replacing?: string,
+): Promise<readonly string[]> {
+  // Held to the commit, so a second replacement waits for the token the first is making, rather than
+  // reading past it and leaving three accepted (the SAd review).
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`api_token:${principalId}`}, 0))`.execute(
+    trx,
+  );
+  const held = await trx
+    .selectFrom('api_token')
+    .select(['id', 'name', 'ends_at'])
+    .where('principal_id', '=', principalId)
+    .orderBy('created_at', 'desc')
+    .orderBy('id', 'desc')
+    .forUpdate()
+    .execute();
+  const newest = replacing === undefined ? held[0] : held.find((each) => each.id === replacing);
+  const older =
+    replacing === undefined
+      ? held.slice(1)
+      : held.filter((each) => each.id !== replacing && each.ends_at !== null);
+  if (newest !== undefined && newest.ends_at === null) {
+    await trx
+      .updateTable('api_token')
+      .set({
+        ends_at: sql<Date>`least(now() + make_interval(hours => ${SECRET_OVERLAP_HOURS}), expires_at)`,
+      })
+      .where('id', '=', newest.id)
+      .execute();
+  }
+  for (const token of older) await recordTokenEvent(trx, 'token.revoked', token, principalId);
+  if (older.length === 0) return [];
+  const ids = older.map((token) => token.id);
+  await trx.deleteFrom('api_token').where('id', 'in', ids).execute();
+  return ids;
+}
+
+/** Tokens past their end, deleted, each recorded as revoked before it goes (SA-I). */
+export async function sweepEndedTokens(
+  trx: TenantTransaction,
+  now: Date = new Date(),
+): Promise<readonly string[]> {
+  const ended = await trx
+    .selectFrom('api_token')
+    .select(['id', 'name', 'principal_id'])
+    .where('ends_at', '<=', now)
+    .orderBy('id')
+    .forUpdate()
+    .execute();
+  for (const token of ended) {
+    await recordTokenEvent(trx, 'token.revoked', token, token.principal_id);
+  }
+  if (ended.length === 0) return [];
+  const ids = ended.map((token) => token.id);
+  await trx.deleteFrom('api_token').where('id', 'in', ids).execute();
+  return ids;
 }

@@ -233,4 +233,54 @@ describe('an act stops when the authority it runs by ends', () => {
       release();
     }
   });
+
+  /** A token of Ada's, its check held at the source, for a case to end by its replacement's time. */
+  const heldCheck = async (name: string) => {
+    const { document, node } = await placed();
+    // Resolved first, so a check has something to check.
+    h.connector.held = undefined;
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['1', 'North']]);
+    const resolved = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+      bindings: [{ node, binding: 'b1' }],
+    });
+    expect(resolved.statusCode, resolved.body).toBe(200);
+    const issued = await h.call('ada', 'POST', '/v1/tokens', {
+      name,
+      scopes: ['edit', 'use_connection'],
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    expect(issued.statusCode, issued.body).toBe(200);
+    const { id, secret } = issued.json<{ id: string; secret: string }>();
+    holdAtTheSource();
+    const before = await recorded();
+    const reached = h.connector.reached.length;
+    const asked = h.bearer(secret, 'POST', `/v1/documents/${document.id}/bindings/check`, {});
+    await reaching(reached);
+    // Replaced, and its 24 hours past: ended, though nothing deleted it or said so.
+    await queryAs(
+      h.db.adminUrl,
+      `update ${h.tenant.schema}.api_token set ends_at = now() - interval '1 second' where id = $1`,
+      [id],
+    );
+    return { asked, before };
+  };
+
+  it('stops an act within two seconds of the token it runs by passing its end', async () => {
+    const { asked, before } = await heldCheck('Ended while held');
+    const at = Date.now();
+    const answer = await asked;
+    expect(answer.statusCode, answer.body).toBe(401);
+    expect(answer.json()).toMatchObject({ code: 'authority_ended', reason: 'token_revoked' });
+    expect(h.connector.closed.at(-1)!.at - at).toBeLessThan(2000);
+    expect(await recorded()).toEqual(before);
+  });
+
+  it('records nothing for a token past its end as the source answers', async () => {
+    const { asked, before } = await heldCheck('Ended as answered');
+    release();
+    const answer = await asked;
+    expect([401, 409], answer.body).toContain(answer.statusCode);
+    expect(await recorded()).toEqual(before);
+  });
 });

@@ -5,6 +5,7 @@
  */
 import { PERFORMANCE_BUDGETS } from './budgets.js';
 import type { Health, WorkHealth } from './health.js';
+import type { SecretKind } from '../secrets/consumers.js';
 
 export type SilentFailureKind =
   | 'query_timeout'
@@ -15,7 +16,8 @@ export type SilentFailureKind =
   | 'index_lagging'
   | 'work_failing'
   | 'capability_failing'
-  | 'integrity_failing';
+  | 'integrity_failing'
+  | 'secret_failing';
 
 /** The kinds administrators are told of by inbox: the rest are shown in Diagnostics or tell their own. */
 export type SilentFailureToldKind = Exclude<
@@ -141,6 +143,17 @@ export const SILENT_FAILURES: readonly SilentFailure[] = [
     },
     administrators: { by: 'inbox' },
   },
+  {
+    kind: 'secret_failing',
+    what: 'Something using a secret failing to authenticate since it was replaced',
+    waiting: {
+      told: true,
+      how: 'The person whose act failed, at once, by its own failure',
+      file: 'apps/service/src/data/failure-words.ts',
+      holds: 'connection_failed',
+    },
+    administrators: { by: 'inbox' },
+  },
 ];
 
 /** The index's ceiling (SCH-067): a version waits no longer than this to be findable by meaning. */
@@ -162,12 +175,30 @@ export interface SilentReadings {
   /** How long the oldest version waiting to be findable by meaning has waited; null with none. */
   readonly indexWaitSeconds: number | null;
   readonly integrity: readonly { readonly class: string; readonly failing: number }[];
+  /**
+   * Each secret replaced, by its key and replacement (`kind:id:ms`), with whether a consumer has failed
+   * to authenticate since (ADM-047), what it is and every consumer by name.
+   */
+  readonly secrets?: readonly {
+    readonly key: string;
+    readonly failing: boolean;
+    readonly secret: SecretFailing;
+  }[];
+}
+
+/** A secret a consumer failed to authenticate with since its replacement, named with every consumer. */
+export interface SecretFailing {
+  readonly kind: SecretKind;
+  readonly name: string | null;
+  readonly consumers: readonly string[];
 }
 
 /** One failure now: its kind and what it is of (a capability, work, job kind, source or class). */
 export interface SilentFailureNow {
   readonly kind: SilentFailureToldKind;
   readonly subject: string;
+  /** A failing secret's, told against it (ADM-047). */
+  readonly secret?: SecretFailing;
 }
 
 export const silentFailureKey = (failure: SilentFailureNow) => `${failure.kind}:${failure.subject}`;
@@ -200,6 +231,14 @@ export function silentFailuresNow(readings: SilentReadings): SilentFailureNow[] 
       'integrity_failing',
       readings.integrity.filter((each) => each.failing > 0).map((each) => each.class),
     ),
+    // Its key holds the replacement, so the next replacement's break is told again (ADM-047).
+    ...(readings.secrets ?? [])
+      .filter((each) => each.failing)
+      .map((each) => ({
+        kind: 'secret_failing' as const,
+        subject: each.key,
+        secret: each.secret,
+      })),
   ];
 }
 

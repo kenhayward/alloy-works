@@ -34,7 +34,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { sql } from 'kysely';
@@ -467,6 +472,64 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
         select count(*)::int as n from model_credential`.execute(trx);
       expect(rows[0]!.n).toBe(0);
     });
+  });
+
+  it("keeps when this tenant's own provider secret was set, since a restore replaces nothing", async () => {
+    const target = await newTenant();
+    const grace = await signInAs(target);
+    const set = '2026-01-02T03:04:05.000Z';
+    // This tenant's provider holds a sealed secret, set at a time of its own.
+    await queryAs(
+      db.adminUrl,
+      `insert into "${target.schema}".identity_provider
+         (issuer, name, client_id, sealed_secret, closed_at)
+       values ('https://kept.example', 'Kept', 'mine', $1, now())`,
+      [`v1.${'a'.repeat(16)}.${'b'.repeat(22)}.${'c'.repeat(40)}`],
+    );
+    await queryAs(
+      db.adminUrl,
+      `update "${target.schema}".identity_provider set secret_set_at = $1
+        where issuer = 'https://kept.example'`,
+      [set],
+    );
+    const bad = forged((name, content) => {
+      if (name === 'manifest.json') {
+        const manifest = JSON.parse(content.toString()) as {
+          tables: Record<string, { rows: number; bytes: number }>;
+        };
+        manifest.tables['identity_provider']!.rows += 1;
+        manifest.tables['identity_provider']!.bytes += 2000;
+        return Buffer.from(JSON.stringify(manifest));
+      }
+      if (name !== 'tables/identity_provider.jsonl.gz') return undefined;
+      return rezip([
+        ...rowsIn(content),
+        {
+          id: '00000000-0000-4000-8000-00000000aab1',
+          issuer: 'https://kept.example',
+          name: 'Kept',
+          client_id: 'theirs',
+          secret_name: 'their_secret',
+          groups_claim: 'groups',
+          scim_claim: 'sub',
+          closed_at: null,
+          secret_set_at: '2025-05-05T05:05:05.000Z',
+        },
+      ]);
+    });
+    const { id, read } = await uploaded(target, grace, bad);
+    if ((await read())!.state !== 'previewed')
+      throw new Error(JSON.stringify((await read())!.refusal));
+    const done = await answered(target, id);
+    expect(done.state, JSON.stringify(done.refusal)).toBe('restored');
+    const kept = await service.withTenant(target, async (trx) =>
+      trx
+        .selectFrom('identity_provider')
+        .select('secret_set_at')
+        .where('issuer', '=', 'https://kept.example')
+        .executeTakeFirstOrThrow(),
+    );
+    expect(kept.secret_set_at?.toISOString()).toBe(set);
   });
 
   it('brings a mail channel back off with no password, neither failing nor told so, so a copied tenant mails nobody', async () => {

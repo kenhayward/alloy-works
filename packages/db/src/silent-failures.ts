@@ -17,6 +17,7 @@ import { integrityOf } from './integrity.js';
 import { capabilityUsage } from './measurements.js';
 import { ownJobs } from './own-jobs.js';
 import { notifyTenant } from './realtime.js';
+import { secretsFailing } from './secrets.js';
 import type { TenantTransaction } from './tables.js';
 
 const DAY = 86_400_000;
@@ -24,7 +25,8 @@ const DAY = 86_400_000;
 /**
  * The environment's silent failures now (diagnostics.md, "Who else is told"; DGe4), from the records
  * Diagnostics reads: a capability failing over the health window, work failing or late, jobs failed in
- * the last day, a data source down, the index lagging past its ceiling, integrity failing.
+ * the last day, a data source down, the index lagging past its ceiling, integrity failing, and a
+ * secret something using it has failed to authenticate with since it was replaced (ADM-047).
  */
 export async function silentFailuresOf(
   trx: TenantTransaction,
@@ -57,6 +59,7 @@ export async function silentFailuresOf(
     })),
     indexWaitSeconds: await embeddingWaitSeconds(trx),
     integrity: (await integrityOf(trx, now)).classes,
+    secrets: await secretsFailing(trx),
   });
 }
 
@@ -95,7 +98,12 @@ export async function tellSilentFailures(
   }
   if (recipients.length === 0) return 0;
   for (const failure of tell) {
-    const counts = JSON.stringify({ kind: failure.kind, subject: failure.subject });
+    // A secret's names its consumers, so the notice says every one (ADM-047).
+    const counts = JSON.stringify({
+      kind: failure.kind,
+      subject: failure.subject,
+      ...(failure.secret === undefined ? {} : { replaced: failure.secret }),
+    });
     for (const id of recipients) {
       await sql`insert into notification (recipient, kind, counts)
         values (${id}, 'diagnostics', ${counts}::jsonb)`.execute(trx);

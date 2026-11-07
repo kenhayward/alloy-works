@@ -58,11 +58,20 @@ export function watchAuthority(options: {
     if (reading) return;
     reading = true;
     db.withTenant(tenant, async (trx) => {
-      const table = credential.kind === 'session' ? 'session' : 'api_token';
+      if (credential.kind === 'session') {
+        const row = await trx
+          .selectFrom('session')
+          .select('id')
+          .where('id', '=', credential.id)
+          .executeTakeFirst();
+        return row !== undefined;
+      }
+      // A replaced token past its end is ended, before the sweep deletes it (secrets.md).
       const row = await trx
-        .selectFrom(table)
+        .selectFrom('api_token')
         .select('id')
         .where('id', '=', credential.id)
+        .where((eb) => eb.or([eb('ends_at', 'is', null), eb('ends_at', '>', new Date())]))
         .executeTakeFirst();
       return row !== undefined;
     })

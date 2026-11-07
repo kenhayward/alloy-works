@@ -98,6 +98,57 @@ describe('sweeping what sign-ins leave behind', () => {
     expect(await sweepExpiredSignIns(worker)).toBe(0);
   });
 
+  it('ADM-007 removes a replaced token once its 24 hours are past, and leaves one still overlapping', async () => {
+    const tokens = await worker.withTenant(tenant, async (trx) => {
+      const principal = await trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: 'hedy',
+          email: null,
+          display_name: 'Hedy',
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const made = [];
+      for (const hash of ['a'.repeat(64), 'b'.repeat(64)]) {
+        made.push(
+          await trx
+            .insertInto('api_token')
+            .values({
+              principal_id: principal.id,
+              name: 'SCIM',
+              token_hash: hash,
+              scopes: [],
+              expires_at: new Date(Date.now() + 30 * 86_400_000),
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow(),
+        );
+      }
+      await trx
+        .updateTable('api_token')
+        .set({ ends_at: new Date(Date.now() + 86_400_000) })
+        .where(
+          'id',
+          'in',
+          made.map((each) => each.id),
+        )
+        .execute();
+      return made.map((each) => each.id);
+    });
+    expect(await sweepExpiredSignIns(worker)).toBe(0);
+    const still = await worker.withTenant(tenant, (trx) =>
+      trx.selectFrom('api_token').select('id').where('id', 'in', tokens).execute(),
+    );
+    expect(still).toHaveLength(2);
+    await sweepExpiredSignIns(worker, new Date(Date.now() + 2 * 86_400_000));
+    const left = await worker.withTenant(tenant, (trx) =>
+      trx.selectFrom('api_token').select('id').where('id', 'in', tokens).execute(),
+    );
+    expect(left).toEqual([]);
+  });
+
   it('IAM-013 records each session it ends as the system ending it, with when it expired', async () => {
     // As the worker runs: no context of its own but the one the sweep names.
     const bare = createTenantDatabase(db.workerUrl);

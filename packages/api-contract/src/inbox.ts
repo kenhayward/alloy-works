@@ -2,6 +2,7 @@ import { ENTRY_FLAGS } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { SecretKindName } from './secrets.js';
 
 export const InboxQuery = z.strictObject({
   ...pageQuery,
@@ -110,11 +111,22 @@ export const NotificationView = z.object({
         'work_failing',
         'capability_failing',
         'integrity_failing',
+        'secret_failing',
       ]),
       subject: z
         .string()
         .describe(
-          'What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index',
+          'What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class, a secret by kind, id and when it was replaced; empty for the index',
+        ),
+      replaced: z
+        .object({
+          kind: SecretKindName,
+          name: z.string().nullable().describe('What the secret belongs to, by name'),
+          consumers: z.array(z.string()).describe('Every consumer of it, by name'),
+        })
+        .optional()
+        .describe(
+          'A secret something failed to authenticate with since it was replaced, and everything that uses it (ADM-047); only with secret_failing',
         ),
     })
     .nullable()

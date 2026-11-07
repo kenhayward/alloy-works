@@ -69,8 +69,11 @@ interface Notification {
       | 'index_lagging'
       | 'work_failing'
       | 'capability_failing'
-      | 'integrity_failing';
+      | 'integrity_failing'
+      | 'secret_failing';
     readonly subject: string;
+    /** A secret something failed to authenticate with since it was replaced (ADM-047). */
+    readonly replaced?: { readonly name: string | null; readonly consumers: readonly string[] };
   } | null;
   readonly at: string;
   readonly read: boolean;
@@ -236,6 +239,13 @@ function said(each: Notification): string {
       return words('account.email-is-failing');
     case 'diagnostics': {
       const failure = each.diagnostics;
+      if (failure?.kind === 'secret_failing') {
+        // Told against the secret, naming everything that uses it (ADM-047).
+        return words('account.silent-failure.secret_failing', {
+          name: failure.replaced?.name ?? words('account.a-secret'),
+          consumers: formats().list(failure.replaced?.consumers ?? []),
+        });
+      }
       return failure
         ? words(`account.silent-failure.${failure.kind}`, { subject: failure.subject })
         : words('account.silent-failure.work_failing');

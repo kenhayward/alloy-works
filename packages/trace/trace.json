@@ -20181,6 +20181,15 @@
       ]
     },
     {
+      "document": "secrets.md",
+      "owns": [
+        {
+          "id": "ADM-007",
+          "howItIsMet": "Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once"
+        }
+      ]
+    },
+    {
       "document": "service-foundations.md",
       "owns": [
         {
@@ -22878,13 +22887,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 872,
+      "line": 873,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 885,
+      "line": 886,
       "kind": "title"
     },
     {
@@ -23518,6 +23527,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-007",
+      "file": "apps/service/src/ct-studio-routes.test.ts",
+      "line": 206,
+      "kind": "title"
+    },
+    {
       "id": "API-074",
       "file": "apps/service/src/ct-studio-routes.test.ts",
       "line": 49,
@@ -23532,7 +23547,7 @@
     {
       "id": "API-077",
       "file": "apps/service/src/ct-studio-routes.test.ts",
-      "line": 398,
+      "line": 410,
       "kind": "title"
     },
     {
@@ -23976,19 +23991,25 @@
     {
       "id": "ADM-017",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 233,
+      "line": 235,
       "kind": "title"
     },
     {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 290,
+      "line": 308,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-070",
+      "file": "apps/service/src/high-risk-permissions.test.ts",
+      "line": 254,
       "kind": "title"
     },
     {
       "id": "IMP-023",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 209,
+      "line": 211,
       "kind": "title"
     },
     {
@@ -24852,7 +24873,7 @@
     {
       "id": "LIB-031",
       "file": "apps/service/src/reference-source-routes.test.ts",
-      "line": 111,
+      "line": 115,
       "kind": "title"
     },
     {
@@ -25030,15 +25051,21 @@
       "kind": "title"
     },
     {
+      "id": "ADM-007",
+      "file": "apps/service/src/scim.test.ts",
+      "line": 599,
+      "kind": "title"
+    },
+    {
       "id": "IAM-003",
       "file": "apps/service/src/scim.test.ts",
-      "line": 227,
+      "line": 229,
       "kind": "title"
     },
     {
       "id": "IAM-008",
       "file": "apps/service/src/scim.test.ts",
-      "line": 247,
+      "line": 249,
       "kind": "title"
     },
     {
@@ -26286,19 +26313,19 @@
     {
       "id": "API-030",
       "file": "apps/web/src/admin/Extensions.test.tsx",
-      "line": 164,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "API-048",
       "file": "apps/web/src/admin/Extensions.test.tsx",
-      "line": 213,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "apps/web/src/admin/Extensions.test.tsx",
-      "line": 288,
+      "line": 298,
       "kind": "title"
     },
     {
@@ -30480,43 +30507,43 @@
     {
       "id": "ADM-054",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 457,
+      "line": 462,
       "kind": "title"
     },
     {
       "id": "AST-030",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 771,
+      "line": 834,
       "kind": "title"
     },
     {
       "id": "IMP-039",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 315,
+      "line": 320,
       "kind": "title"
     },
     {
       "id": "IMP-042",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 997,
+      "line": 1060,
       "kind": "title"
     },
     {
       "id": "IMP-044",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 664,
+      "line": 727,
       "kind": "title"
     },
     {
       "id": "IMP-046",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 512,
+      "line": 575,
       "kind": "title"
     },
     {
       "id": "IMP-052",
       "file": "apps/worker/src/restoration.test.ts",
-      "line": 315,
+      "line": 320,
       "kind": "title"
     },
     {
@@ -30556,9 +30583,15 @@
       "kind": "title"
     },
     {
-      "id": "IAM-013",
+      "id": "ADM-007",
       "file": "apps/worker/src/sweep.test.ts",
       "line": 101,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-013",
+      "file": "apps/worker/src/sweep.test.ts",
+      "line": 152,
       "kind": "title"
     },
     {
@@ -30952,9 +30985,15 @@
       "kind": "title"
     },
     {
+      "id": "ADM-007",
+      "file": "packages/db/src/api-token.test.ts",
+      "line": 174,
+      "kind": "title"
+    },
+    {
       "id": "IAM-034",
       "file": "packages/db/src/api-token.test.ts",
-      "line": 88,
+      "line": 90,
       "kind": "title"
     },
     {
@@ -35346,7 +35385,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1296,
+      "line": 1303,
       "kind": "title"
     },
     {
@@ -36529,6 +36568,12 @@
       "id": "SCH-061",
       "file": "packages/domain/src/search/entries.test.ts",
       "line": 488,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-007",
+      "file": "packages/domain/src/secrets/consumers.test.ts",
+      "line": 63,
       "kind": "title"
     },
     {
@@ -37956,13 +38001,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1559,
+      "line": 1572,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1128,
+      "line": 1141,
       "kind": "title"
     },
     {

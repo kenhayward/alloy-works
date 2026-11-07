@@ -22,6 +22,8 @@ import {
   recordEffected,
   recordLapses,
   sweepIterations,
+  sweepEndedTokens,
+  notifyTenant,
   sweepNotifications,
   sweepPresence,
   sweepPreviews,
@@ -97,8 +99,8 @@ export const SWEEPS_BY_STATE: {
 };
 
 /**
- * What sign-ins leave behind: attempts and hand-offs nobody came back for, and sessions past their
- * last hour. All are refused once expired; this is what stops the rows accumulating for ever. Each
+ * What sign-ins leave behind: attempts and hand-offs nobody came back for, sessions past their last
+ * hour, and tokens replaced past their 24 hours (the SA plan, SA-I), each told to every replica. All are refused once expired; this is what stops the rows accumulating for ever. Each
  * session ended is a sign-out by the system (IAM-013; the AU1 plan, AU1-F), recorded in the
  * transaction that removes it, with when it expired.
  */
@@ -143,7 +145,13 @@ export async function sweepExpiredSignIns(
             label === undefined ? [] : [label],
           );
         }
-        return Number(attempts.numDeletedRows + handoffs.numDeletedRows) + sessions.length;
+        const tokens = await sweepEndedTokens(trx, now);
+        for (const token of tokens) await notifyTenant(trx, { kind: 'credential_ended', token });
+        return (
+          Number(attempts.numDeletedRows + handoffs.numDeletedRows) +
+          sessions.length +
+          tokens.length
+        );
       },
       { actorKind: 'system' },
     );
