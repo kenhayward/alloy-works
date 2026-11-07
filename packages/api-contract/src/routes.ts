@@ -158,7 +158,10 @@ const ownRoutes = {
     summary: 'Whether the service is up. Answers on any hostname',
     tenantScoped: false,
     access: { check: 'none' },
-    responses: { 200: { description: 'The service is up', schema: Health } },
+    responses: {
+      200: { description: 'The service is up, and reaches its database', schema: Health },
+      503: { description: '`database_unavailable`', schema: ErrorBody },
+    },
   },
   getTenant: {
     operationId: 'getTenant',

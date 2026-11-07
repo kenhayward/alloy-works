@@ -107,6 +107,26 @@ Diagnostics reads each against the last 7 days of minutes (`capabilityTotals`): 
 built or not measured. A sample is held to a ceiling by its bucket's upper bound, so a ceiling between two bounds
 (CNT-186's six seconds) is held to the bound below it: a reading may say missed of a budget met, never the reverse.
 
+## Objectives
+
+[ADR-0101](../decisions/0101-availability-is-minutes-probed-up-over-minutes-elapsed.md). The operator sets them on the
+service (`objectivesFrom`): 99.5% a month, a recovery point of 24 hours and a recovery time of 4, by default.
+
+- **Availability**: the worker probes `/health`, which reads the database, each minute (`probeService`) into
+  `platform.service_probe`. Minutes probed up over minutes elapsed this month; a minute unrecorded is down.
+- **Backups and drills**, on the internet stack: `backup.sh` nightly and `restore-drill.sh` monthly
+  (`alloy-drill.timer`) record each class's run, failures too, in `platform.backup_run`.
+
+| Class     | Backed up                                    | Kept                         | Rehearsed                                     |
+| --------- | -------------------------------------------- | ---------------------------- | --------------------------------------------- |
+| Databases | Nightly: the platform, delivery and Keycloak | 7 days, 4 weeks and 6 months | Monthly: each dump loaded, its tables counted |
+| Objects   | Nightly: the store's files, audit exports in | 7 days, 4 weeks and 6 months | Monthly: restored and verified                |
+
+- **Read** in Diagnostics' Objectives through two definers (`service_availability`, `backup_record`): the recovery
+  point is the oldest class's last good backup, the recovery time the latest drills added up. A class not restored well
+  in 35 days is not rehearsed, and no recovery time is shown. Where nothing records backups, Diagnostics says they are
+  the operator's own.
+
 ## Integrity
 
 `INTEGRITY_CLASSES` and `INTEGRITY_PERIOD_DAYS` (`packages/domain/src/diagnostics/integrity.ts`, DG-K, pre-flight 11)
@@ -127,8 +147,7 @@ declare what is re-verified and within what period: 28 days.
 
 ## Not yet built
 
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging; objectives,
-availability and backups (DGe2, DGe4).
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging (DGe4).
 
 ## Requirements owned
 
@@ -138,6 +157,8 @@ availability and backups (DGe2, DGe4).
 | **ADM-011** | Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)                                                       |
 | **ADM-033** | Administration's Usage: each measure as a trend of 13 months, against last month and a year before, and by month or day; kept 396 days                                                     |
 | **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100 |
+| **ADM-020** | Availability, recovery point and recovery time declared as the operator's objectives, each measured: probed each minute, and from the backups' and drills' own records                     |
+| **ADM-043** | Each class's backup frequency, keeping and drill declared above; each drill recorded monthly, and a restore not rehearsed in 35 days shown as not rehearsed                                |
 | **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                           |
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |
 | **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`          |
@@ -145,7 +166,8 @@ availability and backups (DGe2, DGe4).
 
 **ADM-016 and ADM-046 are not claimed** (pre-flight 6): every budget is registered and read against production, but
 six of their requirements are not measured there: VER-051 states no time yet, and for the rest nothing reports a
-time the service could read. **ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
+time the service could read. **IAM-006 is not claimed**: a closed environment's purge is stated (TL-G), but its data stays readable in backups
+for up to six months, and no timetable says so yet. **ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
 nobody waiting (above). The rest are claimed as each is answered in full. **ADM-048 is not claimed**: every chargeable
 operation that exists is counted, model runs by the Model spending page, but malware scanning does not exist yet
 (AST-Q03).

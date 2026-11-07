@@ -8,6 +8,7 @@ import {
   flushEveryMinute,
   JOB_CHANNEL,
   recordCapabilityMinute,
+  recordServiceProbe,
 } from '@alloy-works/db';
 import { createObjectStores } from '@alloy-works/objects';
 import pg from 'pg';
@@ -61,6 +62,7 @@ import {
 } from './sweep.js';
 import { createTypst } from './typst.js';
 import { removeStaleVeraPdfDirectories, startLocalVeraPdf, veraPdfTimeouts } from './verapdf.js';
+import { PROBE_INTERVAL_MS, probeService } from './probe.js';
 import { processNext, type JobHandler } from './worker.js';
 
 const config = loadWorkerConfig(process.env);
@@ -304,6 +306,22 @@ const mails = setInterval(() => {
     });
 }, config.mailIntervalMs);
 
+// The service's health each minute, for availability (ADR-0101); a minute nobody records counts as down.
+const probes =
+  config.serviceHealthUrl === undefined
+    ? undefined
+    : new pg.Pool({ connectionString: config.databaseUrl, max: 1 });
+const probing =
+  config.serviceHealthUrl === undefined || probes === undefined
+    ? undefined
+    : setInterval(() => {
+        void probeService({
+          url: config.serviceHealthUrl!,
+          fetch,
+          record: (at, up) => recordServiceProbe(probes, at, up),
+        }).catch((error: unknown) => log.error({ err: error }, 'the probe could not be recorded'));
+      }, PROBE_INTERVAL_MS);
+
 const stop = async (signal: string) => {
   running = false;
   wake();
@@ -311,9 +329,11 @@ const stop = async (signal: string) => {
   clearInterval(deliveries);
   clearInterval(mails);
   clearInterval(rechecks);
+  clearInterval(probing);
   log.info({ signal }, 'stopping');
   await stopMeasuring();
   await listener.end();
+  await probes?.end();
   await checker.close();
   await warmPool.close();
   await delivered?.close();

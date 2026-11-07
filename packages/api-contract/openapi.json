@@ -47382,7 +47382,7 @@
       "get": {
         "operationId": "getHealth",
         "summary": "Whether the service is up. Answers on any hostname",
-        "description": "Use this check to see whether the service process answers requests. It does not test an environment or its dependencies.",
+        "description": "Use this check to see whether the service answers requests and reaches its database. It does not test an environment or its other dependencies. The worker probes it each minute to measure availability.",
         "tags": [
           "Health"
         ],
@@ -47402,7 +47402,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The service is up",
+            "description": "The service is up, and reaches its database",
             "content": {
               "application/json": {
                 "schema": {
@@ -47419,6 +47419,47 @@
                 },
                 "example": {
                   "status": "ok"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`database_unavailable`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
                 }
               }
             },
@@ -136142,6 +136183,181 @@
                       },
                       "description": "Each connection run on in the last 24 hours"
                     },
+                    "objectives": {
+                      "type": "object",
+                      "properties": {
+                        "availability": {
+                          "type": "object",
+                          "properties": {
+                            "objective": {
+                              "type": "number",
+                              "description": "The fraction of a month the service answers, such as 0.995"
+                            },
+                            "since": {
+                              "type": "string",
+                              "description": "This month, or the first minute probed if later"
+                            },
+                            "measured": {
+                              "description": "Minutes probed up over minutes elapsed",
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "verdict": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "missed",
+                                "unrecorded",
+                                "unrehearsed"
+                              ],
+                              "description": "Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period"
+                            }
+                          },
+                          "required": [
+                            "objective",
+                            "since",
+                            "measured",
+                            "verdict"
+                          ]
+                        },
+                        "recoveryPoint": {
+                          "type": "object",
+                          "properties": {
+                            "objectiveHours": {
+                              "type": "number"
+                            },
+                            "hours": {
+                              "description": "The age of the oldest class's last good backup",
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "verdict": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "missed",
+                                "unrecorded",
+                                "unrehearsed"
+                              ],
+                              "description": "Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period"
+                            }
+                          },
+                          "required": [
+                            "objectiveHours",
+                            "hours",
+                            "verdict"
+                          ]
+                        },
+                        "recoveryTime": {
+                          "type": "object",
+                          "properties": {
+                            "objectiveHours": {
+                              "type": "number"
+                            },
+                            "hours": {
+                              "description": "The latest drills' restores of every class, added up",
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "drilledAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "description": "An ISO 8601 time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verdict": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "missed",
+                                "unrecorded",
+                                "unrehearsed"
+                              ],
+                              "description": "Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period"
+                            }
+                          },
+                          "required": [
+                            "objectiveHours",
+                            "hours",
+                            "drilledAt",
+                            "verdict"
+                          ]
+                        },
+                        "backups": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "class": {
+                                "type": "string",
+                                "enum": [
+                                  "databases",
+                                  "objects"
+                                ]
+                              },
+                              "act": {
+                                "type": "string",
+                                "enum": [
+                                  "backup",
+                                  "drill"
+                                ]
+                              },
+                              "lastStartedAt": {
+                                "type": "string",
+                                "description": "An ISO 8601 time"
+                              },
+                              "lastSeconds": {
+                                "type": "number"
+                              },
+                              "lastOutcome": {
+                                "type": "string",
+                                "enum": [
+                                  "succeeded",
+                                  "failed"
+                                ]
+                              },
+                              "succeededAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "description": "An ISO 8601 time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "class",
+                              "act",
+                              "lastStartedAt",
+                              "lastSeconds",
+                              "lastOutcome",
+                              "succeededAt"
+                            ]
+                          },
+                          "description": "The latest backup and drill of each class; none where backups are recorded elsewhere"
+                        }
+                      },
+                      "required": [
+                        "availability",
+                        "recoveryPoint",
+                        "recoveryTime",
+                        "backups"
+                      ]
+                    },
                     "performance": {
                       "type": "array",
                       "items": {
@@ -136406,6 +136622,7 @@
                     "webhooks",
                     "mail",
                     "connections",
+                    "objectives",
                     "performance",
                     "budgets",
                     "integrity"
@@ -136438,6 +136655,26 @@
                     "givenUp": -9007199254740991
                   },
                   "connections": [],
+                  "objectives": {
+                    "availability": {
+                      "objective": 0,
+                      "since": "example",
+                      "measured": 0,
+                      "verdict": "met"
+                    },
+                    "recoveryPoint": {
+                      "objectiveHours": 0,
+                      "hours": 0,
+                      "verdict": "met"
+                    },
+                    "recoveryTime": {
+                      "objectiveHours": 0,
+                      "hours": 0,
+                      "drilledAt": "example",
+                      "verdict": "met"
+                    },
+                    "backups": []
+                  },
                   "performance": [],
                   "budgets": {
                     "model": {

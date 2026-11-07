@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Nightly, from alloy-backup.timer: dumps the three databases, then sends the dumps and the object store's
 # files to RESTIC_REPOSITORY, encrypted with RESTIC_PASSWORD. Keeps 7 days, 4 weeks and 6 months, then
-# checks the repository. Lives in $ROOT beside deploy.sh, and shares its lock. Removes no volume.
+# checks the repository. Records each class's backup, a failure too, for Diagnostics' recovery point.
+# Lives in $ROOT beside deploy.sh, and shares its lock. Removes no volume.
 set -euo pipefail
 
 ROOT=${ALLOY_ROOT:-/opt/alloy-works}
@@ -31,7 +32,29 @@ compose() {
   docker compose --env-file "$SETTINGS" -f deploy/compose.yaml -f deploy/compose.internet.yaml "$@"
 }
 
+# Each class's run, recorded where Diagnostics reads it (ADR-0101), a failure too. The platform's database
+# is named in compose.internet.yaml; a record that cannot be written is said, and fails nothing.
+DATABASE=alloy
+record() {
+  compose exec -T -u postgres postgres psql -q -v ON_ERROR_STOP=1 -U postgres -d "$DATABASE" -c \
+    "insert into platform.backup_run (class, act, started_at, finished_at, outcome)
+     values ('$1', '$2', '$3', now(), '$4')" >/dev/null || echo "The $2 of $1 could not be recorded." >&2
+}
+
+# The class being backed up, recorded failed if the script stops before it is done; the store unpaused.
+current=
+started=
+paused=false
+finish() {
+  local status=$?
+  if $paused; then compose unpause seaweedfs >/dev/null || true; fi
+  if [ "$status" -ne 0 ] && [ -n "$current" ]; then record "$current" backup "$started" failed; fi
+}
+trap finish EXIT
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+
 echo "== $(date -Is) backing up"
+current=databases started=$(now)
 umask 077
 rm -rf "$WORK"
 mkdir -p "$WORK"
@@ -42,23 +65,26 @@ dump postgres postgres
 dump delivered-postgres postgres
 dump keycloak-postgres keycloak
 
-store=$(compose ps -q seaweedfs)
-[ -n "$store" ] || fail 'The store (seaweedfs) is not running.'
-data=$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}' "$store")
-[ -d "$data" ] || fail "The store's files are not at '$data'."
-
 # Group-readable, so the backup machine's pull (rsyncd.conf) reads it without root.
 umask 027
 restic cat config >/dev/null 2>&1 || restic init
 deployed=$(cat "$ROOT/state/deployed" 2>/dev/null || echo unknown)
 restic backup --quiet --tag databases --tag "release-${deployed//\//-}" "$WORK"
+record databases backup "$started" succeeded
 
+current=objects started=$(now)
+store=$(compose ps -q seaweedfs)
+[ -n "$store" ] || fail 'The store (seaweedfs) is not running.'
+data=$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}' "$store")
+[ -d "$data" ] || fail "The store's files are not at '$data'."
 # Paused so its files hold still while they are read; downloads wait those seconds.
 compose pause seaweedfs >/dev/null
-trap 'compose unpause seaweedfs >/dev/null' EXIT
+paused=true
 restic backup --quiet --tag objects --tag "release-${deployed//\//-}" "$data"
 compose unpause seaweedfs >/dev/null
-trap - EXIT
+paused=false
+record objects backup "$started" succeeded
+current=
 
 restic forget --quiet --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
 restic check --quiet

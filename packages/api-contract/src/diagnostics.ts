@@ -119,6 +119,47 @@ const IntegrityClassView = z.object({
     .describe("The latest failing item's check; null with none failing"),
 });
 
+const objectiveVerdict = z
+  .enum(['met', 'missed', 'unrecorded', 'unrehearsed'])
+  .describe(
+    'Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period',
+  );
+
+/** The objectives an operator set, against what was measured (the DG plan, DG-D; ADR-0101). */
+const ObjectivesView = z.object({
+  availability: z.object({
+    objective: z.number().describe('The fraction of a month the service answers, such as 0.995'),
+    since: at.describe('This month, or the first minute probed if later'),
+    measured: z.number().nullable().describe('Minutes probed up over minutes elapsed'),
+    verdict: objectiveVerdict,
+  }),
+  recoveryPoint: z.object({
+    objectiveHours: z.number(),
+    hours: z.number().nullable().describe("The age of the oldest class's last good backup"),
+    verdict: objectiveVerdict,
+  }),
+  recoveryTime: z.object({
+    objectiveHours: z.number(),
+    hours: z.number().nullable().describe("The latest drills' restores of every class, added up"),
+    drilledAt: at.nullable(),
+    verdict: objectiveVerdict,
+  }),
+  backups: z
+    .array(
+      z.object({
+        class: z.enum(['databases', 'objects']),
+        act: z.enum(['backup', 'drill']),
+        lastStartedAt: at,
+        lastSeconds: z.number(),
+        lastOutcome: z.enum(['succeeded', 'failed']),
+        succeededAt: at.nullable(),
+      }),
+    )
+    .describe(
+      'The latest backup and drill of each class; none where backups are recorded elsewhere',
+    ),
+});
+
 export const DiagnosticsView = z.object({
   at,
   capabilities: z.array(CapabilityView).describe('Each capability with requests in the window'),
@@ -148,6 +189,7 @@ export const DiagnosticsView = z.object({
     givenUp: z.int(),
   }),
   connections: z.array(ConnectionView).describe('Each connection run on in the last 24 hours'),
+  objectives: ObjectivesView,
   performance: z
     .array(PerformanceView)
     .describe('Every performance budget the specification states, read against production'),

@@ -174,6 +174,26 @@ describe('the service', () => {
     expect(response.json()).toEqual({ status: 'ok' });
   });
 
+  it('answers its health only when it reaches its database, so a probe of it measures both (ADR-0101)', async () => {
+    const unreachable = new Proxy(tenantDb, {
+      get: (target, name, receiver) =>
+        name === 'whoAmI'
+          ? () => Promise.reject(new Error('the database is not answering'))
+          : Reflect.get(target, name, receiver),
+    });
+    const down = buildApp({
+      db: unreachable,
+      logLevel: 'silent',
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
+    });
+    const response = await down.inject({ url: '/health', headers: { host: 'anything.example' } });
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ code: 'database_unavailable' });
+    await down.close();
+  });
+
   it('names the environment a hostname serves, read from that tenant', async () => {
     const development = await app.inject({
       url: '/v1/tenant',

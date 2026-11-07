@@ -18,6 +18,17 @@ const calm: DiagnosticsView = {
   webhooks: { subscriptions: 2, failing: 0, disabledFailing: 0 },
   mail: { enabled: true, failingSince: null, waiting: 0, givenUp: 0 },
   connections: [],
+  objectives: {
+    availability: {
+      objective: 0.995,
+      since: '2026-11-01T00:00:00.000Z',
+      measured: null,
+      verdict: 'unrecorded',
+    },
+    recoveryPoint: { objectiveHours: 24, hours: null, verdict: 'unrecorded' },
+    recoveryTime: { objectiveHours: 4, hours: null, drilledAt: null, verdict: 'unrecorded' },
+    backups: [],
+  },
   performance: [],
   budgets: { model: null, queryRunsAtOnce: 4 },
   integrity: {
@@ -221,6 +232,41 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
     expect(needsAttention(troubled).at(-1)).toBe(
       'Images: 2 items failed their integrity check, the latest object_missing.',
     );
+  });
+
+  it('ADM-020 shows each objective against what was measured, and a restore not rehearsed as not rehearsed', async () => {
+    const kept: DiagnosticsView['objectives'] = {
+      availability: {
+        objective: 0.995,
+        since: '2026-11-01T00:00:00.000Z',
+        measured: 0.9991,
+        verdict: 'met',
+      },
+      recoveryPoint: { objectiveHours: 24, hours: 10, verdict: 'met' },
+      recoveryTime: { objectiveHours: 4, hours: null, drilledAt: null, verdict: 'unrehearsed' },
+      backups: [],
+    };
+    render(<Diagnostics client={service({ ...calm, objectives: kept })} />);
+    const table = await screen.findByRole('table', { name: 'Objectives' });
+    const availability = within(table).getByRole('row', { name: /Availability/ });
+    expect(availability).toHaveTextContent('99.5% of the month');
+    expect(availability).toHaveTextContent('99.91%');
+    expect(availability).toHaveTextContent('Met');
+    expect(within(table).getByRole('row', { name: /Recovery point/ })).toHaveTextContent(
+      'The last good backup is 10 hrs old',
+    );
+    const time = within(table).getByRole('row', { name: /Recovery time/ });
+    expect(time).toHaveTextContent('Not rehearsed');
+    expect(time.querySelector('svg[data-icon]')).not.toBeNull();
+  });
+
+  it('says where backups are not recorded here that they are the operator’s own', async () => {
+    render(<Diagnostics client={service(calm)} />);
+    const table = await screen.findByRole('table', { name: 'Objectives' });
+    expect(within(table).getByRole('row', { name: /Recovery point/ })).toHaveTextContent(
+      'Not recorded here',
+    );
+    expect(screen.getByText(/Backups are not recorded here/)).toBeInTheDocument();
   });
 
   it('says so when nothing has failed and nothing was asked', async () => {

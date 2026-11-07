@@ -832,7 +832,7 @@ const byOperation = new Map<string, string>(
 
 const descriptions: Readonly<Record<string, string>> = {
   getHealth:
-    'Use this check to see whether the service process answers requests. It does not test an environment or its dependencies.',
+    'Use this check to see whether the service answers requests and reaches its database. It does not test an environment or its other dependencies. The worker probes it each minute to measure availability.',
   getTenant:
     'Returns the environment selected by the request hostname. Check this before using a token or making a change, especially when you have both production and sandbox environments.',
   getAbout:

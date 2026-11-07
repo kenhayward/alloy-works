@@ -8,7 +8,7 @@ export interface paths {
         };
         /**
          * Whether the service is up. Answers on any hostname
-         * @description Use this check to see whether the service process answers requests. It does not test an environment or its dependencies.
+         * @description Use this check to see whether the service answers requests and reaches its database. It does not test an environment or its other dependencies. The worker probes it each minute to measure availability.
          */
         get: operations["getHealth"];
         put?: never;
@@ -17830,7 +17830,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The service is up */
+            /** @description The service is up, and reaches its database */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17846,6 +17846,26 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         status: "ok";
+                    };
+                };
+            };
+            /** @description `database_unavailable` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -49143,6 +49163,26 @@ export interface operations {
                      *         "givenUp": -9007199254740991
                      *       },
                      *       "connections": [],
+                     *       "objectives": {
+                     *         "availability": {
+                     *           "objective": 0,
+                     *           "since": "example",
+                     *           "measured": 0,
+                     *           "verdict": "met"
+                     *         },
+                     *         "recoveryPoint": {
+                     *           "objectiveHours": 0,
+                     *           "hours": 0,
+                     *           "verdict": "met"
+                     *         },
+                     *         "recoveryTime": {
+                     *           "objectiveHours": 0,
+                     *           "hours": 0,
+                     *           "drilledAt": "example",
+                     *           "verdict": "met"
+                     *         },
+                     *         "backups": []
+                     *       },
                      *       "performance": [],
                      *       "budgets": {
                      *         "model": {
@@ -49254,6 +49294,55 @@ export interface operations {
                             down: boolean;
                             lastFailure: string | null;
                         }[];
+                        objectives: {
+                            availability: {
+                                /** @description The fraction of a month the service answers, such as 0.995 */
+                                objective: number;
+                                /** @description This month, or the first minute probed if later */
+                                since: string;
+                                /** @description Minutes probed up over minutes elapsed */
+                                measured: number | null;
+                                /**
+                                 * @description Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period
+                                 * @enum {string}
+                                 */
+                                verdict: "met" | "missed" | "unrecorded" | "unrehearsed";
+                            };
+                            recoveryPoint: {
+                                objectiveHours: number;
+                                /** @description The age of the oldest class's last good backup */
+                                hours: number | null;
+                                /**
+                                 * @description Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period
+                                 * @enum {string}
+                                 */
+                                verdict: "met" | "missed" | "unrecorded" | "unrehearsed";
+                            };
+                            recoveryTime: {
+                                objectiveHours: number;
+                                /** @description The latest drills' restores of every class, added up */
+                                hours: number | null;
+                                drilledAt: string | null;
+                                /**
+                                 * @description Met, missed, recorded nowhere here, or (a recovery time) not rehearsed in the stated period
+                                 * @enum {string}
+                                 */
+                                verdict: "met" | "missed" | "unrecorded" | "unrehearsed";
+                            };
+                            /** @description The latest backup and drill of each class; none where backups are recorded elsewhere */
+                            backups: {
+                                /** @enum {string} */
+                                class: "databases" | "objects";
+                                /** @enum {string} */
+                                act: "backup" | "drill";
+                                /** @description An ISO 8601 time */
+                                lastStartedAt: string;
+                                lastSeconds: number;
+                                /** @enum {string} */
+                                lastOutcome: "succeeded" | "failed";
+                                succeededAt: string | null;
+                            }[];
+                        };
                         /** @description Every performance budget the specification states, read against production */
                         performance: {
                             /** @description The requirement stating it, with what it times where one states two */

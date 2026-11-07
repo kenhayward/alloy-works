@@ -35,7 +35,7 @@ On the machine, as root, with Docker, git and restic:
 3. If the firewall drops your network's DNS server, as it will on a private one, give Docker public resolvers
    in `/etc/docker/daemon.json`: `{"dns": ["9.9.9.9", "8.8.8.8"]}`, then restart Docker. Check each answers from the
    machine first (`dig @9.9.9.9 github.com`): one that does not costs every lookup in every container its timeout.
-4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer alloy-backup.timer`.
+4. `systemctl enable --now alloy-firewall.service alloy-deploy.timer alloy-backup.timer alloy-drill.timer`.
 5. Point the proxy's host for all three names at this machine's 443 over https, with websockets on. If it limits
    who may call, allow this machine's own address too: the stack reaches its public names through the proxy.
 
@@ -56,7 +56,10 @@ encrypted. It keeps 7 days, 4 weeks and 6 months, then checks the repository.
 
 `restore-drill.sh` proves the latest backup restores without touching the stack: each dump goes into a container
 of its own with no network, and must arrive with the running store's databases and tables; the store's files are
-verified against the repository. Run it after changing the repository, and now and then.
+verified against the repository. `alloy-drill.timer` runs it on the first of each month; run it too after changing the
+repository. Each backup and drill records each class's run, failures too, in the platform's database, where
+Administration's Diagnostics reads the recovery point and time (ADR-0101). The worker probes `/health` each minute for
+availability.
 
 **A copy off the machine** is pulled, not pushed, so the machine holds no credential for the backup machine
 and reaches no LAN. `rsyncd.conf` offers the repository read only, to one address and one user who is not root.

@@ -73,6 +73,33 @@ export interface DiagnosticsView {
     readonly down: boolean;
     readonly lastFailure: string | null;
   }[];
+  readonly objectives: {
+    readonly availability: {
+      readonly objective: number;
+      readonly since: string;
+      readonly measured: number | null;
+      readonly verdict: ObjectiveVerdict;
+    };
+    readonly recoveryPoint: {
+      readonly objectiveHours: number;
+      readonly hours: number | null;
+      readonly verdict: ObjectiveVerdict;
+    };
+    readonly recoveryTime: {
+      readonly objectiveHours: number;
+      readonly hours: number | null;
+      readonly drilledAt: string | null;
+      readonly verdict: ObjectiveVerdict;
+    };
+    readonly backups: readonly {
+      readonly class: 'databases' | 'objects';
+      readonly act: 'backup' | 'drill';
+      readonly lastStartedAt: string;
+      readonly lastSeconds: number;
+      readonly lastOutcome: 'succeeded' | 'failed';
+      readonly succeededAt: string | null;
+    }[];
+  };
   readonly performance: readonly {
     readonly budget: string;
     readonly requirement: string;
@@ -211,6 +238,115 @@ const BUDGET_WHY: Readonly<Record<string, WordKey>> = {
 };
 
 const duration = (ms: number) => amountOf(ms, 'ms');
+
+type ObjectiveVerdict = 'met' | 'missed' | 'unrecorded' | 'unrehearsed';
+
+const OBJECTIVE_VERDICTS: Record<
+  ObjectiveVerdict,
+  { readonly icon: string; readonly tone: ChipTone; readonly word: WordKey }
+> = {
+  met: { icon: 'Confirmed', tone: 'ok', word: 'admin.obj-verdict.met' },
+  missed: { icon: 'Needs attention', tone: 'warn', word: 'admin.obj-verdict.missed' },
+  unrecorded: { icon: 'Minus', tone: 'neutral', word: 'admin.obj-verdict.unrecorded' },
+  unrehearsed: { icon: 'Needs attention', tone: 'warn', word: 'admin.obj-verdict.unrehearsed' },
+};
+
+const percent = (fraction: number) =>
+  formats().number(fraction, { style: 'percent', maximumFractionDigits: 2 });
+const hours = (count: number) => duration(count * 3_600_000);
+
+function ObjectiveRow({
+  name,
+  promised,
+  measured,
+  verdict,
+}: {
+  name: string;
+  promised: string;
+  measured: string;
+  verdict: ObjectiveVerdict;
+}) {
+  const { icon, tone, word } = OBJECTIVE_VERDICTS[verdict];
+  return (
+    <tr>
+      <td className={styles['strong']}>{name}</td>
+      <td className={styles['wraps']}>{promised}</td>
+      <td className={styles['wraps']}>{measured}</td>
+      <td className={styles['wraps']}>
+        <Chip tone={tone}>
+          <Icon name={icon} size={12} /> {words(word)}
+        </Chip>
+      </td>
+    </tr>
+  );
+}
+
+/** Availability, recovery point and recovery time against the operator's objectives (ADM-020). */
+function ObjectivesTable({ view }: { view: DiagnosticsView }) {
+  const { availability, recoveryPoint, recoveryTime, backups } = view.objectives;
+  const unrecorded = words('admin.obj-unrecorded');
+  return (
+    <>
+      <table aria-label={words('admin.diag-objectives')} className={styles['table']}>
+        <thead>
+          <tr>
+            <th scope="col">{words('admin.obj-objective')}</th>
+            <th scope="col">{words('admin.obj-promised')}</th>
+            <th scope="col">{words('admin.perf-measured')}</th>
+            <th scope="col">{words('admin.perf-state')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ObjectiveRow
+            name={words('admin.obj-availability')}
+            promised={words('admin.obj-availability-promised', {
+              percent: percent(availability.objective),
+            })}
+            measured={
+              availability.measured === null
+                ? words('admin.obj-not-probed')
+                : words('admin.obj-availability-measured', {
+                    percent: percent(availability.measured),
+                    since: when(availability.since),
+                  })
+            }
+            verdict={availability.verdict}
+          />
+          <ObjectiveRow
+            name={words('admin.obj-recovery-point')}
+            promised={words('admin.obj-within', { hours: hours(recoveryPoint.objectiveHours) })}
+            measured={
+              recoveryPoint.verdict === 'unrecorded'
+                ? unrecorded
+                : recoveryPoint.hours === null
+                  ? words('admin.obj-no-good-backup')
+                  : words('admin.obj-backup-age', { hours: hours(recoveryPoint.hours) })
+            }
+            verdict={recoveryPoint.verdict}
+          />
+          <ObjectiveRow
+            name={words('admin.obj-recovery-time')}
+            promised={words('admin.obj-within', { hours: hours(recoveryTime.objectiveHours) })}
+            measured={
+              recoveryTime.verdict === 'unrecorded'
+                ? unrecorded
+                : recoveryTime.hours === null || recoveryTime.drilledAt === null
+                  ? words('admin.obj-not-drilled')
+                  : words('admin.obj-drilled', {
+                      hours: hours(recoveryTime.hours),
+                      at: when(recoveryTime.drilledAt),
+                    })
+            }
+            verdict={recoveryTime.verdict}
+          />
+        </tbody>
+      </table>
+      {backups.length === 0 && (
+        <p className={styles['muted']}>{words('admin.obj-backups-elsewhere')}</p>
+      )}
+    </>
+  );
+}
 
 type Reading = DiagnosticsView['performance'][number];
 
@@ -694,6 +830,9 @@ export function Diagnostics({ client }: { client: Client }) {
               })}
         </p>
         <p>{words('admin.diag-runs-at-once', { runs: budgets.queryRunsAtOnce })}</p>
+      </Part>
+      <Part title={words('admin.diag-objectives')}>
+        <ObjectivesTable view={view} />
       </Part>
       <Part title={words('admin.diag-performance')}>
         <p className={styles['muted']}>{words('admin.diag-performance-note')}</p>
