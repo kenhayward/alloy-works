@@ -913,6 +913,19 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s Secrets: each secret, what uses it and when it was replaced (the SA plan, SAd)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/secrets`);
+      const arrival: Arrival = {
+        shows: [page.getByRole('heading', { name: 'Secrets', level: 1 })],
+      };
+      await arrive(arrival);
+      await checkAxe(page, 'every secret and what uses it', task.meta, arrival);
+    });
+  });
+
   it('passes axe on Administration’s Usage: each measure by month and one by day (the DG plan, DGd2)', async ({
     task,
   }) => {

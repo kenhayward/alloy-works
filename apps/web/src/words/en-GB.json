@@ -6581,7 +6581,6 @@
   "admin.support-given": "{person} was given support access until {until}.",
   "admin.support-revoked": "Support access for {person} was revoked.",
   "admin.support-none": "Nobody has been given support access.",
-  "admin.secrets": "Secrets",
   "admin.secrets-lead": "Every secret this environment holds, what uses each and when it was last replaced. Look here before replacing one: everything listed stops working if the new value is wrong. A token replaced is still accepted for 24 hours, so whatever holds it can move without a gap.",
   "admin.secrets-not-yours": "You need permission to replace secrets to see them here.",
   "admin.secrets-could-not-be-read": "The secrets could not be read. Try again later.",
