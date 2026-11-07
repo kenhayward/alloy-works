@@ -188,6 +188,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'import.restored'() {
     return words('admin.import-restored');
   },
+  get 'integrity.failed'() {
+    return words('admin.integrity-failed');
+  },
   get 'tenant.created'() {
     return words('admin.tenant-created');
   },
@@ -557,6 +560,9 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   },
   get import() {
     return words('admin.imports');
+  },
+  get integrity() {
+    return words('admin.integrity');
   },
   get invitation() {
     return words('admin.invitations');

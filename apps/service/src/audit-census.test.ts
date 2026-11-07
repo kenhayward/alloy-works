@@ -776,6 +776,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     // Measurements rolled up and forgotten: aggregates, not an event (the DG plan, DGa).
     sweepMeasurementsEverywhere: { none: 'derived' },
     sweepUsageEverywhere: { none: 'derived' },
+    // A stored artifact failing its re-verification, audited by the system (the DG plan, DG-K).
+    sweepIntegrityEverywhere: writes('integrity.failed'),
     // A proposal left 30 days abandoned as the system, its importer told seven days before (IM-F).
     sweepImportsEverywhere: writes('import.abandoned'),
   },

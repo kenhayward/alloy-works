@@ -14,6 +14,9 @@ import {
   queueClosureReminders,
   rollUpMeasurements,
   countUsage,
+  integrityDue,
+  verifyIntegrity,
+  type ReadObject,
   recordEvent,
   recordCheckGivenUp,
   recordEffected,
@@ -72,6 +75,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepMailEverywhere',
     'sweepMeasurementsEverywhere',
     'sweepUsageEverywhere',
+    'sweepIntegrityEverywhere',
   ],
 } as const;
 
@@ -535,6 +539,51 @@ export async function sweepUsageEverywhere(db: TenantDatabase, log: WorkerLog): 
     if (await db.withTenant(tenant, (trx) => countUsage(trx))) counted += 1;
   });
   return counted;
+}
+
+/** The store's answer for a key it holds nothing under: a finding, never a failure to read. */
+const objectMissing = (error: unknown) =>
+  error instanceof Error &&
+  (error.name === 'NoSuchKey' ||
+    (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404);
+
+/**
+ * Stored artifacts re-verified, in every live tenant (diagnostics.md, "Integrity"; the DG plan, DG-K):
+ * once a UTC day each, a share of each class, one item at a time, which caps the store's reads. A
+ * failure is recorded and audited by the system (ADM-044); a store that cannot be reached fails the
+ * tenant's run instead. Answers how many items were checked and how many failed.
+ */
+export async function sweepIntegrityEverywhere(
+  db: TenantDatabase,
+  stores: ObjectStores,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<{ readonly checked: number; readonly failed: number }> {
+  let checked = 0;
+  let failed = 0;
+  await inEachTenant(db, log, 'sweepIntegrityEverywhere', async (tenant) => {
+    const due = await db.withTenant(tenant, (trx) => integrityDue(trx, now));
+    if (due === null || due.length === 0) return;
+    const store = due.some((item) => item.class !== 'version')
+      ? await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant))
+      : undefined;
+    const read: ReadObject = async (key) => {
+      try {
+        return await store!.get(key);
+      } catch (error) {
+        if (objectMissing(error)) return null;
+        throw error;
+      }
+    };
+    for (const item of due) {
+      const failure = await db.withTenant(tenant, (trx) => verifyIntegrity(trx, item, read, now), {
+        actorKind: 'system',
+      });
+      checked += 1;
+      if (failure !== null) failed += 1;
+    }
+  });
+  return { checked, failed };
 }
 
 /**
