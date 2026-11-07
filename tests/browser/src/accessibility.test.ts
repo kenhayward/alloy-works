@@ -926,6 +926,22 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s What leaves: each way out and what is set up for it (the SA plan, SAe)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/boundary`);
+      const arrival: Arrival = {
+        shows: [
+          page.getByRole('heading', { name: 'What leaves', level: 1 }),
+          page.getByRole('table', { name: 'What leaves' }),
+        ],
+      };
+      await arrive(arrival);
+      await checkAxe(page, 'every way out and what is set up', task.meta, arrival);
+    });
+  });
+
   it('passes axe on Administration’s Usage: each measure by month and one by day (the DG plan, DGd2)', async ({
     task,
   }) => {

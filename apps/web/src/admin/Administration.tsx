@@ -40,6 +40,7 @@ import { Roles, type RoleRow } from './Roles.js';
 import { SignIn } from './SignIn.js';
 import { Spaces } from './Spaces.js';
 import { Secrets } from './Secrets.js';
+import { Boundary } from './Boundary.js';
 import { ActiveSupport, SupportAccess } from './SupportAccess.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
@@ -207,6 +208,14 @@ const SECTIONS = [
     slug: 'secrets',
     get title() {
       return words('admin.secrets');
+    },
+    group: 'environment',
+  },
+  // Everything that can leave the environment, and what is set up for each (ADM-041).
+  {
+    slug: 'boundary',
+    get title() {
+      return words('admin.boundary');
     },
     group: 'environment',
   },
@@ -732,6 +741,7 @@ export function Administration({
         {opened === 'ctstudio' && <CtStudio client={client} />}
         {opened === 'extensions' && <Extensions client={client} />}
         {opened === 'secrets' && <Secrets client={client} />}
+        {opened === 'boundary' && <Boundary client={client} />}
         {opened === 'connections' && <Connections client={client} embedded />}
         {opened === 'query-definitions' && <QueryDefinitions client={client} embedded />}
         {opened === 'about' && <About about={about} />}
