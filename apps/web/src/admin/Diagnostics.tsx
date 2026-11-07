@@ -7,6 +7,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { formats, words, type WordKey } from '../words/words.js';
 import styles from './Administration.module.css';
+import { amountOf } from './Usage.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -71,6 +72,23 @@ export interface DiagnosticsView {
     readonly down: boolean;
     readonly lastFailure: string | null;
   }[];
+  readonly performance: readonly {
+    readonly budget: string;
+    readonly requirement: string;
+    readonly owner: string;
+    readonly reference: string;
+    readonly percentile: number | null;
+    readonly withinMs: number | null;
+    readonly neverAboveMs: number | null;
+    readonly provisional: boolean;
+    readonly confirmedBy: string;
+    readonly measuredAs: 'request' | 'job' | 'lag' | 'immediate' | 'unmeasured';
+    readonly capability: string | null;
+    readonly verdict: Verdict;
+    readonly atMs: number | null;
+    readonly largestMs: number | null;
+    readonly why: string | null;
+  }[];
   readonly budgets: {
     readonly model: {
       readonly currency: string;
@@ -132,6 +150,121 @@ const workName = (work: string) => {
   const key = WORK_NAMES[work];
   return key === undefined ? work : words(key);
 };
+
+type Verdict = 'met' | 'missed' | 'nothing' | 'immediate' | 'unmeasured';
+
+/** Each verdict in icon, words and tone together. */
+const VERDICTS: Record<Verdict, { readonly icon: string; readonly tone: ChipTone }> = {
+  met: { icon: 'Confirmed', tone: 'ok' },
+  missed: { icon: 'Needs attention', tone: 'warn' },
+  nothing: { icon: 'Minus', tone: 'neutral' },
+  immediate: { icon: 'Confirmed', tone: 'ok' },
+  unmeasured: { icon: 'Minus', tone: 'neutral' },
+};
+
+/** What each budget times, as an administrator reads it; one the page does not know, by its name. */
+const BUDGET_NAMES: Readonly<Record<string, WordKey>> = {
+  'API-036': 'admin.perf.API-036',
+  'CNT-180-open': 'admin.perf.CNT-180-open',
+  'CNT-180-jump': 'admin.perf.CNT-180-jump',
+  'CNT-186': 'admin.perf.CNT-186',
+  'PUB-102': 'admin.perf.PUB-102',
+  'REL-031': 'admin.perf.REL-031',
+  'REU-049': 'admin.perf.REU-049',
+  'SCH-033': 'admin.perf.SCH-033',
+  'SCH-036': 'admin.perf.SCH-036',
+  'SCH-066': 'admin.perf.SCH-066',
+  'SCH-067': 'admin.perf.SCH-067',
+  'STR-063': 'admin.perf.STR-063',
+  'STR-073': 'admin.perf.STR-073',
+  'VER-051': 'admin.perf.VER-051',
+};
+
+/** Why a budget is met as built or not measured, in the reader's language where the page knows it. */
+const BUDGET_WHY: Readonly<Record<string, WordKey>> = {
+  'API-036': 'admin.perf-why.API-036',
+  'CNT-180-open': 'admin.perf-why.client',
+  'CNT-180-jump': 'admin.perf-why.client',
+  'REU-049': 'admin.perf-why.REU-049',
+  'SCH-036': 'admin.perf-why.SCH-036',
+  'SCH-066': 'admin.perf-why.SCH-066',
+  'STR-073': 'admin.perf-why.client',
+  'VER-051': 'admin.perf-why.VER-051',
+};
+
+const duration = (ms: number) => amountOf(ms, 'ms');
+
+type Reading = DiagnosticsView['performance'][number];
+
+function heldTo(budget: Reading): string {
+  if (budget.withinMs === null) return words('admin.perf-no-time');
+  const within = duration(budget.withinMs);
+  if (budget.percentile === null) return words('admin.perf-within', { within });
+  return budget.neverAboveMs === null
+    ? words('admin.perf-held', { percent: budget.percentile, within })
+    : words('admin.perf-held-ceiling', {
+        percent: budget.percentile,
+        within,
+        above: duration(budget.neverAboveMs),
+      });
+}
+
+function measuredAt(budget: Reading): string {
+  if (budget.atMs === null) return words('admin.diag-none');
+  const percent = budget.percentile ?? 0.95;
+  return budget.largestMs === null
+    ? words('admin.perf-at-past', { percent, at: duration(budget.atMs) })
+    : words('admin.perf-at', {
+        percent,
+        at: duration(budget.atMs),
+        largest: duration(budget.largestMs),
+      });
+}
+
+function PerformanceTable({ view }: { view: DiagnosticsView }) {
+  const name = words('admin.diag-performance');
+  return (
+    <table aria-label={name} className={styles['table']}>
+      <thead>
+        <tr>
+          <th scope="col">{words('admin.perf-budget')}</th>
+          <th scope="col">{words('admin.perf-times')}</th>
+          <th scope="col">{words('admin.perf-held-heading')}</th>
+          <th scope="col">{words('admin.perf-measured')}</th>
+          <th scope="col">{words('admin.diag-state')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {view.performance.map((each) => {
+          const { icon, tone } = VERDICTS[each.verdict];
+          const named = BUDGET_NAMES[each.budget];
+          const why = BUDGET_WHY[each.budget];
+          return (
+            <tr key={each.budget}>
+              <td className={styles['strong']}>{each.requirement}</td>
+              <td>{named === undefined ? each.budget : words(named)}</td>
+              <td>
+                {heldTo(each)}
+                {each.provisional && (
+                  <span className={styles['muted']}> {words('admin.perf-provisional')}</span>
+                )}
+              </td>
+              <td>{measuredAt(each)}</td>
+              <td>
+                <Chip tone={tone}>
+                  <Icon name={icon} size={12} /> {words(`admin.perf-verdict.${each.verdict}`)}
+                </Chip>
+                {(why !== undefined || each.why !== null) && (
+                  <p className={styles['muted']}>{why === undefined ? each.why : words(why)}</p>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
 
 const when = (at: string) =>
   `${formats().date(new Date(at), { day: 'numeric', month: 'short' })} ${formats().time(new Date(at))}`;
@@ -478,6 +611,10 @@ export function Diagnostics({ client }: { client: Client }) {
               })}
         </p>
         <p>{words('admin.diag-runs-at-once', { runs: budgets.queryRunsAtOnce })}</p>
+      </Part>
+      <Part title={words('admin.diag-performance')}>
+        <p className={styles['muted']}>{words('admin.diag-performance-note')}</p>
+        <PerformanceTable view={view} />
       </Part>
     </div>
   );

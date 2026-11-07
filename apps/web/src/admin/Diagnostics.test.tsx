@@ -18,8 +18,56 @@ const calm: DiagnosticsView = {
   webhooks: { subscriptions: 2, failing: 0, disabledFailing: 0 },
   mail: { enabled: true, failingSince: null, waiting: 0, givenUp: 0 },
   connections: [],
+  performance: [],
   budgets: { model: null, queryRunsAtOnce: 4 },
 };
+
+const held = {
+  owner: 'docs/design/search.md',
+  reference: 'A generated tenant of a million components',
+  percentile: 0.95,
+  withinMs: 250,
+  neverAboveMs: 500,
+  provisional: true,
+  confirmedBy: 'T7',
+};
+
+const measured: DiagnosticsView['performance'] = [
+  {
+    ...held,
+    budget: 'SCH-033',
+    requirement: 'SCH-033',
+    measuredAs: 'request',
+    capability: 'Searches',
+    verdict: 'missed',
+    atMs: 500,
+    largestMs: 1000,
+    why: null,
+  },
+  {
+    ...held,
+    budget: 'STR-063',
+    requirement: 'STR-063',
+    measuredAs: 'request',
+    capability: 'Document structure',
+    verdict: 'met',
+    atMs: 100,
+    largestMs: 250,
+    why: null,
+  },
+  {
+    ...held,
+    budget: 'API-036',
+    requirement: 'API-036',
+    neverAboveMs: 1000,
+    measuredAs: 'unmeasured',
+    capability: null,
+    verdict: 'unmeasured',
+    atMs: null,
+    largestMs: null,
+    why: 'A viewer does not acknowledge a change it is sent.',
+  },
+];
 
 const troubled: DiagnosticsView = {
   ...calm,
@@ -110,6 +158,23 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
       expect.stringContaining('Site readings'),
     ]);
     expect(needsAttention(calm)).toEqual([]);
+  });
+
+  it('shows each performance budget, what it is held to and whether production meets it', async () => {
+    render(<Diagnostics client={service({ ...calm, performance: measured })} />);
+    const table = await screen.findByRole('table', { name: 'Performance budgets' });
+    const search = within(table).getByRole('row', { name: /SCH-033/ });
+    expect(search).toHaveTextContent('A search’s first page');
+    expect(search).toHaveTextContent('95% within 250 ms, none above 500 ms');
+    expect(search).toHaveTextContent('Provisional');
+    expect(search).toHaveTextContent('95% within 500 ms, the largest 1 sec');
+    // In icon and words, never colour alone.
+    expect(search).toHaveTextContent('Missed');
+    expect(search.querySelector('svg[data-icon]')).not.toBeNull();
+    expect(within(table).getByRole('row', { name: /STR-063/ })).toHaveTextContent('Met');
+    const realtime = within(table).getByRole('row', { name: /API-036/ });
+    expect(realtime).toHaveTextContent('Not measured in production');
+    expect(realtime).toHaveTextContent('acknowledge');
   });
 
   it('says so when nothing has failed and nothing was asked', async () => {
