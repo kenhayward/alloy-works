@@ -1,36 +1,43 @@
 # SA: Support access, the boundary and secrets
 
 > T7's trust slice, split from DG by DG-E. **Full tier**: several PRs, migrations, new contracts, auth and tenancy.
-> Ken answered SA-A to SA-C (2026-11-07); the rest are taken by default, for Ken to overrule.
+> Ken answered SA-A to SA-C (2026-11-07); the rest are taken by default, for Ken to overrule. Pre-flight ran
+> 2026-11-07 and reshaped SA-D, SA-E and SA-G.
 
 **Goal:** a tenant decides who outside it may look, at what and until when, and sees it happening; sees everything
 that can leave it; and replaces any secret without reading it, knowing first what uses it.
 
 **Requirements:** ADM-022, ADM-023, ADM-024, ADM-025, ADM-026, ADM-042 (support); IAM-070 (its last act, granting
-support access); ADM-041 (the boundary); ADM-007, ADM-047 (secrets). **LIF-072** only if pre-flight 4 finds
-`asset.replaced` and `channel.changed` emitted or emittable here; otherwise its gap is named. **Left unclaimed, gap
-named:** ADM-Q01 is open, so the boundary states a residency only where an endpoint declares one; malware scanning
-does not exist (AST-Q03), so the boundary says so.
+support access); LIF-072 (`asset.replaced` emitted by `replaceAsset`; `mail_channel.changed` answers COL-060, so
+`channel.changed` retires); ADM-041 (the boundary); ADM-007, ADM-047 (secrets). **Gaps named, not claimed away:**
+ADM-Q01 is open, so the boundary states a residency only where an endpoint declares one; malware scanning does not
+exist (AST-Q03); the object store credential is the operator's and nothing rotates it, so ADM-007 is claimed for a
+tenant's own secrets and the operator's is named.
 
-**What exists** (the map, 2026-11-07):
+**What exists** (the map and pre-flight, 2026-11-07):
 
-- **Support:** `support.granted`, `support.used`, `support.revoked` declared in `audit/kinds.ts`, emitted by nothing.
-  No support identity; the operator is the steward's CLI, holds no account and reads no content (TL-P, IAM-087).
-- **Outside people:** invitations (IAM-072), grants with an expiry capped by the tenant (IAM-049, IAM-050), the
-  external list (IAM-051), the effective-permission view (`explainAccess`, IAM-029, IAM-030).
-- **Permissions:** IAM-070's acts exist as permissions but granting support access (`permissions.ts`; `0190`).
-- **Secrets**, all sealed and write-only: connection credential, model endpoint key (generation, embedding,
-  translation), extension secret (behind `administer`), webhook signing secret (the old one signs 24 hours more), mail
-  relay password, sign-in client secret, SCIM token (ends the old at once). Nothing lists what consumes a secret.
-- **Boundary:** `model_endpoint.boundary` (inside or outside) alone; no declaration.
+- **Support:** `support.granted`, `support.used`, `support.revoked` declared, emitted by nothing. No support identity;
+  the operator is the steward's CLI and reads no content (TL-P, IAM-087).
+- **Outside people:** invitations (IAM-072); grants with an expiry, the tenant's cap re-applied at every decision
+  (`decide.ts:106`); facts read per request, so expiry and revocation bite at the next request. **An outsider's
+  tenant-level allow is refused and ignored (IAM-071)**, so support cannot be ordinary grants.
+- **Routes:** 493 in the contract; about 79 GETs carry content, 57 metadata, 83 neither; 31 writes need only a session.
+  The event stream carries ids, state names and presence: metadata.
+- **Diagnostics:** six reads, all `administer`: diagnostics, usage, query usage and its CSV, model usage, meaning
+  freshness. Failures are codes; query usage shows document titles, Diagnostics connection names (metadata).
+- **Secrets**, sealed or hashed, write-only: sign-in client secret, connection credential, model key, webhook signing
+  secret (old signs 24 hours more), extension secret (`administer`), mail password, SCIM token (issuing deletes the
+  rest), CT Studio token (the old stays live), service identity tokens, the bridge's delivery-store password, a shared
+  provider's secret (copied into member tenants), the object store credential (the operator's). Session refresh tokens
+  are per session, outside ADM-007.
 
-| PR  | Holds                                                                                                                   |
-| --- | ----------------------------------------------------------------------------------------------------------------------- |
-| SAa | The plan, `support.md`, ADR-0102; every route declares what it reads (content, metadata or neither), held by a test     |
-| SAb | Support grants: `grant_support`, the grant routes, scopes enforced, `support.*` audited, in the effective view          |
-| SAc | Administration's Support access: grant, review, revoke; active access shown to administrators; content read on purpose  |
-| SAd | Secrets: SCIM overlap, the extension secret under `rotate_secrets`, `GET /v1/secrets` with consumers, a break told once |
-| SAe | The boundary declared: `OUTBOUND` registry, `GET /v1/boundary`, Administration's What leaves; the close                 |
+| PR  | Holds                                                                                                                                        |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| SAa | The plan, `support.md`, ADR-0102; `reads` on every `RouteContract`, held by the compiler and a test; `read_diagnostics`                      |
+| SAb | Support grants: `grant_support`, `support_grant` decided apart from `access_grant`, read-only, scopes refused by route, `support.*` audited  |
+| SAc | Administration's Support access (grant, review, revoke, active shown to every administrator); the support person's own view; LIF-072's kinds |
+| SAd | Secrets: SCIM overlap, the extension secret under `rotate_secrets`, `GET /v1/secrets` with consumers, a break told once                      |
+| SAe | The boundary declared: `OUTBOUND`, `GET /v1/boundary`, Administration's What leaves; the close                                               |
 
 ## Ken's answers
 
@@ -42,44 +49,41 @@ does not exist (AST-Q03), so the boundary says so.
 
 ## Taken by default, for Ken to overrule
 
-- **A support grant is a grant**, to an external principal, with a required expiry under the tenant's cap and a
-  required purpose: one row in `support_grant` (principal, scope, purpose, expires, granted by, revoked) beside the
-  grants it makes, so revoking it ends them together and the effective view explains it as support.
-- **`grant_support`** is a new permission (IAM-070's last), held by Administrator by migration, limited by ADR-0091.
-- **`support.used`** is audited once per support person per day per scope, and once per artifact whose content is
-  opened under a content grant: the log stays readable and every content read is named.
+- **SA-B extended:** field values, version notes and approval reasons are content. A route carrying any content is a
+  content route, so the metadata scope sees less, never more.
+- **Support is read-only.** A support principal is refused every write (`support_scope`) but signing out, its own
+  sessions, presence and its inbox; it cannot make a token, use `/mcp`, start a conversation or import.
+- **`support.used`** is audited once per support person per day per scope, and once per content read, naming it.
+- **A tenant whose only way in is its own provider** needs a guest account there for support; `support.md` says so.
 
 ## Decisions (draft)
 
-- **SA-D Scopes.** _Diagnostics_: Diagnostics, Usage and background work, through a new `read_diagnostics` permission
-  (Administrator holds it too). _Metadata_: diagnostics plus every listing and outline (titles, states, dates, sizes,
-  failures) with content withheld and marked so. _Content read_: metadata plus `read` on the spaces named.
-- **SA-E What a route reads**, declared in `documentation.ts` beside its summary (`reads: 'content' | 'metadata' |
-'none'`); `buildOpenApi` throws without it. A metadata-scope caller reaching a content route is refused
-  `support_scope`. This is ADM-026's "obvious": the line is in the contract, not in each handler.
-- **SA-F Seen while active** (ADM-025): `GET /v1/support-access` lists active and past grants; while any is active every
-  administrator sees a lozenge in Administration naming who, what scope and until when.
-- **SA-G Content on purpose** (ADM-026): under a content grant the renderer asks before opening a body ("Read this
-  content under support access") and the service records the read; nothing opens content by navigation alone.
-- **SA-H Consumers** (ADM-047): `SECRET_CONSUMERS` in `packages/domain` maps each secret kind to what reads it
-  (a model key to every purpose and guardrail using its endpoint; a connection to its datasets, query definitions and
-  refreshes; and so on). `GET /v1/secrets` answers each secret, when it was last replaced and its consumers. After a
-  replacement, the first authentication failure of any consumer is told once against the secret, naming every
-  consumer, by the silent-failure path DGe4 built.
-- **SA-I The boundary** (ADM-041): `OUTBOUND` in `packages/domain`, one row per way out (model endpoints, embedding,
-  reference sources, translation, malware scanning, connections, webhooks, mail, extensions): what may leave, on by
-  default or not, the permission that changes it, residency where declared. `GET /v1/boundary` adds what this tenant
-  has configured. A test holds `OUTBOUND` to every outbound sender module.
-
-## Pre-flight
-
-1. **Every content route.** Classify every route under SA-E before SAb; list the doubtful (search snippets, outlines
-   carrying text, exports, previews, live updates on the event stream). The stream is the likeliest leak.
-2. **The external path end to end.** An invited address claims on first sign-in (IAM-072); confirm a support grant's
-   expiry and revocation end an open session's access at its next request, not its next sign-in.
-3. **`read_diagnostics`** without `administer`: every Diagnostics and Usage read checked, nothing else opened.
-4. **LIF-072.** Is `asset.replaced` emittable (does replacing exist)? Is `channel.changed` superseded by
-   `mail_channel.changed`? Claim or name the gap.
-5. **Consumers complete.** Every sealed column found by migration search has a `SECRET_CONSUMERS` row; the object store
-   credential is the operator's and outside ADM-007 (say so).
-6. **SCIM overlap.** Two valid tokens for 24 hours without widening what either can do.
+- **SA-D Support decided apart.** A `support_grant` row (principal, scope, spaces, purpose, expires, granted by,
+  revoked) is checked by its own decision, not through `access_grant`, so IAM-071 stands. Its expiry is required and
+  capped as an outsider's grant is; a lowered cap ends it, and "active" is read from the decision, never the row. The
+  row joins the access-change trigger and the IAM-063 epoch lock, so a revocation ends open streams.
+- **SA-E What a route reads**: `reads: 'content' | 'metadata' | 'none'`, required on `RouteContract` beside `access`;
+  the compiler holds every route to it, the service's route hook enforces it, the OpenAPI document publishes it. A test
+  pins the doubtful as content: search, document reads (field values), numbering (captions), texts, changes,
+  comparisons, previews, shared outputs, every download and export, query definitions (SQL), mail and webhook
+  deliveries, version and approval lists.
+- **SA-F Scopes.** _Diagnostics_: the six diagnostics reads, through `read_diagnostics` (also given to every role and
+  token holding `administer`, kept from `externalCap`). _Metadata_: diagnostics plus `metadata` routes in the spaces
+  named. _Content read_: metadata plus `content` routes there, each request carrying `Support-Read: <purpose>` or
+  refused (ADM-026's deliberate act, for API callers as much as the renderer, which asks first).
+- **SA-G Seen while active** (ADM-025): `GET /v1/support-access` lists active and past grants; while any is active every
+  administrator sees a lozenge naming who, what scope and until when. `grant_support` sits in
+  `administrativePermissions` and `PERSONS_ACTS`, so ADR-0091 and the last-holder guard apply and no token holds it.
+- **SA-H Consumers** (ADM-047): `SECRET_CONSUMERS` in `packages/domain`, one row per secret above, each naming what
+  reads it (a model key every purpose and guardrail on its endpoint; a connection its datasets, definitions and
+  refreshes; a shared provider's secret its member tenants). `GET /v1/secrets` answers each, when last replaced and its
+  consumers. After a replacement, the first authentication failure of any consumer is told once against the secret,
+  naming every consumer, by DGe4's silent-failure path. Scanning and translation services are named as absent.
+- **SA-I SCIM overlap**: `api_token.ends_at`, nullable, settable once from null and never past `expires_at`, with its own
+  update grant; issuing sets it 24 hours on for the token before and ends any older at once (two at most);
+  `findApiToken` refuses past it; a sweep deletes them. Turning SCIM off ends all. The CT Studio token and service
+  identity tokens gain the same rule.
+- **SA-J The boundary** (ADM-041): `OUTBOUND` in `packages/domain`, one row per way out (model endpoints, embedding,
+  reference sources, translation, malware scanning, connections, webhooks, mail, extensions, CT Studio's sink): what
+  may leave, on by default or not, the permission that changes it, residency where declared. `GET /v1/boundary` adds
+  what this tenant has configured. A test holds `OUTBOUND` to every outbound sender module.
