@@ -5,8 +5,8 @@ export type { paths } from './generated/schema.js';
 export { followStream } from './stream.js';
 export type { FollowOptions, StreamSample, StreamSnapshot } from './stream.js';
 export { streamPost } from './stream-post.js';
-export { sendLanguage } from './language.js';
-import { saidLanguage } from './language.js';
+export { sendLanguage, sendSupportRead } from './language.js';
+import { saidLanguage, saidSupportRead } from './language.js';
 export type { StreamPostOptions, StreamPostOutcome } from './stream-post.js';
 
 /** What the service answers with, named from the document rather than written out again. */
@@ -70,6 +70,9 @@ export function createApiClient(
     const request = input instanceof Request ? input : new Request(input, init);
     const said = saidLanguage();
     if (said !== undefined) request.headers.set('accept-language', said);
+    // A support person's purpose, once they have chosen to read content (ADM-026; support.md).
+    const purpose = saidSupportRead();
+    if (purpose !== undefined) request.headers.set('support-read', purpose);
     const response = await (given ?? globalThis.fetch)(request);
     void noticeRefusal(response);
     return response;

@@ -23,6 +23,8 @@ export interface StoredSupport extends SupportGrant {
   readonly grantedBy: { readonly id: string; readonly name: string | null };
   readonly grantedAt: Date;
   readonly revokedBy: { readonly id: string; readonly name: string | null } | null;
+  /** Why it ended early: revoked by somebody, or the cap lowered past it (0218's trigger). */
+  readonly revokedReason: 'revoked' | 'cap_lowered' | null;
   readonly active: boolean;
 }
 
@@ -56,6 +58,7 @@ function listed(trx: TenantTransaction) {
       's.granted_at',
       's.revoked_at',
       's.revoked_by',
+      's.revoked_reason',
       'p.id as principal_id',
       'p.display_name as principal_name',
       'p.email as principal_email',
@@ -82,6 +85,7 @@ function stored(row: Row, now: Date, externalCapDays: number): StoredSupport {
     grantedBy: { id: row.granted_by, name: row.granted_by_name },
     grantedAt: row.granted_at,
     revokedBy: row.revoked_by === null ? null : { id: row.revoked_by, name: row.revoked_by_name },
+    revokedReason: row.revoked_reason,
     // Read from the decision's own rule, never the row alone (SA-D).
     active: supportActive(grant, now, externalCapDays),
   };
