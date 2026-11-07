@@ -107,7 +107,14 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
       h.tenant,
       (trx) =>
         recordCapabilityMinute(trx, new Date(Date.now() - 60_000), [
-          { capability: 'Searches', requests: 10, clientErrors: 0, serverErrors: 0, refused: 0, buckets: slow },
+          {
+            capability: 'Searches',
+            requests: 10,
+            clientErrors: 0,
+            serverErrors: 0,
+            refused: 0,
+            buckets: slow,
+          },
         ]),
       { actorKind: 'system' },
     );

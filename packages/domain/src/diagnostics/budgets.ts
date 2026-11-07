@@ -181,7 +181,7 @@ export const PERFORMANCE_BUDGETS: readonly PerformanceBudget[] = [
     confirmedBy: 'T7',
     production: {
       kind: 'immediate',
-      why: "Words are indexed in the transaction that writes their version, so they are findable when it is.",
+      why: 'Words are indexed in the transaction that writes their version, so they are findable when it is.',
     },
   },
   {
@@ -224,7 +224,8 @@ export const PERFORMANCE_BUDGETS: readonly PerformanceBudget[] = [
     id: 'VER-051',
     requirement: 'VER-051',
     owner: 'docs/design/comparison.md',
-    reference: 'Two baselines of 300 components and a component of 300 versions, by counted operations',
+    reference:
+      'Two baselines of 300 components and a component of 300 versions, by counted operations',
     percentile: null,
     withinMs: null,
     neverAboveMs: null,

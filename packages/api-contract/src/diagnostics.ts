@@ -66,7 +66,9 @@ const ConnectionView = z.object({
 
 /** A performance budget, as registered and as production measured it (the DG plan, DG-J). */
 const PerformanceView = z.object({
-  budget: z.string().describe('The requirement stating it, with what it times where one states two'),
+  budget: z
+    .string()
+    .describe('The requirement stating it, with what it times where one states two'),
   requirement: z.string(),
   owner: z.string().describe('The design that claims it'),
   reference: z.string().describe('What the tests measure it on'),

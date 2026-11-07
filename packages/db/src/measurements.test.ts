@@ -132,7 +132,9 @@ describe("a capability's requests measured by minute and rolled up (the DG plan,
       await sql`
         insert into capability_usage
           (span, at, capability, buckets_version, requests, client_errors, server_errors, refused, buckets)
-        values ('minute', ${since}, 'Searches', ${BUCKETS_VERSION + 1}, 1, 0, 0, 0, ${[1]})`.execute(trx);
+        values ('minute', ${since}, 'Searches', ${BUCKETS_VERSION + 1}, 1, 0, 0, 0, ${[1]})`.execute(
+        trx,
+      );
     });
     expect(await as((trx) => capabilityTotals(trx, since))).toEqual([
       {

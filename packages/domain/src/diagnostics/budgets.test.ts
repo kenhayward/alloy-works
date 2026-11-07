@@ -54,9 +54,7 @@ describe('performance budgets registered (the DG plan, DG-J)', () => {
     // Each request measured is an operation measured as its own capability.
     const measured = new Set(Object.values(MEASURED_OPERATIONS));
     for (const each of bucketed.filter((one) => one.production.kind === 'request')) {
-      expect(measured, each.id).toContain(
-        (each.production as { capability: string }).capability,
-      );
+      expect(measured, each.id).toContain((each.production as { capability: string }).capability);
     }
   });
 

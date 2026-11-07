@@ -78,7 +78,8 @@ function performance(
       verdict: reading.verdict,
       atMs: finite(reading.atMs),
       largestMs: finite(reading.largestMs),
-      why: production.kind === 'unmeasured' || production.kind === 'immediate' ? production.why : null,
+      why:
+        production.kind === 'unmeasured' || production.kind === 'immediate' ? production.why : null,
     };
   });
 }
@@ -221,10 +222,10 @@ export function diagnosticsHandlers() {
           givenUp: mail.givenUp,
         },
         connections,
-        performance: performance(
-          await capabilityTotals(trx, new Date(now.getTime() - 7 * DAY)),
-          { p95Seconds: freshness.p95Seconds, maxSeconds: freshness.maxSeconds },
-        ),
+        performance: performance(await capabilityTotals(trx, new Date(now.getTime() - 7 * DAY)), {
+          p95Seconds: freshness.p95Seconds,
+          maxSeconds: freshness.maxSeconds,
+        }),
         budgets: {
           model:
             budget === null || spent === null
