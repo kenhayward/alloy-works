@@ -146,7 +146,8 @@ const WIRE_CODES = {
   'asset.uploading': 'asset_uploading',
   // A copy's own refusals (the RM plan, RM-H, RM-K).
   'copy.too_large': 'copy_too_large',
-  'copy.unreadable': 'copy_unreadable',
+  'copy.exception_unknown': 'exception_unknown',
+  'copy.exception_fixed': 'exception_fixed',
   'artifact.held': 'artifact_held',
   'artifact.kept': 'artifact_kept',
   'space.name_invalid': 'space_name_invalid',
@@ -353,6 +354,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'conditions.unmet': 'LIF-004',
   // A copy of more components than it makes at once (the RM plan, RM-H).
   'copy.too_large': 'REU-057',
+  // Copying a component no choice copies (REU-057).
+  'copy.exception_fixed': 'REU-057',
   // A prompt run on a part of another component type than it declares it writes (the GC plan, GC-C).
   'prompt.output_mismatch': 'GEN-004',
 };

@@ -10677,7 +10677,7 @@
     {
       "id": "REU-057",
       "area": "REU",
-      "statement": "A document's copy must offer to reuse every component, to copy only the components no other document places, or to copy every one, and must say how many it would copy before it is made (REU-046); it must be made at once, within a stated limit",
+      "statement": "A document's copy must start from reusing every component, copying only those no other document places, or copying every one, and must let the author set any one component the other way before it is made. A component its template requires and shares, one archived or deleted, or one the caller may not read must be reused, never copied, and must not refuse the copy; one the caller may not read must not be named. It must say which components it copies, and how many, before it is made (REU-046), and be made at once within a stated limit, counted after the author's choices",
       "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
@@ -10882,13 +10882,22 @@
       "line": 118
     },
     {
+      "id": "REU-068",
+      "area": "REU",
+      "statement": "A document's copy must let the author keep its local overrides (REU-011) on the copy or leave every one behind, and must say before it is made how many it would carry and how many no longer apply and are dropped (REU-015). Left behind, they stay on the original only",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 119
+    },
+    {
       "id": "REU-016",
       "area": "REU",
       "statement": "A variable must resolve from the document's parameter set, its metadata, or a query result",
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "REU-017",
@@ -10897,7 +10906,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "REU-018",
@@ -10906,7 +10915,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "REU-019",
@@ -10915,7 +10924,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "REU-036",
@@ -10924,7 +10933,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "REU-037",
@@ -10933,7 +10942,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "REU-038",
@@ -10942,7 +10951,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "REU-020",
@@ -10951,7 +10960,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "REU-021",
@@ -10960,7 +10969,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "REU-022",
@@ -10969,7 +10978,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "REU-023",
@@ -10978,7 +10987,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-048",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "REU-024",
@@ -10987,7 +10996,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "REU-025",
@@ -10996,7 +11005,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "REU-026",
@@ -11005,7 +11014,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "REU-027",
@@ -11014,7 +11023,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "REU-053",
@@ -11023,7 +11032,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "REU-048",
@@ -11032,7 +11041,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "REU-047",
@@ -11041,7 +11050,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "REU-028",
@@ -11050,7 +11059,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "REU-029",
@@ -11059,7 +11068,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "REU-030",
@@ -11068,7 +11077,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "REU-039",
@@ -11077,7 +11086,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "REU-040",
@@ -11086,7 +11095,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "REU-031",
@@ -11095,7 +11104,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "REU-032",
@@ -11104,7 +11113,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "REU-033",
@@ -11113,7 +11122,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "REU-034",
@@ -11122,7 +11131,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "REU-035",
@@ -11131,7 +11140,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "REU-051",
@@ -11140,7 +11149,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "REU-041",
@@ -11149,7 +11158,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-051",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "REU-049",
@@ -11158,7 +11167,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "SCH-001",
@@ -15540,31 +15549,31 @@
       "id": "REU-N01",
       "statement": "**No copying content to reuse it.** A reference resolves; it does not duplicate",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "REU-N02",
       "statement": "**No overrides that live on the component.** An override belongs to one reference (REU-012)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "REU-N03",
       "statement": "**No inferred inclusion.** A condition axis a profile does not set excludes (REU-024)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 238
+      "line": 239
     },
     {
       "id": "REU-N04",
       "statement": "**No conditional content in an output, hidden.** Excluded means absent, and every publication is scanned to prove it (REU-048, which superseded REU-023)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "REU-N05",
       "statement": "**No ambient input to resolution.** What a document resolves to is a function of its components, profile, parameters and overrides, and of nothing else - no clock, no execution order, no identity of whoever pressed the button (REU-039)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "SCH-N01",
@@ -16443,35 +16452,35 @@
       "question": "**Does the override mechanism actually hold (section 5)?** The spike's case 6 was never run, and it is the case where the discarded alternative is stronger",
       "settledBy": "Running case 6: one component in two documents where one needs a single word different",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "REU-Q02",
       "question": "**May a condition apply to a whole component reference, as well as to content inside one?** \"Include this section only for the regulator\" is an obvious want",
       "settledBy": "Whether it is expressible as an outline-node condition in **STR** instead, which may be cleaner",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 247
+      "line": 248
     },
     {
       "id": "REU-Q03",
       "question": "**How many profiles does one document have in practice?** Two is easy; twelve makes preview, comparison and publication counts awkward",
       "settledBy": "Real customer profiles. It affects whether publishing per profile is a routine act or a batch job",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 248
+      "line": 249
     },
     {
       "id": "REU-Q04",
       "question": "**Can conditions nest or combine with logic?** \"UK and not draft\" is asked for the moment two axes exist",
       "settledBy": "Whether simple set membership survives a real house style. Boolean conditions are easy to add and very hard to review",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 249
+      "line": 250
     },
     {
       "id": "REU-Q05",
       "question": "**May a parameter set be declared per profile, so that variables rather than conditions carry per-profile wording?** REU-047 makes conditional alternatives the documented path; parameters would make it a table instead",
       "settledBy": "Real house wording differences. Conditions suit a sentence that differs; parameters suit a value that differs, and customers will have both",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 250
+      "line": 251
     },
     {
       "id": "SCH-Q01",
@@ -20503,7 +20512,11 @@
         },
         {
           "id": "REU-057",
-          "howItIsMet": "A document's copy reuses every component, copies only those no other document places (the default), or copies every one, never one its template requires or one archived or deleted; the preview counts what it copies and reuses before it is made, and a copy past 200 components, or of one the caller may not read, is refused (`previewCopy`; RM-G, RM-H, RM-K)"
+          "howItIsMet": "A document's copy starts from reusing every component, copying only those no other document places (the default), or copying every one, and takes exceptions, each setting one component the other way; one its template requires and shares, one archived or deleted, or one the caller may not read is fixed as reused and never copied, the last listed unnamed rather than refusing the copy. The preview answers each component, where it stands and what the copy does with it, and counts what it copies before it is made; past 200 components after the exceptions it is refused (`previewCopy`; RM-G, RM-H, RM-K; [ADR-0103](../decisions/0103-a-copy-starts-from-a-choice-and-takes-exceptions.md))"
+        },
+        {
+          "id": "REU-068",
+          "howItIsMet": "A document's copy keeps its local overrides, the default, or leaves every one behind on the original; the preview counts them and those a kept copy drops (`copyArtifact`, `rewordings`; ADR-0103)"
         },
         {
           "id": "REU-058",
@@ -23450,7 +23463,7 @@
     {
       "id": "LIF-079",
       "file": "apps/service/src/copying-routes.test.ts",
-      "line": 304,
+      "line": 367,
       "kind": "title"
     },
     {
@@ -23463,6 +23476,12 @@
       "id": "REU-057",
       "file": "apps/service/src/copying-routes.test.ts",
       "line": 175,
+      "kind": "title"
+    },
+    {
+      "id": "REU-068",
+      "file": "apps/service/src/copying-routes.test.ts",
+      "line": 267,
       "kind": "title"
     },
     {
@@ -27920,13 +27939,19 @@
     {
       "id": "REU-056",
       "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
-      "line": 103,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "REU-057",
       "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
-      "line": 60,
+      "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "REU-068",
+      "file": "apps/web/src/listing/DuplicateDialog.test.tsx",
+      "line": 240,
       "kind": "title"
     },
     {
@@ -31575,6 +31600,12 @@
       "id": "REU-058",
       "file": "packages/db/src/copies.test.ts",
       "line": 204,
+      "kind": "title"
+    },
+    {
+      "id": "REU-068",
+      "file": "packages/db/src/copies.test.ts",
+      "line": 519,
       "kind": "title"
     },
     {
@@ -35354,7 +35385,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1301,
+      "line": 1303,
       "kind": "title"
     },
     {
@@ -36590,19 +36621,19 @@
     {
       "id": "REU-057",
       "file": "packages/domain/src/structure/copy.test.ts",
-      "line": 103,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "REU-058",
       "file": "packages/domain/src/structure/copy.test.ts",
-      "line": 75,
+      "line": 85,
       "kind": "title"
     },
     {
       "id": "REU-061",
       "file": "packages/domain/src/structure/copy.test.ts",
-      "line": 182,
+      "line": 192,
       "kind": "title"
     },
     {
@@ -38025,6 +38056,12 @@
       "id": "COL-071",
       "file": "tests/browser/src/document-panes.test.ts",
       "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "REU-057",
+      "file": "tests/browser/src/duplicate.test.ts",
+      "line": 22,
       "kind": "title"
     },
     {

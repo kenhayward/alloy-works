@@ -18,7 +18,27 @@ export const CopyBody = z
       .enum(['reuse', 'own', 'all'])
       .optional()
       .describe(
-        "A document's components: reuse every one, copy only those no other document places (the default), or copy every one",
+        "A document's components, where they start from: reuse every one, copy only those no other document places (the default), or copy every one",
+      ),
+    exceptions: z
+      .array(
+        z
+          .object({
+            component: LowercaseUuid.describe('A component the document places'),
+            as: z.enum(['copy', 'reuse']).describe('Copied, or reused, whatever `components` says'),
+          })
+          .strict(),
+      )
+      .max(1000)
+      .optional()
+      .describe(
+        "A document's components set otherwise than `components` starts them; one not placed in the document, or copying one that is fixed (required by its template, archived or deleted, or not the caller's to read), is refused",
+      ),
+    rewordings: z
+      .enum(['keep', 'drop'])
+      .optional()
+      .describe(
+        "A document's local overrides: kept on the copy (the default), or left behind on the original only",
       ),
   })
   .strict();
@@ -39,7 +59,7 @@ const CopyCounts = {
   unreadable: z
     .number()
     .int()
-    .describe('Of those it would copy, the ones the caller may not read, which refuse the copy'),
+    .describe('Of those reused, the ones the caller may not read: never copied, never named'),
   approvedToLatest: z
     .number()
     .int()
@@ -48,10 +68,11 @@ const CopyCounts = {
     .number()
     .int()
     .describe('Components placed at more than one version, copied at the newest shown'),
+  overrides: z.number().int().describe("The document's local overrides"),
   overridesDropped: z
     .number()
     .int()
-    .describe('Local overrides dropped, their paragraph changed at the version copied'),
+    .describe('Of those kept, the ones dropped, their paragraph changed at the version copied'),
   lines: z.number().int().describe('Divergent lines of what is copied, which are not'),
   translations: z.number().int().describe('Translations of what is copied, which are not'),
 };
@@ -68,6 +89,37 @@ export const CopyPreviewAnswer = z.object({
     })
     .nullable()
     .describe('What a copy in another space leaves behind in this one; null in the same space'),
+  components: z
+    .array(
+      z.object({
+        component: LowercaseUuid,
+        title: z
+          .string()
+          .nullable()
+          .describe('Its title; null where the caller may not read it, or it is gone'),
+        placed: z
+          .enum(['only', 'shared', 'required', 'kept', 'unreadable'])
+          .describe(
+            "Placed in no other document, or in others; or fixed, never copied: required by its template, archived or deleted, or not the caller's to read",
+          ),
+        others: z
+          .number()
+          .int()
+          .nullable()
+          .describe(
+            'Other documents the caller may read that place it; null where it is not theirs to read',
+          ),
+        grouped: z
+          .boolean()
+          .describe('A member of a placed group: copying it makes the run plain references'),
+        outcome: z
+          .enum(['copy', 'reuse'])
+          .describe('What the copy does with it, exceptions applied'),
+      }),
+    )
+    .describe(
+      "A document's components, each once in the order first placed; none for another kind",
+    ),
 });
 export type CopyPreviewAnswer = z.infer<typeof CopyPreviewAnswer>;
 
@@ -88,7 +140,10 @@ export const CopyRefusal = TemplateRefusal.extend({
     .number()
     .int()
     .optional()
-    .describe('copy_unreadable: how many components it would copy the caller may not read'),
+    .describe('No longer sent: a component the caller may not read is reused instead'),
+  component: LowercaseUuid.optional().describe(
+    'exception_unknown, exception_fixed: the component the exception names',
+  ),
   failures: z
     .array(z.record(z.string(), z.unknown()))
     .optional()
@@ -98,7 +153,7 @@ export const CopyRefusal = TemplateRefusal.extend({
 const refusals = {
   400: {
     description:
-      'content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers',
+      'content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once, counted after the exceptions; exception_unknown: an exception names a component the document does not place; exception_fixed: an exception copies a component that is fixed; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers',
     schema: CopyRefusal,
   },
   401: { description: 'Not signed in', schema: ErrorBody },

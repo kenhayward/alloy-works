@@ -118,9 +118,13 @@ export {
   chosenCopies,
   copyContent,
   copyOutline,
+  isFixed,
+  startsCopied,
   type CopiedComponent,
   type CopyChoice,
   type CopyCounts,
+  type CopyException,
+  type CopyPlacement,
   type PlacedComponent,
 } from './copy.js';
 export {

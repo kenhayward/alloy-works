@@ -99,6 +99,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     id: string;
     title: string;
     space: string;
+    spaceName: string;
+    state?: { readonly key: string; readonly name: string } | null;
   } | null>(null);
   // The row shown in the panel beside the list, and each row's button, to give the focus back to.
   const [shown, setShown] = useState<string | null>(null);
@@ -449,7 +451,13 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                           if (changed) void load(null);
                         }}
                         onDuplicate={() =>
-                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                          setDuplicating({
+                            id: item.id,
+                            title: item.title,
+                            space: item.space.id,
+                            spaceName: item.space.name,
+                            state: item.state ?? null,
+                          })
                         }
                       />
                     </td>
@@ -482,6 +490,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
             id={duplicating.id}
             title={duplicating.title}
             space={duplicating.space}
+            spaceName={duplicating.spaceName}
+            state={duplicating.state}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

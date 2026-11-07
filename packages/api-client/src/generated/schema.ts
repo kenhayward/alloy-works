@@ -110,7 +110,7 @@ export interface paths {
         put?: never;
         /**
          * Copy a document, component or template under a new title
-         * @description Makes a copy of a document, component or template under a new title, in its own space or another, as one transaction. A document's copy keeps its outline's node identities, its template, parameters, values, language, profile, waivers and each binding's latest result, and with `components` reuses every component, copies only those no other document places (the default) or copies every one, each at the version the document shows; a component the template requires, or one deleted or archived, is reused. A component's copy is its latest version; a template's is its definition under the new name. A copy starts at 0.1 in its workflow's first state, with no other version, comment, baseline, publication or grant. A title in use there is answered, not refused. Needs read on it, and create at the target, or design for a template.
+         * @description Makes a copy of a document, component or template under a new title, in its own space or another, as one transaction. A document's copy keeps its outline's node identities, its template, parameters, values, language, profile, waivers and each binding's latest result, and with `components` starts from reusing every component, copying only those no other document places (the default) or copying every one, each at the version the document shows; `exceptions` set any one component the other way. A component the template requires and shares, one deleted or archived, or one the caller may not read is always reused, and an exception copying one is refused. With `rewordings: drop` the copy carries none of the document's local overrides. A component's copy is its latest version; a template's is its definition under the new name. A copy starts at 0.1 in its workflow's first state, with no other version, comment, baseline, publication or grant. A title in use there is answered, not refused. Needs read on it, and create at the target, or design for a template.
          */
         post: operations["copyArtifact"];
         delete?: never;
@@ -130,7 +130,7 @@ export interface paths {
         put?: never;
         /**
          * What copying would make, reuse and leave behind
-         * @description Answers what `copyArtifact` would make and reuse now, whether the title is in use there, and what a copy in another space leaves behind, changing nothing.
+         * @description Answers what `copyArtifact` would make and reuse now, whether the title is in use there, and what a copy in another space leaves behind, changing nothing. For a document it answers each component it places: its title, unless the caller may not read it; where it stands; how many other documents the caller may read place it; and whether the copy copies or reuses it, exceptions applied.
          */
         post: operations["copyArtifactPreview"];
         delete?: never;
@@ -18503,10 +18503,25 @@ export interface operations {
                     /** @description The copy's title, or a template's name; one in use there is warned of */
                     title: string;
                     /**
-                     * @description A document's components: reuse every one, copy only those no other document places (the default), or copy every one
+                     * @description A document's components, where they start from: reuse every one, copy only those no other document places (the default), or copy every one
                      * @enum {string}
                      */
                     components?: "reuse" | "own" | "all";
+                    /** @description A document's components set otherwise than `components` starts them; one not placed in the document, or copying one that is fixed (required by its template, archived or deleted, or not the caller's to read), is refused */
+                    exceptions?: {
+                        /** @description A component the document places */
+                        component: string & (unknown & unknown);
+                        /**
+                         * @description Copied, or reused, whatever `components` says
+                         * @enum {string}
+                         */
+                        as: "copy" | "reuse";
+                    }[];
+                    /**
+                     * @description A document's local overrides: kept on the copy (the default), or left behind on the original only
+                     * @enum {string}
+                     */
+                    rewordings?: "keep" | "drop";
                 };
             };
         };
@@ -18534,6 +18549,7 @@ export interface operations {
                      *       "unreadable": -9007199254740991,
                      *       "approvedToLatest": -9007199254740991,
                      *       "newestShown": -9007199254740991,
+                     *       "overrides": -9007199254740991,
                      *       "overridesDropped": -9007199254740991,
                      *       "lines": -9007199254740991,
                      *       "translations": -9007199254740991,
@@ -18557,13 +18573,15 @@ export interface operations {
                         required: number;
                         /** @description Of those reused, the deleted or archived ones, never copied */
                         kept: number;
-                        /** @description Of those it would copy, the ones the caller may not read, which refuse the copy */
+                        /** @description Of those reused, the ones the caller may not read: never copied, never named */
                         unreadable: number;
                         /** @description References to a copy that tracked the approved revision, now its latest */
                         approvedToLatest: number;
                         /** @description Components placed at more than one version, copied at the newest shown */
                         newestShown: number;
-                        /** @description Local overrides dropped, their paragraph changed at the version copied */
+                        /** @description The document's local overrides */
+                        overrides: number;
+                        /** @description Of those kept, the ones dropped, their paragraph changed at the version copied */
                         overridesDropped: number;
                         /** @description Divergent lines of what is copied, which are not */
                         lines: number;
@@ -18577,7 +18595,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
+            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once, counted after the exceptions; exception_unknown: an exception names a component the document does not place; exception_fixed: an exception copies a component that is fixed; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -18651,8 +18669,10 @@ export interface operations {
                         }[];
                         /** @description copy_too_large: the most components one copy makes */
                         limit?: number;
-                        /** @description copy_unreadable: how many components it would copy the caller may not read */
+                        /** @description No longer sent: a component the caller may not read is reused instead */
                         unreadable?: number;
+                        /** @description exception_unknown, exception_fixed: the component the exception names */
+                        component?: string & (unknown & unknown);
                         /** @description values_invalid: each value that no longer fits its field */
                         failures?: {
                             [key: string]: unknown;
@@ -18790,10 +18810,25 @@ export interface operations {
                     /** @description The copy's title, or a template's name; one in use there is warned of */
                     title: string;
                     /**
-                     * @description A document's components: reuse every one, copy only those no other document places (the default), or copy every one
+                     * @description A document's components, where they start from: reuse every one, copy only those no other document places (the default), or copy every one
                      * @enum {string}
                      */
                     components?: "reuse" | "own" | "all";
+                    /** @description A document's components set otherwise than `components` starts them; one not placed in the document, or copying one that is fixed (required by its template, archived or deleted, or not the caller's to read), is refused */
+                    exceptions?: {
+                        /** @description A component the document places */
+                        component: string & (unknown & unknown);
+                        /**
+                         * @description Copied, or reused, whatever `components` says
+                         * @enum {string}
+                         */
+                        as: "copy" | "reuse";
+                    }[];
+                    /**
+                     * @description A document's local overrides: kept on the copy (the default), or left behind on the original only
+                     * @enum {string}
+                     */
+                    rewordings?: "keep" | "drop";
                 };
             };
         };
@@ -18819,6 +18854,7 @@ export interface operations {
                      *       "unreadable": -9007199254740991,
                      *       "approvedToLatest": -9007199254740991,
                      *       "newestShown": -9007199254740991,
+                     *       "overrides": -9007199254740991,
                      *       "overridesDropped": -9007199254740991,
                      *       "lines": -9007199254740991,
                      *       "translations": -9007199254740991,
@@ -18828,7 +18864,8 @@ export interface operations {
                      *         "terms": -9007199254740991,
                      *         "imagesStaying": -9007199254740991,
                      *         "bound": -9007199254740991
-                     *       }
+                     *       },
+                     *       "components": []
                      *     }
                      */
                     "application/json": {
@@ -18844,13 +18881,15 @@ export interface operations {
                         required: number;
                         /** @description Of those reused, the deleted or archived ones, never copied */
                         kept: number;
-                        /** @description Of those it would copy, the ones the caller may not read, which refuse the copy */
+                        /** @description Of those reused, the ones the caller may not read: never copied, never named */
                         unreadable: number;
                         /** @description References to a copy that tracked the approved revision, now its latest */
                         approvedToLatest: number;
                         /** @description Components placed at more than one version, copied at the newest shown */
                         newestShown: number;
-                        /** @description Local overrides dropped, their paragraph changed at the version copied */
+                        /** @description The document's local overrides */
+                        overrides: number;
+                        /** @description Of those kept, the ones dropped, their paragraph changed at the version copied */
                         overridesDropped: number;
                         /** @description Divergent lines of what is copied, which are not */
                         lines: number;
@@ -18869,10 +18908,30 @@ export interface operations {
                             /** @description Bound parts, whose query definition stays */
                             bound: number;
                         } | null;
+                        /** @description A document's components, each once in the order first placed; none for another kind */
+                        components: {
+                            component: string & (unknown & unknown);
+                            /** @description Its title; null where the caller may not read it, or it is gone */
+                            title: string | null;
+                            /**
+                             * @description Placed in no other document, or in others; or fixed, never copied: required by its template, archived or deleted, or not the caller's to read
+                             * @enum {string}
+                             */
+                            placed: "only" | "shared" | "required" | "kept" | "unreadable";
+                            /** @description Other documents the caller may read that place it; null where it is not theirs to read */
+                            others: number | null;
+                            /** @description A member of a placed group: copying it makes the run plain references */
+                            grouped: boolean;
+                            /**
+                             * @description What the copy does with it, exceptions applied
+                             * @enum {string}
+                             */
+                            outcome: "copy" | "reuse";
+                        }[];
                     };
                 };
             };
-            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
+            /** @description content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once, counted after the exceptions; exception_unknown: an exception names a component the document does not place; exception_fixed: an exception copies a component that is fixed; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -18946,8 +19005,10 @@ export interface operations {
                         }[];
                         /** @description copy_too_large: the most components one copy makes */
                         limit?: number;
-                        /** @description copy_unreadable: how many components it would copy the caller may not read */
+                        /** @description No longer sent: a component the caller may not read is reused instead */
                         unreadable?: number;
+                        /** @description exception_unknown, exception_fixed: the component the exception names */
+                        component?: string & (unknown & unknown);
                         /** @description values_invalid: each value that no longer fits its field */
                         failures?: {
                             [key: string]: unknown;

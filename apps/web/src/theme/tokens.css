@@ -179,6 +179,8 @@
   --danger-bg: #fdecea;
   --on-danger: #ffffff;
   --info: #5b3fb8;
+  /* What a copy reuses (the duplicate handoff): the info hue, under its own name. */
+  --reuse: var(--info);
   --info-bg: #efeafc;
   --mark-a: #11325f;
   --mark-b: #49888e;
@@ -238,6 +240,7 @@
   --danger-bg: #3b1715;
   --on-danger: #2a0b08;
   --info: #c0adff;
+  --reuse: var(--info);
   --info-bg: #2a2148;
   --mark-a: #8fd0e0;
   --mark-b: #63aea2;
