@@ -20739,6 +20739,15 @@
       ]
     },
     {
+      "document": "support.md",
+      "owns": [
+        {
+          "id": "ADM-017",
+          "howItIsMet": "An Administrator reads Diagnostics and usage through `read_diagnostics`, which every role and token holding `administer` gained"
+        }
+      ]
+    },
+    {
       "document": "system.md",
       "owns": [
         {
@@ -23914,15 +23923,21 @@
       "kind": "title"
     },
     {
+      "id": "ADM-017",
+      "file": "apps/service/src/high-risk-permissions.test.ts",
+      "line": 233,
+      "kind": "title"
+    },
+    {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 252,
+      "line": 290,
       "kind": "title"
     },
     {
       "id": "IMP-023",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 190,
+      "line": 209,
       "kind": "title"
     },
     {
@@ -33948,7 +33963,7 @@
     {
       "id": "IAM-019",
       "file": "packages/domain/src/access/permissions.test.ts",
-      "line": 13,
+      "line": 19,
       "kind": "title"
     },
     {
