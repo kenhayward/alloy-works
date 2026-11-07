@@ -97,6 +97,11 @@ export async function activeSupport(
   now: Date,
   externalCapDays: number,
 ): Promise<SupportGrant | undefined> {
+  // A schema before 0218, as a migration's own test reads it with today's code, holds no support.
+  const { rows: kept } = await sql<{ kept: boolean }>`
+    select to_regclass('support_grant') is not null as kept
+  `.execute(trx);
+  if (!kept[0]?.kept) return undefined;
   const rows = await trx
     .selectFrom('support_grant')
     .select(['id', 'scope', 'spaces', 'purpose', 'expires_at', 'revoked_at'])
@@ -116,6 +121,18 @@ export async function activeSupport(
       revokedAt: row.revoked_at,
     }))
     .find((grant) => supportActive(grant, now, externalCapDays));
+}
+
+/** `activeSupport` by the true clock and the cap as they stand: what a request's route hook asks. */
+export async function supportNow(
+  trx: TenantTransaction,
+  principalId: string,
+): Promise<SupportGrant | undefined> {
+  const { rows } = await sql<{ now: Date; cap: number }>`
+    select clock_timestamp() as now, external_cap_days as cap from access_policy
+  `.execute(trx);
+  const policy = rows[0];
+  return policy && activeSupport(trx, principalId, policy.now, policy.cap);
 }
 
 /**

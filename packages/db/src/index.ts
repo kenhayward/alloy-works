@@ -933,6 +933,7 @@ export {
   recordSupportRead,
   recordSupportUse,
   revokeSupport,
+  supportNow,
   type StoredSupport,
   type SupportAnswer,
   type SupportRefusal,

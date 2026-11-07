@@ -60,9 +60,10 @@ const writes = (...kinds: AuditKind[]): Entry => ({ writes: kinds });
 
 /**
  * Written wherever they happen, so on no route's entry: a refusal of anybody identified, by the
- * error handlers (AU1-E), and a token's use, once a minute, wherever one is presented (AU1-G).
+ * error handlers (AU1-E), a token's use, once a minute, wherever one is presented (AU1-G), and
+ * support's use, once a day and at each content read, by the route hook (support.md).
  */
-const ON_ANY_ROUTE: readonly AuditKind[] = ['access.refused', 'token.used'];
+const ON_ANY_ROUTE: readonly AuditKind[] = ['access.refused', 'token.used', 'support.used'];
 
 const ROUTES: Readonly<Record<string, Entry>> = {
   getHealth: read,
@@ -372,6 +373,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listInvitations: read,
   invite: writes('invitation.sent'),
   withdrawInvitation: writes('invitation.withdrawn', 'access.revoked', 'group.member_removed'),
+  listSupportAccess: read,
+  grantSupportAccess: writes('support.granted', 'invitation.sent'),
+  revokeSupportAccess: writes('support.revoked'),
   listGroups: read,
   createGroup: writes('group.made'),
   setGroupMembers: writes('group.member_added', 'group.member_removed'),

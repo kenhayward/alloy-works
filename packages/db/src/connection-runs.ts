@@ -21,6 +21,8 @@ export interface ConnectionRuns {
 export async function connectionRunsSince(
   trx: TenantTransaction,
   since: Date,
+  /** Only connections in these spaces, for a support grant naming them (support.md). */
+  spaces?: readonly string[],
 ): Promise<ConnectionRuns[]> {
   const { rows } = await sql<{
     connection: string;
@@ -45,6 +47,8 @@ export async function connectionRunsSince(
              order by v.revision_no desc, v.version_no desc limit 1) as name
       from query_run
      where connection_id is not null and at >= ${since} and outcome <> 'throttled'
+       and (${spaces === undefined} or connection_id in
+         (select a.id from artifact a where a.space_id = any(${[...(spaces ?? [])]}::uuid[])))
      group by connection_id
      order by connection_id`.execute(trx);
   return rows.map((row) => ({

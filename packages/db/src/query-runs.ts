@@ -107,6 +107,8 @@ export interface UsageTotal {
 export async function queryUsage(
   trx: TenantTransaction,
   period: { readonly from: Date; readonly to: Date },
+  /** Only what lives in these spaces, for a support grant naming them (support.md). */
+  spaces?: readonly string[],
 ): Promise<{ readonly byQueryDefinition: UsageTotal[]; readonly byDocument: UsageTotal[] }> {
   const totals = async (column: 'query_definition_id' | 'document_id') => {
     const rows = await trx
@@ -126,6 +128,10 @@ export async function queryUsage(
       .where('r.at', '>=', period.from)
       .where('r.at', '<', period.to)
       .where(`r.${column}`, 'is not', null)
+      .$if(spaces !== undefined, (query) =>
+        query.where(sql<boolean>`${sql.ref(`r.${column}`)} in
+          (select a.id from artifact a where a.space_id = any(${[...(spaces ?? [])]}::uuid[]))`),
+      )
       .groupBy(`r.${column}`)
       .orderBy(sql`sum(r.duration_ms)`, 'desc')
       .execute();
@@ -152,13 +158,28 @@ export const QUERY_RUNS_MOST = 100_000;
 /** Every run in a period, oldest first, for the CSV (R18-E); at most `limit`. */
 export async function queryRunsBetween(
   trx: TenantTransaction,
-  period: { readonly from: Date; readonly to: Date; readonly limit?: number },
+  period: {
+    readonly from: Date;
+    readonly to: Date;
+    readonly limit?: number;
+    /** Only runs naming nothing outside these spaces, for a support grant naming them. */
+    readonly spaces?: readonly string[];
+  },
 ): Promise<StoredQueryRun[]> {
+  const within = (column: 'connection_id' | 'query_definition_id' | 'document_id') =>
+    sql<boolean>`(${sql.ref(column)} is null or ${sql.ref(column)} in
+      (select a.id from artifact a where a.space_id = any(${[...(period.spaces ?? [])]}::uuid[])))`;
   const rows = await trx
     .selectFrom('query_run')
     .selectAll()
     .where('at', '>=', period.from)
     .where('at', '<', period.to)
+    .$if(period.spaces !== undefined, (query) =>
+      query
+        .where(within('connection_id'))
+        .where(within('query_definition_id'))
+        .where(within('document_id')),
+    )
     .orderBy('at')
     .orderBy('id')
     .limit(period.limit ?? QUERY_RUNS_MOST)

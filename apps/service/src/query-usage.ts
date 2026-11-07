@@ -4,6 +4,7 @@ import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import type { BinaryBody } from './assets.js';
 import { AppError } from './errors.js';
+import { supportSpaces } from './support.js';
 
 const DAY = 86_400_000;
 /** The longest period asked for: the 13 months runs are kept (the R18 plan, R18-D). */
@@ -38,10 +39,11 @@ export function queryUsageHandlers() {
   return {
     getQueryUsage: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, facts }: Authorised,
     ): Promise<QueryUsageView> => {
       const period = periodOf(request.query as QueryUsageQuery);
-      const usage = await queryUsage(trx, period);
+      // Support sees the documents and definitions of its spaces alone (support.md).
+      const usage = await queryUsage(trx, period, supportSpaces(facts));
       return {
         from: period.from.toISOString(),
         to: period.to.toISOString(),
@@ -50,10 +52,18 @@ export function queryUsageHandlers() {
       };
     },
 
-    getQueryRunsCsv: async (request: FastifyRequest, { trx }: Authorised): Promise<BinaryBody> => {
+    getQueryRunsCsv: async (
+      request: FastifyRequest,
+      { trx, facts }: Authorised,
+    ): Promise<BinaryBody> => {
       const period = periodOf(request.query as QueryUsageQuery);
+      const spaces = supportSpaces(facts);
       // One past the most, so a period holding more is refused rather than cut short.
-      const runs = await queryRunsBetween(trx, { ...period, limit: QUERY_RUNS_MOST + 1 });
+      const runs = await queryRunsBetween(trx, {
+        ...period,
+        limit: QUERY_RUNS_MOST + 1,
+        ...(spaces === undefined ? {} : { spaces }),
+      });
       if (runs.length > QUERY_RUNS_MOST) {
         throw new AppError(
           400,

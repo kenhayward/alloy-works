@@ -37,6 +37,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
+import { supportSpaces } from './support.js';
 import { AppError } from './errors.js';
 
 const DAY = 86_400_000;
@@ -149,7 +150,10 @@ export function diagnosticsHandlers(objectives: Objectives) {
         })),
       };
     },
-    getDiagnostics: async (_request: unknown, { trx }: Authorised): Promise<DiagnosticsView> => {
+    getDiagnostics: async (
+      _request: unknown,
+      { trx, facts }: Authorised,
+    ): Promise<DiagnosticsView> => {
       const now = new Date();
       const minutes = await capabilityUsage(
         trx,
@@ -187,18 +191,19 @@ export function diagnosticsHandlers(objectives: Objectives) {
       const freshness = await embeddingFreshness(trx);
       const channel = await mailChannel(trx);
       const mail = await mailCounts(trx);
-      const connections = (await connectionRunsSince(trx, new Date(now.getTime() - DAY))).map(
-        (each) => ({
-          connection: each.connection,
-          name: each.name,
-          runs: each.runs,
-          failed: each.failed,
-          timedOut: each.timedOut,
-          lastRunAt: each.lastRunAt.toISOString(),
-          down: each.lastFailed,
-          lastFailure: each.lastFailure,
-        }),
-      );
+      // Support sees the connections of its spaces alone (support.md).
+      const connections = (
+        await connectionRunsSince(trx, new Date(now.getTime() - DAY), supportSpaces(facts))
+      ).map((each) => ({
+        connection: each.connection,
+        name: each.name,
+        runs: each.runs,
+        failed: each.failed,
+        timedOut: each.timedOut,
+        lastRunAt: each.lastRunAt.toISOString(),
+        down: each.lastFailed,
+        lastFailure: each.lastFailure,
+      }));
       const budget = await readBudget(trx);
       const spent = budget === null ? null : await spendThisMonth(trx, budget.currency);
       const policy = await dataPolicy(trx);

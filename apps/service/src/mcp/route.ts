@@ -1,4 +1,10 @@
-import { findApiToken, recordEvent, type Tenant, type TenantDatabase } from '@alloy-works/db';
+import {
+  findApiToken,
+  recordEvent,
+  supportNow,
+  type Tenant,
+  type TenantDatabase,
+} from '@alloy-works/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { contextOf } from '../audit.js';
 import { REQUEST_ID_HEADER } from '../http.js';
@@ -208,9 +214,10 @@ export function registerMcp(
       const holder =
         secret === undefined
           ? undefined
-          : await db.withTenant(tenant, (trx) =>
-              findApiToken(trx, hashToken(secret), new Date(), request.id),
-            );
+          : await db.withTenant(tenant, async (trx) => {
+              const found = await findApiToken(trx, hashToken(secret), new Date(), request.id);
+              return found && { ...found, support: await supportNow(trx, found.principalId) };
+            });
       if (!holder) {
         return send(
           reply.header('WWW-Authenticate', 'Bearer'),
@@ -225,6 +232,14 @@ export function registerMcp(
         displayName: holder.displayName,
       };
       request.credential = { kind: 'token', id: holder.tokenId, scopes: holder.scopes };
+      // Support access reads through the API alone, each content read saying why (support.md).
+      if (holder.support !== undefined) {
+        return send(
+          reply,
+          403,
+          failure(null, INVALID_REQUEST, 'Support access cannot connect an assistant here.'),
+        );
+      }
 
       const message = parseMessage(request.body);
       if (message.kind === 'invalid') {

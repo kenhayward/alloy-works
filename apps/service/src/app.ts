@@ -60,6 +60,7 @@ import {
   setInterfaceLanguage,
   mayEnterWhileClosing,
   ownTenantState,
+  supportNow,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
@@ -68,9 +69,11 @@ import {
   MEASURED_OPERATIONS,
   OBJECTIVE_DEFAULTS,
   permissions,
+  supportActive,
   type Decision,
   type Objectives,
   type Permission,
+  type SupportGrant,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -90,6 +93,7 @@ import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
 import { presentationHandlers } from './presentation.js';
 import { searchHandlers } from './search.js';
+import { holdToSupport, supportHandlers } from './support.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
@@ -213,6 +217,11 @@ declare module 'fastify' {
      * mask every decision taken for the request (service-foundations.md, TK-A).
      */
     credential: Credential | null;
+    /**
+     * The principal's active support grant, found with them (support.md): it holds every route to its
+     * scope before the route runs. Null for everybody else.
+     */
+    support: SupportGrant | null;
   }
 }
 
@@ -534,6 +543,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);
+  app.decorateRequest('support', null);
 
   function secret(name: string): string {
     const value = secrets.get(name);
@@ -965,6 +975,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),
+    ...supportHandlers(),
     ...groupHandlers(),
     ...spaceHandlers(),
     ...settingsHandlers(db, tenantOf),
@@ -1564,6 +1575,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         principalId,
         stillOpen: async () => (await db.resolveHostname(request.hostname))?.state === 'active',
         ...(options.stateCheckMs === undefined ? {} : { stateCheckMs: options.stateCheckMs }),
+        ...(request.support === null ? {} : { support: request.support }),
         ...(scope === undefined || components === undefined
           ? {}
           : {
@@ -1610,12 +1622,25 @@ export function buildApp(options: AppOptions): FastifyInstance {
           decision.grants.flatMap((reached) => (reached.through === null ? [] : [reached.through])),
         ),
       );
+      // Support decides in place of the grants while active, and is named as what decided (ADM-042).
+      const support =
+        facts.support !== undefined &&
+        supportActive(facts.support, facts.now, facts.externalCapDays)
+          ? facts.support
+          : null;
       return {
         principal,
         target: formatLevel(target),
         // A disabled person holds nothing, whatever the grants say, and the answer names why
         // (identity.md, "Disabled people"); what the grants say stays, for enabling them.
         disabled,
+        support: support && {
+          id: support.id,
+          scope: support.scope,
+          spaces: [...support.spaces],
+          purpose: support.purpose,
+          expiresAt: support.expiresAt.toISOString(),
+        },
         permissions: decisions.map((decision) => ({
           ...explained(decision, names),
           ...(disabled ? { allowed: false, reason: 'disabled' as const } : {}),
@@ -1762,10 +1787,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
           const holder =
             secret === undefined
               ? undefined
-              : await db.withTenant(tenantOf(request), (trx) =>
-                  findApiToken(trx, hashToken(secret), new Date(), request.id),
-                );
+              : await db.withTenant(tenantOf(request), async (trx) => {
+                  const found = await findApiToken(trx, hashToken(secret), new Date(), request.id);
+                  return found && { ...found, support: await supportNow(trx, found.principalId) };
+                });
           if (!holder) throw unauthenticated();
+          request.support = holder.support ?? null;
           request.principal = {
             principalId: holder.principalId,
             email: holder.email,
@@ -1779,9 +1806,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
         }
         const token = request.cookies[SESSION_COOKIE];
         const held = token
-          ? await db.withTenant(tenantOf(request), (trx) => sessionHeld(trx, token))
+          ? await db.withTenant(tenantOf(request), async (trx) => {
+              const found = await sessionHeld(trx, token);
+              return (
+                found && { ...found, support: await supportNow(trx, found.principal.principalId) }
+              );
+            })
           : undefined;
         if (!held) throw unauthenticated();
+        request.support = held.support ?? null;
         // Asked again at its provider once an interval, outside any transaction (IAM-010; PC-C).
         if (providerCheckDue(held)) {
           const tenant = tenantOf(request);
@@ -1810,6 +1843,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
           providerId: held.providerId,
           authenticatedAt: held.authenticatedAt,
         };
+      });
+      // A support principal is held to their grant's scope before the route runs (support.md).
+      onRequest.push(async (request) => {
+        if (request.support !== null) {
+          await holdToSupport(db, tenantOf(request), request, route, request.support);
+        }
       });
     }
     http.route({
