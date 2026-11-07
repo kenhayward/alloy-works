@@ -66,6 +66,8 @@ export function TemplateList({ client }: { readonly client: Client }) {
     id: string;
     title: string;
     space: string;
+    spaceName: string;
+    state?: { readonly key: string; readonly name: string } | null;
   } | null>(null);
   const fetchPage = useCallback(
     (cursor: string | null) =>
@@ -211,7 +213,12 @@ export function TemplateList({ client }: { readonly client: Client }) {
                           if (changed) void listing.load(null);
                         }}
                         onDuplicate={() =>
-                          setDuplicating({ id: item.id, title: item.name, space: item.space.id })
+                          setDuplicating({
+                            id: item.id,
+                            title: item.name,
+                            space: item.space.id,
+                            spaceName: item.space.name,
+                          })
                         }
                         onGenerate={() => setGenerating(item)}
                       />
@@ -230,6 +237,8 @@ export function TemplateList({ client }: { readonly client: Client }) {
             id={duplicating.id}
             title={duplicating.title}
             space={duplicating.space}
+            spaceName={duplicating.spaceName}
+            state={duplicating.state}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

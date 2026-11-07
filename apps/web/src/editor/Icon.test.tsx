@@ -70,3 +70,20 @@ describe('the document panels’ rail icons (the DP plan, Task 1)', () => {
     expect(drawn).toEqual(names);
   });
 });
+
+describe("Duplicate's icons (the duplicate handoff)", () => {
+  it('draws the act, its starting points and what it says', () => {
+    const names = ['Duplicate', 'Branch', 'Link', 'Information', 'Warning', 'Fixed', 'Folder'];
+    const { container } = render(
+      <>
+        {names.map((name) => (
+          <Icon key={name} name={name} />
+        ))}
+      </>,
+    );
+    const drawn = [...container.querySelectorAll('svg[data-icon]')]
+      .filter((icon) => icon.querySelector('path') !== null)
+      .map((icon) => icon.getAttribute('data-icon'));
+    expect(drawn).toEqual(names);
+  });
+});
