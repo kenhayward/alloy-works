@@ -886,6 +886,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           page.getByRole('region', { name: 'Needs attention' }),
           page.getByRole('region', { name: 'Health by capability' }),
           page.getByRole('region', { name: 'Budgets', exact: true }),
+          page.getByRole('table', { name: 'Objectives' }),
           page.getByRole('table', { name: 'Performance budgets' }),
         ],
       };

@@ -223,7 +223,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   words), its requests, server error rate and 95th percentile; the search index's model and lag;
   webhook and mail delivery; each sweep and loop's last run, its last failure and when it is next due;
   the last day's jobs by kind and state; each data source's runs, down when its latest failed; and the
-  month's model spend against its budget; and every performance budget the specification states,
+  month's model spend against its budget; availability this month, the recovery point and the recovery
+  time against the operator's objectives (99.5%, 24 hours and 4 hours unless set), a restore not rehearsed
+  in 35 days said so; and every performance budget the specification states,
   what it is held to, what production measured over 7 days and whether it is met, or why production
   cannot measure it yet. Codes and counts only, never content. Measured by the minute,
   kept by the hour after a week and by the day after 90 days, for 13 months.

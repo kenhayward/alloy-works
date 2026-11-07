@@ -2,6 +2,8 @@
 # Proves the latest backup restores, touching nothing that runs: each dump is loaded into a container of its
 # own, on the store's own image, with no network, and checked for its databases and tables; the store's
 # files are restored and verified against the repository. Everything it makes is removed. Removes no volume.
+# Monthly, from alloy-drill.timer; records each class's restore and how long it took, a failure too, for
+# Diagnostics' recovery time (ADR-0101).
 set -euo pipefail
 
 ROOT=${ALLOY_ROOT:-/opt/alloy-works}
@@ -23,16 +25,30 @@ compose() {
   docker compose --env-file "$SETTINGS" -f deploy/compose.yaml -f deploy/compose.internet.yaml "$@"
 }
 
+# Each class's run, recorded where Diagnostics reads it (ADR-0101), a failure too. The platform's database
+# is named in compose.internet.yaml; a record that cannot be written is said, and fails nothing.
+DATABASE=alloy
+record() {
+  compose exec -T -u postgres postgres psql -q -v ON_ERROR_STOP=1 -U postgres -d "$DATABASE" -c \
+    "insert into platform.backup_run (class, act, started_at, finished_at, outcome)
+     values ('$1', '$2', '$3', now(), '$4')" >/dev/null || echo "The $2 of $1 could not be recorded." >&2
+}
+
 TMP=$(mktemp -d /var/tmp/alloy-drill.XXXXXX)
 containers=()
+current=
+started=
 cleanup() {
+  local status=$?
   for container in "${containers[@]}"; do docker rm -f "$container" >/dev/null 2>&1 || true; done
   rm -rf "$TMP"
+  if [ "$status" -ne 0 ] && [ -n "$current" ]; then record "$current" drill "$started" failed; fi
 }
 trap cleanup EXIT
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
+current=databases started=$(now)
 restic restore latest --quiet --tag databases --target "$TMP/databases" --verify
-restic restore latest --quiet --tag objects --target "$TMP/objects" --verify
 
 for pair in postgres:postgres delivered-postgres:postgres keycloak-postgres:keycloak; do
   store=${pair%:*} user=${pair#*:}
@@ -64,7 +80,13 @@ for pair in postgres:postgres delivered-postgres:postgres keycloak-postgres:keyc
   done
 done
 
+record databases drill "$started" succeeded
+
+current=objects started=$(now)
+restic restore latest --quiet --tag objects --target "$TMP/objects" --verify
 files=$(find "$TMP/objects" -type f | wc -l)
 [ "$files" -gt 0 ] || fail 'The store restored no files.'
 echo "seaweedfs: $files files, $(du -sh "$TMP/objects" | cut -f1), verified"
+record objects drill "$started" succeeded
+current=
 echo "== $(date -Is) the latest backup restores"
