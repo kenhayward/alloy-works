@@ -25,14 +25,18 @@ end
 $$;
 
 -- When each secret held in a row was last replaced, set by the database as the sealed value changes,
--- so no write path can forget it. Rows from before this take the nearest time already kept.
+-- so no write path can forget it, unless the write names the time itself: a restore keeps the time
+-- of the secret it puts back, which no runtime write may name (no grant). Rows from before this take
+-- the nearest time already kept.
 alter table identity_provider add column secret_set_at timestamptz;
 update identity_provider set secret_set_at = now() where sealed_secret is not null;
 create function identity_provider_secret_set() returns trigger
 language plpgsql as $$
 begin
-  if new.sealed_secret is not null
-    and (tg_op = 'INSERT' or new.sealed_secret is distinct from old.sealed_secret) then
+  if new.sealed_secret is not null and (
+    (tg_op = 'INSERT' and new.secret_set_at is null)
+    or (tg_op = 'UPDATE' and new.sealed_secret is distinct from old.sealed_secret
+        and new.secret_set_at is not distinct from old.secret_set_at)) then
     new.secret_set_at := now();
   end if;
   return new;
@@ -46,8 +50,10 @@ update mail_channel set password_set_at = updated_at where sealed_password is no
 create function mail_channel_password_set() returns trigger
 language plpgsql as $$
 begin
-  if new.sealed_password is not null
-    and (tg_op = 'INSERT' or new.sealed_password is distinct from old.sealed_password) then
+  if new.sealed_password is not null and (
+    (tg_op = 'INSERT' and new.password_set_at is null)
+    or (tg_op = 'UPDATE' and new.sealed_password is distinct from old.sealed_password
+        and new.password_set_at is not distinct from old.password_set_at)) then
     new.password_set_at := now();
   end if;
   return new;
@@ -63,8 +69,10 @@ update webhook_subscription
 create function webhook_subscription_secret_set() returns trigger
 language plpgsql as $$
 begin
-  if new.sealed is not null
-    and (tg_op = 'INSERT' or new.sealed is distinct from old.sealed) then
+  if new.sealed is not null and (
+    (tg_op = 'INSERT' and new.secret_set_at is null)
+    or (tg_op = 'UPDATE' and new.sealed is distinct from old.sealed
+        and new.secret_set_at is not distinct from old.secret_set_at)) then
     new.secret_set_at := now();
   end if;
   return new;
