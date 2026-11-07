@@ -7783,6 +7783,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every support grant, active and ended
+         * @description Lists every support grant, active and ended, the newest first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it, and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.
+         */
+        get: operations["listSupportAccess"];
+        put?: never;
+        /**
+         * Lets somebody from outside look, at what and until when
+         * @description Lets a named person from outside look, by address: somebody from outside who signed in with it, verified, or else the address invited as such, the invitation lasting as long as the grant. The scope is diagnostics, metadata or content, the spaces it reads are named, and the purpose and an expiry within the cap for outside access are required. While it is active its person reads nothing else and changes nothing: every write but signing out, their own sessions, presence and their inbox is refused support_scope, and so is any route the scope does not reach; each content read must carry a Support-Read header saying why, or is refused support_read_required. Granting, its use once a day and every content read are recorded in this environment’s log. Needs grant_support at the environment, which a token never holds.
+         */
+        post: operations["grantSupportAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support-access/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Ends a support grant at once
+         * @description Ends a support grant at once: its person’s next request is decided without it, and their open event streams end. Recorded in the log. Needs grant_support at the environment.
+         */
+        delete: operations["revokeSupportAccess"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/suspension": {
         parameters: {
             query?: never;
@@ -18020,7 +18064,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics" | "grant_support";
                             allowed: boolean;
                         }[];
                     };
@@ -18136,6 +18180,13 @@ export interface operations {
                      *       "principal": "example",
                      *       "target": "example",
                      *       "disabled": false,
+                     *       "support": {
+                     *         "id": "example",
+                     *         "scope": "diagnostics",
+                     *         "spaces": [],
+                     *         "purpose": "example",
+                     *         "expiresAt": "example"
+                     *       },
                      *       "permissions": []
                      *     }
                      */
@@ -18144,15 +18195,24 @@ export interface operations {
                         target: string;
                         /** @description Disabled: every permission is refused, whatever the grants say */
                         disabled: boolean;
+                        /** @description Their active support grant, which decides every permission in place of the grants, or null for none */
+                        support: {
+                            id: string;
+                            /** @enum {string} */
+                            scope: "diagnostics" | "metadata" | "content";
+                            spaces: string[];
+                            purpose: string;
+                            expiresAt: string;
+                        } | null;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics" | "grant_support";
                             allowed: boolean;
                             /**
-                             * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
+                             * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it. support: decided by their active support grant, which `support` names, allowed at its level or refused as beyond its scope
                              * @enum {string}
                              */
-                            reason: "allowed" | "denied" | "not_granted" | "capped" | "scoped" | "disabled";
+                            reason: "allowed" | "denied" | "not_granted" | "capped" | "scoped" | "disabled" | "support";
                             /** @description The level that decided, or null when none said anything */
                             level: string | null;
                             /** @description Every level looked at, nearest first */
@@ -117328,7 +117388,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics" | "grant_support")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -117463,7 +117523,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics" | "grant_support")[];
                 };
             };
         };
@@ -117491,7 +117551,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics" | "grant_support")[];
                         };
                     };
                 };
@@ -138742,6 +138802,567 @@ export interface operations {
             };
             /** @description No such component or document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every support grant */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "active": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every grant, active and ended, the newest first */
+                        items: {
+                            id: string;
+                            person: {
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                            /**
+                             * @description diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why
+                             * @enum {string}
+                             */
+                            scope: "diagnostics" | "metadata" | "content";
+                            spaces: string[];
+                            purpose: string;
+                            expiresAt: string;
+                            grantedBy: {
+                                id: string;
+                                name: string | null;
+                            };
+                            grantedAt: string;
+                            revokedAt: string | null;
+                            revokedBy: {
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
+                            active: boolean;
+                        }[];
+                        /** @description How many are active now */
+                        active: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    grantSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "developer@example.com",
+                 *       "scope": "diagnostics",
+                 *       "spaces": [],
+                 *       "purpose": "example",
+                 *       "expiresAt": "2026-01-01T00:00:00.000Z"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * Format: email
+                     * @description The address of the person from outside who gives support; invited as such where nobody has signed in with it
+                     */
+                    email: string;
+                    /**
+                     * @description diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why
+                     * @enum {string}
+                     */
+                    scope: "diagnostics" | "metadata" | "content";
+                    /** @description The spaces a metadata or content grant reads, at least one; for diagnostics, the spaces whose documents and queries its reads may name */
+                    spaces: (string & (unknown & unknown))[];
+                    /** @description Why support needs it, as the log keeps it */
+                    purpose: string;
+                    /**
+                     * Format: date-time
+                     * @description When it ends: required, and within the environment's cap for access from outside
+                     */
+                    expiresAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Granted */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "support": {
+                     *         "id": "example",
+                     *         "person": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "email": "example"
+                     *         },
+                     *         "scope": "diagnostics",
+                     *         "spaces": [],
+                     *         "purpose": "example",
+                     *         "expiresAt": "example",
+                     *         "grantedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "grantedAt": "example",
+                     *         "revokedAt": "example",
+                     *         "revokedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "active": false
+                     *       },
+                     *       "invitation": {
+                     *         "id": "example",
+                     *         "email": "example",
+                     *         "person": "example",
+                     *         "external": false,
+                     *         "invitedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "createdAt": "example",
+                     *         "expiresAt": "example",
+                     *         "lapsed": false,
+                     *         "acceptedAt": "example",
+                     *         "acceptedThrough": "organisation"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        support: {
+                            id: string;
+                            person: {
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                            /**
+                             * @description diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why
+                             * @enum {string}
+                             */
+                            scope: "diagnostics" | "metadata" | "content";
+                            spaces: string[];
+                            purpose: string;
+                            expiresAt: string;
+                            grantedBy: {
+                                id: string;
+                                name: string | null;
+                            };
+                            grantedAt: string;
+                            revokedAt: string | null;
+                            revokedBy: {
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
+                            active: boolean;
+                        };
+                        /** @description The invitation made or renewed for the address, or null where its person has signed in */
+                        invitation: {
+                            id: string;
+                            /** @description The address invited, in lower case */
+                            email: string;
+                            /** @description The principal the invitation made: a grant names it, and its first sign-in becomes it */
+                            person: string;
+                            /** @description Invited as somebody from outside the organisation */
+                            external: boolean;
+                            /** @description Null for an invitation made by whoever provisioned the environment */
+                            invitedBy: {
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            createdAt: string;
+                            /** @description When it can no longer be accepted, or null for never */
+                            expiresAt: string | null;
+                            /** @description Waiting, and past its expiry: nobody can accept it until renewed */
+                            lapsed: boolean;
+                            acceptedAt: string | null;
+                            acceptedThrough: ("organisation" | "google") | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description An address, scope or expiry that is not one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not hold grant_support at the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description support_member: the address is somebody in the organisation; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    revokeSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "person": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "email": "example"
+                     *       },
+                     *       "scope": "diagnostics",
+                     *       "spaces": [],
+                     *       "purpose": "example",
+                     *       "expiresAt": "example",
+                     *       "grantedBy": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "grantedAt": "example",
+                     *       "revokedAt": "example",
+                     *       "revokedBy": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "active": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        person: {
+                            id: string;
+                            name: string | null;
+                            email: string;
+                        };
+                        /**
+                         * @description diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why
+                         * @enum {string}
+                         */
+                        scope: "diagnostics" | "metadata" | "content";
+                        spaces: string[];
+                        purpose: string;
+                        expiresAt: string;
+                        grantedBy: {
+                            id: string;
+                            name: string | null;
+                        };
+                        grantedAt: string;
+                        revokedAt: string | null;
+                        revokedBy: {
+                            id: string;
+                            name: string | null;
+                        } | null;
+                        /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
+                        active: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not hold grant_support at the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such support grant in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description support_revoked: it was revoked already */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

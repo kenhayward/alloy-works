@@ -550,6 +550,16 @@ export {
   InvitationWithdrawn,
 } from './invitations.js';
 export {
+  SUPPORT_READ_HEADER,
+  SupportAccessBody,
+  SupportAccessGranted,
+  SupportAccessList,
+  SupportAccessParams,
+  SupportAccessView,
+  SupportScope,
+  supportRoutes,
+} from './support.js';
+export {
   GoogleSettingsBody,
   PersonDisablement,
   PrincipalParams,

@@ -237,6 +237,11 @@ export const documentationGroups = [
       { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
       {
+        name: 'Support access',
+        description:
+          'Let somebody from outside look at Diagnostics, or at metadata or content in named spaces, for a purpose and until a stated time, and see and end it.',
+      },
+      {
         name: 'Sign-in settings',
         description:
           'Identity providers, the Google route, session lifetimes and disabling a person.',
@@ -720,6 +725,7 @@ const operationTags = {
   'People and principals': ['listPeople', 'listPrincipals', 'getErasure', 'erasePrincipal'],
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
+  'Support access': ['listSupportAccess', 'grantSupportAccess', 'revokeSupportAccess'],
   'Sign-in settings': [
     'getSignInSettings',
     'addProvider',
@@ -1705,6 +1711,12 @@ const descriptions: Readonly<Record<string, string>> = {
   setGroupMembers:
     'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.',
   listInvitations: 'Lists waiting and accepted invitations in stable cursor pages.',
+  listSupportAccess:
+    'Lists every support grant, active and ended, the newest first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it, and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.',
+  grantSupportAccess:
+    'Lets a named person from outside look, by address: somebody from outside who signed in with it, verified, or else the address invited as such, the invitation lasting as long as the grant. The scope is diagnostics, metadata or content, the spaces it reads are named, and the purpose and an expiry within the cap for outside access are required. While it is active its person reads nothing else and changes nothing: every write but signing out, their own sessions, presence and their inbox is refused support_scope, and so is any route the scope does not reach; each content read must carry a Support-Read header saying why, or is refused support_read_required. Granting, its use once a day and every content read are recorded in this environment’s log. Needs grant_support at the environment, which a token never holds.',
+  revokeSupportAccess:
+    'Ends a support grant at once: its person’s next request is decided without it, and their open event streams end. Recorded in the log. Needs grant_support at the environment.',
   invite:
     'Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.',
   getSignInSettings:
