@@ -13,6 +13,8 @@ import {
   createServiceIdentity,
   findRole,
   grant,
+  notifyTenant,
+  overlapTokens,
   readCtStudio,
   removeBridgeSettings,
   removeGrant,
@@ -332,6 +334,12 @@ export function ctStudioHandlers(options: {
           }
         } else if (disabled) {
           throw identityDisabled();
+        } else if (record.tokenId !== null) {
+          // The recorded token works 24 hours more, so CT Studio moves without a gap; one replaced
+          // before it ends now (ADM-007; the SA plan, SA-I).
+          for (const token of await overlapTokens(trx, identityId, record.tokenId)) {
+            await notifyTenant(trx, { kind: 'credential_ended', token });
+          }
         }
         const issued = await issueToken(trx, identityId);
         await writeCtStudio(trx, { identityId, tokenId: issued.id });

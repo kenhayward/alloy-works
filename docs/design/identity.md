@@ -103,7 +103,8 @@ One page, `configure_services` at the environment (`administer` until IDd splits
 - **Google**: the route on or off, and its Workspace domains.
 - **Sessions**: idle timeout and absolute lifetime.
 - **SCIM**: per provider, turned on (making its service identity) or off, its token made (shown once),
-  last used, revoked.
+  last used, revoked. A new token leaves the one before it accepted for 24 hours and ends any older
+  ([secrets.md](secrets.md); ADM-007).
 
 Every change is audited (`sign_in.configured`, naming what changed and never a secret) and needs a
 recent sign-in (IN-D). The page asks for one when it opens, before any form, so nothing typed is lost to

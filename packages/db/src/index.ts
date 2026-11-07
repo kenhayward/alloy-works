@@ -632,7 +632,9 @@ export {
   findApiToken,
   issueApiToken,
   listApiTokens,
+  overlapTokens,
   revokeApiToken,
+  sweepEndedTokens,
   TOKEN_TOUCH_AFTER_MS,
   type ApiTokenHolder,
   type StoredApiToken,
@@ -1650,6 +1652,7 @@ export {
   type UnlistedProperty,
 } from './bridge-store.js';
 export { readCtStudio, writeCtStudio, type CtStudioRecord } from './ct-studio.js';
+export { secretsFailing, tenantSecrets, type SecretConsumer, type SecretHeld } from './secrets.js';
 export {
   deliveryNote,
   writeDocumentDelivery,

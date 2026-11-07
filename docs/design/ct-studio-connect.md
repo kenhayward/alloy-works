@@ -59,7 +59,8 @@ setup still works, but CT Studio is refused until the key is set and the service
      new space.
    - **Token near expiry** (within 30 days) **or expired:** the summary says so and offers **Issue a
      new token**, which issues one and shows a shortened hand-off page (the token and step 3 of the
-     instructions). The old token is left to expire, so CT Studio keeps working until it is swapped;
+     instructions). The old token is accepted for 24 hours more ([secrets.md](secrets.md)), so CT Studio
+     keeps working until it is swapped;
      the page offers to revoke it once the new one is in. The environment records CT Studio's
      current token as well as its identity, so the summary shows that token's expiry and knows which
      one is old. _(My call.)_

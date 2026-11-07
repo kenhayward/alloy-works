@@ -62,6 +62,8 @@ const SPLIT: Readonly<Record<string, readonly string[]>> = {
     'setMailPassword',
     'replaceProviderSecret',
     'issueScimToken',
+    'setExtensionSecret',
+    'listSecrets',
   ],
   configure_services: [
     'getMailChannel',
@@ -247,6 +249,22 @@ describe('the high-risk permissions', () => {
     }
     // Reading Diagnostics administers nothing.
     expect((await get('/v1/audit', reader.cookie)).statusCode).toBe(403);
+  });
+
+  it('IAM-070 sets an extension secret through rotate_secrets, which administer alone does not give', async () => {
+    const rotator = await holding('ivy', 'Secrets', ['read', 'rotate_secrets']);
+    const admin = await holding('joan', 'Administrator, no secrets', ['read', 'administer']);
+    const put = (cookie: string) =>
+      app.inject({
+        method: 'PUT',
+        url: '/v1/extensions/00000000-0000-4000-8000-000000000000/secret',
+        headers: { host: HOST, cookie },
+        payload: { secret: 'herbarium-token' },
+      });
+    expect((await put(admin.cookie)).statusCode).toBe(403);
+    // Allowed, and so it reaches the extension, which is not there.
+    expect((await put(rotator.cookie)).statusCode).toBe(404);
+    expect((await put(ada.cookie)).statusCode).toBe(404);
   });
 
   it('leaves what grants access or makes a token that edits with administer', () => {

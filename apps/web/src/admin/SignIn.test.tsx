@@ -152,7 +152,11 @@ describe("Administration's Sign-in", () => {
     const after = (await screen.findByText('Contractors')).closest('tr')!;
     await userEvent.click(within(after).getByRole('button', { name: /More/ }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'New SCIM token' }));
-    expect(screen.getByText('The token it has now stops working at once.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'The token it has now keeps working for 24 hours, so the provider can move to the new one, and then stops. One older than that stops at once.',
+      ),
+    ).toBeInTheDocument();
     expect(sent.length).toBe(sentBefore);
   });
 

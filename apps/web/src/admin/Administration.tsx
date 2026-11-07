@@ -39,6 +39,7 @@ import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { SignIn } from './SignIn.js';
 import { Spaces } from './Spaces.js';
+import { Secrets } from './Secrets.js';
 import { ActiveSupport, SupportAccess } from './SupportAccess.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
@@ -198,6 +199,14 @@ const SECTIONS = [
     slug: 'extensions',
     get title() {
       return words('admin.extensions');
+    },
+    group: 'environment',
+  },
+  // Every secret the environment holds and what uses each, before one is replaced (ADM-047).
+  {
+    slug: 'secrets',
+    get title() {
+      return words('admin.secrets');
     },
     group: 'environment',
   },
@@ -722,6 +731,7 @@ export function Administration({
         {opened === 'email' && <Mail client={client} mayChange={configures} />}
         {opened === 'ctstudio' && <CtStudio client={client} />}
         {opened === 'extensions' && <Extensions client={client} />}
+        {opened === 'secrets' && <Secrets client={client} />}
         {opened === 'connections' && <Connections client={client} embedded />}
         {opened === 'query-definitions' && <QueryDefinitions client={client} embedded />}
         {opened === 'about' && <About about={about} />}

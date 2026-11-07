@@ -2346,7 +2346,7 @@ export interface paths {
         put?: never;
         /**
          * Issue CT Studio a new token, or a new identity in place of a disabled one
-         * @description Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.
+         * @description Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token is still accepted for 24 hours, so CT Studio moves without a gap, and one replaced before it ends now. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.
          */
         post: operations["issueCtStudioToken"];
         delete?: never;
@@ -4077,7 +4077,7 @@ export interface paths {
         get?: never;
         /**
          * Set the secret a reference extension is sent
-         * @description Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         * @description Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs rotate_secrets at the environment, with a signed-in session.
          */
         put: operations["setExtensionSecret"];
         post?: never;
@@ -6531,6 +6531,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every secret this environment holds, and everything that uses each
+         * @description Lists every secret this environment holds: its kind, what it belongs to, when it was last replaced, until when the value it replaced is still accepted, how it is replaced and with what permission, and everything here that uses it, resolved now: a model key every purpose routed to its endpoint, the guardrails and the translation policy; a connection the query definitions naming it and their datasets; a webhook its subscription; the mail relay its deliveries; a SCIM token its provisioning; a shared provider its member environments. Never a value or a hash. Needs rotate_secrets at the environment.
+         */
+        get: operations["listSecrets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/service-identities": {
         parameters: {
             query?: never;
@@ -6954,7 +6974,7 @@ export interface paths {
         put?: never;
         /**
          * Make a provider's SCIM token, shown this once, ending any before it
-         * @description Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.
+         * @description Makes the bearer token a provider's SCIM client presents, answered this once. The token before it is still accepted for 24 hours, so the client moves without a gap, and any older ends now: two at most are accepted. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.
          */
         post: operations["issueScimToken"];
         delete?: never;
@@ -49256,7 +49276,8 @@ export interface operations {
                      *       "integrity": {
                      *         "periodDays": -9007199254740991,
                      *         "classes": []
-                     *       }
+                     *       },
+                     *       "secrets": []
                      *     }
                      */
                     "application/json": {
@@ -49480,6 +49501,18 @@ export interface operations {
                                 } | null;
                             }[];
                         };
+                        /** @description Each secret something has failed to authenticate with since it was last replaced (ADM-047); none for support, whose grant may not reach what uses it */
+                        secrets: {
+                            /**
+                             * @description sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token
+                             * @enum {string}
+                             */
+                            kind: "sign_in_client_secret" | "shared_provider_secret" | "connection_credential" | "delivery_store_password" | "model_endpoint_key" | "webhook_signing_secret" | "extension_secret" | "mail_relay_password" | "scim_token" | "ct_studio_token" | "service_identity_token";
+                            /** @description What the secret belongs to, by name */
+                            name: string | null;
+                            /** @description Every consumer of it, by name */
+                            consumers: string[];
+                        }[];
                     };
                 };
             };
@@ -89337,7 +89370,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            /** @description The caller does not hold rotate_secrets at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -95832,9 +95865,21 @@ export interface operations {
                             /** @description A failure nobody would otherwise see, told to those who administer once until it clears; null otherwise */
                             diagnostics: {
                                 /** @enum {string} */
-                                kind: "source_down" | "job_failed" | "index_lagging" | "work_failing" | "capability_failing" | "integrity_failing";
-                                /** @description What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index */
+                                kind: "source_down" | "job_failed" | "index_lagging" | "work_failing" | "capability_failing" | "integrity_failing" | "secret_failing";
+                                /** @description What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class, a secret by kind, id and when it was replaced; empty for the index */
                                 subject: string;
+                                /** @description A secret something failed to authenticate with since it was replaced, and everything that uses it (ADM-047); only with secret_failing */
+                                replaced?: {
+                                    /**
+                                     * @description sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token
+                                     * @enum {string}
+                                     */
+                                    kind: "sign_in_client_secret" | "shared_provider_secret" | "connection_credential" | "delivery_store_password" | "model_endpoint_key" | "webhook_signing_secret" | "extension_secret" | "mail_relay_password" | "scim_token" | "ct_studio_token" | "service_identity_token";
+                                    /** @description What the secret belongs to, by name */
+                                    name: string | null;
+                                    /** @description Every consumer of it, by name */
+                                    consumers: string[];
+                                };
                             } | null;
                             /** Format: date-time */
                             at: string;
@@ -119443,6 +119488,144 @@ export interface operations {
                 };
             };
             /** @description The caller may not read the environment’s diagnostics */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listSecrets: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every secret, never its value */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "absent": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every secret this environment holds, never a value or hash */
+                        items: {
+                            /**
+                             * @description sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token
+                             * @enum {string}
+                             */
+                            kind: "sign_in_client_secret" | "shared_provider_secret" | "connection_credential" | "delivery_store_password" | "model_endpoint_key" | "webhook_signing_secret" | "extension_secret" | "mail_relay_password" | "scim_token" | "ct_studio_token" | "service_identity_token";
+                            /** @description What the secret belongs to: a provider, connection, endpoint, webhook and the like */
+                            of: {
+                                id: string;
+                                name: string | null;
+                            };
+                            /** @description When its value was last set or replaced; null where no record says */
+                            replacedAt: string | null;
+                            /** @description Until when the value it replaced is still accepted; null where none is */
+                            previousUntil: string | null;
+                            /** @description How it is replaced */
+                            replacement: {
+                                /** @description The operation that replaces it */
+                                operation: string;
+                                /** @description The permission that operation needs */
+                                permission: string;
+                                /**
+                                 * @description overlap: the old value is still accepted for a time; atomic: the product is its only holder, and reads the new value at once; beside: a new one is issued beside the old, which is revoked once its holder has moved
+                                 * @enum {string}
+                                 */
+                                how: "overlap" | "atomic" | "beside";
+                            };
+                            /** @description Everything here that uses it, resolved now */
+                            consumers: {
+                                /**
+                                 * @description What uses it: sign_in, member_tenant, query_definition, dataset, data_delivery (a space delivered to), purpose (a model purpose routed to the endpoint), guardrails, translation_policy, webhook_subscription, reference_source, mail_delivery, provisioning, ct_studio_space or service_identity
+                                 * @enum {string}
+                                 */
+                                kind: "sign_in" | "member_tenant" | "query_definition" | "dataset" | "data_delivery" | "purpose" | "guardrails" | "translation_policy" | "webhook_subscription" | "reference_source" | "mail_delivery" | "provisioning" | "ct_studio_space" | "service_identity";
+                                /** @description Its id, or the purpose; null where it has none */
+                                id: string | null;
+                                /** @description Its name; null where it has none */
+                                name: string | null;
+                            }[];
+                        }[];
+                        /** @description What holds no secret here, and why */
+                        absent: {
+                            what: string;
+                            why: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not hold rotate_secrets at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

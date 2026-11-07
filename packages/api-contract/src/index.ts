@@ -560,6 +560,13 @@ export {
   supportRoutes,
 } from './support.js';
 export {
+  SecretConsumerView,
+  SecretKindName,
+  SecretList,
+  SecretView,
+  secretRoutes,
+} from './secrets.js';
+export {
   GoogleSettingsBody,
   PersonDisablement,
   PrincipalParams,

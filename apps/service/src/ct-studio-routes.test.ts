@@ -203,7 +203,7 @@ describe('connecting a space to CT Studio (docs/design/ct-studio-connect.md)', (
     expect(answer.json<CtStudioConnected>().settings.connection).toEqual(expect.any(String));
   });
 
-  it('API-074 a new token replaces the recorded one; the old one stays live', async () => {
+  it('API-074 ADM-007 a new token replaces the recorded one; the old one works 24 hours more, and one before it ends', async () => {
     const [identity] = await identities();
     const before = (await h.call('ada', 'GET', '/v1/ct-studio')).json<CtStudioStatus>().token!;
     const answer = await h.call('ada', 'POST', '/v1/ct-studio/tokens', { replaceIdentity: false });
@@ -213,6 +213,18 @@ describe('connecting a space to CT Studio (docs/design/ct-studio-connect.md)', (
     expect(body.status.token!.id).toBe(body.issued.id);
     expect((await tokensOf(identity!.id)).map((each) => each.id)).toContain(before.id);
     expect(answer.headers['cache-control']).toBe('no-store');
+    const ending = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx.selectFrom('api_token').select('ends_at').where('id', '=', before.id).executeTakeFirst(),
+    );
+    const hours = (ending!.ends_at!.getTime() - Date.now()) / 3_600_000;
+    expect(hours).toBeGreaterThan(23.9);
+    expect(hours).toBeLessThanOrEqual(24);
+    // Another: the one before ends now, the one it replaces overlaps in turn.
+    const again = await h.call('ada', 'POST', '/v1/ct-studio/tokens', { replaceIdentity: false });
+    expect(again.statusCode, again.body).toBe(200);
+    const held = (await tokensOf(identity!.id)).map((each) => each.id);
+    expect(held).not.toContain(before.id);
+    expect(held).toContain(body.issued.id);
   });
 
   it('API-074 replacing an identity that is still enabled is refused ct_studio_identity_enabled', async () => {

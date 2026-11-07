@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SecretKindName } from './secrets.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
@@ -216,6 +217,17 @@ export const DiagnosticsView = z.object({
       classes: z.array(IntegrityClassView),
     })
     .describe('Stored artifacts re-verified, a share each night'),
+  secrets: z
+    .array(
+      z.object({
+        kind: SecretKindName,
+        name: z.string().nullable().describe('What the secret belongs to, by name'),
+        consumers: z.array(z.string()).describe('Every consumer of it, by name'),
+      }),
+    )
+    .describe(
+      'Each secret something has failed to authenticate with since it was last replaced (ADM-047); none for support, whose grant may not reach what uses it',
+    ),
 });
 export type DiagnosticsView = z.infer<typeof DiagnosticsView>;
 

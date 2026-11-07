@@ -20,7 +20,7 @@ import {
   googleRoute,
   listProviders,
   markProviderShared,
-  revokeApiToken,
+  overlapTokens,
   turnScimOff,
   turnScimOn,
   notifyTenant,
@@ -263,7 +263,8 @@ export function signInSettingsHandlers(options: {
       return read(request, trx);
     },
 
-    // A token replaces those before it, so one that leaked ends as the new one is made.
+    // The one before it works for 24 hours more, so the provider moves without a gap, and any older
+    // ends now (ADM-007; the SA plan, SA-I). One that leaked is ended by turning SCIM off.
     issueScimToken: async (request: FastifyRequest, { trx }: Authorised): Promise<TokenIssued> => {
       const { id } = request.params as ProviderParams;
       const provider = await trx
@@ -276,15 +277,8 @@ export function signInSettingsHandlers(options: {
       if (provider.scim_identity === null) {
         throw new AppError(409, 'scim_off', 'Turn SCIM on for this provider first.');
       }
-      const held = await trx
-        .selectFrom('api_token')
-        .select('id')
-        .where('principal_id', '=', provider.scim_identity)
-        .orderBy('id')
-        .execute();
-      for (const token of held) {
-        await revokeApiToken(trx, provider.scim_identity, token.id);
-        await notifyTenant(trx, { kind: 'credential_ended', token: token.id });
+      for (const token of await overlapTokens(trx, provider.scim_identity)) {
+        await notifyTenant(trx, { kind: 'credential_ended', token });
       }
       const secret = newTokenSecret();
       const expiresAt = new Date(Date.now() + SCIM_TOKEN_DAYS * 24 * 60 * 60 * 1000);

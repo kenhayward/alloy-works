@@ -1,7 +1,8 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ExtensionManifest } from '@alloy-works/domain';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
+import { administersAt } from '../access/ManageAccessLink.js';
 import { refusal } from '../account/TokenTable.js';
 import { connectionLink } from '../data/links.js';
 import { everyPage } from '../paging.js';
@@ -210,6 +211,17 @@ export function Extensions({ client }: { client: Client }) {
   const [removing, setRemoving] = useState<Installed | null>(null);
   const [secretOf, setSecretOf] = useState<Installed | null>(null);
   const [secret, setSecret] = useState('');
+  // Setting a secret needs rotate_secrets (IAM-070): offered only where the service says so.
+  const [rotates, setRotates] = useState(false);
+  useEffect(() => {
+    let current = true;
+    void administersAt(client, 'tenant', 'rotate_secrets').then((answer) => {
+      if (current) setRotates(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client]);
   const again = () => setGeneration((was) => was + 1);
 
   const look = async (event: FormEvent) => {
@@ -391,7 +403,7 @@ export function Extensions({ client }: { client: Client }) {
                             >
                               {words('admin.check-for-update')}
                             </button>{' '}
-                            {secretLabel(extension.manifest) !== undefined && (
+                            {rotates && secretLabel(extension.manifest) !== undefined && (
                               <>
                                 <button
                                   type="button"

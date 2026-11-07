@@ -301,6 +301,10 @@ export const NOT_SECRETS: Readonly<Record<string, string>> = {
   'artifact_version.content_hash': 'The digest of the version, which a reader recomputes.',
   'identity_provider.secret_name': 'The name of an environment variable, not its value.',
   'identity_provider.client_id': 'Public by OAuth, sent in the browser.',
+  // When a secret was last replaced (0220; secrets.md): a time, never the value.
+  'identity_provider.secret_set_at': 'When its secret was last set, not the secret.',
+  'mail_channel.password_set_at': 'When its password was last set, not the password.',
+  'webhook_subscription.secret_set_at': 'When its secret was last set, not the secret.',
 };
 
 /** A column named like a store key whose bytes do not travel, each with its reason. */

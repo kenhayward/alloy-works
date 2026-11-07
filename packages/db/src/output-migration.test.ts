@@ -370,6 +370,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0217_read_diagnostics',
       '0218_support_access',
       '0219_retire_channel_changed',
+      '0220_secrets',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

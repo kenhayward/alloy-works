@@ -4,6 +4,7 @@ import { permissions, tokenScopes } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { findApiToken, overlapTokens, sweepEndedTokens } from './api-tokens.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -11,6 +12,7 @@ import {
   freshDatabase,
   queryAs,
   TEST_PASSWORDS,
+  untilWaitingOnLocks,
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
@@ -167,6 +169,102 @@ describe('api_token, where a personal token is kept as its hash (service-foundat
       trx.selectFrom('api_token').select('id').where('id', '=', made.id).executeTakeFirst(),
     );
     expect(left).toBeUndefined();
+  });
+
+  it("ADM-007 sets a token's end once, from none, and never past its expiry", async () => {
+    const made = await issue({ expires_at: new Date(Date.now() + 2 * DAY_MS) });
+    const end = (at: string) =>
+      service.withTenant(tenant, (trx) =>
+        sql`update api_token set ends_at = ${at}::timestamptz where id = ${made.id}`.execute(trx),
+      );
+    await expect(end(new Date(Date.now() + 3 * DAY_MS).toISOString())).rejects.toThrow(
+      /api_token_ends_by_expiry/,
+    );
+    await end(new Date(Date.now() + DAY_MS).toISOString());
+    await expect(end(new Date(Date.now() + 2 * 60_000).toISOString())).rejects.toThrow(/set once/);
+  });
+
+  it('ADM-007 accepts the token before a new one for 24 hours, ends any older at once, and sweeps it after', async () => {
+    const hedy = await principal('hedy', 'Hedy');
+    const hashes = [aHash(), aHash(), aHash()];
+    const first = await issue({ principal_id: hedy, token_hash: hashes[0]!, scopes: [] });
+    await service.withTenant(tenant, (trx) => overlapTokens(trx, hedy));
+    const second = await issue({ principal_id: hedy, token_hash: hashes[1]!, scopes: [] });
+    const held = (hash: string, at: Date) =>
+      service.withTenant(tenant, (trx) => findApiToken(trx, hash, at));
+    const soon = new Date(Date.now() + 60_000);
+    const later = new Date(Date.now() + 25 * 60 * 60 * 1000);
+    expect((await held(hashes[0]!, soon))?.tokenId).toBe(first.id);
+    expect(await held(hashes[0]!, later)).toBeUndefined();
+    expect((await held(hashes[1]!, later))?.tokenId).toBe(second.id);
+
+    // A third: the second overlaps, and the first, still overlapping, ends at once.
+    const revoked = await service.withTenant(tenant, (trx) => overlapTokens(trx, hedy));
+    expect(revoked).toEqual([first.id]);
+    await issue({ principal_id: hedy, token_hash: hashes[2]!, scopes: [] });
+    expect(await held(hashes[0]!, soon)).toBeUndefined();
+    expect((await held(hashes[1]!, soon))?.tokenId).toBe(second.id);
+
+    expect(await service.withTenant(tenant, (trx) => sweepEndedTokens(trx, soon))).toEqual([]);
+    expect(await service.withTenant(tenant, (trx) => sweepEndedTokens(trx, later))).toContain(
+      second.id,
+    );
+    const left = await service.withTenant(tenant, (trx) =>
+      trx.selectFrom('api_token').select('id').where('principal_id', '=', hedy).execute(),
+    );
+    expect(left).toHaveLength(1);
+  });
+
+  it('serialises two replacements at once, so two tokens at most are ever accepted', async () => {
+    const mary = await principal('mary', 'Mary');
+    const [a, b, c] = [aHash(), aHash(), aHash()];
+    await issue({ principal_id: mary, token_hash: a, scopes: [] });
+    const insert = (trx: Parameters<Parameters<typeof service.withTenant>[1]>[0], hash: string) =>
+      trx
+        .insertInto('api_token')
+        .values({
+          principal_id: mary,
+          name: 'SCIM',
+          token_hash: hash,
+          scopes: [],
+          expires_at: new Date(Date.now() + 30 * DAY_MS),
+        })
+        .execute();
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let overlapped = () => {};
+    const first = new Promise<void>((resolve) => {
+      overlapped = resolve;
+    });
+    const one = service.withTenant(tenant, async (trx) => {
+      await overlapTokens(trx, mary);
+      await insert(trx, b);
+      overlapped();
+      await held;
+    });
+    await first;
+    const two = service.withTenant(tenant, async (trx) => {
+      await overlapTokens(trx, mary);
+      await insert(trx, c);
+    });
+    // The second waits for the first, rather than reading past the token it is making.
+    const waited = await untilWaitingOnLocks(db.adminUrl, 1).then(
+      () => true,
+      () => false,
+    );
+    release();
+    await Promise.all([one, two]);
+    expect(waited).toBe(true);
+    const accepted = await service.withTenant(tenant, async (trx) => ({
+      a: await findApiToken(trx, a),
+      b: await findApiToken(trx, b),
+      c: await findApiToken(trx, c),
+    }));
+    expect(accepted.a).toBeUndefined();
+    expect(accepted.b).toBeDefined();
+    expect(accepted.c).toBeDefined();
   });
 
   it('goes with its principal: a person removed takes their tokens with them', async () => {

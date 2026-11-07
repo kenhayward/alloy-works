@@ -1522,6 +1522,7 @@ async function stillSignedIn(trx: TenantTransaction, request: FastifyRequest): P
       .select('principal_id')
       .where('token_hash', '=', hashToken(secret))
       .where('expires_at', '>', now)
+      .where((eb) => eb.or([eb('ends_at', 'is', null), eb('ends_at', '>', now)]))
       .forShare()
       .executeTakeFirst();
     return held !== undefined && held.principal_id === principal;
