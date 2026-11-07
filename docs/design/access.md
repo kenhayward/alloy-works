@@ -145,6 +145,10 @@ counts `administer`.
 **`read_diagnostics`** decides the six diagnostics reads ([ADR-0102](../decisions/0102-every-route-declares-what-it-reads.md)), given by migration 0217 to every
 role and token holding `administer`, decided as `administer` is, and left outside `externalCap` for support.
 
+**`grant_support`** grants and revokes support access (0218; [support.md](support.md)), given to every role holding
+`administer`, administrative, a person's act alone and capped for an outsider. A support grant is not an
+`access_grant`: while active it decides in place of a principal's grants (`AccessFacts.support`), so IAM-071 stands.
+
 **`retire`** arrived with archival (0083, ADR-0060), in both closed sets, so a token may be scoped to
 it; Administrator holds it. [lifecycle.md](lifecycle.md) is the detail.
 

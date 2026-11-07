@@ -338,7 +338,9 @@ export function componentHandlers(
       const asked = pageAsked('people', request.query as PeopleQuery, languageOf(request));
       const people = await db.withTenant(tenantOf(request), async (trx) => {
         const listed = await listPeople(trx, asked);
-        return (await readsOnlyShares(trx, principalOf(request).principalId))
+        // Nor for support, who sees the organisation's people through no directory (support.md).
+        return request.support !== null ||
+          (await readsOnlyShares(trx, principalOf(request).principalId))
           ? { ...listed, items: [], next: null }
           : listed;
       });

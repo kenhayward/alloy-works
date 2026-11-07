@@ -3,7 +3,7 @@
   "info": {
     "title": "Alloy Works",
     "version": "1",
-    "description": "Adding a field to a response is never a breaking change, so a caller must ignore any field it does not know. Within an API version no field is removed and none changes its meaning. Use a personal token in Authorization: Bearer for token-enabled operations; sign-in and token management require a browser session. Errors use one JSON shape with a code and traceId. X-Request-Id may be supplied by a caller and is returned on every response. Listings use opaque cursors; send the next cursor without editing it. For supported mutations, Idempotency-Key makes a retry safe and Idempotent-Replayed marks a replay. Versioned edits require the version the caller read; a conflict means read again before editing. A deleted component or document is answered 410 artifact_deleted to a caller who may read it, and is not found to anyone else. The current v1 document describes the synchronous HTTP API; the event stream has a separately specified protocol."
+    "description": "Adding a field to a response is never a breaking change, so a caller must ignore any field it does not know. Within an API version no field is removed and none changes its meaning. Use a personal token in Authorization: Bearer for token-enabled operations; sign-in and token management require a browser session. Errors use one JSON shape with a code and traceId. X-Request-Id may be supplied by a caller and is returned on every response. Listings use opaque cursors; send the next cursor without editing it. For supported mutations, Idempotency-Key makes a retry safe and Idempotent-Replayed marks a replay. Versioned edits require the version the caller read; a conflict means read again before editing. A deleted component or document is answered 410 artifact_deleted to a caller who may read it, and is not found to anyone else. Somebody given support access is refused 403 support_scope by any operation their scope does not reach, and by every write but their own sessions, presence and inbox; an operation whose x-alloy-reads is content needs a Support-Read header saying why, or is refused 403 support_read_required. The current v1 document describes the synchronous HTTP API; the event stream has a separately specified protocol."
   },
   "servers": [
     {
@@ -228,6 +228,10 @@
       "description": "Invite people before their first sign-in."
     },
     {
+      "name": "Support access",
+      "description": "Let somebody from outside look at Diagnostics, or at metadata or content in named spaces, for a purpose and until a stated time, and see and end it."
+    },
+    {
       "name": "Sign-in settings",
       "description": "Identity providers, the Google route, session lifetimes and disabling a person."
     },
@@ -362,6 +366,7 @@
         "Groups",
         "Sessions",
         "Invitations",
+        "Support access",
         "Sign-in settings",
         "Roles and grants"
       ]
@@ -47807,7 +47812,8 @@
                               "suspend_tenant",
                               "create_tenant",
                               "share_provider",
-                              "read_diagnostics"
+                              "read_diagnostics",
+                              "grant_support"
                             ]
                           },
                           "allowed": {
@@ -48077,6 +48083,49 @@
                       "type": "boolean",
                       "description": "Disabled: every permission is refused, whatever the grants say"
                     },
+                    "support": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "enum": [
+                                "diagnostics",
+                                "metadata",
+                                "content"
+                              ]
+                            },
+                            "spaces": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "purpose": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "scope",
+                            "spaces",
+                            "purpose",
+                            "expiresAt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Their active support grant, which decides every permission in place of the grants, or null for none"
+                    },
                     "permissions": {
                       "type": "array",
                       "items": {
@@ -48110,7 +48159,8 @@
                               "suspend_tenant",
                               "create_tenant",
                               "share_provider",
-                              "read_diagnostics"
+                              "read_diagnostics",
+                              "grant_support"
                             ]
                           },
                           "allowed": {
@@ -48124,9 +48174,10 @@
                               "not_granted",
                               "capped",
                               "scoped",
-                              "disabled"
+                              "disabled",
+                              "support"
                             ],
-                            "description": "disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it"
+                            "description": "disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it. support: decided by their active support grant, which `support` names, allowed at its level or refused as beyond its scope"
                           },
                           "level": {
                             "description": "The level that decided, or null when none said anything",
@@ -48235,6 +48286,7 @@
                     "principal",
                     "target",
                     "disabled",
+                    "support",
                     "permissions"
                   ]
                 },
@@ -48242,6 +48294,13 @@
                   "principal": "example",
                   "target": "example",
                   "disabled": false,
+                  "support": {
+                    "id": "example",
+                    "scope": "diagnostics",
+                    "spaces": [],
+                    "purpose": "example",
+                    "expiresAt": "example"
+                  },
                   "permissions": []
                 }
               }
@@ -293040,7 +293099,7 @@
             }
           },
           "409": {
-            "description": "invitation_accepted",
+            "description": "invitation_accepted; or invitation_supported: the address was given support access, which is kept, and revoking it ends the invitation",
             "content": {
               "application/json": {
                 "schema": {
@@ -349711,7 +349770,8 @@
                                 "suspend_tenant",
                                 "create_tenant",
                                 "share_provider",
-                                "read_diagnostics"
+                                "read_diagnostics",
+                                "grant_support"
                               ]
                             }
                           }
@@ -350041,7 +350101,8 @@
                         "suspend_tenant",
                         "create_tenant",
                         "share_provider",
-                        "read_diagnostics"
+                        "read_diagnostics",
+                        "grant_support"
                       ]
                     },
                     "description": "What it holds, each once. Without read it can only be granted as a denial"
@@ -350109,7 +350170,8 @@
                               "suspend_tenant",
                               "create_tenant",
                               "share_provider",
-                              "read_diagnostics"
+                              "read_diagnostics",
+                              "grant_support"
                             ]
                           }
                         }
@@ -414521,6 +414583,1365 @@
           },
           "404": {
             "description": "No such component or document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/support-access": {
+      "get": {
+        "operationId": "listSupportAccess",
+        "summary": "Every support grant, active and ended",
+        "description": "Lists the support grants, active and ended, the newest 200 first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it (nobody, where the environment’s cap on outside access was lowered past it), and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.",
+        "tags": [
+          "Support access"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "x-alloy-reads": "metadata",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every support grant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "person": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "email": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "email"
+                            ]
+                          },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "diagnostics",
+                              "metadata",
+                              "content"
+                            ],
+                            "description": "diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why"
+                          },
+                          "spaces": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "purpose": {
+                            "type": "string"
+                          },
+                          "expiresAt": {
+                            "type": "string"
+                          },
+                          "grantedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "grantedAt": {
+                            "type": "string"
+                          },
+                          "revokedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "revokedBy": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "active": {
+                            "type": "boolean",
+                            "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "person",
+                          "scope",
+                          "spaces",
+                          "purpose",
+                          "expiresAt",
+                          "grantedBy",
+                          "grantedAt",
+                          "revokedAt",
+                          "revokedBy",
+                          "active"
+                        ]
+                      },
+                      "description": "Every grant, active and ended, the newest first, at most 200"
+                    },
+                    "active": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many are active now"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "active"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "active": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "grantSupportAccess",
+        "summary": "Lets somebody from outside look, at what and until when",
+        "description": "Lets a named person from outside look, by address: somebody from outside who signed in with it, verified, or else the address invited as such, the invitation lasting as long as the grant. The scope is diagnostics, metadata or content, the spaces it reads are named, and the purpose and an expiry within the cap for outside access are required. While it is active its person reads nothing else and changes nothing: every write but signing out, their own sessions, presence and their inbox is refused support_scope, and so is any route the scope does not reach; each content read must carry a Support-Read header saying why, or is refused support_read_required. Granting, its use once a day and every content read are recorded in this environment’s log. Needs grant_support at the environment, which a token never holds.",
+        "tags": [
+          "Support access"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "grant_support",
+        "x-alloy-reads": "metadata",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "The address of the person from outside who gives support; invited as such where nobody has signed in with it"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "diagnostics",
+                      "metadata",
+                      "content"
+                    ],
+                    "description": "diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why"
+                  },
+                  "spaces": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
+                    },
+                    "description": "The spaces a metadata or content grant reads, at least one; for diagnostics, the spaces whose documents and queries its reads may name"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "Why support needs it, as the log keeps it"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "description": "When it ends: required, and within the environment's cap for access from outside"
+                  }
+                },
+                "required": [
+                  "email",
+                  "scope",
+                  "spaces",
+                  "purpose",
+                  "expiresAt"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "email": "developer@example.com",
+                "scope": "diagnostics",
+                "spaces": [],
+                "purpose": "example",
+                "expiresAt": "2026-01-01T00:00:00.000Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "support": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "person": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "email"
+                          ]
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "diagnostics",
+                            "metadata",
+                            "content"
+                          ],
+                          "description": "diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why"
+                        },
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "purpose": {
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "type": "string"
+                        },
+                        "grantedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "grantedAt": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "revokedBy": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "active": {
+                          "type": "boolean",
+                          "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "person",
+                        "scope",
+                        "spaces",
+                        "purpose",
+                        "expiresAt",
+                        "grantedBy",
+                        "grantedAt",
+                        "revokedAt",
+                        "revokedBy",
+                        "active"
+                      ]
+                    },
+                    "invitation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string",
+                              "description": "The address invited, in lower case"
+                            },
+                            "person": {
+                              "type": "string",
+                              "description": "The principal the invitation made: a grant names it, and its first sign-in becomes it"
+                            },
+                            "external": {
+                              "type": "boolean",
+                              "description": "Invited as somebody from outside the organisation"
+                            },
+                            "invitedBy": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Null for an invitation made by whoever provisioned the environment"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "description": "When it can no longer be accepted, or null for never",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "lapsed": {
+                              "type": "boolean",
+                              "description": "Waiting, and past its expiry: nobody can accept it until renewed"
+                            },
+                            "acceptedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "acceptedThrough": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "organisation",
+                                    "google"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "email",
+                            "person",
+                            "external",
+                            "invitedBy",
+                            "createdAt",
+                            "expiresAt",
+                            "lapsed",
+                            "acceptedAt",
+                            "acceptedThrough"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The invitation made or renewed for the address, or null where its person has signed in"
+                    }
+                  },
+                  "required": [
+                    "support",
+                    "invitation"
+                  ]
+                },
+                "example": {
+                  "support": {
+                    "id": "example",
+                    "person": {
+                      "id": "example",
+                      "name": "example",
+                      "email": "example"
+                    },
+                    "scope": "diagnostics",
+                    "spaces": [],
+                    "purpose": "example",
+                    "expiresAt": "example",
+                    "grantedBy": {
+                      "id": "example",
+                      "name": "example"
+                    },
+                    "grantedAt": "example",
+                    "revokedAt": "example",
+                    "revokedBy": {
+                      "id": "example",
+                      "name": "example"
+                    },
+                    "active": false
+                  },
+                  "invitation": {
+                    "id": "example",
+                    "email": "example",
+                    "person": "example",
+                    "external": false,
+                    "invitedBy": {
+                      "id": "example",
+                      "name": "example"
+                    },
+                    "createdAt": "example",
+                    "expiresAt": "example",
+                    "lapsed": false,
+                    "acceptedAt": "example",
+                    "acceptedThrough": "organisation"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An address, scope or expiry that is not one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not hold grant_support at the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "support_member: the address is somebody in the organisation; support_kind_differs: it is invited as such; support_signed_in: somebody signed in with it meanwhile, so try again; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/support-access/{id}": {
+      "delete": {
+        "operationId": "revokeSupportAccess",
+        "summary": "Ends a support grant at once, and the invitation it made",
+        "description": "Ends a support grant at once: its person’s next request is decided without it, and their open event streams end. Recorded in the log. Needs grant_support at the environment.",
+        "tags": [
+          "Support access"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "grant_support",
+        "x-alloy-reads": "metadata",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "person": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email"
+                      ]
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "diagnostics",
+                        "metadata",
+                        "content"
+                      ],
+                      "description": "diagnostics: Diagnostics and usage alone; metadata: those, and titles, names and states in the spaces named; content: those, and content there, each request carrying a Support-Read header saying why"
+                    },
+                    "spaces": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "purpose": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    },
+                    "grantedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "grantedAt": {
+                      "type": "string"
+                    },
+                    "revokedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "revokedBy": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean",
+                      "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "person",
+                    "scope",
+                    "spaces",
+                    "purpose",
+                    "expiresAt",
+                    "grantedBy",
+                    "grantedAt",
+                    "revokedAt",
+                    "revokedBy",
+                    "active"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "person": {
+                    "id": "example",
+                    "name": "example",
+                    "email": "example"
+                  },
+                  "scope": "diagnostics",
+                  "spaces": [],
+                  "purpose": "example",
+                  "expiresAt": "example",
+                  "grantedBy": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "grantedAt": "example",
+                  "revokedAt": "example",
+                  "revokedBy": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "active": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not hold grant_support at the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such support grant in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "support_revoked: it was revoked already",
             "content": {
               "application/json": {
                 "schema": {

@@ -189,11 +189,13 @@ describe('a route that changes access', () => {
       'disconnectCtStudio',
       'erasePrincipal',
       'extendGrant',
+      'grantSupportAccess',
       'issueCtStudioToken',
       'makeGrant',
       'moveToSpace',
       'removeGrant',
       'revokePublicationShare',
+      'revokeSupportAccess',
       'setGoogleSignIn',
       'setGroupMembers',
       'sharePublication',
@@ -203,13 +205,17 @@ describe('a route that changes access', () => {
     const sharing = ['revokePublicationShare', 'sharePublication'];
     // What was split out of administer (identity.md, "High-risk permissions").
     const configuring = ['closeProvider', 'disconnectCtStudio', 'setGoogleSignIn'];
+    // Support access is granted and revoked through its own permission (support.md).
+    const supporting = ['grantSupportAccess', 'revokeSupportAccess'];
     for (const route of declaring) {
       expect(route.access, route.operationId).toMatchObject({
         permission: sharing.includes(route.operationId)
           ? 'publish'
           : configuring.includes(route.operationId)
             ? 'configure_services'
-            : 'administer',
+            : supporting.includes(route.operationId)
+              ? 'grant_support'
+              : 'administer',
       });
     }
   });

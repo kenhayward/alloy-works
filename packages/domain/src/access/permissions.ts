@@ -44,6 +44,9 @@ export const permissions = [
   // Reading Diagnostics and usage (the SA plan, SA-F): every role and token holding `administer`
   // gained it by migration 0217. Support's narrowest scope names it; it is uncapped for an outsider.
   'read_diagnostics',
+  // Granting, reviewing and revoking support access (IAM-070's last; support.md): a person's act,
+  // never a token's, and given by migration 0218 to every role holding `administer`.
+  'grant_support',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -62,6 +65,7 @@ const PERSONS_ACTS = [
   'suspend_tenant',
   'create_tenant',
   'share_provider',
+  'grant_support',
 ] as const;
 
 export const tokenScopes: readonly Exclude<Permission, (typeof PERSONS_ACTS)[number]>[] =
@@ -102,6 +106,7 @@ export const externalCap: readonly Permission[] = [
   'suspend_tenant',
   'create_tenant',
   'share_provider',
+  'grant_support',
 ];
 
 /**
@@ -123,6 +128,7 @@ export const administrativePermissions: readonly Permission[] = [
   'create_tenant',
   'share_provider',
   'read_diagnostics',
+  'grant_support',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

@@ -62,7 +62,13 @@ describe('migration 0217, over roles and tokens made before it', () => {
       `select name, permissions from ${schema}.role`,
     );
     const role = (name: string) => roles.find((each) => each.name === name)!.permissions;
-    expect(role('Own administrator')).toEqual(['read', 'administer', 'read_diagnostics']);
+    // And 0218's grant_support, which every holder of administer gains too.
+    expect(role('Own administrator')).toEqual([
+      'read',
+      'administer',
+      'read_diagnostics',
+      'grant_support',
+    ]);
     expect(role('Administrator')).toContain('read_diagnostics');
     expect(role('Own exporter')).toEqual(['read', 'export_audit']);
     expect(roles.filter((each) => each.permissions.includes('read_diagnostics'))).toEqual(

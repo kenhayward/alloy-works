@@ -31,6 +31,7 @@ import {
   duplicateTheme,
   findRole,
   grant,
+  grantSupport,
   invite,
   migrate,
   pendingResult,
@@ -552,6 +553,7 @@ const OTHER_TENANT_IDS: Readonly<
   }),
   discardAssetDerivatives: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
+  revokeSupportAccess: async (tenant, db) => ({ id: await supportIdIn(tenant, db) }),
   changeProvider: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
   replaceProviderSecret: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
   closeProvider: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
@@ -1001,6 +1003,15 @@ const VALID_INPUT: Readonly<
   restoreDocumentVersion: { payload: { latest: SESSION } },
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
+  grantSupportAccess: {
+    payload: {
+      email: 'sam@vendor.example',
+      scope: 'diagnostics',
+      spaces: [],
+      purpose: 'A slow page',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    },
+  },
   addProvider: {
     payload: {
       name: 'Elsewhere',
@@ -2031,6 +2042,34 @@ const grantIdIn = (tenant: Tenant, db: TenantDatabase) =>
   });
 
 /** An invitation waiting in environment B, made by a principal of its own. */
+const supportIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(
+    tenant,
+    async (trx) => {
+      const by = await trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: `ada-${randomUUID()}`,
+          email: null,
+          display_name: null,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const made = await grantSupport(trx, {
+        email: `${randomUUID()}@vendor.example`,
+        scope: 'diagnostics',
+        spaces: [],
+        purpose: 'A slow page',
+        expiresAt: new Date(Date.now() + 86_400_000),
+        grantedBy: by.id,
+      });
+      if (!('granted' in made)) throw new Error(`refused: ${made.refused}`);
+      return made.granted.id;
+    },
+    { actorKind: 'system' },
+  );
+
 const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const inviter = await trx

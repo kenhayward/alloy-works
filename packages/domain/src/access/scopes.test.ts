@@ -65,7 +65,8 @@ describe("a token's scopes, a mask over its creator's grants (TK-A)", () => {
           permission !== 'suspend_environment' &&
           permission !== 'suspend_tenant' &&
           permission !== 'create_tenant' &&
-          permission !== 'share_provider',
+          permission !== 'share_provider' &&
+          permission !== 'grant_support',
       ),
     );
     expect(tokenScopes).not.toContain('read');

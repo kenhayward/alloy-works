@@ -227,6 +227,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0215_integrity_check',
       '0216_silent_failures',
       '0217_read_diagnostics',
+      '0218_support_access',
     ]);
 
     const read = async () =>

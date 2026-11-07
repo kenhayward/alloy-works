@@ -1,0 +1,3 @@
+### Added
+
+- **Support access.** An administrator can let a named person from outside the organisation look at Diagnostics, or at titles and names, or at content, in the spaces they choose, for a stated purpose and until a stated time within the limit for outside access. While it lasts that person changes nothing, sees nothing beyond it, and must say why each time they open content. Every grant, revocation, day of use and content read is recorded in the environment's audit log, and the access explanation names it. A new permission, grant support, decides who may give it; every administrator role holds it. The screens for it follow.

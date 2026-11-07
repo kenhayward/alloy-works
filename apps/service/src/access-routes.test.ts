@@ -1839,6 +1839,19 @@ describe('routes that check a permission', () => {
       payload: { email: 'ivy@example.com' },
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
+    listSupportAccess: () => ({ url: '/v1/support-access', status: 403 }),
+    grantSupportAccess: () => ({
+      url: '/v1/support-access',
+      status: 403,
+      payload: {
+        email: 'sam@vendor.example',
+        scope: 'diagnostics',
+        spaces: [],
+        purpose: 'A slow page',
+        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    }),
+    revokeSupportAccess: () => ({ url: `/v1/support-access/${MISSING}`, status: 403 }),
     // A group is an administrator's of the whole environment, so it is refused before it is looked
     // for: 403, never 404, whether or not the group exists.
     listGroups: () => ({ url: '/v1/groups', status: 403 }),

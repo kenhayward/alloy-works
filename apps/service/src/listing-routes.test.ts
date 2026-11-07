@@ -766,6 +766,8 @@ describe('the listings through the service', () => {
       'listTenantRestorations',
       // And an organisation's tenants: a handful, and answered only at its own tenant (TLd).
       'listOrganisationTenants',
+      // And support access: the newest 200 grants, active and ended (support.md).
+      'listSupportAccess',
     ];
     const listings = allRoutes.filter(
       (route) =>

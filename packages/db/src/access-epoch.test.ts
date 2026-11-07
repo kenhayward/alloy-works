@@ -180,6 +180,39 @@ describe('the access epoch', () => {
         whileHeld((trx) =>
           trx.updateTable('principal').set({ kind: 'external' }).where('id', '=', ada).execute(),
         ),
+      support_grant: async () => {
+        const support = (trx: TenantTransaction) =>
+          trx
+            .insertInto('support_grant')
+            .values({
+              principal_id: ada,
+              scope: 'diagnostics',
+              spaces: [],
+              purpose: 'A slow page',
+              expires_at: new Date(Date.now() + 86_400_000),
+              granted_by: ada,
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow();
+        const made = await whileHeld(support);
+        const kept = await service.withTenant(production, support);
+        const revoked = await whileHeld((trx) =>
+          trx
+            .updateTable('support_grant')
+            .set({ revoked_at: new Date(), revoked_by: ada })
+            .where('id', '=', kept.id)
+            .execute(),
+        );
+        // Its use recorded is no change to access.
+        const used = await whileHeld((trx) =>
+          trx
+            .updateTable('support_grant')
+            .set({ used_on: '2026-11-07' })
+            .where('id', '=', kept.id)
+            .execute(),
+        );
+        return made === false && revoked === false && used === true ? false : true;
+      },
       'role.permissions': () =>
         whileHeld((trx) =>
           trx

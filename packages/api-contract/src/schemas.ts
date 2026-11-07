@@ -207,14 +207,26 @@ export const AccessExplanation = z.object({
   principal: z.string(),
   target: z.string(),
   disabled: z.boolean().describe('Disabled: every permission is refused, whatever the grants say'),
+  support: z
+    .object({
+      id: z.string(),
+      scope: z.enum(['diagnostics', 'metadata', 'content']),
+      spaces: z.array(z.string()),
+      purpose: z.string(),
+      expiresAt: z.string(),
+    })
+    .nullable()
+    .describe(
+      'Their active support grant, which decides every permission in place of the grants, or null for none',
+    ),
   permissions: z.array(
     z.object({
       permission: PermissionName,
       allowed: z.boolean(),
       reason: z
-        .enum(['allowed', 'denied', 'not_granted', 'capped', 'scoped', 'disabled'])
+        .enum(['allowed', 'denied', 'not_granted', 'capped', 'scoped', 'disabled', 'support'])
         .describe(
-          'disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it',
+          'disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it. support: decided by their active support grant, which `support` names, allowed at its level or refused as beyond its scope',
         ),
       level: z
         .string()

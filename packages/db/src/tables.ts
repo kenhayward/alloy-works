@@ -646,6 +646,27 @@ export interface AccessGrantTable {
   granted_at: ColumnType<Date, never, never>;
 }
 
+/** Support access (0218; support.md): written once, then stamped revoked or used. */
+export interface SupportGrantTable {
+  id: ColumnType<string, string | undefined, never>;
+  principal_id: ColumnType<string, string, never>;
+  scope: ColumnType<
+    'diagnostics' | 'metadata' | 'content',
+    'diagnostics' | 'metadata' | 'content',
+    never
+  >;
+  spaces: ColumnType<string[], string[], never>;
+  purpose: ColumnType<string, string, never>;
+  expires_at: ColumnType<Date, Date, never>;
+  granted_by: ColumnType<string, string, never>;
+  granted_at: ColumnType<Date, never, never>;
+  revoked_at: ColumnType<Date | null, never, Date>;
+  revoked_by: ColumnType<string | null, never, string>;
+  revoked_reason: ColumnType<'revoked' | 'cap_lowered' | null, never, 'revoked' | 'cap_lowered'>;
+  invitation_id: ColumnType<string | null, string | null | undefined, never>;
+  used_on: ColumnType<string | null, never, string>;
+}
+
 /** Named by an administrator of the database; the runtime role records a claim and nothing else. */
 export interface FirstAdministratorTable {
   id: ColumnType<string, never, never>;
@@ -1592,6 +1613,7 @@ export interface TenantTables {
   access_group: AccessGroupTable;
   group_member: GroupMemberTable;
   access_grant: AccessGrantTable;
+  support_grant: SupportGrantTable;
   first_administrator: FirstAdministratorTable;
   component_type_default: ComponentTypeDefaultTable;
   layout_default: LayoutDefaultTable;

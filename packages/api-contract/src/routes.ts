@@ -74,6 +74,7 @@ import { documentRoutes } from './documents.js';
 import { editingRoutes } from './editing.js';
 import { groupRoutes } from './groups.js';
 import { invitationRoutes } from './invitations.js';
+import { supportRoutes } from './support.js';
 import { signInSettingsRoutes } from './sign-in-settings.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
@@ -438,6 +439,7 @@ type Routes = typeof ownRoutes &
   typeof editingRoutes &
   typeof managingAccessRoutes &
   typeof invitationRoutes &
+  typeof supportRoutes &
   typeof signInSettingsRoutes &
   typeof groupRoutes &
   typeof assetRoutes &
@@ -528,6 +530,7 @@ export const routes: Routes = {
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,
+  ...supportRoutes,
   ...signInSettingsRoutes,
   ...groupRoutes,
   ...assetRoutes,

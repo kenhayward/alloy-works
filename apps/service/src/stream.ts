@@ -68,6 +68,11 @@ export async function streamToViewer(options: {
   /** Whether the tenant still answers, read afresh rather than from the resolver's cache (TL-B). */
   readonly stillOpen?: () => Promise<boolean>;
   readonly stateCheckMs?: number;
+  /**
+   * The viewer's support grant, where they hold one (support.md): any change to access ends even the
+   * environment's stream, which would otherwise outlive a revocation, and its expiry ends it too.
+   */
+  readonly support?: { readonly expiresAt: Date };
 }): Promise<void> {
   const { request, reply, db, events, tenant, credential, scoped } = options;
   let components = scoped?.components ?? new Set<string>();
@@ -98,6 +103,10 @@ export async function streamToViewer(options: {
     }
     if (scoped === undefined) {
       if (event.kind === 'sample') send('sample', event);
+      if (event.kind === 'permissions' && options.support !== undefined) {
+        send('permissions', {});
+        end();
+      }
       return;
     }
     if (event.kind === 'permissions') {
@@ -173,7 +182,13 @@ export async function streamToViewer(options: {
     else held.push(event);
   });
   const beat = setInterval(() => raw.write(': alive\n\n'), HEARTBEAT_MS);
-  const lifetime = setTimeout(() => end(), options.lifetimeMs ?? STREAM_LIFETIME_MS);
+  const lifetimeMs = options.lifetimeMs ?? STREAM_LIFETIME_MS;
+  const lifetime = setTimeout(
+    () => end(),
+    options.support === undefined
+      ? lifetimeMs
+      : Math.max(0, Math.min(lifetimeMs, options.support.expiresAt.getTime() - Date.now())),
+  );
   const stateCheck = setInterval(() => {
     void options.stillOpen?.().then(
       (open) => {
