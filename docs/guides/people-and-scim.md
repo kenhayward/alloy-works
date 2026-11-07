@@ -33,7 +33,8 @@ SCIM is per provider, at the subset Entra ID and Okta use (`Users`, `Groups`; no
    pushed. Change it after people have signed in and those people may be refused until an operator
    reconciles them: refused, never merged by address.
 2. **Turn on SCIM** on the provider's row. Copy the SCIM address and the token, shown once. The token lasts
-   a year; **New SCIM token** ends the old one at once.
+   a year; **New SCIM token** leaves the old one working for 24 hours, so the provider can move to the
+   new one, and ends any older at once.
 3. **At the provider**, set the tenant URL and the bearer token, and map `externalId` to the claim above.
 
 From then on:

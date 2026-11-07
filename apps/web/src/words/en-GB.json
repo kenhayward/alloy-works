@@ -6136,7 +6136,7 @@
   "admin.signin-scim-done": "Done",
   "admin.signin-scim-new-token": "New SCIM token",
   "admin.signin-scim-new-token-question": "Make a new SCIM token for {name}?",
-  "admin.signin-scim-new-token-sentence": "The token it has now stops working at once.",
+  "admin.signin-scim-new-token-sentence": "The token it has now keeps working for 24 hours, so the provider can move to the new one, and then stops. One older than that stops at once.",
   "admin.signin-scim-turn-off": "Turn off SCIM",
   "admin.signin-scim-off-question": "Turn off SCIM for {name}?",
   "admin.signin-scim-off-sentence": "Its token stops working. People it pushed stay, and anybody this provider signs in is admitted again.",
