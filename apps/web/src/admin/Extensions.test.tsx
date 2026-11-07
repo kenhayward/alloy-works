@@ -59,7 +59,7 @@ const herbarium = {
   secretSet: false,
 };
 
-function service(options: { inUse?: boolean; reference?: boolean } = {}) {
+function service(options: { inUse?: boolean; reference?: boolean; rotates?: boolean } = {}) {
   const sent: { method: string; path: string; body?: unknown }[] = [];
   let extensions: Record<string, unknown>[] = [
     {
@@ -84,6 +84,16 @@ function service(options: { inUse?: boolean; reference?: boolean } = {}) {
       sent.push({ method: request.method, path, ...(text ? { body: JSON.parse(text) } : {}) });
     }
     if (route === 'GET /v1/extensions') return json(200, { items: extensions, next: null });
+    if (route === 'GET /v1/access') {
+      return json(200, {
+        target: 'tenant',
+        permissions: [
+          { permission: 'read', allowed: true },
+          { permission: 'administer', allowed: true },
+          { permission: 'rotate_secrets', allowed: options.rotates ?? true },
+        ],
+      });
+    }
     if (route === 'POST /v1/extensions/preview') {
       return json(200, {
         url: 'https://tides.example.test/manifest.json',
@@ -321,6 +331,17 @@ describe("Administration's Extensions (the EX plan, EXc)", () => {
     expect(screen.queryByDisplayValue('herbarium-token')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Set the secret of River gauges' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('offers setting a secret only to whoever the service says may replace secrets', async () => {
+    const { client } = service({ reference: true, rotates: false });
+    render(<Extensions client={client} />);
+    await screen.findByRole('table', { name: 'Extensions' });
+    // Asked, and answered no: never offered, so never refused.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      screen.queryByRole('button', { name: 'Set the secret of Herbarium records' }),
     ).not.toBeInTheDocument();
   });
 });
