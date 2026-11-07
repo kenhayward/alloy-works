@@ -287,14 +287,18 @@ export const extensionRoutes = {
     summary: 'Set the secret a reference extension is sent',
     tenantScoped: true,
     reads: 'none',
-    access: ADMINISTER,
+    // Replacing a secret is its own act (IAM-070), as every other secret's is.
+    access: { ...ADMINISTER, permission: 'rotate_secrets' },
     params: ExtensionParams,
     body: ExtensionSecretBody,
     responses: {
       200: { description: 'Set; the secret itself is never answered', schema: ExtensionView },
       400: { description: 'invalid_request', schema: ErrorBody },
       401: unauthenticated,
-      403: notAdministering,
+      403: {
+        description: 'The caller does not hold rotate_secrets at the environment',
+        schema: ErrorBody,
+      },
       404: missing,
       409: {
         description:

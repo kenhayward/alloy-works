@@ -206,11 +206,13 @@ export async function revokeApiToken(
  * Before a principal is issued a token in place of its last (the SA plan, SA-I; ADM-007): its newest
  * token is accepted for 24 hours more, never past its expiry, and every older one ends now, so two at
  * most are ever accepted. An end once set stands. Answers the tokens revoked, for the caller to tell
- * every replica.
+ * every replica. With `replacing`, that token is the one that overlaps, and only those already ending
+ * end now: an identity's other tokens are not this rotation's.
  */
 export async function overlapTokens(
   trx: TenantTransaction,
   principalId: string,
+  replacing?: string,
 ): Promise<readonly string[]> {
   const held = await trx
     .selectFrom('api_token')
@@ -220,7 +222,11 @@ export async function overlapTokens(
     .orderBy('id', 'desc')
     .forUpdate()
     .execute();
-  const [newest, ...older] = held;
+  const newest = replacing === undefined ? held[0] : held.find((each) => each.id === replacing);
+  const older =
+    replacing === undefined
+      ? held.slice(1)
+      : held.filter((each) => each.id !== replacing && each.ends_at !== null);
   if (newest !== undefined && newest.ends_at === null) {
     await trx
       .updateTable('api_token')

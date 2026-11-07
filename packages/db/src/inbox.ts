@@ -1,7 +1,12 @@
 import { personView } from './person-view.js';
 import { mayBeToldOfSpend, type BudgetCounts } from './generation-budget.js';
 import { internalHeld } from './internal-held.js';
-import { labelFor, type EntryFlag, type SilentFailureToldKind } from '@alloy-works/domain';
+import {
+  labelFor,
+  type EntryFlag,
+  type SecretFailing,
+  type SilentFailureToldKind,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { notDeletedAs } from './deletion.js';
@@ -76,7 +81,12 @@ export interface StoredNotification {
   /** A proposal about to be swept names its import and when (the IM plan, IM-F); null on every other. */
   readonly import: { readonly import: string; readonly sweepsAt: string } | null;
   /** A silent failure names its kind and what it is of (DGe4); null on every other. */
-  readonly diagnostics: { readonly kind: SilentFailureToldKind; readonly subject: string } | null;
+  readonly diagnostics: {
+    readonly kind: SilentFailureToldKind;
+    readonly subject: string;
+    /** A secret failing's, naming it and every consumer (ADM-047). */
+    readonly secret?: SecretFailing;
+  } | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -335,7 +345,7 @@ export async function listInbox(
       import: row.kind === 'import' ? (row.counts as { import: string; sweepsAt: string }) : null,
       diagnostics:
         row.kind === 'diagnostics'
-          ? (row.counts as { kind: SilentFailureToldKind; subject: string })
+          ? (row.counts as { kind: SilentFailureToldKind; subject: string; secret?: SecretFailing })
           : null,
       at: row.at,
       readAt: row.read_at,

@@ -42,6 +42,8 @@ describe('SCIM', () => {
   let elsewhere: Tenant;
   let providerId: string;
   let token: string;
+  /** A token replaced and still overlapping, which turning SCIM off ends too. */
+  let held = '';
   let admin: { cookie: string; id: string };
 
   beforeAll(async () => {
@@ -594,18 +596,49 @@ describe('SCIM', () => {
     expect(held).toBeUndefined();
   });
 
-  it('a new token ends the one before it', async () => {
-    const before = token;
+  it('ADM-007 a new token leaves the one before it working for 24 hours, and ends any older at once', async () => {
+    const first = token;
     const again = await settings('POST', `/providers/${providerId}/scim/token`, {});
-    token = again.json<{ secret: string }>().secret;
-    expect((await scim('GET', '/Users', undefined, { bearer: before })).statusCode).toBe(401);
+    const second = again.json<{ id: string; secret: string }>();
+    token = second.secret;
+    // Both work: the provider moves to the new one without a moment when neither does.
+    expect((await scim('GET', '/Users', undefined, { bearer: first })).statusCode).toBe(200);
     expect((await scim('GET', '/Users')).statusCode).toBe(200);
+    const ends = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('api_token')
+        .select(['id', 'ends_at'])
+        .where('principal_id', '=', (eb) =>
+          eb
+            .selectFrom('identity_provider')
+            .select('scim_identity')
+            .where('id', '=', providerId),
+        )
+        .orderBy('created_at')
+        .execute(),
+    );
+    expect(ends).toHaveLength(2);
+    const hours = (ends[0]!.ends_at!.getTime() - Date.now()) / 3_600_000;
+    expect(hours).toBeGreaterThan(23.9);
+    expect(hours).toBeLessThanOrEqual(24);
+    expect(ends[1]).toEqual({ id: second.id, ends_at: null });
+
+    // A third: the second overlaps in turn, and the first ends now, so two at most are accepted.
+    const third = await settings('POST', `/providers/${providerId}/scim/token`, {});
+    token = third.json<{ secret: string }>().secret;
+    expect((await scim('GET', '/Users', undefined, { bearer: first })).statusCode).toBe(401);
+    expect((await scim('GET', '/Users', undefined, { bearer: second.secret })).statusCode).toBe(
+      200,
+    );
+    expect((await scim('GET', '/Users')).statusCode).toBe(200);
+    held = second.secret;
   });
 
-  it('turning it off ends its token, and its people sign in as anybody of the provider', async () => {
+  it('ADM-007 turning it off ends every token at once, and its people sign in as anybody of the provider', async () => {
     const off = await settings('DELETE', `/providers/${providerId}/scim`);
     expect(off.statusCode).toBe(200);
     expect((await scim('GET', '/Users')).statusCode).toBe(401);
+    expect((await scim('GET', '/Users', undefined, { bearer: held })).statusCode).toBe(401);
     expect((await signIn('mary')).cookie).toBeDefined();
   });
 });
