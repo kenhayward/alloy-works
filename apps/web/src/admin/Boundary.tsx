@@ -140,7 +140,9 @@ export function Boundary({ client }: { client: Client }) {
                   <td className={styles['wraps']}>
                     {row.absent !== null ? (
                       <span className={styles['muted']}>
-                        {words(`admin.boundary-absent.${row.way}`)}
+                        {row.way === 'malware_scanning'
+                          ? words('admin.boundary-absent.malware_scanning')
+                          : words('admin.boundary-absent')}
                       </span>
                     ) : row.items.length === 0 ? (
                       <span className={styles['muted']}>{words('admin.boundary-here-none')}</span>

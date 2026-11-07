@@ -6637,6 +6637,7 @@
   "admin.boundary-here": "Set up here",
   "admin.boundary-here-none": "Nothing set up",
   "admin.boundary-item": "{name}, {on, select, yes {on} other {off}}{host, select, none {} other {, to {host}}}{boundary, select, inside {, inside your data boundary} outside {, outside your data boundary} other {}}",
+  "admin.boundary-absent": "Nothing exists to send by yet.",
   "admin.boundary-absent.malware_scanning": "No scanning service exists yet.",
   "admin.boundary-change": "Change",
   "admin.boundary-change-for": "Change {way}",
