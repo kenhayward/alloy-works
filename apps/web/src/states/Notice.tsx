@@ -9,7 +9,9 @@ export type NoticeTone =
   | 'withdrawn'
   | 'editing'
   /** Saved and never made a version: offered back as Recover (component-editor.md, RC-F). */
-  | 'unsaved';
+  | 'unsaved'
+  /** Somebody from outside may look in under support access (support.md, ADM-025). */
+  | 'support';
 
 /**
  * Something could not be done, or is not the reader's to change: the sentence, with an edge and a

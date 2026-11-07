@@ -50,6 +50,11 @@
   border-color: var(--warn);
 }
 
+.notice[data-tone='support'] {
+  border-color: var(--info);
+  background: var(--info-bg);
+}
+
 .notice[data-tone='editing'] {
   border-color: var(--info);
   background: var(--info-bg);

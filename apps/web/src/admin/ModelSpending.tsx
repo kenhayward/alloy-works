@@ -42,11 +42,20 @@ interface Budget {
 /**
  * Administration's **Model spending** (generation.md, "Cost"; the G6 plan): the monthly budget and who
  * is told as it is spent (GEN-034, ADM-013, ADM-014, ADM-034), and how often each person may call a
- * model (GEN-035).
+ * model (GEN-035). The budget and the limits are an administrator's; the trend is Diagnostics', so a
+ * reader of Diagnostics alone sees it and nothing that would refuse them (the SA plan, SAc).
  */
-export function ModelSpending({ client }: { client: Client }) {
+export function ModelSpending({
+  client,
+  administers = true,
+}: {
+  client: Client;
+  /** Whether the reader administers the environment, as the service said. */
+  administers?: boolean;
+}) {
   const [people, setPeople] = useState<readonly ShownPerson[]>([]);
   useEffect(() => {
+    if (!administers) return undefined;
     let current = true;
     everyPage<ShownPerson>((cursor) =>
       client.GET('/v1/principals', {
@@ -66,12 +75,12 @@ export function ModelSpending({ client }: { client: Client }) {
     return () => {
       current = false;
     };
-  }, [client]);
+  }, [client, administers]);
   return (
     <>
-      <MonthlyBudget client={client} people={people} />
+      {administers && <MonthlyBudget client={client} people={people} />}
       <Trend client={client} />
-      <RateLimits client={client} people={people} />
+      {administers && <RateLimits client={client} people={people} />}
     </>
   );
 }

@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
+import { administersAt } from '../access/ManageAccessLink.js';
 import styles from './Administration.module.css';
 import { formats, words } from '../words/words.js';
 
@@ -66,7 +67,8 @@ const where = (endpoint: Endpoint | null) =>
  * meaning is searched by, and the one embedding is routed to that waits, with what embedding the
  * corpus would cost; **Confirm** embeds nothing before it is pressed, and the model serving goes on
  * answering until the new one has every text. Beside it, how long new versions took to be findable by
- * meaning (the FR plan, FR-E; SCH-067).
+ * meaning (the FR plan, FR-E; SCH-067). The model is an administrator's to read, the lag Diagnostics',
+ * each asked apart, so a reader of Diagnostics alone sees the lag and no failure (the SA plan, SAc).
  */
 export function EmbeddingPanel({ client, generation }: { client: Client; generation: number }) {
   const [read, setRead] = useState<View | 'failed' | null>(null);
@@ -74,8 +76,20 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
   const [said, setSaid] = useState('');
   const [failure, setFailed] = useState('');
   const [busy, setBusy] = useState(false);
+  const [administers, setAdministers] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
+    let current = true;
+    void administersAt(client, 'tenant').then((answer) => {
+      if (current) setAdministers(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+
+  useEffect(() => {
+    if (administers !== true) return undefined;
     let current = true;
     client
       .GET('/v1/embedding')
@@ -85,6 +99,13 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
       .catch(() => {
         if (current) setRead('failed');
       });
+    return () => {
+      current = false;
+    };
+  }, [client, generation, administers]);
+
+  useEffect(() => {
+    let current = true;
     // Unread, it is left unsaid.
     client
       .GET('/v1/search/meaning/freshness')
@@ -123,6 +144,14 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
     }
   };
 
+  if (administers === false) {
+    return freshness ? (
+      <section aria-label={words('admin.searching-by-meaning')}>
+        <h2>{words('admin.searching-by-meaning')}</h2>
+        <p>{lag(freshness)}</p>
+      </section>
+    ) : null;
+  }
   if (read === null) return null;
   if (read === 'failed') return <p>{words('admin.searching-by-meaning-could-not')}</p>;
   const pending = read.pending;

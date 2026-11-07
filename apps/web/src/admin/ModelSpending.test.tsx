@@ -13,6 +13,7 @@ const json = (status: number, body: unknown) =>
 
 function service() {
   const sent: { method: string; path: string; body: unknown }[] = [];
+  const asked: string[] = [];
   let budget = {
     budget: null as { currency: string; limit: number; thresholds: number[] } | null,
     month: '2026-10',
@@ -28,6 +29,7 @@ function service() {
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
+    asked.push(path);
     if (path === '/v1/model-limits' && request.method === 'GET') return json(200, limits);
     if (path === '/v1/model-usage') {
       return json(200, {
@@ -109,7 +111,11 @@ function service() {
     }
     return json(404, { code: 'not_found', message: 'Not found' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    sent,
+    asked,
+  };
 }
 
 describe("Administration's Model spending", () => {
@@ -134,6 +140,14 @@ describe("Administration's Model spending", () => {
     expect(within(months).getByRole('table', { name: 'Query runs by month' })).toHaveTextContent(
       '1,200',
     );
+  });
+
+  it('shows a reader of Diagnostics alone the trend, and neither the budget nor the limits they could not read', async () => {
+    const { client, asked } = service();
+    render(<ModelSpending client={client} administers={false} />);
+    expect(await screen.findByRole('region', { name: 'Twelve months' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Budget' })).toBeNull();
+    expect(asked.filter((path) => /model-budget|model-limits|principals/.test(path))).toEqual([]);
   });
 
   it('GEN-034 ADM-013 ADM-014 sets a monthly budget with alerts before it, declares that nothing stops when it is spent, and names who is told', async () => {
