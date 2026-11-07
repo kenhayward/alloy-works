@@ -2,6 +2,7 @@ import type { AuditContext, ModelEndpoint } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { createConnection, setConnectionCredential } from './connections.js';
 import { grant } from './grants.js';
 import { listInbox } from './inbox.js';
 import { setMailChannel, setMailPassword } from './mail.js';
@@ -18,6 +19,7 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { secretsFailing, tenantSecrets } from './secrets.js';
 import { createServiceIdentity } from './service-identities.js';
+import { createSpace } from './spaces.js';
 import { silentFailuresOf, tellSilentFailures } from './silent-failures.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -221,5 +223,50 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     await run('model_unavailable');
     expect(await sweep()).toBe(1);
     expect(await told()).toHaveLength(2);
+  });
+
+  it("ADM-047 reads a connection's break from its runs since the credential was replaced", async () => {
+    const id = await as(async (trx) => {
+      const space = (await createSpace(trx, 'Readings')).id;
+      const made = await createConnection(trx, {
+        author: ada,
+        spaceId: space,
+        settings: {
+          schemaVersion: 1,
+          name: 'Warehouse',
+          description: 'The sites and their readings.',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: 'reader',
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const set = await setConnectionCredential(trx, {
+        id: made.connection.id,
+        sealed: SEALED,
+        by: ada,
+        sealedFor: made.connection.settings,
+      });
+      if (set.answer !== 'set') throw new Error(set.answer);
+      return made.connection.id;
+    });
+    const failing = async () =>
+      (await as((trx) => secretsFailing(trx))).find((each) => each.key.includes(id));
+    expect((await failing())?.failing).toBe(false);
+    await as((trx) =>
+      sql`insert into query_run (act, principal_id, connection_id, duration_ms, outcome, failure)
+          values ('sample', ${ada}, ${id}, 10, 'failed', 'connection_failed')`.execute(trx),
+    );
+    expect(await failing()).toMatchObject({
+      failing: true,
+      secret: { kind: 'connection_credential', name: 'Warehouse' },
+    });
   });
 });

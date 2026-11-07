@@ -333,7 +333,7 @@ export async function secretsFailing(trx: TenantTransaction): Promise<
   for (const each of await tenantSecrets(trx)) {
     if (each.replacedAt === null) continue;
     const since = each.replacedAt;
-    let failing = false;
+    let failing: boolean;
     if (each.kind === 'connection_credential' || each.kind === 'delivery_store_password') {
       const { rows } = await sql<{ failing: boolean }>`
         select coalesce((
