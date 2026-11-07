@@ -214,6 +214,11 @@ export async function overlapTokens(
   principalId: string,
   replacing?: string,
 ): Promise<readonly string[]> {
+  // Held to the commit, so a second replacement waits for the token the first is making, rather than
+  // reading past it and leaving three accepted (the SAd review).
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`api_token:${principalId}`}, 0))`.execute(
+    trx,
+  );
   const held = await trx
     .selectFrom('api_token')
     .select(['id', 'name', 'ends_at'])

@@ -12,6 +12,7 @@ import {
   freshDatabase,
   queryAs,
   TEST_PASSWORDS,
+  untilWaitingOnLocks,
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
@@ -212,6 +213,58 @@ describe('api_token, where a personal token is kept as its hash (service-foundat
       trx.selectFrom('api_token').select('id').where('principal_id', '=', hedy).execute(),
     );
     expect(left).toHaveLength(1);
+  });
+
+  it('serialises two replacements at once, so two tokens at most are ever accepted', async () => {
+    const mary = await principal('mary', 'Mary');
+    const [a, b, c] = [aHash(), aHash(), aHash()];
+    await issue({ principal_id: mary, token_hash: a, scopes: [] });
+    const insert = (trx: Parameters<Parameters<typeof service.withTenant>[1]>[0], hash: string) =>
+      trx
+        .insertInto('api_token')
+        .values({
+          principal_id: mary,
+          name: 'SCIM',
+          token_hash: hash,
+          scopes: [],
+          expires_at: new Date(Date.now() + 30 * DAY_MS),
+        })
+        .execute();
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let overlapped = () => {};
+    const first = new Promise<void>((resolve) => {
+      overlapped = resolve;
+    });
+    const one = service.withTenant(tenant, async (trx) => {
+      await overlapTokens(trx, mary);
+      await insert(trx, b);
+      overlapped();
+      await held;
+    });
+    await first;
+    const two = service.withTenant(tenant, async (trx) => {
+      await overlapTokens(trx, mary);
+      await insert(trx, c);
+    });
+    // The second waits for the first, rather than reading past the token it is making.
+    const waited = await untilWaitingOnLocks(db.adminUrl, 1).then(
+      () => true,
+      () => false,
+    );
+    release();
+    await Promise.all([one, two]);
+    expect(waited).toBe(true);
+    const accepted = await service.withTenant(tenant, async (trx) => ({
+      a: await findApiToken(trx, a),
+      b: await findApiToken(trx, b),
+      c: await findApiToken(trx, c),
+    }));
+    expect(accepted.a).toBeUndefined();
+    expect(accepted.b).toBeDefined();
+    expect(accepted.c).toBeDefined();
   });
 
   it('goes with its principal: a person removed takes their tokens with them', async () => {
