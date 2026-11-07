@@ -37970,13 +37970,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1559,
+      "line": 1572,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1128,
+      "line": 1141,
       "kind": "title"
     },
     {
