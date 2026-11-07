@@ -294,6 +294,12 @@ export interface IntegrityCheckTable {
   failure: 'hash_mismatch' | 'digest_mismatch' | 'object_missing' | null;
 }
 
+/** A silent failure administrators were told of, until it clears (0216; DGe4), by `kind:subject`. */
+export interface SilentFailureToldTable {
+  failure: string;
+  told_at: ColumnType<Date, Date | undefined, never>;
+}
+
 export interface UsageDayTable {
   day: ColumnType<string, string, string>;
   measure: string;
@@ -1550,6 +1556,7 @@ export interface TenantTables {
   background_work: BackgroundWorkTable;
   usage_day: UsageDayTable;
   integrity_check: IntegrityCheckTable;
+  silent_failure_told: SilentFailureToldTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;
