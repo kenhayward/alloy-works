@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { permissions } from '../access/permissions.js';
+import { supportScopes } from '../access/support.js';
 import { INTEGRITY_CLASSES, INTEGRITY_FAILURES } from '../diagnostics/integrity.js';
 
 /**
@@ -70,6 +71,8 @@ export const refusalReasons = [
   'capped',
   'scoped',
   'token_not_allowed',
+  // Decided by a support grant: outside its scope or its spaces (support.md).
+  'support',
 ] as const;
 
 /** A refused authorisation (IAM-013): what was asked, of what, the rule and whether it was hidden. */
@@ -174,6 +177,17 @@ const GUARDRAILS = 'packages/db/src/guardrails.ts';
 const LIMITS = 'packages/db/src/generation-limits.ts';
 const BUDGET = 'packages/db/src/generation-budget.ts';
 const EMBEDDINGS = 'packages/db/src/embeddings.ts';
+
+const SUPPORT = 'packages/db/src/support.ts';
+const SupportScope = z.enum(supportScopes);
+const SupportPurpose = z.string().min(1).max(500);
+const SupportGiven = z.strictObject({
+  principal: Id,
+  scope: SupportScope,
+  spaces: z.array(Id),
+  purpose: SupportPurpose,
+  expiresAt: z.iso.datetime(),
+});
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -872,9 +886,25 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/shares.ts',
   ),
-  'support.granted': kind(['LIF-072', 'ADM-042'], empty, LATER),
-  'support.used': kind(['LIF-072', 'ADM-024'], empty, LATER),
-  'support.revoked': kind(['LIF-072', 'ADM-042'], empty, LATER),
+  // Support access granted and revoked (support.md; ADM-042): whom for, its scope, spaces, purpose and
+  // expiry. The purpose is the granting administrator's sentence, kept as a suspension's reason is.
+  'support.granted': kind(['LIF-072', 'ADM-042'], SupportGiven, SUPPORT),
+  'support.revoked': kind(['LIF-072', 'ADM-042'], SupportGiven, SUPPORT),
+  // Support used (ADM-024): once a person a day a scope, and each content read, naming the route, the
+  // ids its path names and the purpose its `Support-Read` header gave.
+  'support.used': kind(
+    ['LIF-072', 'ADM-024'],
+    z.union([
+      z.strictObject({ scope: SupportScope }),
+      z.strictObject({
+        scope: z.literal('content'),
+        route: AuditName,
+        on: z.record(AuditName, Id),
+        purpose: SupportPurpose,
+      }),
+    ]),
+    SUPPORT,
+  ),
   // A delivery from CT Studio written (the CS plan, Task 5; API-071): the delivery and its family.
   // The document or tables are the event's subject.
   'bridge.delivered': kind(

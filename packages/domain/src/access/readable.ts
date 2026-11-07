@@ -19,6 +19,8 @@ export interface ReadableFacts {
   readonly grants: readonly AccessGrant[];
   readonly now: Date;
   readonly externalCapDays: AccessFacts['externalCapDays'];
+  /** The principal's support grant, which decides each read in place of the grants while active. */
+  readonly support?: AccessFacts['support'];
 }
 
 /**
@@ -67,6 +69,7 @@ export function readableSet(facts: ReadableFacts): ReadableSet {
       grants,
       now: facts.now,
       externalCapDays: facts.externalCapDays,
+      ...(facts.support === undefined ? {} : { support: facts.support }),
     }).allowed;
   const tenant = asked([{ kind: 'tenant' }], atTenant);
   const spaces = facts.spaces.filter((id) =>

@@ -27,3 +27,11 @@ export {
   type Decision,
 } from './decide.js';
 export { readableSet, type ReadableFacts, type ReadableSet } from './readable.js';
+export {
+  supportActive,
+  supportReaches,
+  supportScopes,
+  type Reveals,
+  type SupportGrant,
+  type SupportScope,
+} from './support.js';

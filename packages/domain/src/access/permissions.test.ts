@@ -45,6 +45,7 @@ describe('the permission set', () => {
         'edit',
         'export_audit',
         'export_environment',
+        'grant_support',
         'hold',
         'import_environment',
         'manage_definitions',
@@ -142,5 +143,16 @@ describe('the permission set', () => {
     ).toEqual(['Administrator']);
     expect(administrativePermissions).toContain('read_diagnostics');
     expect(tokenScopes).toContain('read_diagnostics');
+  });
+
+  it("IAM-070 names granting support access apart from administer: a person's act alone, administrative, held by Administrator, and refused an outsider", () => {
+    expect(
+      starterRoles
+        .filter((role) => (role.permissions as readonly string[]).includes('grant_support'))
+        .map((role) => role.name),
+    ).toEqual(['Administrator']);
+    expect(administrativePermissions).toContain('grant_support');
+    expect(tokenScopes).not.toContain('grant_support');
+    expect(externalCap).toContain('grant_support');
   });
 });

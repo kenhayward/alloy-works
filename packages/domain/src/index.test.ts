@@ -148,6 +148,10 @@ describe('the domain package', () => {
         'starterRoles',
         // W12.1: what a personal token may be scoped to, every permission but read (TK-B).
         'tokenScopes',
+        // Support access, decided apart from grants (support.md).
+        'supportActive',
+        'supportReaches',
+        'supportScopes',
         // The audit log (AU1-A): its kinds and their details, its context, and labels.
         'AccessRefusedDetail',
         'AuditContext',

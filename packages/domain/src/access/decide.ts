@@ -5,6 +5,7 @@ import {
   type Permission,
   type PrincipalKind,
 } from './permissions.js';
+import { supportActive, type SupportGrant } from './support.js';
 
 /** A grant as a decision reads it: a role, one subject, one level, an effect and an expiry. */
 export interface AccessGrant {
@@ -45,6 +46,11 @@ export interface AccessFacts {
    * principal's grants, never a grant of its own. Undefined for a session, which is not masked.
    */
   readonly scopes?: readonly Permission[] | undefined;
+  /**
+   * The principal's support grant, unrevoked and unexpired as loaded (support.md). While `supportActive`
+   * holds it decides in place of the grants: read in its spaces, diagnostics, and nothing else.
+   */
+  readonly support?: SupportGrant | undefined;
 }
 
 /** A grant that decided, and the group it reached the principal through, or null for directly. */
@@ -56,9 +62,10 @@ export interface Decision {
   /**
    * `capped`: an external principal, refused whatever the walk found, which `level` still names.
    * `scoped`: allowed by the grants, and refused because the token the request was made with is not
-   * scoped to it; `level` and `grants` still name the allow it masked.
+   * scoped to it; `level` and `grants` still name the allow it masked. `support`: decided by an active
+   * support grant, allowed at `level` or refused as outside its scope, `grants` empty.
    */
-  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped';
+  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped' | 'support';
   /** The level that decided; null when no level said anything. */
   readonly level: Level | null;
   /** The grants that decided at that level: the denials, or else the allows. */
@@ -122,6 +129,12 @@ function through(grant: AccessGrant, facts: AccessFacts): string | null | undefi
  * a refusal. Enforcement reads `allowed`; the explanation is the rest of the same answer.
  */
 export function decide(permission: Permission, facts: AccessFacts): Decision {
+  if (
+    facts.support !== undefined &&
+    supportActive(facts.support, facts.now, facts.externalCapDays)
+  ) {
+    return decideSupport(permission, facts, facts.support);
+  }
   const walked = walk(permission, facts);
   if (facts.principal.kind === 'external' && externalCap.includes(permission)) {
     return { ...walked, allowed: false, reason: 'capped' };
@@ -138,6 +151,35 @@ export function decide(permission: Permission, facts: AccessFacts): Decision {
     return { ...walked, allowed: false, reason: 'scoped' };
   }
   return walked;
+}
+
+/**
+ * A support principal's decision (support.md; SA-D): diagnostics at the tenant in every scope, read in
+ * the granted spaces for a metadata or content grant, and nothing else, whatever the grants say. A
+ * denial on the way still refuses, and a token's scopes still mask.
+ */
+function decideSupport(
+  permission: Permission,
+  facts: AccessFacts,
+  support: SupportGrant,
+): Decision {
+  checkChain(facts.chain);
+  const checked = walkFor(permission, facts.chain);
+  const level =
+    permission === 'read_diagnostics'
+      ? facts.chain.at(-1)!
+      : permission === 'read' && support.scope !== 'diagnostics'
+        ? facts.chain.find((each) => each.kind === 'space' && support.spaces.includes(each.id))
+        : undefined;
+  if (level === undefined) {
+    return { permission, allowed: false, reason: 'support', level: null, grants: [], checked };
+  }
+  const walked = walk(permission, facts);
+  if (walked.reason === 'denied') return walked;
+  if (facts.scopes !== undefined && permission !== 'read' && !facts.scopes.includes(permission)) {
+    return { permission, allowed: false, reason: 'scoped', level, grants: [], checked };
+  }
+  return { permission, allowed: true, reason: 'support', level, grants: [], checked };
 }
 
 function walk(permission: Permission, facts: AccessFacts): Decision {
