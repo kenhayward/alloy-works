@@ -38,6 +38,7 @@ export const NotificationView = z.object({
     'reference',
     'import',
     'mail',
+    'diagnostics',
   ]),
   actor: z
     .object({
@@ -100,6 +101,26 @@ export const NotificationView = z.object({
     })
     .nullable()
     .describe('A proposal left alone, abandoned in seven days; null otherwise'),
+  diagnostics: z
+    .object({
+      kind: z.enum([
+        'source_down',
+        'job_failed',
+        'index_lagging',
+        'work_failing',
+        'capability_failing',
+        'integrity_failing',
+      ]),
+      subject: z
+        .string()
+        .describe(
+          'What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index',
+        ),
+    })
+    .nullable()
+    .describe(
+      'A failure nobody would otherwise see, told to those who administer once until it clears; null otherwise',
+    ),
   at: z.iso.datetime(),
   read: z.boolean(),
 });

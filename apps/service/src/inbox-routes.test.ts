@@ -222,6 +222,35 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
     expect((await inbox('grace')).notifications.map((each) => each.id)).not.toContain(mine);
   });
 
+  it('names a silent failure an administrator was told of by its kind and subject alone (DGe4)', async () => {
+    await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('notification')
+        .values({
+          recipient: ids.alice!,
+          kind: 'diagnostics',
+          actor: null,
+          thread_id: null,
+          artifact_id: null,
+          counts: JSON.stringify({ kind: 'work_failing', subject: 'sweepDates' }),
+        })
+        .execute(),
+    );
+    expect((await inbox('alice')).notifications).toEqual([
+      expect.objectContaining({
+        kind: 'diagnostics',
+        actor: null,
+        on: null,
+        counts: null,
+        diagnostics: { kind: 'work_failing', subject: 'sweepDates' },
+      }),
+    ]);
+    expect((await inbox('grace')).notifications[0]!.diagnostics).toBeNull();
+    await tenantDb.withTenant(tenant, (trx) =>
+      trx.deleteFrom('notification').where('kind', '=', 'diagnostics').execute(),
+    );
+  });
+
   it('pages the inbox by a cursor', async () => {
     await mentioning('ivy');
     await mentioning('ivy');

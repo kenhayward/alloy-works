@@ -1200,6 +1200,7 @@ export {
   sweepEmbeddingLag,
   recordEmbeddingLag,
   embeddingFreshness,
+  embeddingWaitSeconds,
   type EmbeddingFreshness,
   embedIndexed,
   embeddedHashes,
@@ -1697,6 +1698,7 @@ export {
   type IntegrityItem,
   type ReadObject,
 } from './integrity.js';
+export { silentFailuresOf, tellSilentFailures } from './silent-failures.js';
 export {
   backgroundWork,
   recordBackgroundWork,

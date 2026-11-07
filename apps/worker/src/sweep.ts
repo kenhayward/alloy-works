@@ -33,6 +33,8 @@ import {
   sweepWebhookDeliveries,
   sweepMail,
   sweepImports,
+  silentFailuresOf,
+  tellSilentFailures,
   expireTenantExport,
   tenantExportsDue,
   type JobQueue,
@@ -76,6 +78,7 @@ export const SWEEPS_UNDER_REVIEW = {
     'sweepMeasurementsEverywhere',
     'sweepUsageEverywhere',
     'sweepIntegrityEverywhere',
+    'sweepSilentFailuresEverywhere',
   ],
 } as const;
 
@@ -584,6 +587,26 @@ export async function sweepIntegrityEverywhere(
     }
   });
   return { checked, failed };
+}
+
+/**
+ * Silent failures told, in every live tenant (diagnostics.md, "Who else is told"; DGe4): each read from
+ * the records Diagnostics reads, and told to those who administer once until it clears. Answers how
+ * many were told of.
+ */
+export async function sweepSilentFailuresEverywhere(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let told = 0;
+  await inEachTenant(db, log, 'sweepSilentFailuresEverywhere', async (tenant) => {
+    told += await db.withTenant(
+      tenant,
+      async (trx) => tellSilentFailures(trx, await silentFailuresOf(trx)),
+      { actorKind: 'system' },
+    );
+  });
+  return told;
 }
 
 /**

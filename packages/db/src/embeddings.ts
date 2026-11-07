@@ -258,6 +258,19 @@ export async function embeddingFreshness(trx: TenantTransaction): Promise<Embedd
   };
 }
 
+/**
+ * How long the oldest artifact waiting to be embedded has waited, in seconds: the lag now, before it is
+ * measured (SCH-067; DGe4). Null with none waiting.
+ */
+export async function embeddingWaitSeconds(trx: TenantTransaction): Promise<number | null> {
+  if (!(await queueStored(trx))) return null;
+  const { rows } = await sql<{ s: number | null }>`
+    select extract(epoch from now() - min(queued_at))::float8 as s from embedding_queued`.execute(
+    trx,
+  );
+  return rows[0]?.s ?? null;
+}
+
 /** Lag measured 30 days ago and more goes (SCH-067). */
 export async function sweepEmbeddingLag(trx: TenantTransaction): Promise<number> {
   const { rows: present } = await sql<{ present: boolean }>`

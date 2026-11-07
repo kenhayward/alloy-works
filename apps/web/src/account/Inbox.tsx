@@ -32,7 +32,8 @@ interface Place {
 
 interface Notification {
   readonly id: string;
-  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import' | 'mail';
+  readonly kind:
+    Kind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import' | 'mail' | 'diagnostics';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round a person was named a reviewer on (RR-H). */
@@ -60,6 +61,17 @@ interface Notification {
   } | null;
   /** A proposal left alone, abandoned at `sweepsAt` (IM-F). */
   readonly import?: { readonly id: string; readonly sweepsAt: string } | null;
+  /** A silent failure told to those who administer (DGe4). */
+  readonly diagnostics?: {
+    readonly kind:
+      | 'source_down'
+      | 'job_failed'
+      | 'index_lagging'
+      | 'work_failing'
+      | 'capability_failing'
+      | 'integrity_failing';
+    readonly subject: string;
+  } | null;
   readonly at: string;
   readonly read: boolean;
 }
@@ -222,6 +234,12 @@ function said(each: Notification): string {
       return words('account.an-import-you-have-not');
     case 'mail':
       return words('account.email-is-failing');
+    case 'diagnostics': {
+      const failure = each.diagnostics;
+      return failure
+        ? words(`account.silent-failure.${failure.kind}`, { subject: failure.subject })
+        : words('account.silent-failure.work_failing');
+    }
   }
 }
 
@@ -411,6 +429,11 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                   {each.kind === 'mail' && (
                     <a href="#/admin/email" onClick={() => void markRead(each)}>
                       {words('account.open-email')}
+                    </a>
+                  )}
+                  {each.kind === 'diagnostics' && (
+                    <a href="#/admin/diagnostics" onClick={() => void markRead(each)}>
+                      {words('account.open-diagnostics')}
                     </a>
                   )}
                   {each.kind === 'webhook' && (

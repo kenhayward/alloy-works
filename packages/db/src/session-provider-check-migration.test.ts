@@ -71,6 +71,7 @@ describe('migration 0213, which lets a session keep a sealed refresh token', () 
       '0213_session_provider_check',
       '0214_usage_day',
       '0215_integrity_check',
+      '0216_silent_failures',
     ]);
 
     expect(

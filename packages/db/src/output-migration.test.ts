@@ -366,6 +366,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0213_session_provider_check',
       '0214_usage_day',
       '0215_integrity_check',
+      '0216_silent_failures',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

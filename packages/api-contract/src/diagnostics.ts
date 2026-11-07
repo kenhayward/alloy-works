@@ -176,6 +176,12 @@ export const DiagnosticsView = z.object({
       .nullable()
       .describe("A version's wait to be searchable by meaning, over the last 7 days"),
     maxLagSeconds: z.number().nullable(),
+    waitingSeconds: z
+      .number()
+      .nullable()
+      .describe(
+        'How long the oldest version waiting to be searchable by meaning has waited; null with none waiting',
+      ),
   }),
   webhooks: z.object({
     subscriptions: z.int(),

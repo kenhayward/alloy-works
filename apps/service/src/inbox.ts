@@ -166,6 +166,8 @@ export function inboxHandlers(
               each.import === null
                 ? null
                 : { id: each.import.import, sweepsAt: each.import.sweepsAt },
+            // A silent failure (DGe4): its kind and what it is of, codes alone.
+            diagnostics: each.diagnostics,
             at: each.at.toISOString(),
             read: each.readAt !== null,
           })),

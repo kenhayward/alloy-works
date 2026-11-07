@@ -3,6 +3,27 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.241.0 - 2026-11-07 (PR #1051)
+
+Diagnostics: how an environment is doing, in Administration, from each capability's health to what failed with nobody told, which is now told to whoever administers it. Usage over 13 months, every performance budget against production, the operator's objectives with backups and rehearsals recorded, and every stored item checked again within 28 days. Sessions through an organisation's sign-in provider are asked again every five minutes, and an installation on the internet has an outside check.
+
+### Added
+
+- **Diagnostics in Administration.** An administrator sees how the environment is doing: what failed with nobody told first, then each capability's health over the last 15 minutes in icon and words, the search index, webhook and mail delivery, background work, the last day's jobs, each data source's recent runs and the month's model spend against its budget.
+- **Performance budgets in Diagnostics.** An administrator sees every performance budget the specification states, what it is held to, what production measured over the last 7 days, and whether it is met. A budget production cannot measure yet says why. Searches, relationships and a document's structure are now measured on their own, and each reads as degraded when it runs past its budget.
+- **Objectives in Diagnostics.** An administrator sees this month's availability, the recovery point and the recovery time against the objectives the operator set: 99.5%, 24 hours and 4 hours unless set otherwise. The service is checked each minute, and on the internet installation every backup and restore rehearsal records itself. A restore not rehearsed in the last 35 days says so, and rehearsals now run monthly.
+- **Usage by day.** Each night the environment counts what it used the day before: publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, with the database and stored files sampled too. Whoever administers reads 13 months of it at `GET /v1/usage`.
+- **Usage in Administration.** An administrator sees what the environment has used over 13 months: the database and stored files, publications made, assets stored, mail, webhooks, translation, reference searches, embedding and query time. Each has a trend, this month so far, last month and the same month a year before, and any one can be shown by month or by day.
+- **Integrity checked.** Each night a share of the environment's stored images, versions and exports is checked again against its hash or digests, so every one is checked within 28 days. Diagnostics shows each kind checked and any failing, and a failure is recorded in the audit log.
+- **Silent failures told.** When something fails that nobody would otherwise notice, such as background work, failed jobs, a data source down, the search index falling behind or a failed integrity check, those who administer the environment are told in their inbox, once until it clears, and Diagnostics says so. A search by meaning while the index is behind says new content may not be found by meaning yet.
+- **Signed out when your organisation disables you.** A session through your organisation's sign-in provider asks it again every five minutes, and somebody it no longer lets in is signed out at their next request and loses their API tokens. The provider is now asked for offline access; Google sign-in is unchanged.
+- **An outside check for an installation on the internet.** One script asks the installation, from outside, for what a caller should not get, and the door now logs who called.
+
+### Fixed
+
+- **Keycloak's administration is closed at the door.** A path with a semicolon in it reached Keycloak's console and its master realm; only the sign-in realm is let through now. The store's internal services no longer answer other containers, which reach it through a gate that passes S3 alone, the firewall finds its network rather than assuming one, and automatic deploys take a release only by its tag.
+- **Deliveries into an installation on the internet are quicker.** Its worker reaches the object store directly, rather than out through the proxy and back, which made each of its calls about 13 times as long.
+
 ## 0.240.0 - 2026-11-06 (PR #1035)
 
 Component groups: a set of components reused as one, approved together, and offered to each document that places it. New document now shows the templates, every document starts from one, the service measures each capability and its background work for Diagnostics to come, and backups can be pulled by another machine.

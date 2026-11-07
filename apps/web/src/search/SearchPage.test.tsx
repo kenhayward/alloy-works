@@ -145,6 +145,23 @@ describe('the search page', () => {
     expect(screen.queryByText(/Found by/)).toBeNull();
   });
 
+  it('ADM-037 tells the searcher that new content may not be found by meaning yet while the index lags', async () => {
+    const lagging = service(() => json(200, { ...results, meaning: 'used', meaningBehind: true }));
+    const { unmount } = render(
+      <SearchPage client={lagging.client} query="lever" onSearch={() => undefined} />,
+    );
+    expect(
+      await screen.findByText(
+        'New content may not be found by meaning yet: it is waiting longer than it should to be indexed.',
+      ),
+    ).toBeInTheDocument();
+    unmount();
+    const current = service(() => json(200, { ...results, meaning: 'used' }));
+    render(<SearchPage client={current.client} query="lever" onSearch={() => undefined} />);
+    await screen.findAllByRole('article');
+    expect(screen.queryByText(/may not be found by meaning/)).toBeNull();
+  });
+
   it('SCH-053 shows a section with its document and the components it places, and offers to place it in a document', async () => {
     const PUMP = 'cccccccc-0000-4000-8000-0000000000aa';
     const { client } = service(() =>

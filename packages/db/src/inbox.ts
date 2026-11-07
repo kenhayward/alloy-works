@@ -1,7 +1,7 @@
 import { personView } from './person-view.js';
 import { mayBeToldOfSpend, type BudgetCounts } from './generation-budget.js';
 import { internalHeld } from './internal-held.js';
-import { labelFor, type EntryFlag } from '@alloy-works/domain';
+import { labelFor, type EntryFlag, type SilentFailureToldKind } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { notDeletedAs } from './deletion.js';
@@ -55,7 +55,9 @@ export interface StoredNotification {
     | 'reference'
     | 'import'
     /** The environment's mail failing, told to those who configure services (EM-N). */
-    | 'mail';
+    | 'mail'
+    /** A silent failure, told to those who administer (DGe4). */
+    | 'diagnostics';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
@@ -73,6 +75,8 @@ export interface StoredNotification {
   } | null;
   /** A proposal about to be swept names its import and when (the IM plan, IM-F); null on every other. */
   readonly import: { readonly import: string; readonly sweepsAt: string } | null;
+  /** A silent failure names its kind and what it is of (DGe4); null on every other. */
+  readonly diagnostics: { readonly kind: SilentFailureToldKind; readonly subject: string } | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -317,7 +321,8 @@ export async function listInbox(
         row.kind === 'mail' ||
         row.kind === 'webhook' ||
         row.kind === 'reference' ||
-        row.kind === 'import'
+        row.kind === 'import' ||
+        row.kind === 'diagnostics'
           ? null
           : (row.counts as DigestCounts | null),
       budget: row.kind === 'budget' ? (row.counts as BudgetCounts) : null,
@@ -328,6 +333,10 @@ export async function listInbox(
       reference:
         row.kind === 'reference' ? (row.counts as { entry: string; outcome: EntryFlag }) : null,
       import: row.kind === 'import' ? (row.counts as { import: string; sweepsAt: string }) : null,
+      diagnostics:
+        row.kind === 'diagnostics'
+          ? (row.counts as { kind: SilentFailureToldKind; subject: string })
+          : null,
       at: row.at,
       readAt: row.read_at,
     })),

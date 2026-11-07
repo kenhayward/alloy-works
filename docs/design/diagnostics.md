@@ -3,7 +3,7 @@
 How an administrator answers "is it us or is it you" without a support ticket: each capability's health, what
 background work last did, what failed silently, what the environment uses, and whether the product meets what it
 promises. Built by [the DG plan](../plans/2026-11-06-dg-diagnostics-usage-and-health.md), which holds the decisions;
-built so far is the measuring, background work, Diagnostics, usage, budgets and integrity.
+all of it is built.
 
 ## Measuring
 
@@ -52,21 +52,35 @@ environment's role. Codes and counts, never content.
 
 `apps/web/src/admin/Diagnostics.tsx`, in the System group, read once as it opens. **Needs attention** comes first
 (`needsAttention`): a capability failing or degraded, work failing or late, jobs failed, webhooks failing or turned
-off, mail failing, a data source down, each in a sentence with its code. Then health by capability, the index,
+off, mail failing, a data source down, the index lagging past its five minutes, each in a sentence with its code. Then health by capability, the index,
 deliveries, background work, jobs, data sources and budgets. Health is a `Chip` with an icon and its word, never
 colour alone, and not `Lozenge`, which is for content's states.
 
-**Who else is told** of a silent failure (ADM-037's second half), kind by kind:
+## Silent failures told
 
-| Kind               | The person waiting                                                              |
-| ------------------ | ------------------------------------------------------------------------------- |
-| A query timing out | The person running it, at once (`timeout`, 504)                                 |
-| A data source down | The person running a query on it, at once, by its failure code                  |
-| A job failed       | Its submitter, on their job (Jobs)                                              |
-| A webhook failing  | Its maker, in their inbox when it is turned off (WB)                            |
-| Mail failing       | Those who configure services, in their inbox, once until it clears (EM-N)       |
-| The index lagging  | **Nobody**: an author whose new version is not yet found by meaning is not told |
-| Background work    | Nobody waits on a sweep; Diagnostics alone                                      |
+`SILENT_FAILURES` (`packages/domain/src/diagnostics/silent.ts`, pre-flight 7) lists, kind by kind, how the person
+waiting is told, or why nobody waits, and how administrators are; a test finds each telling where it says.
+
+| Kind                 | The person waiting                                                 | Administrators         |
+| -------------------- | ------------------------------------------------------------------ | ---------------------- |
+| A query timing out   | The person running it, at once, by its code (`timeout`)            | Diagnostics' sources   |
+| A data source down   | The person running a query on it, at once, by its reason           | Inbox                  |
+| A job failed         | Its submitter, on their job                                        | Inbox                  |
+| A webhook failing    | Its maker, in their inbox when it is turned off (WB)               | That notice, not twice |
+| Mail failing         | Those who configure services, in their inbox, once until it clears | That notice, not twice |
+| The index lagging    | Whoever searches by meaning meanwhile, beside the results          | Inbox                  |
+| Background work      | Nobody waits on a sweep or a loop                                  | Inbox                  |
+| A capability failing | The person whose request failed, at once, by its code              | Inbox                  |
+| Integrity failing    | Nobody asked: it is the product checking its own store             | Inbox                  |
+
+- **The index lagging** is the oldest artifact waiting to be embedded (`embeddingWaitSeconds`) past SCH-067's five
+  minutes (`indexLagging`). A search that used meaning meanwhile answers `meaningBehind`, and Search says new
+  content may not be found by meaning yet; Diagnostics says so in Needs attention.
+- **Administrators are told** by `sweepSilentFailuresEverywhere` (`silentFailuresOf`, `tellSilentFailures`): each
+  failure read from the records Diagnostics reads, and told once to those who administer at the environment, each
+  decided again on their grants, by the inbox kind `diagnostics`, never mailed, as a failing mail channel is (EM-N).
+  `silent_failure_told` (0216) keeps what was told, left out of exports; a failure cleared is forgotten, so its
+  return tells again, and one told to nobody is told when somebody may be.
 
 ## Usage
 
@@ -145,29 +159,25 @@ declare what is re-verified and within what period: 28 days.
 - **Shown** in Diagnostics' Integrity part, each class's items, those checked in the period and those failing,
   and in Needs attention while any fails.
 
-## Not yet built
-
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging (DGe4).
-
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                              |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)                                          |
-| **ADM-011** | Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)                                                       |
-| **ADM-033** | Administration's Usage: each measure as a trend of 13 months, against last month and a year before, and by month or day; kept 396 days                                                     |
-| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100 |
-| **ADM-020** | Availability, recovery point and recovery time declared as the operator's objectives, each measured: probed each minute, and from the backups' and drills' own records                     |
-| **ADM-043** | Each class's backup frequency, keeping and drill declared above; each drill recorded monthly, and a restore not rehearsed in 35 days shown as not rehearsed                                |
-| **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                           |
-| **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |
-| **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`          |
-| **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                       |
+| ID          | How it is met                                                                                                                                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)                                                                 |
+| **ADM-011** | Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)                                                                              |
+| **ADM-033** | Administration's Usage: each measure as a trend of 13 months, against last month and a year before, and by month or day; kept 396 days                                                                            |
+| **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100                        |
+| **ADM-020** | Availability, recovery point and recovery time declared as the operator's objectives, each measured: probed each minute, and from the backups' and drills' own records                                            |
+| **ADM-043** | Each class's backup frequency, keeping and drill declared above; each drill recorded monthly, and a restore not rehearsed in 35 days shown as not rehearsed                                                       |
+| **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                                                  |
+| **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                                                    |
+| **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`                                 |
+| **ADM-037** | Each silent failure surfaced in Diagnostics, told to administrators by inbox once until it clears, and to the person waiting where there is one (`SILENT_FAILURES`), the searcher by meaning of the index lagging |
+| **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                                              |
 
 **ADM-016 and ADM-046 are not claimed** (pre-flight 6): every budget is registered and read against production, but
 six of their requirements are not measured there: VER-051 states no time yet, and for the rest nothing reports a
 time the service could read. **IAM-006 is not claimed**: a closed environment's purge is stated (TL-G), but its data stays readable in backups
-for up to six months, and no timetable says so yet. **ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
-nobody waiting (above). The rest are claimed as each is answered in full. **ADM-048 is not claimed**: every chargeable
+for up to six months, and no timetable says so yet. The rest are claimed as each is answered in full. **ADM-048 is not claimed**: every chargeable
 operation that exists is counted, model runs by the Model spending page, but malware scanning does not exist yet
 (AST-Q03).

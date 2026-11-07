@@ -49149,7 +49149,8 @@ export interface operations {
                      *           "confirmed": false
                      *         },
                      *         "p95LagSeconds": 0,
-                     *         "maxLagSeconds": 0
+                     *         "maxLagSeconds": 0,
+                     *         "waitingSeconds": 0
                      *       },
                      *       "webhooks": {
                      *         "subscriptions": -9007199254740991,
@@ -49266,6 +49267,8 @@ export interface operations {
                             /** @description A version's wait to be searchable by meaning, over the last 7 days */
                             p95LagSeconds: number | null;
                             maxLagSeconds: number | null;
+                            /** @description How long the oldest version waiting to be searchable by meaning has waited; null with none waiting */
+                            waitingSeconds: number | null;
                         };
                         webhooks: {
                             subscriptions: number;
@@ -95686,7 +95689,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference" | "import" | "mail";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference" | "import" | "mail" | "diagnostics";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -95765,6 +95768,13 @@ export interface operations {
                                  * @description When it is abandoned unless it is acted on
                                  */
                                 sweepsAt: string;
+                            } | null;
+                            /** @description A failure nobody would otherwise see, told to those who administer once until it clears; null otherwise */
+                            diagnostics: {
+                                /** @enum {string} */
+                                kind: "source_down" | "job_failed" | "index_lagging" | "work_failing" | "capability_failing" | "integrity_failing";
+                                /** @description What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index */
+                                subject: string;
                             } | null;
                             /** Format: date-time */
                             at: string;
@@ -119203,6 +119213,11 @@ export interface operations {
                          * @enum {string}
                          */
                         meaning: "used" | "unavailable" | "unconfigured" | "skipped";
+                        /**
+                         * @description Where meaning was used while new versions have waited past five minutes to be findable by meaning (SCH-067): what changed lately may not be found by meaning yet. Absent otherwise
+                         * @constant
+                         */
+                        meaningBehind?: true;
                         /** @description The outcome in a sentence, for the reader */
                         message: string;
                     };

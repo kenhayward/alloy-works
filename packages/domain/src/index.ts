@@ -214,6 +214,19 @@ export {
   type Objectives,
   type ObjectiveVerdict,
 } from './diagnostics/objectives.js';
+export {
+  INDEX_LAG_CEILING_SECONDS,
+  indexLagging,
+  SILENT_FAILURES,
+  silentFailureKey,
+  silentFailuresNow,
+  silentFailuresToTell,
+  type SilentFailure,
+  type SilentFailureKind,
+  type SilentFailureToldKind,
+  type SilentFailureNow,
+  type SilentReadings,
+} from './diagnostics/silent.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

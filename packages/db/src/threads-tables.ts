@@ -63,7 +63,8 @@ export interface NotificationTable {
     | 'webhook'
     | 'reference'
     | 'import'
-    | 'mail',
+    | 'mail'
+    | 'diagnostics',
     | 'mention'
     | 'reply'
     | 'resolution'
@@ -73,7 +74,8 @@ export interface NotificationTable {
     | 'webhook'
     | 'reference'
     | 'import'
-    | 'mail',
+    | 'mail'
+    | 'diagnostics',
     never
   >;
   actor: ColumnType<string | null, string | null, never>;

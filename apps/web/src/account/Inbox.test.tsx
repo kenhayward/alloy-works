@@ -307,4 +307,41 @@ describe('the inbox, from the account chip', () => {
       '#/admin/email',
     );
   });
+
+  it('ADM-037 tells those who administer of a silent failure in words, and opens Diagnostics', async () => {
+    const { client } = service([
+      {
+        id: id(8),
+        kind: 'diagnostics',
+        actor: null,
+        thread: null,
+        on: null,
+        counts: null,
+        diagnostics: { kind: 'capability_failing', subject: 'Search' },
+        at: '2026-11-07T10:00:00.000Z',
+        read: false,
+      },
+      {
+        id: id(9),
+        kind: 'diagnostics',
+        actor: null,
+        thread: null,
+        on: null,
+        counts: null,
+        diagnostics: { kind: 'work_failing', subject: 'sweepDates' },
+        at: '2026-11-07T09:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const row = (await screen.findByText(/Search is failing/)).closest('li')!;
+    expect(row).toHaveTextContent('Search is failing most of what it is asked.');
+    expect(within(row).getByRole('link', { name: 'Open Diagnostics' })).toHaveAttribute(
+      'href',
+      '#/admin/diagnostics',
+    );
+    expect(
+      await screen.findByText('Background work in your environment is failing or late.'),
+    ).toBeInTheDocument();
+  });
 });

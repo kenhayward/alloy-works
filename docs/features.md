@@ -230,7 +230,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   cannot measure it yet; and each kind of stored item (images, versions, audit log and environment
   exports) checked again within 28 days, a share each night, with any failing, which is also audited.
   Codes and counts only, never content. Measured by the minute,
-  kept by the hour after a week and by the day after 90 days, for 13 months.
+  kept by the hour after a week and by the day after 90 days, for 13 months. A failure nobody would
+  otherwise see (a capability or background work failing, jobs failed, a data source down, the index
+  lagging past five minutes, integrity failing) is told to whoever administers in their inbox, once
+  until it clears, never by email; a search by meaning while the index lags says new content may not
+  be found by meaning yet.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the
   publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,

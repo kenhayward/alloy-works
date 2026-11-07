@@ -294,6 +294,18 @@ export interface IntegrityCheckTable {
   failure: 'hash_mismatch' | 'digest_mismatch' | 'object_missing' | null;
 }
 
+/** An artifact waiting to be embedded (0136; G7-F), once however often it is saved meanwhile. */
+export interface EmbeddingQueuedTable {
+  artifact_id: string;
+  queued_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+/** A silent failure administrators were told of, until it clears (0216; DGe4), by `kind:subject`. */
+export interface SilentFailureToldTable {
+  failure: string;
+  told_at: ColumnType<Date, Date | undefined, never>;
+}
+
 export interface UsageDayTable {
   day: ColumnType<string, string, string>;
   measure: string;
@@ -1550,6 +1562,8 @@ export interface TenantTables {
   background_work: BackgroundWorkTable;
   usage_day: UsageDayTable;
   integrity_check: IntegrityCheckTable;
+  silent_failure_told: SilentFailureToldTable;
+  embedding_queued: EmbeddingQueuedTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;

@@ -290,6 +290,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0213_session_provider_check',
       '0214_usage_day',
       '0215_integrity_check',
+      '0216_silent_failures',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -450,6 +451,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0213_session_provider_check',
       '0214_usage_day',
       '0215_integrity_check',
+      '0216_silent_failures',
     ]);
 
     expect(await queryRoles(development)).toEqual([
