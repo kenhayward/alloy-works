@@ -313,6 +313,8 @@
   padding-block: var(--space-4);
   overflow: visible;
   white-space: normal;
+  /* A word with no space to break at, an address, breaks where it must rather than spilling over. */
+  overflow-wrap: anywhere;
 }
 
 .table tr[data-current='true'] td {

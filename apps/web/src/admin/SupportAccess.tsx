@@ -380,13 +380,15 @@ function GiveSupport({
           <p role="alert">{failure}</p>
         </Notice>
       )}
-      <button
-        type="submit"
-        className="primary"
-        disabled={busy || email.trim() === '' || purpose.trim() === ''}
-      >
-        {words('admin.support-give')}
-      </button>
+      <div>
+        <button
+          type="submit"
+          className="primary"
+          disabled={busy || email.trim() === '' || purpose.trim() === ''}
+        >
+          {words('admin.support-give')}
+        </button>
+      </div>
     </form>
   );
 }
@@ -513,7 +515,7 @@ export function SupportAccess({
                     <td>
                       <Standing row={row} />
                     </td>
-                    <td>
+                    <td className={styles['wraps']}>
                       {mayGrant && row.active && (
                         <button
                           type="button"
