@@ -1,6 +1,7 @@
 import type { DiagnosticsView, UsageQuery, UsageView } from '@alloy-works/api-contract';
 import {
   backgroundWork,
+  backupRecord,
   capabilityTotals,
   capabilityUsage,
   connectionRunsSince,
@@ -11,6 +12,7 @@ import {
   mailCounts,
   ownJobs,
   readBudget,
+  serviceAvailability,
   spendThisMonth,
   usageDays,
   webhookCounts,
@@ -23,6 +25,8 @@ import {
   emptyBuckets,
   HEALTH_WINDOW_MS,
   JOB_CAPABILITIES,
+  objectiveReadings,
+  type Objectives,
   PERFORMANCE_BUDGETS,
   runsAtOnce,
   USAGE_KEPT_DAYS,
@@ -125,7 +129,7 @@ function daysOf(query: UsageQuery): { readonly from: string; readonly to: string
   return { from, to };
 }
 
-export function diagnosticsHandlers() {
+export function diagnosticsHandlers(objectives: Objectives) {
   return {
     getUsage: async (request: FastifyRequest, { trx }: Authorised): Promise<UsageView> => {
       const { from, to } = daysOf(request.query as UsageQuery);
@@ -222,6 +226,22 @@ export function diagnosticsHandlers() {
           givenUp: mail.givenUp,
         },
         connections,
+        objectives: await (async () => {
+          const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+          const probes = await serviceAvailability(trx, month);
+          const runs = await backupRecord(trx);
+          const read = objectiveReadings(objectives, { probes, runs }, now);
+          return {
+            availability: { ...read.availability, since: read.availability.since.toISOString() },
+            recoveryPoint: read.recoveryPoint,
+            recoveryTime: { ...read.recoveryTime, drilledAt: iso(read.recoveryTime.drilledAt) },
+            backups: runs.map((run) => ({
+              ...run,
+              lastStartedAt: run.lastStartedAt.toISOString(),
+              succeededAt: iso(run.succeededAt),
+            })),
+          };
+        })(),
         performance: performance(await capabilityTotals(trx, new Date(now.getTime() - 7 * DAY)), {
           p95Seconds: freshness.p95Seconds,
           maxSeconds: freshness.maxSeconds,

@@ -195,6 +195,8 @@ services:
       # A notification's mail links to the environment as development reaches it (EM-Q).
       MAIL_LINK_SCHEME: http
       MAIL_LINK_PORT: '${SERVICE_PORT:-8088}'
+      # The service's health, probed each minute for its availability (ADR-0101).
+      SERVICE_HEALTH_URL: http://service:${SERVICE_PORT:-8088}/health
       # The delivery store, as the service has it: a data package is written there by the worker.
       SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:
