@@ -3,6 +3,7 @@
 > T7's trust slice, split from DG by DG-E. **Full tier**: several PRs, migrations, new contracts, auth and tenancy.
 > Ken answered SA-A to SA-C (2026-11-07); the rest are taken by default, for Ken to overrule. Pre-flight ran
 > 2026-11-07 and reshaped SA-D, SA-E and SA-G.
+> **Built, 0.242.0** (#1053 to #1058 and SAe, which carries the close).
 
 **Goal:** a tenant decides who outside it may look, at what and until when, and sees it happening; sees everything
 that can leave it; and replaces any secret without reading it, knowing first what uses it.

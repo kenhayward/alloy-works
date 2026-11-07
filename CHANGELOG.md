@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.242.0 - 2026-11-07 (PR #1059)
+
+Support access, secrets and the boundary: an administrator lets a named person from outside look, at Diagnostics, at titles and names or at content, in chosen spaces until a stated time, and sees it happening. Every secret the environment holds is listed with what uses it before it is replaced, and every way anything can leave the environment is declared in one place, with what is set up for each.
+
+### Added
+
+- **Support access.** An administrator can let a named person from outside the organisation look at Diagnostics, or at titles and names, or at content, in the spaces they choose, for a stated purpose and until a stated time within the limit for outside access. While it lasts that person changes nothing, sees nothing beyond it, and must say why each time they open content. Every grant, revocation, day of use and content read is recorded in the environment's audit log, and the access explanation names it. A new permission, grant support, decides who may give it; every administrator role holds it. The screens for it follow.
+- **Support access screens.** Administration has a Support access section listing every grant, active and ended, with who, what, where, why, by whom and until when, and how each ended. Whoever may give support access gives it there, each scope explained, and revokes it after being told what that ends. While any is active, every administrator sees it at the top of Administration. A support person sees what their access reaches on every page, is offered only the parts of Administration they may open, is asked before any content opens, and is told when a page is withheld from them.
+- **Read diagnostics.** A permission of its own now decides Diagnostics, Usage, Query usage, Model spending and how fresh meaning search is. Every role and token that administers the environment was given it, so nobody loses a page, and a token can be scoped to it.
+- **What each operation reads.** The API document now says of every operation whether it reads content, only metadata such as titles and names, or neither.
+- **Secrets.** Administration's new Secrets section lists every secret the environment holds, what uses each and when it was last replaced, with a link to where it is replaced, so an administrator sees every dependent before replacing one. If something using a secret fails to sign in after the secret is replaced, those who read Diagnostics are told once, naming everything that uses it.
+- **What leaves.** Administration has a new What leaves section listing every way anything can leave the environment: model endpoints, embedding, machine translation, reference sources, data connections, webhooks, mail, extensions, vocabulary sources and CT Studio, and malware scanning, which does not exist yet. Each says what may be sent, whether it is on before anyone changes it, who may change it, and whether each model endpoint is inside or outside your data boundary, then what is set up here, with a link to where it is changed.
+
+### Changed
+
+- **Tokens overlap when replaced.** A new SCIM or CT Studio token leaves the one before it working for 24 hours, so the provider or CT Studio can move to it without a gap; any older one ends at once. Turning SCIM off still ends every token at once.
+- **Extension secrets need the permission to replace secrets.** Setting a reference extension's secret now needs rotate secrets, as every other secret does, rather than administer.
+
 ## 0.241.0 - 2026-11-07 (PR #1051)
 
 Diagnostics: how an environment is doing, in Administration, from each capability's health to what failed with nobody told, which is now told to whoever administers it. Usage over 13 months, every performance budget against production, the operator's objectives with backups and rehearsals recorded, and every stored item checked again within 28 days. Sessions through an organisation's sign-in provider are asked again every five minutes, and an installation on the internet has an outside check.

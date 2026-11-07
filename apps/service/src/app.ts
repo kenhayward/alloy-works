@@ -101,6 +101,7 @@ import {
   type SupportUse,
 } from './support.js';
 import { tenantSecretHandlers } from './tenant-secrets.js';
+import { boundaryHandlers } from './boundary.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
@@ -996,6 +997,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...invitationHandlers(),
     ...supportHandlers(),
     ...tenantSecretHandlers(),
+    ...boundaryHandlers(),
     ...groupHandlers(),
     ...spaceHandlers(),
     ...settingsHandlers(db, tenantOf),

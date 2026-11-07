@@ -567,6 +567,13 @@ export {
   secretRoutes,
 } from './secrets.js';
 export {
+  BoundaryItemView,
+  BoundaryView,
+  BoundaryWayView,
+  OutboundWayName,
+  boundaryRoutes,
+} from './boundary.js';
+export {
   GoogleSettingsBody,
   PersonDisablement,
   PrincipalParams,

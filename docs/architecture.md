@@ -4510,6 +4510,27 @@ background work, jobs, the index, deliveries, data sources, budgets, every perfo
   those who administer by the inbox kind `diagnostics`, never mailed, once until each clears (`silent_failure_told`,
   `0216`). A search that used meaning while the index lags past five minutes answers `meaningBehind`.
 
+## Support access, the boundary and secrets
+
+The SA plan; [support.md](design/support.md), [secrets.md](design/secrets.md).
+[ADR-0102](decisions/0102-every-route-declares-what-it-reads.md): every `RouteContract` declares `reads` (`content`,
+`metadata` or `nothing`), held by the compiler and a test and published in `openapi.json`. `read_diagnostics` (`0217`)
+decides Diagnostics, Usage, Query usage, Model spending and meaning freshness apart from `administer`.
+
+- **Support access**: a `support_grant` (`0218`; principal, scope, spaces, purpose, expiry) given under
+  `grant_support` to a named outsider, decided apart from `access_grant` (`supportActive`,
+  `packages/domain/src/access/support.ts`), which while active decides everything the person asks. The route hook
+  (`apps/service/src/support.ts`) refuses writes and reads beyond the scope by each route's `reads`, asks a reason
+  before content (`Support-Read`), and audits `support.granted`, `support.used`, `support.revoked`. Administration's
+  Support access lists, gives and revokes; every administrator sees an active one.
+- **Secrets**: `SECRET_CONSUMERS` (`packages/domain/src/secrets/consumers.ts`), held to every sealed or hashed column.
+  `GET /v1/secrets` (`rotate_secrets`; `packages/db/src/secrets.ts`) answers each with its consumers, never a value; a
+  SCIM or CT Studio token overlaps 24 hours by `api_token.ends_at` (`0220`); a break after a replacement is the silent
+  failure `secret_failing`. Administration's Secrets shows them.
+- **The boundary**: `OUTBOUND` (`packages/domain/src/boundary/outbound.ts`), one row per way out, held by a test to
+  every module of the service, worker and connector that sends out. `GET /v1/boundary` (`administer`;
+  `packages/db/src/boundary.ts`) adds what is configured, by host alone; Administration's What leaves shows it.
+
 ## Backups pulled
 
 An installation on the internet serves its encrypted backups read-only over rsync (`deploy/internet/rsyncd.conf`) for a

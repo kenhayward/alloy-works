@@ -237,6 +237,11 @@ export const documentationGroups = [
       { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
       {
+        name: 'Boundary',
+        description:
+          'See everything that can leave the environment: what may leave by each way, whether it is on by default, who may change it and what is configured.',
+      },
+      {
         name: 'Secrets',
         description:
           'See every secret the environment holds, what uses each and when it was last replaced, before replacing one.',
@@ -732,6 +737,7 @@ const operationTags = {
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
   'Support access': ['listSupportAccess', 'grantSupportAccess', 'revokeSupportAccess'],
   Secrets: ['listSecrets'],
+  Boundary: ['getBoundary'],
   'Sign-in settings': [
     'getSignInSettings',
     'addProvider',
@@ -1717,6 +1723,8 @@ const descriptions: Readonly<Record<string, string>> = {
   setGroupMembers:
     'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead. Refused `grant_beyond_held` where the group holds an administrative permission the caller does not.',
   listInvitations: 'Lists waiting and accepted invitations in stable cursor pages.',
+  getBoundary:
+    'Answers every way anything can leave this environment: model endpoints, embedding, machine translation, reference sources, malware scanning (none exists), data connections, webhooks, mail, extensions, vocabulary sources and CT Studio. For each, what may leave in plain words, whether it is on by default, the operation and permission that change it, and its residency: an endpoint’s declared boundary, else none declared. Then what is configured for it here, each by name, on or off, and its host alone, never a path or query an address can carry a key in, nor any secret. Needs administer at the environment.',
   listSecrets:
     'Lists every secret this environment holds: its kind, what it belongs to, when it was last replaced, until when the value it replaced is still accepted, how it is replaced and with what permission, and everything here that uses it, resolved now: a model key every purpose routed to its endpoint, the guardrails and the translation policy; a connection the query definitions naming it and their datasets; a webhook its subscription; the mail relay its deliveries; a SCIM token its provisioning; a shared provider its member environments. Never a value or a hash. Needs rotate_secrets at the environment.',
   listSupportAccess:

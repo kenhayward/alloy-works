@@ -259,6 +259,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads Diagnostics, naming everything that uses the secret, and shows in Needs attention. A refused
   token or sign-in secret cannot be told apart, so is not told. The object store's credential is the
   operator's, and nothing rotates it.
+- **What leaves.** Administration's **What leaves**, or `GET /v1/boundary`, to whoever administers:
+  every way anything can leave the environment (model endpoints, embedding, machine translation,
+  reference sources, data connections, webhooks, mail, extensions, vocabulary sources and CT Studio,
+  and malware scanning, which does not exist), each with what may be sent, whether it is on by default
+  (only Crossref and PubMed are), who may change it, and its residency: each model endpoint's declared
+  boundary, inside or outside, and not declared for the rest, since what residency is promised is
+  open. Then what is set up here, by name, on or off and by host alone, linked to where it is
+  changed. A test holds the list to every part of the product that sends anything out.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the
   publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,

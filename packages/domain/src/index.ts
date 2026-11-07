@@ -243,6 +243,16 @@ export {
   type SecretKind,
   type SecretReplacement,
 } from './secrets/consumers.js';
+// Everything that can leave a tenant (docs/design/secrets.md, "The boundary"; ADM-041).
+export {
+  OUTBOUND,
+  OUTBOUND_EXCLUSIONS,
+  OUTBOUND_WAYS,
+  outbound,
+  type Outbound,
+  type OutboundResidency,
+  type OutboundWay,
+} from './boundary/outbound.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,
