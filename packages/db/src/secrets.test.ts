@@ -207,7 +207,7 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     const [notice] = await told();
     expect(notice).toMatchObject({
       kind: 'secret_failing',
-      secret: {
+      replaced: {
         kind: 'model_endpoint_key',
         name: 'Drafting',
         consumers: ['drafting', 'translate', 'translation_policy'],

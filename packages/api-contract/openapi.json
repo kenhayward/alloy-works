@@ -228,6 +228,10 @@
       "description": "Invite people before their first sign-in."
     },
     {
+      "name": "Secrets",
+      "description": "See every secret the environment holds, what uses each and when it was last replaced, before replacing one."
+    },
+    {
       "name": "Support access",
       "description": "Let somebody from outside look at Diagnostics, or at metadata or content in named spaces, for a purpose and until a stated time, and see and end it."
     },
@@ -366,6 +370,7 @@
         "Groups",
         "Sessions",
         "Invitations",
+        "Secrets",
         "Support access",
         "Sign-in settings",
         "Roles and grants"
@@ -129177,7 +129182,7 @@
       "post": {
         "operationId": "issueCtStudioToken",
         "summary": "Issue CT Studio a new token, or a new identity in place of a disabled one",
-        "description": "Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.",
+        "description": "Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token is still accepted for 24 hours, so CT Studio moves without a gap, and one replaced before it ends now. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.",
         "tags": [
           "CT Studio bridge"
         ],
@@ -136823,6 +136828,51 @@
                         "classes"
                       ],
                       "description": "Stored artifacts re-verified, a share each night"
+                    },
+                    "secrets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "sign_in_client_secret",
+                              "shared_provider_secret",
+                              "connection_credential",
+                              "delivery_store_password",
+                              "model_endpoint_key",
+                              "webhook_signing_secret",
+                              "extension_secret",
+                              "mail_relay_password",
+                              "scim_token",
+                              "ct_studio_token",
+                              "service_identity_token"
+                            ],
+                            "description": "sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token"
+                          },
+                          "name": {
+                            "description": "What the secret belongs to, by name",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "consumers": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Every consumer of it, by name"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "name",
+                          "consumers"
+                        ]
+                      },
+                      "description": "Each secret something has failed to authenticate with since it was last replaced (ADM-047); none for support, whose grant may not reach what uses it"
                     }
                   },
                   "required": [
@@ -136837,7 +136887,8 @@
                     "objectives",
                     "performance",
                     "budgets",
-                    "integrity"
+                    "integrity",
+                    "secrets"
                   ]
                 },
                 "example": {
@@ -136900,7 +136951,8 @@
                   "integrity": {
                     "periodDays": -9007199254740991,
                     "classes": []
-                  }
+                  },
+                  "secrets": []
                 }
               }
             },
@@ -272491,12 +272543,12 @@
       "put": {
         "operationId": "setExtensionSecret",
         "summary": "Set the secret a reference extension is sent",
-        "description": "Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.",
+        "description": "Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs rotate_secrets at the environment, with a signed-in session.",
         "tags": [
           "Extensions"
         ],
         "x-alloy-token-enabled": false,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "rotate_secrets",
         "x-alloy-reads": "none",
         "security": [
           {
@@ -273030,7 +273082,7 @@
             }
           },
           "403": {
-            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token",
+            "description": "The caller does not hold rotate_secrets at the environment",
             "content": {
               "application/json": {
                 "schema": {
@@ -290759,12 +290811,55 @@
                                       "index_lagging",
                                       "work_failing",
                                       "capability_failing",
-                                      "integrity_failing"
+                                      "integrity_failing",
+                                      "secret_failing"
                                     ]
                                   },
                                   "subject": {
                                     "type": "string",
-                                    "description": "What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index"
+                                    "description": "What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class, a secret by kind, id and when it was replaced; empty for the index"
+                                  },
+                                  "replaced": {
+                                    "description": "A secret something failed to authenticate with since it was replaced, and everything that uses it (ADM-047); only with secret_failing",
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "sign_in_client_secret",
+                                          "shared_provider_secret",
+                                          "connection_credential",
+                                          "delivery_store_password",
+                                          "model_endpoint_key",
+                                          "webhook_signing_secret",
+                                          "extension_secret",
+                                          "mail_relay_password",
+                                          "scim_token",
+                                          "ct_studio_token",
+                                          "service_identity_token"
+                                        ],
+                                        "description": "sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token"
+                                      },
+                                      "name": {
+                                        "description": "What the secret belongs to, by name",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "consumers": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "description": "Every consumer of it, by name"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "name",
+                                      "consumers"
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -355353,6 +355448,366 @@
         }
       }
     },
+    "/v1/secrets": {
+      "get": {
+        "operationId": "listSecrets",
+        "summary": "Every secret this environment holds, and everything that uses each",
+        "description": "Lists every secret this environment holds: its kind, what it belongs to, when it was last replaced, until when the value it replaced is still accepted, how it is replaced and with what permission, and everything here that uses it, resolved now: a model key every purpose routed to its endpoint, the guardrails and the translation policy; a connection the query definitions naming it and their datasets; a webhook its subscription; the mail relay its deliveries; a SCIM token its provisioning; a shared provider its member environments. Never a value or a hash. Needs rotate_secrets at the environment.",
+        "tags": [
+          "Secrets"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "rotate_secrets",
+        "x-alloy-reads": "metadata",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every secret, never its value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "sign_in_client_secret",
+                              "shared_provider_secret",
+                              "connection_credential",
+                              "delivery_store_password",
+                              "model_endpoint_key",
+                              "webhook_signing_secret",
+                              "extension_secret",
+                              "mail_relay_password",
+                              "scim_token",
+                              "ct_studio_token",
+                              "service_identity_token"
+                            ],
+                            "description": "sign_in_client_secret, shared_provider_secret (copied into each tenant of the organisation), connection_credential, delivery_store_password, model_endpoint_key, webhook_signing_secret, extension_secret, mail_relay_password, scim_token, ct_studio_token or service_identity_token"
+                          },
+                          "of": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "description": "What the secret belongs to: a provider, connection, endpoint, webhook and the like"
+                          },
+                          "replacedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "When its value was last set or replaced; null where no record says"
+                          },
+                          "previousUntil": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Until when the value it replaced is still accepted; null where none is"
+                          },
+                          "replacement": {
+                            "type": "object",
+                            "properties": {
+                              "operation": {
+                                "type": "string",
+                                "description": "The operation that replaces it"
+                              },
+                              "permission": {
+                                "type": "string",
+                                "description": "The permission that operation needs"
+                              },
+                              "how": {
+                                "type": "string",
+                                "enum": [
+                                  "overlap",
+                                  "atomic",
+                                  "beside"
+                                ],
+                                "description": "overlap: the old value is still accepted for a time; atomic: the product is its only holder, and reads the new value at once; beside: a new one is issued beside the old, which is revoked once its holder has moved"
+                              }
+                            },
+                            "required": [
+                              "operation",
+                              "permission",
+                              "how"
+                            ],
+                            "description": "How it is replaced"
+                          },
+                          "consumers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "sign_in",
+                                    "member_tenant",
+                                    "query_definition",
+                                    "dataset",
+                                    "data_delivery",
+                                    "purpose",
+                                    "guardrails",
+                                    "translation_policy",
+                                    "webhook_subscription",
+                                    "reference_source",
+                                    "mail_delivery",
+                                    "provisioning",
+                                    "ct_studio_space",
+                                    "service_identity"
+                                  ],
+                                  "description": "What uses it: sign_in, member_tenant, query_definition, dataset, data_delivery (a space delivered to), purpose (a model purpose routed to the endpoint), guardrails, translation_policy, webhook_subscription, reference_source, mail_delivery, provisioning, ct_studio_space or service_identity"
+                                },
+                                "id": {
+                                  "description": "Its id, or the purpose; null where it has none",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "name": {
+                                  "description": "Its name; null where it has none",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "description": "Everything here that uses it, resolved now"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "of",
+                          "replacedAt",
+                          "previousUntil",
+                          "replacement",
+                          "consumers"
+                        ]
+                      },
+                      "description": "Every secret this environment holds, never a value or hash"
+                    },
+                    "absent": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "what": {
+                            "type": "string"
+                          },
+                          "why": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "what",
+                          "why"
+                        ]
+                      },
+                      "description": "What holds no secret here, and why"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "absent"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "absent": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not hold rotate_secrets at the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/service-identities": {
       "get": {
         "operationId": "listServiceIdentities",
@@ -364361,7 +364816,7 @@
       "post": {
         "operationId": "issueScimToken",
         "summary": "Make a provider's SCIM token, shown this once, ending any before it",
-        "description": "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
+        "description": "Makes the bearer token a provider's SCIM client presents, answered this once. The token before it is still accepted for 24 hours, so the client moves without a gap, and any older ends now: two at most are accepted. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
         "tags": [
           "Sign-in settings"
         ],

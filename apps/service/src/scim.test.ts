@@ -609,10 +609,7 @@ describe('SCIM', () => {
         .selectFrom('api_token')
         .select(['id', 'ends_at'])
         .where('principal_id', '=', (eb) =>
-          eb
-            .selectFrom('identity_provider')
-            .select('scim_identity')
-            .where('id', '=', providerId),
+          eb.selectFrom('identity_provider').select('scim_identity').where('id', '=', providerId),
         )
         .orderBy('created_at')
         .execute(),
@@ -632,6 +629,50 @@ describe('SCIM', () => {
     );
     expect((await scim('GET', '/Users')).statusCode).toBe(200);
     held = second.secret;
+  });
+
+  it('ADM-047 lists every secret with its consumers and overlap, and never a value or a hash', async () => {
+    const answer = await app.inject({
+      url: '/v1/secrets',
+      headers: { host: HOST, cookie: admin.cookie },
+    });
+    expect(answer.statusCode, answer.body).toBe(200);
+    const { items } = answer.json<{
+      items: {
+        kind: string;
+        of: { id: string; name: string | null };
+        previousUntil: string | null;
+        replacement: { operation: string; how: string };
+        consumers: { kind: string; id: string | null }[];
+      }[];
+    }>();
+    const scimToken = items.find((each) => each.kind === 'scim_token')!;
+    expect(scimToken.of.id).toBe(providerId);
+    expect(scimToken.replacement).toMatchObject({ operation: 'issueScimToken', how: 'overlap' });
+    expect(scimToken.consumers).toEqual([
+      { kind: 'provisioning', id: providerId, name: expect.any(String) },
+    ]);
+    expect(Date.parse(scimToken.previousUntil!)).toBeGreaterThan(Date.now() + 23 * 3_600_000);
+    const signIn = items.find((each) => each.kind === 'sign_in_client_secret')!;
+    expect(signIn.consumers).toEqual([
+      { kind: 'sign_in', id: providerId, name: expect.any(String) },
+    ]);
+    // Neither the tokens nor the provider's secret, nor any hash or sealed value of them.
+    const hashes = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('api_token').select('token_hash').execute(),
+    );
+    const sealed = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('identity_provider').select('sealed_secret').execute(),
+    );
+    for (const value of [
+      token,
+      held,
+      STAND_IN_SECRET,
+      ...hashes.map((each) => each.token_hash),
+      ...sealed.flatMap((each) => (each.sealed_secret === null ? [] : [each.sealed_secret])),
+    ]) {
+      expect(answer.body).not.toContain(value);
+    }
   });
 
   it('ADM-007 turning it off ends every token at once, and its people sign in as anybody of the provider', async () => {

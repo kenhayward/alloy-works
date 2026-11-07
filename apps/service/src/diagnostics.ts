@@ -10,6 +10,7 @@ import {
   embeddingWaitSeconds,
   embeddingStatus,
   integrityOf,
+  secretsFailing,
   mailChannel,
   mailCounts,
   ownJobs,
@@ -208,6 +209,11 @@ export function diagnosticsHandlers(objectives: Objectives) {
       const spent = budget === null ? null : await spendThisMonth(trx, budget.currency);
       const policy = await dataPolicy(trx);
       const integrity = await integrityOf(trx, now);
+      // A secret names consumers in every space, so support, held to its spaces, sees none.
+      const secrets =
+        supportSpaces(facts) === undefined
+          ? (await secretsFailing(trx)).filter((each) => each.failing).map((each) => each.secret)
+          : [];
       return {
         at: now.toISOString(),
         capabilities,
@@ -276,6 +282,7 @@ export function diagnosticsHandlers(objectives: Objectives) {
                 : { ...each.lastFailure, at: each.lastFailure.at.toISOString() },
           })),
         },
+        secrets: secrets.map((each) => ({ ...each, consumers: [...each.consumers] })),
       };
     },
   };

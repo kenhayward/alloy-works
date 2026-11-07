@@ -102,7 +102,7 @@ export async function tellSilentFailures(
     const counts = JSON.stringify({
       kind: failure.kind,
       subject: failure.subject,
-      ...(failure.secret === undefined ? {} : { secret: failure.secret }),
+      ...(failure.secret === undefined ? {} : { replaced: failure.secret }),
     });
     for (const id of recipients) {
       await sql`insert into notification (recipient, kind, counts)

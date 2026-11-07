@@ -85,7 +85,7 @@ export interface StoredNotification {
     readonly kind: SilentFailureToldKind;
     readonly subject: string;
     /** A secret failing's, naming it and every consumer (ADM-047). */
-    readonly secret?: SecretFailing;
+    readonly replaced?: Omit<SecretFailing, 'consumers'> & { readonly consumers: string[] };
   } | null;
   readonly at: Date;
   readonly readAt: Date | null;
@@ -345,7 +345,11 @@ export async function listInbox(
       import: row.kind === 'import' ? (row.counts as { import: string; sweepsAt: string }) : null,
       diagnostics:
         row.kind === 'diagnostics'
-          ? (row.counts as { kind: SilentFailureToldKind; subject: string; secret?: SecretFailing })
+          ? (row.counts as {
+              kind: SilentFailureToldKind;
+              subject: string;
+              replaced?: Omit<SecretFailing, 'consumers'> & { consumers: string[] };
+            })
           : null,
       at: row.at,
       readAt: row.read_at,

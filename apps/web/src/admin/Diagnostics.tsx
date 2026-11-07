@@ -8,6 +8,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { formats, words, type WordKey } from '../words/words.js';
 import styles from './Administration.module.css';
+import { secretKindName, type SecretKind } from './Secrets.js';
 import diagnostics from './Diagnostics.module.css';
 import { amountOf } from './Usage.js';
 
@@ -142,6 +143,12 @@ export interface DiagnosticsView {
       } | null;
     }[];
   };
+  /** Each secret something failed to authenticate with since it was replaced (ADM-047). */
+  readonly secrets?: readonly {
+    readonly kind: SecretKind;
+    readonly name: string | null;
+    readonly consumers: readonly string[];
+  }[];
 }
 
 type IntegrityClass = 'asset' | 'version' | 'audit_export' | 'tenant_export';
@@ -497,6 +504,15 @@ export function needsAttention(view: DiagnosticsView): string[] {
         name: words(`admin.diag-integrity.${each.class}`),
         failing: each.failing,
         failure: each.lastFailure?.failure ?? '',
+      }),
+    );
+  }
+  for (const each of view.secrets ?? []) {
+    said.push(
+      words('admin.diag-secret-failing', {
+        kind: secretKindName(each.kind),
+        name: each.name ?? words('admin.secret-unnamed'),
+        consumers: formats().list([...each.consumers]),
       }),
     );
   }
