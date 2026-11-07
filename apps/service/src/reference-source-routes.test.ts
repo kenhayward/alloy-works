@@ -88,7 +88,11 @@ describe('reference sources through the API (the XR plan, XR-C, XR-D)', () => {
     });
     expect(off.statusCode, off.body).toBe(200);
     expect(off.json()).toMatchObject({ id: 'pubmed', enabled: false });
-    const events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+    // Ada's own: Grace's refusal is recorded after its answer, in a transaction of its own, so it may
+    // land after the mark.
+    const events = (
+      await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before))
+    ).filter((each) => each.actor === h.ids.ada);
     expect(events.map((each) => [each.kind, each.actor, each.detail])).toEqual([
       ['settings.changed', h.ids.ada, { settings: ['referenceSources.pubmed'] }],
     ]);

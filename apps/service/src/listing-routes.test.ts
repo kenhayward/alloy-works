@@ -768,6 +768,8 @@ describe('the listings through the service', () => {
       'listOrganisationTenants',
       // And support access: the newest 200 grants, active and ended (support.md).
       'listSupportAccess',
+      // And the secrets: the environment's handful, each with what uses it (secrets.md).
+      'listSecrets',
     ];
     const listings = allRoutes.filter(
       (route) =>
