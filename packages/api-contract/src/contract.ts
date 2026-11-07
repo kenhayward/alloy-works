@@ -101,7 +101,7 @@ export interface RouteContract {
   /** What it checks. Anything but `none` needs a session, and the cross-tenant harness tests it. */
   readonly access: RouteAccess;
   /**
-   * What its answer or its effect reveals (support.md; ADR-0102): `content` where anything of a body,
+   * What its answer or its effect reveals (ADR-0102): `content` where anything of a body,
    * caption, comment, field value, version note, approval reason, asset file, publication, search
    * snippet, SQL text, or mail or webhook delivery; `metadata` where titles, names, states and counts
    * but none of those; `none` where nothing of the tenant's artifacts or people. Any content makes

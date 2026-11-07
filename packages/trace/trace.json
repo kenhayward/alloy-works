@@ -18477,6 +18477,10 @@
           "howItIsMet": "Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`"
         },
         {
+          "id": "ADM-017",
+          "howItIsMet": "An Administrator reads Diagnostics and usage through `read_diagnostics`, which every role and token holding `administer` gained"
+        },
+        {
           "id": "ADM-037",
           "howItIsMet": "Each silent failure surfaced in Diagnostics, told to administrators by inbox once until it clears, and to the person waiting where there is one (`SILENT_FAILURES`), the searcher by meaning of the index lagging"
         },
@@ -20735,15 +20739,6 @@
         {
           "id": "STR-076",
           "howItIsMet": "`typedNumber` (`apps/web/src/structure/partSummary.ts`) finds a dotted number opening a title, the Part panel offers **Number it** only where it equals the number the section would take, and `set` carries `numbered` with `title` as one operation, so one version and one undo (`operations.test.ts`, `tree.test.ts`, `PartPanel.test.tsx`)"
-        }
-      ]
-    },
-    {
-      "document": "support.md",
-      "owns": [
-        {
-          "id": "ADM-017",
-          "howItIsMet": "An Administrator reads Diagnostics and usage through `read_diagnostics`, which every role and token holding `administer` gained"
         }
       ]
     },

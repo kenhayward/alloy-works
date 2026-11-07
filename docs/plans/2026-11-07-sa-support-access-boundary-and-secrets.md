@@ -31,13 +31,13 @@ tenant's own secrets and the operator's is named.
   provider's secret (copied into member tenants), the object store credential (the operator's). Session refresh tokens
   are per session, outside ADM-007.
 
-| PR  | Holds                                                                                                                                        |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| SAa | The plan, `support.md`, ADR-0102; `reads` on every `RouteContract`, held by the compiler and a test; `read_diagnostics`                      |
-| SAb | Support grants: `grant_support`, `support_grant` decided apart from `access_grant`, read-only, scopes refused by route, `support.*` audited  |
-| SAc | Administration's Support access (grant, review, revoke, active shown to every administrator); the support person's own view; LIF-072's kinds |
-| SAd | Secrets: SCIM overlap, the extension secret under `rotate_secrets`, `GET /v1/secrets` with consumers, a break told once                      |
-| SAe | The boundary declared: `OUTBOUND`, `GET /v1/boundary`, Administration's What leaves; the close                                               |
+| PR  | Holds                                                                                                                                                     |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SAa | The plan, ADR-0102; `reads` on every `RouteContract`, held by the compiler and a test; `read_diagnostics`                                                 |
+| SAb | `support.md`; support grants: `grant_support`, `support_grant` decided apart from `access_grant`, read-only, scopes refused by route, `support.*` audited |
+| SAc | Administration's Support access (grant, review, revoke, active shown to every administrator); the support person's own view; LIF-072's kinds              |
+| SAd | Secrets: SCIM overlap, the extension secret under `rotate_secrets`, `GET /v1/secrets` with consumers, a break told once                                   |
+| SAe | The boundary declared: `OUTBOUND`, `GET /v1/boundary`, Administration's What leaves; the close                                                            |
 
 ## Ken's answers
 

@@ -35,7 +35,7 @@ all of it is built.
 
 ## Diagnostics' read
 
-`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever holds `read_diagnostics` ([support.md](support.md)), in one transaction under the
+`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever holds `read_diagnostics` ([ADR-0102](../decisions/0102-every-route-declares-what-it-reads.md)), in one transaction under the
 environment's role. Codes and counts, never content.
 
 - **Health** (`capabilityHealth`, DG-F) per capability over 15 minutes: failing at half the answered requests failing
@@ -172,6 +172,7 @@ declare what is re-verified and within what period: 28 days.
 | **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                                                  |
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                                                    |
 | **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`                                 |
+| **ADM-017** | An Administrator reads Diagnostics and usage through `read_diagnostics`, which every role and token holding `administer` gained                                                                                   |
 | **ADM-037** | Each silent failure surfaced in Diagnostics, told to administrators by inbox once until it clears, and to the person waiting where there is one (`SILENT_FAILURES`), the searcher by meaning of the index lagging |
 | **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                                              |
 

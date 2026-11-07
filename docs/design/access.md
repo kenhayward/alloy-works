@@ -142,7 +142,7 @@ They are not built; adding them migrates `role_permissions_closed` and `api_toke
 principal's reach. The ways-in guard counts `configure_services`; the last-administrator count still
 counts `administer`.
 
-**`read_diagnostics`** decides the six diagnostics reads ([support.md](support.md)), given by migration 0217 to every
+**`read_diagnostics`** decides the six diagnostics reads ([ADR-0102](../decisions/0102-every-route-declares-what-it-reads.md)), given by migration 0217 to every
 role and token holding `administer`, decided as `administer` is, and left outside `externalCap` for support.
 
 **`retire`** arrived with archival (0083, ADR-0060), in both closed sets, so a token may be scoped to
