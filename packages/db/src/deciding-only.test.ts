@@ -168,6 +168,20 @@ describe('a transaction that declared it only decides', () => {
         deciding((trx) =>
           trx.updateTable('principal').set({ kind: 'external' }).where('id', '=', ada).execute(),
         ),
+      support_grant: () =>
+        deciding((trx) =>
+          trx
+            .insertInto('support_grant')
+            .values({
+              principal_id: ada,
+              scope: 'diagnostics',
+              spaces: [],
+              purpose: 'A slow page',
+              expires_at: new Date(Date.now() + 86_400_000),
+              granted_by: ada,
+            })
+            .execute(),
+        ),
       'role.permissions': () =>
         deciding((trx) =>
           trx

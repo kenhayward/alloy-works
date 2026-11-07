@@ -6,6 +6,7 @@ import {
   type ReadableSet,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { activeSupport } from './support.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -20,6 +21,7 @@ export const accessFactSources = [
   'group_member',
   'principal.kind',
   'role.permissions',
+  'support_grant',
 ] as const;
 
 export type AccessFactSource = (typeof accessFactSources)[number];
@@ -238,7 +240,16 @@ export async function loadFacts(
   if (!who || !chain) return undefined;
   const grants = await grantsReaching(trx, principalId, who.groups, now, chain);
   const externalCapDays = await externalCapOf(trx);
-  return { principal: who.principal, groups: who.groups, chain, grants, now, externalCapDays };
+  const support = await activeSupport(trx, principalId, now, externalCapDays);
+  return {
+    principal: who.principal,
+    groups: who.groups,
+    chain,
+    grants,
+    now,
+    externalCapDays,
+    ...(support === undefined ? {} : { support }),
+  };
 }
 
 /**
@@ -274,6 +285,7 @@ export async function loadFactsFor(
   const grants =
     levels.length === 0 ? [] : await grantsReaching(trx, principalId, who.groups, now, levels);
   const externalCapDays = await externalCapOf(trx);
+  const support = await activeSupport(trx, principalId, now, externalCapDays);
   // Each grant's position under its level, so an artifact takes its chain's grants in load order
   // without a pass over every grant (#604).
   const key = (level: Level) => (level.kind === 'tenant' ? 'tenant' : `${level.kind}:${level.id}`);
@@ -296,6 +308,7 @@ export async function loadFactsFor(
           .map((position) => grants[position]!),
         now,
         externalCapDays,
+        ...(support === undefined ? {} : { support }),
       },
     ]),
   );
@@ -328,6 +341,8 @@ export async function loadReadableSet(
           .where('id', 'in', named)
           .orderBy('id')
           .execute();
+  const externalCapDays = await externalCapOf(trx);
+  const support = await activeSupport(trx, principalId, now, externalCapDays);
   return readableSet({
     principal: who.principal,
     groups: who.groups,
@@ -335,6 +350,7 @@ export async function loadReadableSet(
     artifacts: new Map(artifacts.map((row) => [row.id, row.space_id])),
     grants,
     now,
-    externalCapDays: await externalCapOf(trx),
+    externalCapDays,
+    ...(support === undefined ? {} : { support }),
   });
 }

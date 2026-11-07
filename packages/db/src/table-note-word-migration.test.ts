@@ -259,6 +259,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0215_integrity_check',
       '0216_silent_failures',
       '0217_read_diagnostics',
+      '0218_support_access',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

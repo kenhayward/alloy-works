@@ -927,6 +927,17 @@ export {
   type StoredShare,
 } from './shares.js';
 export {
+  activeSupport,
+  grantSupport,
+  listSupport,
+  recordSupportRead,
+  recordSupportUse,
+  revokeSupport,
+  type StoredSupport,
+  type SupportAnswer,
+  type SupportRefusal,
+} from './support.js';
+export {
   acceptRevision,
   effectiveAt,
   versionRevisions,

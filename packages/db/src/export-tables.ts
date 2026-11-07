@@ -257,6 +257,9 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   space: natural(['name'], { breaksCycleAt: ['default_template'] }),
   suggestion: kept(),
   suggestion_resolution: kept(),
+  support_grant: leftOut(
+    'Support access granted to somebody from outside for a time: granted afresh, and its acts are in the log.',
+  ),
   tenant_restore: leftOut(
     'That this environment was restored, which an archive of it does not undo.',
   ),
