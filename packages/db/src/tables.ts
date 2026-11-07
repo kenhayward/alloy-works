@@ -285,6 +285,15 @@ export interface CapabilityUsageTable {
 
 /** A kind of background work's last run in this tenant (0211; the DG plan, DG-G). */
 /** Usage counted by day (0214; ADR-0100): a UTC day, a measure and a whole amount. */
+/** An item's last integrity check (0215; the DG plan, DG-K): a failure as a code where not ok. */
+export interface IntegrityCheckTable {
+  class: 'asset' | 'version' | 'audit_export' | 'tenant_export';
+  item: string;
+  checked_at: Date;
+  ok: boolean;
+  failure: 'hash_mismatch' | 'digest_mismatch' | 'object_missing' | null;
+}
+
 export interface UsageDayTable {
   day: ColumnType<string, string, string>;
   measure: string;
@@ -1540,6 +1549,7 @@ export interface TenantTables {
   capability_usage: CapabilityUsageTable;
   background_work: BackgroundWorkTable;
   usage_day: UsageDayTable;
+  integrity_check: IntegrityCheckTable;
   email_attempt: EmailAttemptTable;
   notification_email_off: NotificationEmailOffTable;
   webhook_subscription: WebhookSubscriptionTable;

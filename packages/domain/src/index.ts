@@ -185,6 +185,14 @@ export {
   type UsageMeasure,
 } from './diagnostics/usage.js';
 export {
+  INTEGRITY_CLASSES,
+  INTEGRITY_FAILURES,
+  INTEGRITY_PERIOD_DAYS,
+  integrityShare,
+  type IntegrityClass,
+  type IntegrityFailure,
+} from './diagnostics/integrity.js';
+export {
   BUDGETED_OPERATIONS,
   budgetVerdict,
   PERFORMANCE_BUDGETS,

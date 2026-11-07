@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { permissions } from '../access/permissions.js';
+import { INTEGRITY_CLASSES, INTEGRITY_FAILURES } from '../diagnostics/integrity.js';
 
 /**
  * The audit log's closed list of kinds (audit.md, "Event types"; the AU1 plan, AU1-A): each with the
@@ -455,6 +456,17 @@ export const auditKindSpecs = {
     ['LIF-067'],
     z.strictObject({ request: Id, codes: z.array(AuditName) }),
     'apps/worker/src/jobs/publish.ts',
+  ),
+  // A stored artifact failing its re-verification, by the system (the DG plan, DG-K): its class, the
+  // item by id, and why, as a code.
+  'integrity.failed': kind(
+    ['ADM-044'],
+    z.strictObject({
+      class: z.enum(INTEGRITY_CLASSES),
+      item: Id,
+      failure: z.enum(INTEGRITY_FAILURES),
+    }),
+    'packages/db/src/integrity.ts',
   ),
   // An export asked for and each download of it handed out (the AU2 plan, AU-N): the audit log's
   // today, the tenant's (the R21 plan, R21-B), a document's when IMP builds one, told apart by `of`.

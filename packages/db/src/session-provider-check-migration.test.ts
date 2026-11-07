@@ -70,6 +70,7 @@ describe('migration 0213, which lets a session keep a sealed refresh token', () 
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0213_session_provider_check',
       '0214_usage_day',
+      '0215_integrity_check',
     ]);
 
     expect(

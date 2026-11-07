@@ -1681,6 +1681,15 @@ export { ownJobs, type OwnJobs, type QueueState } from './own-jobs.js';
 export { connectionRunsSince, type ConnectionRuns } from './connection-runs.js';
 export { countUsage, usageDays, type UsageDay } from './usage.js';
 export {
+  integrityDue,
+  integrityOf,
+  objectFailure,
+  verifyIntegrity,
+  type IntegrityClassSummary,
+  type IntegrityItem,
+  type ReadObject,
+} from './integrity.js';
+export {
   backgroundWork,
   recordBackgroundWork,
   type BackgroundOutcome,
