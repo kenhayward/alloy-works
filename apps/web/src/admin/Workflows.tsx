@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
+import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
 import { formats, words } from '../words/words.js';
@@ -156,13 +157,16 @@ export function keyOf(name: string, taken: readonly string[]): string {
 const labelled = <T extends { name: string }>(rows: readonly T[]): Edited<T>[] =>
   rows.map((row) => ({ ...row, label: row.name }));
 
+/** The roles a signed gate may name, by name; not yet asked for, being read, or not read. */
+type Signers = readonly string[] | 'reading' | 'unread' | undefined;
+
 /** A gate as a save sends it: its signature's roles a list of its own. */
 const wireGate = ({ signature, ...gate }: Gate) =>
   signature === undefined
     ? gate
     : { ...gate, signature: { meaning: { ...signature.meaning }, roles: [...signature.roles] } };
 
-/** A gate no longer signed: its baseline and approvals as they were. */
+/** A gate no longer signed: its baseline and approvals as they are now. */
 const withoutSignature = ({ signature: _, ...gate }: Gate): Gate => gate;
 
 /**
@@ -218,7 +222,7 @@ function KindWorkflow({
   const [review, setReview] = useState<Review | undefined>(body.review);
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   // The roles a signed gate may name: those holding approve and read, read when first wanted.
-  const [signers, setSigners] = useState<readonly string[] | undefined>(undefined);
+  const [signers, setSigners] = useState<Signers>(undefined);
   const [said, setSaid] = useState('');
   const [problems, setProblems] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -478,24 +482,26 @@ function KindWorkflow({
                   signers={signers}
                   onSigners={() => {
                     if (signers !== undefined) return;
-                    setSigners([]);
-                    void client
-                      .GET('/v1/roles', {
-                        params: { query: { level: 'tenant', limit: '100' } },
-                      })
-                      .then(({ data }) => {
-                        if (!data) return;
+                    setSigners('reading');
+                    void everyPage((cursor) =>
+                      client.GET('/v1/roles', {
+                        params: { query: { level: 'tenant', ...(cursor ? { cursor } : {}) } },
+                      }),
+                    )
+                      .then((read) =>
                         setSigners(
-                          data.items
-                            .filter(
-                              (role) =>
-                                role.permissions.includes('approve') &&
-                                role.permissions.includes('read'),
-                            )
-                            .map((role) => role.name),
-                        );
-                      })
-                      .catch(() => undefined);
+                          'items' in read
+                            ? read.items
+                                .filter(
+                                  (role) =>
+                                    role.permissions.includes('approve') &&
+                                    role.permissions.includes('read'),
+                                )
+                                .map((role) => role.name)
+                            : 'unread',
+                        ),
+                      )
+                      .catch(() => setSigners('unread'));
                   }}
                   transition={transition}
                   stateOptions={stateOptions}
@@ -605,7 +611,7 @@ function GateCell({
   onChange,
 }: {
   kind: Kind;
-  signers: readonly string[] | undefined;
+  signers: Signers;
   onSigners: () => void;
   transition: Transition & { label: string };
   stateOptions: React.ReactNode;
@@ -614,6 +620,9 @@ function GateCell({
 }) {
   const { gate, label } = transition;
   const signature = gate?.signature;
+  // Why a signed gate's approvers and baseline are fixed, said to whoever reaches them.
+  const fixedHint = useId();
+  const fixed = signature === undefined ? undefined : fixedHint;
   return (
     <div className={styles['gate']}>
       <input
@@ -647,6 +656,7 @@ function GateCell({
               value={gate.approvals}
               // A signed gate needs one approval for each role it names.
               disabled={signature !== undefined}
+              aria-describedby={fixed}
               onChange={(change) =>
                 onChange({ gate: { ...gate, approvals: Number(change.target.value) } })
               }
@@ -695,6 +705,7 @@ function GateCell({
                   checked={gate.baseline ?? false}
                   // What is signed is the baseline (LIF-087): a signed gate always takes one.
                   disabled={signature !== undefined}
+                  aria-describedby={fixed}
                   onChange={(change) =>
                     onChange({
                       gate: {
@@ -731,6 +742,11 @@ function GateCell({
                 onSigners={onSigners}
                 onChange={(next) => onChange({ gate: next })}
               />
+              {fixed && (
+                <span id={fixed} className={styles['muted']}>
+                  {words('admin.signed-gate-fixed')}
+                </span>
+              )}
             </>
           )}
         </>
@@ -752,7 +768,7 @@ function SignatureFields({
 }: {
   label: string;
   gate: Gate;
-  signers: readonly string[] | undefined;
+  signers: Signers;
   onSigners: () => void;
   onChange: (gate: Gate) => void;
 }) {
@@ -765,10 +781,8 @@ function SignatureFields({
   const signed = (next: Signature) =>
     onChange({ ...gate, approvals: Math.max(1, next.roles.length), signature: next });
   // Offered: every role that may approve, and any the gate already names, so it can be taken off.
-  const offered = [
-    ...(signers ?? []),
-    ...(signature?.roles ?? []).filter((role) => !(signers ?? []).includes(role)),
-  ];
+  const read: readonly string[] = Array.isArray(signers) ? signers : [];
+  const offered = [...read, ...(signature?.roles ?? []).filter((role) => !read.includes(role))];
   return (
     <>
       <label>
@@ -821,7 +835,10 @@ function SignatureFields({
             }
           />
           <span>{words('admin.signed-under-roles')}</span>
-          {signers !== undefined && offered.length === 0 && (
+          {signers === 'unread' && (
+            <span className={styles['muted']}>{words('admin.roles-unread')}</span>
+          )}
+          {Array.isArray(signers) && offered.length === 0 && (
             <span className={styles['muted']}>{words('admin.no-role-may-sign')}</span>
           )}
           {offered.map((role) => (

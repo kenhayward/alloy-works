@@ -91,10 +91,16 @@ describe('holding a role (the ES plan, ES-F)', () => {
     expect(holdsRole(given, 'Reading', 'approve')).toBe(false);
   });
 
-  it('refuses an external principal, whatever they are granted', () => {
+  it('refuses an external principal, whatever they are granted and for whatever permission', () => {
     const given = facts([grant(technical, space, { expiresAt: new Date(NOW.getTime() + DAY) })], {
       principal: { id: ADA, kind: 'external' },
     });
+    expect(holdsRole(given, 'Technical', 'approve')).toBe(false);
+    expect(holdsRole(given, 'Technical', 'read')).toBe(false);
+  });
+
+  it('refuses a service principal: a signature is a person’s', () => {
+    const given = facts([grant(technical, space)], { principal: { id: ADA, kind: 'service' } });
     expect(holdsRole(given, 'Technical', 'approve')).toBe(false);
   });
 

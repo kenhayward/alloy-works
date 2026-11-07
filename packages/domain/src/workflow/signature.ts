@@ -36,10 +36,23 @@ export interface SignedParts {
 
 const FORMAT = 'alloy-works/electronic-signature/1';
 
+/** A lone surrogate or a NUL: what Postgres text cannot hold as written, so it could never verify. */
+const LONE_SURROGATE = /\p{Cs}/u;
+const NUL = String.fromCharCode(0);
+
+/** A text part, composed (NFC), so a part stored composed reads back to the same manifest. */
+function text<T extends string | null>(part: T): T {
+  if (part === null) return part;
+  if (LONE_SURROGATE.test(part) || part.includes(NUL)) {
+    throw new Error('A signed part is text the database can hold');
+  }
+  return part.normalize('NFC') as T;
+}
+
 /**
  * The canonical text of a signature's parts: one JSON array, in a fixed order, under its format's
- * name, the time in UTC to the millisecond. JSON keeps each part apart, so no text in one can be
- * spelled to read as another.
+ * name, each text composed (NFC), the time in UTC to the millisecond. JSON keeps each part apart, so
+ * no text in one can be spelled to read as another.
  */
 export function signatureManifest(parts: SignedParts): string {
   if (Number.isNaN(parts.signedAt.getTime())) throw new Error('A signature has a time');
@@ -48,18 +61,20 @@ export function signatureManifest(parts: SignedParts): string {
   }
   return JSON.stringify([
     FORMAT,
-    parts.baselineDigest,
-    parts.signer.issuer,
-    parts.signer.subject,
-    parts.signer.providerKey,
-    parts.signer.name,
-    parts.signer.address,
-    parts.role,
-    parts.title,
-    parts.baseline,
-    parts.decision,
-    parts.meaning,
-    parts.reason,
+    ...[
+      parts.baselineDigest,
+      parts.signer.issuer,
+      parts.signer.subject,
+      parts.signer.providerKey,
+      parts.signer.name,
+      parts.signer.address,
+      parts.role,
+      parts.title,
+      parts.baseline,
+      parts.decision,
+      parts.meaning,
+      parts.reason,
+    ].map(text),
     parts.signedAt.toISOString(),
     parts.offset,
   ]);

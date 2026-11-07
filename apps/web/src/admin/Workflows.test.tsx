@@ -15,7 +15,11 @@ type Kind = 'component' | 'document';
 type Body = typeof SEED_WORKFLOW;
 
 /** Each kind's workflow in force, a save making the next version; `refuse` answers a save instead. */
-function service(refuse?: () => Response, documentBody: Body = SEED_WORKFLOW) {
+function service(
+  refuse?: () => Response,
+  documentBody: Body = SEED_WORKFLOW,
+  roles: 'one page' | 'two pages' | 'failing' = 'one page',
+) {
   const versions: Record<Kind, { version: number; body: Body; by: typeof IVY | null; at: string }> =
     {
       component: { version: 1, body: SEED_WORKFLOW, by: null, at: '2026-10-13T09:00:00.000Z' },
@@ -38,7 +42,20 @@ function service(refuse?: () => Response, documentBody: Body = SEED_WORKFLOW) {
       return json(200, { kind, ...versions[kind] });
     }
     if (new URL(request.url).pathname === '/v1/roles') {
-      asked.push(new URL(request.url));
+      const url = new URL(request.url);
+      asked.push(url);
+      if (roles === 'failing') return json(503, { code: 'unavailable', message: 'Not now.' });
+      if (roles === 'two pages') {
+        return url.searchParams.get('cursor') === 'page-2'
+          ? json(200, {
+              items: [{ id: 'r4', name: 'Quality', permissions: ['read', 'approve'] }],
+              next: null,
+            })
+          : json(200, {
+              items: [{ id: 'r2', name: 'Approver', permissions: ['read', 'approve'] }],
+              next: 'page-2',
+            });
+      }
       return json(200, {
         items: [
           { id: 'r1', name: 'Reader', permissions: ['read'] },
@@ -335,6 +352,49 @@ describe("Administration's Workflows", () => {
     expect(
       await within(documents).findByRole('checkbox', { name: 'Approve is signed under Approver' }),
     ).not.toBeChecked();
+  });
+
+  it('says why a signed gate’s approvers and baseline cannot be changed', async () => {
+    const { client } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    await userEvent.click(within(documents).getByRole('checkbox', { name: 'Approve is signed' }));
+    const why =
+      'A signed gate takes a baseline, which is what is signed, and needs one approval for each role it is signed under.';
+    expect(
+      within(documents).getByRole('checkbox', { name: 'Approve takes a baseline' }),
+    ).toHaveAccessibleDescription(why);
+    expect(
+      within(documents).getByRole('combobox', { name: 'Approvers Approve needs' }),
+    ).toHaveAccessibleDescription(why);
+  });
+
+  it('offers the roles from every page of them', async () => {
+    const { client } = service(undefined, SEED_WORKFLOW, 'two pages');
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    await userEvent.click(within(documents).getByRole('checkbox', { name: 'Approve is signed' }));
+    for (const role of ['Approver', 'Quality']) {
+      expect(
+        await within(documents).findByRole('checkbox', { name: `Approve is signed under ${role}` }),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it('says the roles could not be read, rather than that none may sign', async () => {
+    const { client } = service(undefined, SEED_WORKFLOW, 'failing');
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    await userEvent.click(within(documents).getByRole('checkbox', { name: 'Approve is signed' }));
+    expect(
+      await within(documents).findByText('The roles could not be read, so none can be offered.'),
+    ).toBeInTheDocument();
+    expect(
+      within(documents).queryByText('No role holds approve and read, so none can sign yet.'),
+    ).not.toBeInTheDocument();
   });
 
   it('turns a signed gate back into an unsigned one, keeping its baseline and approvals', async () => {

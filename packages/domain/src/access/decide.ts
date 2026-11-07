@@ -207,11 +207,11 @@ function walk(permission: Permission, facts: AccessFacts): Decision {
 /**
  * Whether the principal holds `role`, by name, for `permission` over the target (LIF-083; the ES plan,
  * ES-F): the walk over that role's grants alone allows it, and so does the whole decision, so a nearer
- * denial of any role, an external principal's cap and support access all still refuse. A token never
- * holds a role here: a signature is a person's, made in a session.
+ * denial of any role and support access still refuse. Only a person holds a role here, in a session:
+ * never a token, an external principal (whatever the permission asked) or a service principal.
  */
 export function holdsRole(facts: AccessFacts, role: string, permission: Permission): boolean {
-  if (facts.scopes !== undefined) return false;
+  if (facts.scopes !== undefined || facts.principal.kind !== 'user') return false;
   const own = walk(permission, {
     ...facts,
     grants: facts.grants.filter((grant) => grant.role.name === role),

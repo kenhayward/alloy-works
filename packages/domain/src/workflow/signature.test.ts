@@ -59,6 +59,33 @@ describe("a signature's manifest (the ES plan, ES-Q)", () => {
     expect(signatureManifest(shifted)).not.toBe(signatureManifest(parts));
   });
 
+  it('is the same text for a part however it is composed, so what is stored composed still verifies', () => {
+    const acute = String.fromCharCode(0x301);
+    const eAcute = String.fromCharCode(0xe9);
+    const decomposed = {
+      ...parts,
+      signer: { ...parts.signer, name: `Ade${acute}le Martin` },
+      title: `Re${acute}sume${acute}`,
+    };
+    const composed = {
+      ...parts,
+      signer: { ...parts.signer, name: `Ad${eAcute}le Martin` },
+      title: `R${eAcute}sum${eAcute}`,
+    };
+    expect(signatureManifest(decomposed)).toBe(signatureManifest(composed));
+  });
+
+  it('refuses a part the database cannot store as written: a lone surrogate or a NUL', () => {
+    const lone = String.fromCharCode(0xd800);
+    const nul = String.fromCharCode(0);
+    for (const title of [`Dosing ${lone} guide`, `Dosing ${nul} guide`]) {
+      expect(() => signatureManifest({ ...parts, title })).toThrow();
+    }
+    expect(() =>
+      signatureManifest({ ...parts, signer: { ...parts.signer, name: `Ada ${lone}` } }),
+    ).toThrow();
+  });
+
   it('holds no internal id, and refuses a time or offset it cannot write', () => {
     expect(signatureManifest(parts)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/u);
     expect(() => signatureManifest({ ...parts, signedAt: new Date(Number.NaN) })).toThrow();

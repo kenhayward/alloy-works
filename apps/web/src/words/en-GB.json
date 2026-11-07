@@ -3756,6 +3756,8 @@
   "admin.signed-under": "{label} is signed under {role}",
   "admin.signed-under-roles": "Signed under, one approval each",
   "admin.no-role-may-sign": "No role holds approve and read, so none can sign yet.",
+  "admin.roles-unread": "The roles could not be read, so none can be offered.",
+  "admin.signed-gate-fixed": "A signed gate takes a baseline, which is what is signed, and needs one approval for each role it is signed under.",
   "admin.reviews": "{kind, select, component {Component reviews} document {Document reviews} queryDefinition {Query definition reviews} prompt {Prompt reviews} term {Term reviews} other {{kind} reviews}}",
   "admin.days-before-a-review-its": "Days before a review its owner is prompted",
   "admin.when-a-review-lapses": "When a review lapses",

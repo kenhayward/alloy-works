@@ -50,14 +50,19 @@ create table electronic_signature (
 create index electronic_signature_document on electronic_signature (document_id, signed_at desc);
 create index electronic_signature_baseline on electronic_signature (baseline_id);
 
--- A digest not its baseline's, or an approval that is another's, is refused, however it is written: an
--- import restores rows whose approvals it renumbered, and those still name their own.
+-- A digest not its baseline's, a baseline of another version than the one signed (a new version starts
+-- the round again on a new baseline), or an approval that is another's, is refused, however it is
+-- written: an import restores rows whose approvals it renumbered, and those still name their own.
 create function electronic_signature_bound() returns trigger
 language plpgsql as $$
 begin
   if not exists (select 1 from baseline b
                   where b.id = new.baseline_id and b.digest = new.baseline_digest) then
     raise exception 'electronic_signature: the baseline digest is not its baseline''s';
+  end if;
+  if not exists (select 1 from baseline b
+                  where b.id = new.baseline_id and b.document_version_id = new.version_id) then
+    raise exception 'electronic_signature: the baseline is not of the version signed';
   end if;
   if not exists (select 1 from workflow_approval a
                   where a.id = new.approval_id

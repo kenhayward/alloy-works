@@ -1,8 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { SEED_DOCUMENT_WORKFLOW, type WorkflowBody } from '@alloy-works/domain';
+import {
+  type OutlineDocument,
+  SEED_DOCUMENT_WORKFLOW,
+  type WorkflowBody,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { makeBaseline } from './baselines.js';
 import { createDocument } from './documents.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -10,6 +15,7 @@ import { createRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
+import { recordVersion } from './versions.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
@@ -193,6 +199,8 @@ describe('electronic signatures, declared and kept (the ES plan, ESa)', () => {
 
   describe('the electronic_signature row', () => {
     let row: Record<string, unknown> = {};
+    /** A baseline of the same document at a later version: not the round's. */
+    let later = { id: '', digest: '' };
 
     beforeAll(async () => {
       await as((trx) =>
@@ -270,6 +278,44 @@ describe('electronic signatures, declared and kept (the ES plan, ESa)', () => {
           mac: 'e'.repeat(64),
         };
       });
+      later = await as(async (trx) => {
+        const recorded = await recordVersion(trx, {
+          artifactId: made.artifactId,
+          openedFrom: made.id,
+          author: ada,
+          substance: {
+            kind: 'document',
+            content: {
+              ...(made.content as OutlineDocument),
+              nodes: [
+                {
+                  type: 'section',
+                  id: 's'.repeat(26),
+                  title: [{ type: 'text', value: 'Dosing', marks: [] }],
+                  numbered: true,
+                  matter: 'body',
+                  pageBreak: 'none',
+                  values: {},
+                  children: [],
+                },
+              ],
+            },
+          },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        const taken = await makeBaseline(trx, {
+          documentId: made.artifactId,
+          version: recorded.version.id,
+          name: 'Later',
+          maker: ada,
+        });
+        if (taken.answer !== 'made') throw new Error(taken.answer);
+        return trx
+          .selectFrom('baseline')
+          .select(['id', 'digest'])
+          .where('id', '=', taken.baseline)
+          .executeTakeFirstOrThrow();
+      });
     });
 
     const insert = (values: Record<string, unknown>) =>
@@ -281,10 +327,13 @@ describe('electronic signatures, declared and kept (the ES plan, ESa)', () => {
           .executeTakeFirstOrThrow(),
       );
 
-    it('refuses a baseline digest that is not its baseline’s, and an approval that is another’s', async () => {
+    it('refuses a baseline digest that is not its baseline’s, a baseline of another version, and an approval that is another’s', async () => {
       await expect(insert({ ...row, baseline_digest: 'f'.repeat(64) })).rejects.toThrow(
         /baseline digest is not its baseline's/u,
       );
+      await expect(
+        insert({ ...row, baseline_id: later.id, baseline_digest: later.digest }),
+      ).rejects.toThrow(/baseline is not of the version signed/u);
       await expect(insert({ ...row, principal_id: ada })).rejects.toThrow(
         /approval is not this signature's/u,
       );
