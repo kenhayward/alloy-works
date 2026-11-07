@@ -9,6 +9,7 @@ import { generalSpace, makeComponent, squarePng, uploadImage } from './testing/c
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, fromMenu, withPage } from './testing/page.js';
 import { approvedTerm, makeTemplate, translatedComponent } from './testing/fixtures.js';
+import { countUsageNow } from './testing/store.js';
 import { pondSurvey } from './testing/word.js';
 
 /**
@@ -899,6 +900,8 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     task,
   }) => {
     await withPage(async (page) => {
+      // A fresh stack has seen no night, so nothing would be counted: count now, as the worker does.
+      await countUsageNow();
       await page.goto(`${SERVICE}/#/admin/usage`);
       const arrival: Arrival = {
         shows: [page.getByRole('table', { name: 'Usage by month' })],
