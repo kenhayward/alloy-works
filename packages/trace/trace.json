@@ -18473,6 +18473,10 @@
           "howItIsMet": "A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources"
         },
         {
+          "id": "ADM-044",
+          "howItIsMet": "Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`"
+        },
+        {
           "id": "COL-061",
           "howItIsMet": "A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff"
         }
@@ -22816,13 +22820,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 864,
+      "line": 866,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 877,
+      "line": 879,
       "kind": "title"
     },
     {
@@ -23560,13 +23564,13 @@
     {
       "id": "ADM-011",
       "file": "apps/service/src/diagnostics.test.ts",
-      "line": 195,
+      "line": 235,
       "kind": "title"
     },
     {
       "id": "ADM-020",
       "file": "apps/service/src/diagnostics.test.ts",
-      "line": 151,
+      "line": 191,
       "kind": "title"
     },
     {
@@ -26110,25 +26114,31 @@
     {
       "id": "ADM-020",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 191,
+      "line": 237,
       "kind": "title"
     },
     {
       "id": "ADM-021",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 160,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "ADM-036",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 139,
+      "line": 165,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-044",
+      "file": "apps/web/src/admin/Diagnostics.test.tsx",
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "COL-061",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 160,
+      "line": 186,
       "kind": "title"
     },
     {
@@ -32138,6 +32148,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-044",
+      "file": "packages/db/src/integrity.test.ts",
+      "line": 126,
+      "kind": "title"
+    },
+    {
       "id": "API-040",
       "file": "packages/db/src/jobs.test.ts",
       "line": 80,
@@ -34018,13 +34034,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 299,
+      "line": 302,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 276,
+      "line": 279,
       "kind": "title"
     },
     {
@@ -35104,7 +35120,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1280,
+      "line": 1284,
       "kind": "title"
     },
     {
@@ -37714,13 +37730,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1542,
+      "line": 1543,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1111,
+      "line": 1112,
       "kind": "title"
     },
     {

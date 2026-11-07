@@ -136518,6 +136518,99 @@
                         "model",
                         "queryRunsAtOnce"
                       ]
+                    },
+                    "integrity": {
+                      "type": "object",
+                      "properties": {
+                        "periodDays": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Every item of every class is checked within this many days"
+                        },
+                        "classes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "class": {
+                                "type": "string",
+                                "enum": [
+                                  "asset",
+                                  "version",
+                                  "audit_export",
+                                  "tenant_export"
+                                ],
+                                "description": "An asset's original against its hash, a version against its digests, or an export against its hash"
+                              },
+                              "items": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Items held now"
+                              },
+                              "checkedInPeriod": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Items checked within the period"
+                              },
+                              "failing": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Items whose last check failed"
+                              },
+                              "lastFailure": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "item": {
+                                        "type": "string",
+                                        "description": "The item, by id"
+                                      },
+                                      "failure": {
+                                        "type": "string",
+                                        "enum": [
+                                          "hash_mismatch",
+                                          "digest_mismatch",
+                                          "object_missing"
+                                        ]
+                                      },
+                                      "at": {
+                                        "type": "string",
+                                        "description": "When the check found it, an ISO 8601 time"
+                                      }
+                                    },
+                                    "required": [
+                                      "item",
+                                      "failure",
+                                      "at"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The latest failing item's check; null with none failing"
+                              }
+                            },
+                            "required": [
+                              "class",
+                              "items",
+                              "checkedInPeriod",
+                              "failing",
+                              "lastFailure"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "periodDays",
+                        "classes"
+                      ],
+                      "description": "Stored artifacts re-verified, a share each night"
                     }
                   },
                   "required": [
@@ -136531,7 +136624,8 @@
                     "connections",
                     "objectives",
                     "performance",
-                    "budgets"
+                    "budgets",
+                    "integrity"
                   ]
                 },
                 "example": {
@@ -136589,6 +136683,10 @@
                       "limitMicros": "example"
                     },
                     "queryRunsAtOnce": -9007199254740991
+                  },
+                  "integrity": {
+                    "periodDays": -9007199254740991,
+                    "classes": []
                   }
                 }
               }

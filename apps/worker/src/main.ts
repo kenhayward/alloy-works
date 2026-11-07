@@ -57,6 +57,7 @@ import {
   sweepMailEverywhere,
   sweepMeasurementsEverywhere,
   sweepUsageEverywhere,
+  sweepIntegrityEverywhere,
   sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -162,6 +163,7 @@ listener.on('notification', () => wake());
 
 let running = true;
 let sweepingNonces = false;
+let verifying = false;
 const sweep = setInterval(() => {
   void sweepExpiredSignIns(db, new Date(), log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired sign-ins'))
@@ -250,6 +252,18 @@ const sweep = setInterval(() => {
   void sweepUsageEverywhere(db, log)
     .then((counted) => counted > 0 && log.info({ counted }, 'counted usage'))
     .catch((error: unknown) => log.error({ err: error }, 'usage count failed'));
+  // Stored artifacts re-verified, a share a night, never overlapping itself (the DG plan, DG-K).
+  if (!verifying) {
+    verifying = true;
+    void sweepIntegrityEverywhere(db, stores, log)
+      .then(
+        ({ checked, failed }) => checked > 0 && log.info({ checked, failed }, 'checked integrity'),
+      )
+      .catch((error: unknown) => log.error({ err: error }, 'integrity check failed'))
+      .finally(() => {
+        verifying = false;
+      });
+  }
 }, config.sweepIntervalMs);
 
 // The nightly re-check of cited entries against their sources, never overlapping itself (XR-E).

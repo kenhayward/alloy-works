@@ -171,6 +171,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   import_made: kept(),
   import_part: kept({ breaksCycleAt: ['parent'] }),
   import_policy: singleton(),
+  integrity_check: leftOut('When each stored item was last re-verified, checked afresh in a copy.'),
   invitation: kept(),
   invitation_provider: kept(),
   iteration: kept(),

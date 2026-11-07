@@ -31,6 +31,15 @@ const calm: DiagnosticsView = {
   },
   performance: [],
   budgets: { model: null, queryRunsAtOnce: 4 },
+  integrity: {
+    periodDays: 28,
+    classes: [
+      { class: 'asset', items: 56, checkedInPeriod: 56, failing: 0, lastFailure: null },
+      { class: 'version', items: 2800, checkedInPeriod: 2800, failing: 0, lastFailure: null },
+      { class: 'audit_export', items: 2, checkedInPeriod: 2, failing: 0, lastFailure: null },
+      { class: 'tenant_export', items: 0, checkedInPeriod: 0, failing: 0, lastFailure: null },
+    ],
+  },
 };
 
 const held = {
@@ -128,6 +137,23 @@ const troubled: DiagnosticsView = {
     model: { currency: 'GBP', spentMicros: '12500000', limitMicros: '50000000' },
     queryRunsAtOnce: 4,
   },
+  integrity: {
+    periodDays: 28,
+    classes: [
+      {
+        class: 'asset',
+        items: 56,
+        checkedInPeriod: 40,
+        failing: 2,
+        lastFailure: {
+          item: '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41',
+          failure: 'object_missing',
+          at: AT,
+        },
+      },
+      ...calm.integrity.classes.slice(1),
+    ],
+  },
 };
 
 function service(view: DiagnosticsView) {
@@ -167,6 +193,7 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
       expect.stringContaining('turned off'),
       expect.stringContaining('Mail'),
       expect.stringContaining('Site readings'),
+      expect.stringContaining('Images'),
     ]);
     expect(needsAttention(calm)).toEqual([]);
   });
@@ -186,6 +213,25 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
     const realtime = within(table).getByRole('row', { name: /API-036/ });
     expect(realtime).toHaveTextContent('Not measured in production');
     expect(realtime).toHaveTextContent('acknowledge');
+  });
+
+  it('ADM-044 shows each class of stored item checked within the period, and a failure in icon and words', async () => {
+    render(<Diagnostics client={service(troubled)} />);
+    const table = await screen.findByRole('table', { name: 'Integrity' });
+    const images = within(table).getByRole('row', { name: /Images/ });
+    expect(images).toHaveTextContent('56');
+    expect(images).toHaveTextContent('40');
+    expect(images).toHaveTextContent('Failing');
+    expect(images).toHaveTextContent('object_missing');
+    expect(images.querySelector('svg[data-icon]')).not.toBeNull();
+    expect(within(table).getByRole('row', { name: /Versions/ })).toHaveTextContent('Intact');
+    expect(within(table).getByRole('row', { name: /Environment exports/ })).toHaveTextContent(
+      'Nothing held',
+    );
+    expect(screen.getByRole('region', { name: 'Integrity' })).toHaveTextContent('28 days');
+    expect(needsAttention(troubled).at(-1)).toBe(
+      'Images: 2 items failed their integrity check, the latest object_missing.',
+    );
   });
 
   it('ADM-020 shows each objective against what was measured, and a restore not rehearsed as not rehearsed', async () => {

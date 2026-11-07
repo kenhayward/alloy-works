@@ -49191,6 +49191,10 @@ export interface operations {
                      *           "limitMicros": "example"
                      *         },
                      *         "queryRunsAtOnce": -9007199254740991
+                     *       },
+                     *       "integrity": {
+                     *         "periodDays": -9007199254740991,
+                     *         "classes": []
                      *       }
                      *     }
                      */
@@ -49385,6 +49389,33 @@ export interface operations {
                             } | null;
                             /** @description How many query runs may run at once */
                             queryRunsAtOnce: number;
+                        };
+                        /** @description Stored artifacts re-verified, a share each night */
+                        integrity: {
+                            /** @description Every item of every class is checked within this many days */
+                            periodDays: number;
+                            classes: {
+                                /**
+                                 * @description An asset's original against its hash, a version against its digests, or an export against its hash
+                                 * @enum {string}
+                                 */
+                                class: "asset" | "version" | "audit_export" | "tenant_export";
+                                /** @description Items held now */
+                                items: number;
+                                /** @description Items checked within the period */
+                                checkedInPeriod: number;
+                                /** @description Items whose last check failed */
+                                failing: number;
+                                /** @description The latest failing item's check; null with none failing */
+                                lastFailure: {
+                                    /** @description The item, by id */
+                                    item: string;
+                                    /** @enum {string} */
+                                    failure: "hash_mismatch" | "digest_mismatch" | "object_missing";
+                                    /** @description When the check found it, an ISO 8601 time */
+                                    at: string;
+                                } | null;
+                            }[];
                         };
                     };
                 };

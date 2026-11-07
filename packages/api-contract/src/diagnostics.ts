@@ -99,6 +99,26 @@ const PerformanceView = z.object({
   why: z.string().nullable().describe('Why it is met as built, or not measured in production'),
 });
 
+/** A class of stored artifact, as its re-verification last found it (the DG plan, DG-K). */
+const IntegrityClassView = z.object({
+  class: z
+    .enum(['asset', 'version', 'audit_export', 'tenant_export'])
+    .describe(
+      "An asset's original against its hash, a version against its digests, or an export against its hash",
+    ),
+  items: z.int().describe('Items held now'),
+  checkedInPeriod: z.int().describe('Items checked within the period'),
+  failing: z.int().describe('Items whose last check failed'),
+  lastFailure: z
+    .object({
+      item: z.string().describe('The item, by id'),
+      failure: z.enum(['hash_mismatch', 'digest_mismatch', 'object_missing']),
+      at: z.string().describe('When the check found it, an ISO 8601 time'),
+    })
+    .nullable()
+    .describe("The latest failing item's check; null with none failing"),
+});
+
 const objectiveVerdict = z
   .enum(['met', 'missed', 'unrecorded', 'unrehearsed'])
   .describe(
@@ -184,6 +204,12 @@ export const DiagnosticsView = z.object({
       .describe("The month's model spend against its budget; null with no budget set"),
     queryRunsAtOnce: z.int().describe('How many query runs may run at once'),
   }),
+  integrity: z
+    .object({
+      periodDays: z.int().describe('Every item of every class is checked within this many days'),
+      classes: z.array(IntegrityClassView),
+    })
+    .describe('Stored artifacts re-verified, a share each night'),
 });
 export type DiagnosticsView = z.infer<typeof DiagnosticsView>;
 

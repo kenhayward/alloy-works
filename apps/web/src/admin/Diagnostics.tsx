@@ -125,7 +125,23 @@ export interface DiagnosticsView {
     } | null;
     readonly queryRunsAtOnce: number;
   };
+  readonly integrity: {
+    readonly periodDays: number;
+    readonly classes: readonly {
+      readonly class: IntegrityClass;
+      readonly items: number;
+      readonly checkedInPeriod: number;
+      readonly failing: number;
+      readonly lastFailure: {
+        readonly item: string;
+        readonly failure: string;
+        readonly at: string;
+      } | null;
+    }[];
+  };
 }
+
+type IntegrityClass = 'asset' | 'version' | 'audit_export' | 'tenant_export';
 
 type Health = 'healthy' | 'degraded' | 'failing' | 'idle' | 'paused';
 
@@ -167,6 +183,7 @@ const WORK_NAMES: Readonly<Record<string, WordKey>> = {
   sweepMailEverywhere: 'admin.diag-work.sweepMailEverywhere',
   sweepMeasurementsEverywhere: 'admin.diag-work.sweepMeasurementsEverywhere',
   sweepUsageEverywhere: 'admin.diag-work.sweepUsageEverywhere',
+  sweepIntegrityEverywhere: 'admin.diag-work.sweepIntegrityEverywhere',
   sweepOldNotifications: 'admin.diag-work.sweepOldNotifications',
   sweepQueryEmbeddingsEverywhere: 'admin.diag-work.sweepQueryEmbeddingsEverywhere',
   sweepRestorations: 'admin.diag-work.sweepRestorations',
@@ -468,6 +485,16 @@ export function needsAttention(view: DiagnosticsView): string[] {
       }),
     );
   }
+  for (const each of view.integrity.classes) {
+    if (each.failing === 0) continue;
+    said.push(
+      words('admin.diag-integrity-failed', {
+        name: words(`admin.diag-integrity.${each.class}`),
+        failing: each.failing,
+        failure: each.lastFailure?.failure ?? '',
+      }),
+    );
+  }
   return said;
 }
 
@@ -641,6 +668,59 @@ function SourcesTable({ view }: { view: DiagnosticsView }) {
   );
 }
 
+/** Each class of stored item, as its re-verification last found it (ADM-044; the DG plan, DG-K). */
+function IntegrityTable({ view }: { view: DiagnosticsView }) {
+  const name = words('admin.diag-integrity');
+  return (
+    <table aria-label={name} className={styles['table']}>
+      <thead>
+        <tr>
+          <th scope="col">{words('admin.diag-integrity-class')}</th>
+          <th scope="col">{words('admin.diag-integrity-items')}</th>
+          <th scope="col">
+            {words('admin.diag-integrity-checked', { days: view.integrity.periodDays })}
+          </th>
+          <th scope="col">{words('admin.diag-integrity-failing')}</th>
+          <th scope="col">{words('admin.diag-state')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {view.integrity.classes.map((each) => {
+          const state = each.failing > 0 ? 'failing' : each.items === 0 ? 'empty' : 'intact';
+          const { icon, tone } = INTEGRITY_SHOWN[state];
+          return (
+            <tr key={each.class}>
+              <td className={`${styles['strong']} ${styles['wraps']}`}>
+                {words(`admin.diag-integrity.${each.class}`)}
+              </td>
+              <td>{formats().number(each.items)}</td>
+              <td>{formats().number(each.checkedInPeriod)}</td>
+              <td>{formats().number(each.failing)}</td>
+              <td className={styles['wraps']}>
+                <Chip tone={tone}>
+                  <Icon name={icon} size={12} /> {words(`admin.diag-integrity-${state}`)}
+                </Chip>
+                {each.lastFailure !== null && (
+                  <p className={styles['muted']}>
+                    {`${each.lastFailure.failure}, ${when(each.lastFailure.at)}`}
+                  </p>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+/** Each class's state in icon, words and tone together. */
+const INTEGRITY_SHOWN = {
+  intact: { icon: 'Confirmed', tone: 'ok' },
+  failing: { icon: 'Close', tone: 'danger' },
+  empty: { icon: 'Minus', tone: 'neutral' },
+} as const satisfies Record<string, { readonly icon: string; readonly tone: ChipTone }>;
+
 /**
  * **Administration's Diagnostics** (ADM-036; diagnostics.md; the DG plan, DG-H): what failed silently
  * first, then health by capability, the search index, deliveries, background work, jobs, data sources
@@ -757,6 +837,12 @@ export function Diagnostics({ client }: { client: Client }) {
       <Part title={words('admin.diag-performance')}>
         <p className={styles['muted']}>{words('admin.diag-performance-note')}</p>
         <PerformanceTable view={view} />
+      </Part>
+      <Part title={words('admin.diag-integrity')}>
+        <p className={styles['muted']}>
+          {words('admin.diag-integrity-note', { days: view.integrity.periodDays })}
+        </p>
+        <IntegrityTable view={view} />
       </Part>
     </div>
   );

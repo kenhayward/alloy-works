@@ -227,7 +227,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   time against the operator's objectives (99.5%, 24 hours and 4 hours unless set), a restore not rehearsed
   in 35 days said so; and every performance budget the specification states,
   what it is held to, what production measured over 7 days and whether it is met, or why production
-  cannot measure it yet. Codes and counts only, never content. Measured by the minute,
+  cannot measure it yet; and each kind of stored item (images, versions, audit log and environment
+  exports) checked again within 28 days, a share each night, with any failing, which is also audited.
+  Codes and counts only, never content. Measured by the minute,
   kept by the hour after a week and by the day after 90 days, for 13 months.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the

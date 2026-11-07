@@ -175,6 +175,8 @@ describe('the audit kinds', () => {
       'translation.job_decided',
       // The XL plan's (XL-I): a machine draft accepted.
       'translation.machine_accepted',
+      // The DG plan's (DG-K): a stored artifact failing its re-verification.
+      'integrity.failed',
     ];
     expect([...auditKinds].sort()).toEqual([...listed].sort());
     for (const kind of auditKinds) {
@@ -198,6 +200,7 @@ describe('the audit kinds', () => {
       'scim.provisioned': { resource: 'user', act: 'patched' },
       'import.accepted': { import: ID, components: 3 },
       'import.abandoned': { swept: true },
+      'integrity.failed': { class: 'asset', item: ID, failure: 'hash_mismatch' },
       'translation.declared': { version: ID, retranslate: false },
       'translation.marked_current': { line: ID, language: 'fr-FR', version: ID, translates: OTHER },
       'authentication.sign_in_failed': { route: 'google', failure: 'handoff_expired' },

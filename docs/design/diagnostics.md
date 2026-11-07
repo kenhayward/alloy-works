@@ -3,7 +3,7 @@
 How an administrator answers "is it us or is it you" without a support ticket: each capability's health, what
 background work last did, what failed silently, what the environment uses, and whether the product meets what it
 promises. Built by [the DG plan](../plans/2026-11-06-dg-diagnostics-usage-and-health.md), which holds the decisions;
-built so far is the measuring, background work, Diagnostics, and usage.
+built so far is the measuring, background work, Diagnostics, usage, budgets and integrity.
 
 ## Measuring
 
@@ -127,10 +127,27 @@ service (`objectivesFrom`): 99.5% a month, a recovery point of 24 hours and a re
   in 35 days is not rehearsed, and no recovery time is shown. Where nothing records backups, Diagnostics says they are
   the operator's own.
 
+## Integrity
+
+`INTEGRITY_CLASSES` and `INTEGRITY_PERIOD_DAYS` (`packages/domain/src/diagnostics/integrity.ts`, DG-K, pre-flight 11)
+declare what is re-verified and within what period: 28 days.
+
+- **Classes**: `asset`, a ready upload's original read from the store against the hash its key ends in (AST-042);
+  `version`, every version's digests recomputed from its row (VER-042), no object read; `audit_export` (LIF-055)
+  and `tenant_export`, a done export's object against its `sha256`. An expired tenant export has no object, so
+  is not checked.
+- **A share a night**: `sweepIntegrityEverywhere`, once a tenant's UTC day (`integrityDue`), takes `ceil(n / 28)` of
+  each class, never checked first, then least recently checked, and checks them one at a time, which caps the
+  store's reads. `integrity_check` (0215) keeps each item's last check, left out of exports.
+- **A failure** (`hash_mismatch`, `object_missing`, `digest_mismatch`) is recorded and audited as
+  `integrity.failed` by the system in the check's transaction, once until it clears or changes; never only
+  logged. A store that cannot be reached fails the tenant's run instead, so it shows as background work failing.
+- **Shown** in Diagnostics' Integrity part, each class's items, those checked in the period and those failing,
+  and in Needs attention while any fails.
+
 ## Not yet built
 
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging; integrity (DGe3,
-DGe4).
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging (DGe4).
 
 ## Requirements owned
 
@@ -144,6 +161,7 @@ DGe4).
 | **ADM-043** | Each class's backup frequency, keeping and drill declared above; each drill recorded monthly, and a restore not rehearsed in 35 days shown as not rehearsed                                |
 | **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                           |
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |
+| **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`          |
 | **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                       |
 
 **ADM-016 and ADM-046 are not claimed** (pre-flight 6): every budget is registered and read against production, but
