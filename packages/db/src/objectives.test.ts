@@ -60,9 +60,7 @@ describe('the objectives measured: the service probed, backups and drills record
 
   it("keeps the record closed to an environment's own role but through its definers", async () => {
     await expect(
-      service.withTenant(tenant, (trx) =>
-        sql`select * from platform.service_probe`.execute(trx),
-      ),
+      service.withTenant(tenant, (trx) => sql`select * from platform.service_probe`.execute(trx)),
     ).rejects.toThrow(/permission denied/);
     await expect(
       service.withTenant(tenant, (trx) =>
