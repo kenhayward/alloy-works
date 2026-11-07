@@ -326,6 +326,44 @@ export type DefineAnswer =
   | { readonly answer: 'behind'; readonly version: number };
 
 /**
+ * Why a signed gate's roles cannot be signed under (the ES plan, ES-E): one the tenant has no role by
+ * that name, or one that does not hold both `approve` and `read`, which nobody could sign under.
+ */
+async function signatureRoleProblems(
+  trx: TenantTransaction,
+  body: WorkflowBody,
+): Promise<WorkflowProblem[]> {
+  const named = body.transitions.flatMap((each) => each.gate?.signature?.roles ?? []);
+  if (named.length === 0) return [];
+  const found = await trx
+    .selectFrom('role')
+    .select(['name', 'permissions'])
+    .where('name', 'in', named)
+    .execute();
+  const problems: WorkflowProblem[] = [];
+  body.transitions.forEach((each, index) => {
+    (each.gate?.signature?.roles ?? []).forEach((role, n) => {
+      const path = `transitions.${index}.gate.signature.roles.${n}`;
+      const held = found.find((row) => row.name === role)?.permissions;
+      if (held === undefined) {
+        problems.push({
+          rule: 'signature_role_unknown',
+          path,
+          message: `No role is named ${role}`,
+        });
+      } else if (!held.includes('approve') || !held.includes('read')) {
+        problems.push({
+          rule: 'signature_role_holds',
+          path,
+          message: `The role ${role} does not hold approve and read, so nobody could sign under it`,
+        });
+      }
+    });
+  });
+  return problems;
+}
+
+/**
  * Saves a kind's definition as its next version (LIF-001, LIF-002, LIF-007), under the kind's lock so
  * two saves at once take turns; the same body again changes nothing. Audited as `workflow.defined`.
  * An artifact in a state the new version drops keeps it, under the version it moved under (WF-E).
@@ -342,6 +380,8 @@ export async function defineWorkflow(
 ): Promise<DefineAnswer> {
   const parsed = parseWorkflowBody(input.body, input.kind);
   if (!parsed.ok) return { answer: 'invalid', problems: parsed.problems };
+  const unheld = await signatureRoleProblems(trx, parsed.body);
+  if (unheld.length > 0) return { answer: 'invalid', problems: unheld };
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:workflow:${input.kind}`} || current_schema(), 0))`.execute(
     trx,
   );

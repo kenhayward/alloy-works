@@ -262,6 +262,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0218_support_access',
       '0219_retire_channel_changed',
       '0220_secrets',
+      '0221_electronic_signatures',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

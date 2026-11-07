@@ -76,6 +76,7 @@ describe('migration 0213, which lets a session keep a sealed refresh token', () 
       '0218_support_access',
       '0219_retire_channel_changed',
       '0220_secrets',
+      '0221_electronic_signatures',
     ]);
 
     expect(

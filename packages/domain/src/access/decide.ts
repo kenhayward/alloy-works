@@ -205,6 +205,21 @@ function walk(permission: Permission, facts: AccessFacts): Decision {
 }
 
 /**
+ * Whether the principal holds `role`, by name, for `permission` over the target (LIF-083; the ES plan,
+ * ES-F): the walk over that role's grants alone allows it, and so does the whole decision, so a nearer
+ * denial of any role and support access still refuse. Only a person holds a role here, in a session:
+ * never a token, an external principal (whatever the permission asked) or a service principal.
+ */
+export function holdsRole(facts: AccessFacts, role: string, permission: Permission): boolean {
+  if (facts.scopes !== undefined || facts.principal.kind !== 'user') return false;
+  const own = walk(permission, {
+    ...facts,
+    grants: facts.grants.filter((grant) => grant.role.name === role),
+  });
+  return own.allowed && decide(permission, facts).allowed;
+}
+
+/**
  * access.md, "Routes": `administer` is asked "at the target's level or above" - each level on the
  * chain its own walk (decisions.md, finding 6), so a denial at a level below does not stand against
  * an administrator above it, the way the ordinary nearest-level walk (`decide` on the whole chain)

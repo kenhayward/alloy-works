@@ -91,6 +91,7 @@ exist.
 | [0101](0101-availability-is-minutes-probed-up-over-minutes-elapsed.md)            | Availability is minutes probed up over minutes elapsed                          | Accepted           |
 | [0102](0102-every-route-declares-what-it-reads.md)                                | Every route declares what it reads                                              | Accepted           |
 | [0103](0103-a-copy-starts-from-a-choice-and-takes-exceptions.md)                  | A copy starts from a choice and takes exceptions                                | Accepted           |
+| [0104](0104-a-signature-is-bound-to-its-baseline-by-a-keyed-mac.md)               | A signature is bound to its baseline by a keyed MAC                             | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
 | [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                       | Accepted           |
 | [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can           | Accepted           |

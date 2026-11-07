@@ -33,6 +33,30 @@ const WorkflowStateBody = z.strictObject({
     .describe('Counts as approved: saving one in it moves it to the initial state'),
 });
 
+/** A meaning of signature, recorded verbatim with each signature (LIF-081). */
+const Meaning = z.string().min(1).max(500).describe('As people read it; trimmed and NFC');
+
+/** A gate that takes a signature (the ES plan, ES-E). */
+const SignatureBody = z
+  .strictObject({
+    meaning: z
+      .strictObject({
+        approve: Meaning.describe('What a signature to approve means'),
+        disapprove: Meaning.describe('What a signature to disapprove means'),
+      })
+      .describe('What signing means, recorded verbatim with each signature'),
+    roles: z
+      .array(z.string().min(1).max(200))
+      .min(1)
+      .max(10)
+      .describe(
+        "The roles whose quorum passes it, by name, each once: every one the tenant's, holding approve and read",
+      ),
+  })
+  .describe(
+    "A document's gate taking a baseline: each approval or rejection is a signature under one of its roles, and approvals is the roles' count",
+  );
+
 /** A transition that is a gate (the WF2 plan, WF2-A). */
 const GateBody = z.strictObject({
   approvals: z.int().min(1).max(10).describe('How many distinct approvers it needs'),
@@ -52,6 +76,7 @@ const GateBody = z.strictObject({
     .enum(['none', 'permitted', 'required'])
     .default('none')
     .describe("A document's gate: whether passing may, or must, request an approved publication"),
+  signature: SignatureBody.optional(),
 });
 
 /** What a transition may require (LIF-004; the WF3 plan, WF3-A). */
@@ -149,6 +174,13 @@ export const WorkflowDefinitionView = z.object({
             designates: z.boolean(),
             baseline: z.boolean(),
             publication: z.enum(['none', 'permitted', 'required']),
+            signature: z
+              .object({
+                meaning: z.object({ approve: z.string(), disapprove: z.string() }),
+                roles: z.array(z.string()),
+              })
+              .optional()
+              .describe('Present for a signed gate'),
           })
           .optional(),
         requires: z.array(TransitionCondition).optional(),
@@ -615,7 +647,7 @@ const approvalResponses = (
     },
     409: {
       description:
-        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded',
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing',
       schema: TransitionRefusal,
     },
   }) as const;

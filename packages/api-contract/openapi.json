@@ -88165,7 +88165,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -93976,7 +93976,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -140828,7 +140828,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -318828,7 +318828,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -330580,7 +330580,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -421230,7 +421230,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing",
             "content": {
               "application/json": {
                 "schema": {
@@ -439240,6 +439240,37 @@
                                                 "permitted",
                                                 "required"
                                               ]
+                                            },
+                                            "signature": {
+                                              "description": "Present for a signed gate",
+                                              "type": "object",
+                                              "properties": {
+                                                "meaning": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "approve": {
+                                                      "type": "string"
+                                                    },
+                                                    "disapprove": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "approve",
+                                                    "disapprove"
+                                                  ]
+                                                },
+                                                "roles": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              },
+                                              "required": [
+                                                "meaning",
+                                                "roles"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -439566,7 +439597,7 @@
       "post": {
         "operationId": "defineWorkflow",
         "summary": "Save a kind's workflow as its next version",
-        "description": "Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.",
+        "description": "Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. A signed gate is a document gate taking a baseline, naming roles that exist and hold approve and read, and needing an approval for each. Saving the version in force changes nothing. Needs administer at the environment. Audited.",
         "tags": [
           "Workflow"
         ],
@@ -439746,6 +439777,51 @@
                                 "permitted",
                                 "required"
                               ]
+                            },
+                            "signature": {
+                              "type": "object",
+                              "properties": {
+                                "meaning": {
+                                  "type": "object",
+                                  "properties": {
+                                    "approve": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500,
+                                      "description": "What a signature to approve means"
+                                    },
+                                    "disapprove": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500,
+                                      "description": "What a signature to disapprove means"
+                                    }
+                                  },
+                                  "required": [
+                                    "approve",
+                                    "disapprove"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "What signing means, recorded verbatim with each signature"
+                                },
+                                "roles": {
+                                  "minItems": 1,
+                                  "maxItems": 10,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "description": "The roles whose quorum passes it, by name, each once: every one the tenant's, holding approve and read"
+                                }
+                              },
+                              "required": [
+                                "meaning",
+                                "roles"
+                              ],
+                              "additionalProperties": false,
+                              "description": "A document's gate taking a baseline: each approval or rejection is a signature under one of its roles, and approvals is the roles' count"
                             }
                           },
                           "required": [
@@ -440017,6 +440093,37 @@
                                       "none",
                                       "permitted",
                                       "required"
+                                    ]
+                                  },
+                                  "signature": {
+                                    "description": "Present for a signed gate",
+                                    "type": "object",
+                                    "properties": {
+                                      "meaning": {
+                                        "type": "object",
+                                        "properties": {
+                                          "approve": {
+                                            "type": "string"
+                                          },
+                                          "disapprove": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "approve",
+                                          "disapprove"
+                                        ]
+                                      },
+                                      "roles": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "meaning",
+                                      "roles"
                                     ]
                                   }
                                 },
@@ -440614,6 +440721,37 @@
                                       "none",
                                       "permitted",
                                       "required"
+                                    ]
+                                  },
+                                  "signature": {
+                                    "description": "Present for a signed gate",
+                                    "type": "object",
+                                    "properties": {
+                                      "meaning": {
+                                        "type": "object",
+                                        "properties": {
+                                          "approve": {
+                                            "type": "string"
+                                          },
+                                          "disapprove": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "approve",
+                                          "disapprove"
+                                        ]
+                                      },
+                                      "roles": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "meaning",
+                                      "roles"
                                     ]
                                   }
                                 },

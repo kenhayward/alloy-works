@@ -189,6 +189,20 @@ alone, by display name, never an address.
 **The approval page** (WF2-J; PUB-089) is [publishing.md](publishing.md)'s: a layout's
 `matter.approvals`, listing each approval of the version published.
 
+## A signed gate
+
+The ES plan ([2026-11-07](../plans/2026-11-07-es-electronic-signatures.md); [ADR-0104](../decisions/0104-a-signature-is-bound-to-its-baseline-by-a-keyed-mac.md)).
+**Declared** (ESa; ES-E): `gate.signature { meaning { approve, disapprove }, roles }`, only on a document's
+gate taking a baseline, its `approvals` the roles' count, each meaning kept verbatim. Saving refuses a role by
+name that the tenant has not (`signature_role_unknown`) or that does not hold `approve` and `read`
+(`signature_role_holds`). `holdsRole` decides who may sign under a role; `electronic_signature` (0221) keeps
+each signature, insert-only, its baseline digest checked against its baseline, its approval its own, and bound
+by `digest` and `mac` (ES-Q). Until signing exists (ESb), a signed gate refuses every plain approval and
+rejection (`signature_required`).
+
+LIF-080, LIF-081, LIF-083, LIF-084 and LIF-087 are not claimed yet: nothing signs, re-authenticates or records
+a signature until ESb, and nothing shows one until ESc.
+
 ## Query definitions
 
 **Their own workflow** (WF2-K; DAT-121): `queryDefinition` is a third kind (0098 widened every table's

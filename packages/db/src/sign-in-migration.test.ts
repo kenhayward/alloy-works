@@ -230,6 +230,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0218_support_access',
       '0219_retire_channel_changed',
       '0220_secrets',
+      '0221_electronic_signatures',
     ]);
 
     const read = async () =>

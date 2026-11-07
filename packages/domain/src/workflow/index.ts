@@ -25,6 +25,7 @@ export type {
   WorkflowKind,
   WorkflowProblem,
   WorkflowRule,
+  WorkflowSignature,
   WorkflowState,
   WorkflowTransition,
 } from './workflow.js';
@@ -34,3 +35,5 @@ export { revisionStanding } from './standing.js';
 export type { RevisionStanding, TimedRevision } from './standing.js';
 export { bringBack, lineDifferences } from './lines.js';
 export type { BlockDifference } from './lines.js';
+export { signatureManifest } from './signature.js';
+export type { SignedParts, Signer } from './signature.js';

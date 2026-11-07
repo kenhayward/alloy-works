@@ -1449,6 +1449,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and may publish it: **Approve and publish** for an approver who may publish, or always where the
   gate says so. A publication made from it says **Approved** and prints no draft notice, and where its
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
+- **Signed gates, declared.** In Administration > Workflows, a document's gate taking a baseline can be
+  signed: what approving and disapproving mean, and the roles that must each sign, only roles holding
+  approve and read, one approval each. **Not yet:** signing itself, so a signed gate refuses every
+  plain approval and rejection (`signature_required`) until it arrives.
 - **Publication shares.** A publication's page shows, to whoever may publish its document, **Shared
   outside**: each share with its address, until when, and whether the person has signed in and how
   often they opened it, with **Revoke**, which asks first and takes effect at once; and **Share

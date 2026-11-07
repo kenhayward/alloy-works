@@ -8714,7 +8714,7 @@ export interface paths {
         put?: never;
         /**
          * Save a kind's workflow as its next version
-         * @description Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.
+         * @description Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. A signed gate is a document gate taking a baseline, naming roles that exist and hold approve and read, and needing an approval for each. Saving the version in force changes nothing. Needs administer at the environment. Audited.
          */
         post: operations["defineWorkflow"];
         delete?: never;
@@ -31493,7 +31493,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -33652,7 +33652,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -51042,7 +51042,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -107341,7 +107341,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -111423,7 +111423,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -141398,7 +141398,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded; signature_required: the gate is signed, and decided only by signing */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -148630,6 +148630,14 @@ export interface operations {
                                             baseline: boolean;
                                             /** @enum {string} */
                                             publication: "none" | "permitted" | "required";
+                                            /** @description Present for a signed gate */
+                                            signature?: {
+                                                meaning: {
+                                                    approve: string;
+                                                    disapprove: string;
+                                                };
+                                                roles: string[];
+                                            };
                                         };
                                         requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                                     }[];
@@ -148830,6 +148838,18 @@ export interface operations {
                              * @enum {string}
                              */
                             publication?: "none" | "permitted" | "required";
+                            /** @description A document's gate taking a baseline: each approval or rejection is a signature under one of its roles, and approvals is the roles' count */
+                            signature?: {
+                                /** @description What signing means, recorded verbatim with each signature */
+                                meaning: {
+                                    /** @description What a signature to approve means */
+                                    approve: string;
+                                    /** @description What a signature to disapprove means */
+                                    disapprove: string;
+                                };
+                                /** @description The roles whose quorum passes it, by name, each once: every one the tenant's, holding approve and read */
+                                roles: string[];
+                            };
                         };
                         /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
                         requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
@@ -148924,6 +148944,14 @@ export interface operations {
                                     baseline: boolean;
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
+                                    /** @description Present for a signed gate */
+                                    signature?: {
+                                        meaning: {
+                                            approve: string;
+                                            disapprove: string;
+                                        };
+                                        roles: string[];
+                                    };
                                 };
                                 requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                             }[];
@@ -149139,6 +149167,14 @@ export interface operations {
                                     baseline: boolean;
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
+                                    /** @description Present for a signed gate */
+                                    signature?: {
+                                        meaning: {
+                                            approve: string;
+                                            disapprove: string;
+                                        };
+                                        roles: string[];
+                                    };
                                 };
                                 requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                             }[];

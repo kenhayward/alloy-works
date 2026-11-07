@@ -23734,7 +23734,7 @@
     {
       "id": "ADM-011",
       "file": "apps/service/src/diagnostics.test.ts",
-      "line": 235,
+      "line": 238,
       "kind": "title"
     },
     {
@@ -26014,13 +26014,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 951,
+      "line": 998,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 914,
+      "line": 961,
       "kind": "title"
     },
     {
@@ -26704,73 +26704,73 @@
     {
       "id": "LIB-036",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 264,
+      "line": 460,
       "kind": "title"
     },
     {
       "id": "LIF-001",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 52,
+      "line": 86,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 52,
+      "line": 86,
       "kind": "title"
     },
     {
       "id": "LIF-003",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 160,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIF-004",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 230,
+      "line": 426,
       "kind": "title"
     },
     {
       "id": "LIF-009",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 160,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 160,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 287,
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 206,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 160,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 287,
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 206,
+      "line": 240,
       "kind": "title"
     },
     {
@@ -35500,7 +35500,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1307,
+      "line": 1311,
       "kind": "title"
     },
     {
@@ -37648,7 +37648,7 @@
     {
       "id": "LIB-049",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 162,
+      "line": 237,
       "kind": "title"
     },
     {
@@ -37666,13 +37666,13 @@
     {
       "id": "LIF-004",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 119,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 323,
+      "line": 398,
       "kind": "title"
     },
     {
@@ -37690,7 +37690,7 @@
     {
       "id": "LIF-059",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 197,
+      "line": 272,
       "kind": "title"
     },
     {

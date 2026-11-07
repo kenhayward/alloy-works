@@ -53,6 +53,28 @@ const State = z.strictObject({
 /** What a gate may do with a publication as it passes (LIF-050; the WF2 plan, WF2-I). */
 export const GATE_PUBLICATIONS = ['none', 'permitted', 'required'] as const;
 
+/** A meaning of signature (LIF-081): composed, trimmed, 1 to 500 characters, no control character. */
+const Meaning = z
+  .string()
+  .transform((meaning) => meaning.normalize('NFC').trim())
+  .pipe(
+    z
+      .string()
+      .min(1)
+      .max(500)
+      .regex(/^[^\p{Cc}]*$/u),
+  );
+
+/**
+ * A gate that takes a signature (LIF-080, LIF-081, LIF-084; the ES plan, ES-E): what approving and
+ * disapproving mean, recorded verbatim, and the roles whose quorum passes it, by name as roles are
+ * exported, each once. Only a document's gate taking a baseline is signed (LIF-087).
+ */
+const Signature = z.strictObject({
+  meaning: z.strictObject({ approve: Meaning, disapprove: Meaning }),
+  roles: z.array(z.string().min(1).max(200)).min(1).max(10),
+});
+
 /**
  * A transition that is a gate (LIF-003; the WF2 plan, WF2-A): it passes once `approvals` distinct
  * approvers approve, none an author where `notAuthor` says so; any one may reject it, with a reason,
@@ -66,6 +88,7 @@ const Gate = z.strictObject({
   designates: z.boolean().default(true),
   baseline: z.boolean().default(false),
   publication: z.enum(GATE_PUBLICATIONS).default('none'),
+  signature: Signature.optional(),
 });
 
 /**
@@ -155,6 +178,7 @@ export type WorkflowBody = z.output<typeof workflowBodySchema>;
 export type WorkflowState = WorkflowBody['states'][number];
 export type WorkflowTransition = WorkflowBody['transitions'][number];
 export type WorkflowGate = NonNullable<WorkflowTransition['gate']>;
+export type WorkflowSignature = NonNullable<WorkflowGate['signature']>;
 
 export type WorkflowRule =
   | 'workflow_invalid'
@@ -170,7 +194,13 @@ export type WorkflowRule =
   | 'condition_kind'
   | 'condition_duplicate'
   | 'trial_required'
-  | 'deprecated_required';
+  | 'deprecated_required'
+  | 'signature_kind'
+  | 'signature_baseline'
+  | 'signature_approvals'
+  | 'signature_role_duplicate'
+  | 'signature_role_unknown'
+  | 'signature_role_holds';
 
 export interface WorkflowProblem {
   readonly rule: WorkflowRule;
@@ -323,6 +353,37 @@ export function parseWorkflowBody(
         rule: 'gate_publication',
         path: `${at}.gate.publication`,
         message: 'An approved publication is made from the baseline the gate takes',
+      });
+    }
+    const signature = gate.signature;
+    if (signature === undefined) return;
+    if (kind !== undefined && kind !== 'document') {
+      problems.push({
+        rule: 'signature_kind',
+        path: `${at}.gate.signature`,
+        message: "Only a document's gate takes a signature",
+      });
+    } else if (!gate.baseline) {
+      problems.push({
+        rule: 'signature_baseline',
+        path: `${at}.gate.baseline`,
+        message: 'A signed gate takes a baseline, which is what is signed',
+      });
+    }
+    signature.roles.forEach((role, n) => {
+      if (signature.roles.indexOf(role) !== n) {
+        problems.push({
+          rule: 'signature_role_duplicate',
+          path: `${at}.gate.signature.roles.${n}`,
+          message: `The role ${role} is named twice`,
+        });
+      }
+    });
+    if (gate.approvals !== signature.roles.length) {
+      problems.push({
+        rule: 'signature_approvals',
+        path: `${at}.gate.approvals`,
+        message: 'A signed gate needs one approval for each role it names',
       });
     }
   });

@@ -21,6 +21,7 @@ export {
   administerOrAbove,
   beyondHolding,
   decide,
+  holdsRole,
   type AccessFacts,
   type AccessGrant,
   type DecidingGrant,

@@ -295,6 +295,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0218_support_access',
       '0219_retire_channel_changed',
       '0220_secrets',
+      '0221_electronic_signatures',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -460,6 +461,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0218_support_access',
       '0219_retire_channel_changed',
       '0220_secrets',
+      '0221_electronic_signatures',
     ]);
 
     expect(await queryRoles(development)).toEqual([

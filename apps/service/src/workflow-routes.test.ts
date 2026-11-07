@@ -911,6 +911,53 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(texts.occurrences[0]?.pastReview).toBe(true);
   });
 
+  it('saves a signed document gate naming roles that may approve, and refuses one naming a role the tenant has not, by name', async () => {
+    const signing = (roles: string[]) => ({
+      kind: 'document',
+      ...SEED_DOCUMENT_WORKFLOW,
+      transitions: SEED_DOCUMENT_WORKFLOW.transitions.map((each) =>
+        each.gate === undefined
+          ? each
+          : {
+              ...each,
+              gate: {
+                ...each.gate,
+                approvals: roles.length,
+                signature: {
+                  meaning: { approve: 'I approve this record.', disapprove: 'I do not.' },
+                  roles,
+                },
+              },
+            },
+      ),
+    });
+    const wrong = await call('POST', '/v1/workflows', 'ada', signing(['Approver', 'Nobody']));
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json()).toMatchObject({
+      code: 'workflow_invalid',
+      problems: [
+        {
+          rule: 'signature_role_unknown',
+          path: 'transitions.1.gate.signature.roles.1',
+          message: 'No role is named Nobody',
+        },
+      ],
+    });
+    const saved = await call('POST', '/v1/workflows', 'ada', signing(['Approver']));
+    try {
+      expect(saved.statusCode, saved.body).toBe(200);
+      expect(
+        saved.json<WorkflowDefinitionView>().body.transitions.find((each) => each.key === 'approve')
+          ?.gate?.signature,
+      ).toEqual({
+        meaning: { approve: 'I approve this record.', disapprove: 'I do not.' },
+        roles: ['Approver'],
+      });
+    } finally {
+      await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...SEED_DOCUMENT_WORKFLOW });
+    }
+  });
+
   it('LIF-004 saves a transition requiring conditions, refuses one its kind cannot, and refuses taking it while one is unmet, saying what', async () => {
     const requiring = (requires: string[]) => ({
       kind: 'component',

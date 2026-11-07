@@ -941,6 +941,41 @@ export interface WorkflowApprovalTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/**
+ * An electronic signature (0221; the ES plan, ES-G, ES-Q): a signed gate's approval or rejection on the
+ * baseline signed, its parts as signed, inserted and never changed.
+ */
+export interface ElectronicSignatureTable {
+  id: ColumnType<string, never, never>;
+  document_id: ColumnType<string, string, never>;
+  document_kind: ColumnType<'document', never, never>;
+  baseline_id: ColumnType<string, string, never>;
+  baseline_digest: ColumnType<string, string, never>;
+  version_id: ColumnType<string, string, never>;
+  approval_id: ColumnType<string, string, never>;
+  round: ColumnType<string, string, never>;
+  definition_id: ColumnType<string, string, never>;
+  transition: ColumnType<string, string, never>;
+  principal_id: ColumnType<string, string, never>;
+  issuer: ColumnType<string, string, never>;
+  subject: ColumnType<string, string, never>;
+  provider_key: ColumnType<string | null, string | null, never>;
+  signer_name: ColumnType<string, string, never>;
+  signer_address: ColumnType<string, string, never>;
+  role_name: ColumnType<string, string, never>;
+  title: ColumnType<string, string, never>;
+  baseline_name: ColumnType<string, string, never>;
+  decision: ColumnType<'approved' | 'rejected', 'approved' | 'rejected', never>;
+  meaning: ColumnType<string, string, never>;
+  reason: ColumnType<string | null, string | null, never>;
+  signed_at: ColumnType<Date, Date, never>;
+  offset_minutes: ColumnType<number, number, never>;
+  signing_attempt: ColumnType<string | null, string | null | undefined, never>;
+  digest: ColumnType<string, string, never>;
+  mac: ColumnType<string, string, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** A revision: a version designated as a gate passed, inserted and never changed (0096; WF2-F). */
 export interface RevisionDesignationTable {
   id: ColumnType<string, never, never>;
@@ -1659,6 +1694,7 @@ export interface TenantTables {
   workflow_definition: WorkflowDefinitionTable;
   workflow_transition: WorkflowTransitionTable;
   workflow_approval: WorkflowApprovalTable;
+  electronic_signature: ElectronicSignatureTable;
   revision_designation: RevisionDesignationTable;
   artifact_dates: ArtifactDatesTable;
   revision_effective: RevisionEffectiveTable;
