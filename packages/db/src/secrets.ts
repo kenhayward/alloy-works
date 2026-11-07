@@ -78,16 +78,18 @@ export async function tenantSecrets(trx: TenantTransaction): Promise<SecretHeld[
   const held: SecretHeld[] = [];
 
   // Providers: a shared one's secret is copied into the organisation's tenants; a copy's is the
-  // organisation's to replace, so not listed here.
-  const providers = await trx
+  // organisation's to replace, so not listed here. Every open one may provision by SCIM, a secret
+  // sealed or not (the SAd review).
+  const open = await trx
     .selectFrom('identity_provider')
     .select(['id', 'name', 'shared', 'secret_set_at', 'scim_identity'])
+    .select((eb) => eb('sealed_secret', 'is not', null).as('sealed'))
     .where('closed_at', 'is', null)
-    .where('sealed_secret', 'is not', null)
     .where('managed_by_organisation', '=', false)
     .orderBy('name')
     .orderBy('id')
     .execute();
+  const providers = open.filter((each) => each.sealed);
   // The organisation's other tenants, each holding a copy (TL-M).
   const own = await sql<{ id: string }>`select substring(current_user::text from 3) as id`.execute(
     trx,
@@ -189,7 +191,8 @@ export async function tenantSecrets(trx: TenantTransaction): Promise<SecretHeld[
     .orderBy('id')
     .execute();
   for (const webhook of webhooks) {
-    const name = webhook.description || webhook.url;
+    // Its host where it has no description: its address can carry a path or a key (the SAd review).
+    const name = webhook.description || new URL(webhook.url).host;
     held.push({
       kind: 'webhook_signing_secret',
       of: { id: webhook.id, name },
@@ -247,7 +250,7 @@ export async function tenantSecrets(trx: TenantTransaction): Promise<SecretHeld[
     });
   }
 
-  const scim = providers.filter((each) => each.scim_identity !== null);
+  const scim = open.filter((each) => each.scim_identity !== null);
   for (const provider of scim) {
     const tokens = await tokensOf(trx, provider.scim_identity!);
     if (!tokens.any) continue;
@@ -333,37 +336,33 @@ export async function secretsFailing(trx: TenantTransaction): Promise<
   for (const each of await tenantSecrets(trx)) {
     if (each.replacedAt === null) continue;
     const since = each.replacedAt;
-    let failing: boolean;
+    // Any failure since the replacement, so it is told once for it and stays told until the next.
+    let found;
     if (each.kind === 'connection_credential' || each.kind === 'delivery_store_password') {
-      const { rows } = await sql<{ failing: boolean }>`
-        select coalesce((
-          select outcome = 'failed' and failure = 'connection_failed' from (
-            select at, outcome, failure from query_run
-             where connection_id = ${each.of.id} and at >= ${since} and outcome <> 'throttled'
-            union all
-            select tested_at, outcome, failure from connection_test
-             where connection_id = ${each.of.id} and tested_at >= ${since}
-          ) runs order by at desc limit 1), false) as failing`.execute(trx);
-      failing = rows[0]?.failing ?? false;
+      found = sql<{ failing: boolean }>`
+        select exists (select from query_run
+                        where connection_id = ${each.of.id} and at >= ${since}
+                          and outcome = 'failed' and failure = 'connection_failed')
+            or exists (select from connection_test
+                        where connection_id = ${each.of.id} and tested_at >= ${since}
+                          and outcome = 'failed' and failure = 'connection_failed') as failing`;
     } else if (each.kind === 'model_endpoint_key') {
-      const { rows } = await sql<{ failing: boolean }>`
-        select coalesce((select outcome = 'model_unavailable' from generation_run
-           where endpoint_id = ${each.of.id} and started_at >= ${since} and outcome <> 'running'
-           order by started_at desc, id desc limit 1), false) as failing`.execute(trx);
-      failing = rows[0]?.failing ?? false;
+      found = sql<{ failing: boolean }>`
+        select exists (select from generation_run
+                        where endpoint_id = ${each.of.id} and started_at >= ${since}
+                          and outcome = 'model_unavailable') as failing`;
     } else if (each.kind === 'webhook_signing_secret') {
-      const { rows } = await sql<{ failing: boolean }>`
-        select coalesce((select a.status in (401, 403) from webhook_attempt a
-            join webhook_delivery d on d.id = a.delivery_id
-           where d.subscription_id = ${each.of.id} and a.at >= ${since}
-           order by a.at desc, a.id desc limit 1), false) as failing`.execute(trx);
-      failing = rows[0]?.failing ?? false;
+      found = sql<{ failing: boolean }>`
+        select exists (select from webhook_attempt a
+                         join webhook_delivery d on d.id = a.delivery_id
+                        where d.subscription_id = ${each.of.id} and a.at >= ${since}
+                          and a.status in (401, 403)) as failing`;
     } else if (each.kind === 'mail_relay_password') {
-      const { rows } = await sql<{ failing: boolean }>`
-        select coalesce((select failure = 'auth_failed' from email_attempt
-           where at >= ${since} order by at desc, id desc limit 1), false) as failing`.execute(trx);
-      failing = rows[0]?.failing ?? false;
+      found = sql<{ failing: boolean }>`
+        select exists (select from email_attempt
+                        where at >= ${since} and failure = 'auth_failed') as failing`;
     } else continue;
+    const failing = (await found.execute(trx)).rows[0]?.failing ?? false;
     answer.push({
       key: `${each.kind}:${each.of.id}:${since.getTime()}`,
       failing,

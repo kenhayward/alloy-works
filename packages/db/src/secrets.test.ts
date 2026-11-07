@@ -24,6 +24,7 @@ import { silentFailuresOf, tellSilentFailures } from './silent-failures.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
+  queryAs,
   freshDatabase,
   TEST_PASSWORDS,
   type TestDatabase,
@@ -223,6 +224,85 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     await run('model_unavailable');
     expect(await sweep()).toBe(1);
     expect(await told()).toHaveLength(2);
+  });
+
+  it('tells a break once for its replacement, however it comes and goes, until the next', async () => {
+    await run('finished');
+    expect(await sweep()).toBe(0);
+    await run('model_unavailable');
+    expect(await sweep()).toBe(0);
+    expect(await told()).toHaveLength(2);
+  });
+
+  it('names a webhook with no description by its host, never its address, wherever it is said', async () => {
+    const hook = await as(async (trx) => {
+      const identity = await createServiceIdentity(trx, {
+        name: 'Receiver',
+        description: 'Takes events.',
+        by: ada,
+      });
+      return createWebhookSubscription(trx, {
+        id: crypto.randomUUID(),
+        serviceIdentity: identity.id,
+        url: 'https://receiver.example.test/private-path?key=hidden-query',
+        description: '',
+        eventTypes: ['content.version_cut'],
+        sealed: SEALED,
+        by: ada,
+      });
+    });
+    await queryAs(
+      db.adminUrl,
+      `with d as (
+         insert into "${tenant.schema}".webhook_delivery (id, subscription_id, type, sequence, payload)
+         values (gen_random_uuid(), $1, 'content.version_cut', 'audit:999999', '{}') returning id)
+       insert into "${tenant.schema}".webhook_attempt (delivery_id, status, latency_ms)
+       select id, 401, 5 from d`,
+      [hook.id],
+    );
+    const listed = (await as((trx) => tenantSecrets(trx))).find((each) => each.of.id === hook.id)!;
+    expect(listed.of.name).toBe('receiver.example.test');
+    const failing = (await as((trx) => secretsFailing(trx))).find((each) =>
+      each.key.includes(hook.id),
+    )!;
+    expect(failing.failing).toBe(true);
+    await sweep();
+    const said = JSON.stringify([listed, failing, await told()]);
+    for (const part of ['private-path', 'hidden-query']) expect(said).not.toContain(part);
+  });
+
+  it('lists the SCIM token of a provider whose secret is named, not sealed', async () => {
+    const identity = await as((trx) =>
+      createServiceIdentity(trx, { name: 'SCIM: Named', description: 'Provisions.', by: ada }),
+    );
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `insert into "${tenant.schema}".identity_provider (issuer, name, client_id, secret_name, scim_identity)
+       values ('https://named.example.test', 'Named', 'alloy', 'named_secret', $1) returning id`,
+      [identity.id],
+    );
+    const provider = (rows[0] as { id: string }).id;
+    await as((trx) =>
+      trx
+        .insertInto('api_token')
+        .values({
+          principal_id: identity.id,
+          name: 'SCIM: Named',
+          token_hash: '8'.repeat(64),
+          scopes: [],
+          expires_at: new Date(Date.now() + 30 * 86_400_000),
+        })
+        .execute(),
+    );
+    const held = await as((trx) => tenantSecrets(trx));
+    expect(held.find((each) => each.kind === 'scim_token')).toMatchObject({
+      of: { id: provider, name: 'Named' },
+      consumers: [{ kind: 'provisioning', id: provider, name: 'Named' }],
+    });
+    // Its token is SCIM's, not a service identity's of its own.
+    expect(
+      held.filter((each) => each.kind === 'service_identity_token').map((each) => each.of.name),
+    ).not.toContain('SCIM: Named');
   });
 
   it("reads a connection's break from its runs since the credential was replaced", async () => {
