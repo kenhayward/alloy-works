@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.241.0 - 2026-11-07 (PR #1049)
+## 0.241.0 - 2026-11-07 (PR #1051)
 
 Diagnostics: how an environment is doing, in Administration, from each capability's health to what failed with nobody told, which is now told to whoever administers it. Usage over 13 months, every performance budget against production, the operator's objectives with backups and rehearsals recorded, and every stored item checked again within 28 days. Sessions through an organisation's sign-in provider are asked again every five minutes, and an installation on the internet has an outside check.
 
