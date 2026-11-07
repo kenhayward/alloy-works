@@ -1,6 +1,7 @@
 // The process: read the configuration, connect, listen, and close cleanly when asked to stop. Every
 // decision it relies on lives in modules with tests of their own; this file only wires them.
 import { createTenantDatabase, listenToTenants } from '@alloy-works/db';
+import { objectivesFrom } from '@alloy-works/domain';
 import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
 import { createObjectStores } from '@alloy-works/objects';
@@ -31,6 +32,8 @@ const app = buildApp({
   ...(connector ? { connector } : {}),
   ...(config.trustProxy ? { trustProxy: config.trustProxy } : {}),
   ...(config.mailPlatform ? { mailPlatform: config.mailPlatform } : {}),
+  // The operator's objectives, or the declared defaults (ADR-0101).
+  objectives: objectivesFrom(process.env),
 });
 
 const stop = async (signal: string) => {

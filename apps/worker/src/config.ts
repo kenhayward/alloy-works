@@ -24,6 +24,8 @@ export interface WorkerConfig {
   readonly pollIntervalMs: number;
   readonly leaseMs: number;
   readonly sweepIntervalMs: number;
+  /** The service's health, probed each minute for availability (ADR-0101); none given, none probed. */
+  readonly serviceHealthUrl?: string;
   readonly logLevel: LogLevel;
   /**
    * The connector, and the keys that open its embedding (the G7 plan, G7-E) and its webhook delivery
@@ -77,6 +79,7 @@ const Environment = z.object({
   // each given a third of it (`veraPdfTimeouts`), so a check never outlives its job's lease.
   LEASE_MS: z.coerce.number().int().min(1000).default(120_000),
   SWEEP_INTERVAL_MS: z.coerce.number().int().min(1000).default(600_000),
+  SERVICE_HEALTH_URL: z.url({ error: 'must be a URL' }).optional(),
   LOG_LEVEL: z
     .enum(LOG_LEVELS, { error: `must be one of ${LOG_LEVELS.join(', ')}` })
     .default('info'),
@@ -128,6 +131,7 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     pollIntervalMs: data.POLL_INTERVAL_MS,
     leaseMs: data.LEASE_MS,
     sweepIntervalMs: data.SWEEP_INTERVAL_MS,
+    ...(data.SERVICE_HEALTH_URL === undefined ? {} : { serviceHealthUrl: data.SERVICE_HEALTH_URL }),
     logLevel: data.LOG_LEVEL,
     deliverIntervalMs: data.DELIVER_INTERVAL_MS,
     mailIntervalMs: data.MAIL_INTERVAL_MS,

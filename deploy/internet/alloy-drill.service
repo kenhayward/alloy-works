@@ -1,0 +1,10 @@
+[Unit]
+Description=Rehearse restoring Alloy Works's latest backup, touching nothing that runs
+After=docker.service network-online.target alloy-backup.service
+Wants=network-online.target
+Requires=docker.service
+OnFailure=alloy-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/alloy-works/restore-drill.sh

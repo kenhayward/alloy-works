@@ -18457,6 +18457,14 @@
           "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100"
         },
         {
+          "id": "ADM-020",
+          "howItIsMet": "Availability, recovery point and recovery time declared as the operator's objectives, each measured: probed each minute, and from the backups' and drills' own records"
+        },
+        {
+          "id": "ADM-043",
+          "howItIsMet": "Each class's backup frequency, keeping and drill declared above; each drill recorded monthly, and a restore not rehearsed in 35 days shown as not rehearsed"
+        },
+        {
           "id": "ADM-036",
           "howItIsMet": "Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets"
         },
@@ -22400,7 +22408,7 @@
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 191,
+      "line": 211,
       "kind": "title"
     },
     {
@@ -23552,7 +23560,13 @@
     {
       "id": "ADM-011",
       "file": "apps/service/src/diagnostics.test.ts",
-      "line": 149,
+      "line": 195,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-020",
+      "file": "apps/service/src/diagnostics.test.ts",
+      "line": 151,
       "kind": "title"
     },
     {
@@ -24093,6 +24107,12 @@
       "id": "LIF-005",
       "file": "apps/service/src/inbox-routes.test.ts",
       "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-043",
+      "file": "apps/service/src/internet-stack.test.ts",
+      "line": 283,
       "kind": "title"
     },
     {
@@ -26088,21 +26108,27 @@
       "kind": "title"
     },
     {
+      "id": "ADM-020",
+      "file": "apps/web/src/admin/Diagnostics.test.tsx",
+      "line": 191,
+      "kind": "title"
+    },
+    {
       "id": "ADM-021",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 149,
+      "line": 160,
       "kind": "title"
     },
     {
       "id": "ADM-036",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 128,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "COL-061",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 149,
+      "line": 160,
       "kind": "title"
     },
     {
@@ -34854,6 +34880,18 @@
       "kind": "title"
     },
     {
+      "id": "ADM-020",
+      "file": "packages/domain/src/diagnostics/objectives.test.ts",
+      "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-043",
+      "file": "packages/domain/src/diagnostics/objectives.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
       "id": "ADM-035",
       "file": "packages/domain/src/diagnostics/usage.test.ts",
       "line": 5,
@@ -35066,7 +35104,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1275,
+      "line": 1280,
       "kind": "title"
     },
     {
@@ -37676,13 +37714,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1538,
+      "line": 1542,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1107,
+      "line": 1111,
       "kind": "title"
     },
     {

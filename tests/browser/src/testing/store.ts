@@ -1,6 +1,7 @@
 import {
   addCatalogueVersion,
   addThemeVersion,
+  countUsage,
   createTenantDatabase,
   DEFAULT_CATALOGUE_IDS,
   DEFAULT_THEME_ID,
@@ -160,6 +161,24 @@ export async function writeTheme(
       }
       return artifacts.theme;
     });
+  } finally {
+    await database.close();
+  }
+}
+
+/**
+ * Counts the development environment's usage now, as the worker does each night (ADR-0100), so a walk
+ * of Administration's Usage meets counted measures on a stack that has not yet seen a night.
+ */
+export async function countUsageNow(): Promise<void> {
+  const database = createTenantDatabase(DATABASE, {
+    max: 1,
+    auditContext: { actorKind: 'system', traceId: 'browser-suite' },
+  });
+  try {
+    const tenant = await database.resolveHostname(new URL(API).hostname);
+    if (!tenant) throw new Error(`No environment answers to ${new URL(API).hostname}`);
+    await database.withTenant(tenant, (trx) => countUsage(trx));
   } finally {
     await database.close();
   }

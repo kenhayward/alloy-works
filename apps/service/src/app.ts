@@ -66,8 +66,10 @@ import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
   MEASURED_OPERATIONS,
+  OBJECTIVE_DEFAULTS,
   permissions,
   type Decision,
+  type Objectives,
   type Permission,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
@@ -235,6 +237,8 @@ export interface AppOptions extends HttpOptions {
    * here, written once a minute to each tenant's `capability_usage` and once more on closing.
    */
   readonly measuring?: Measuring;
+  /** The operator's objectives (ADR-0101); the declared defaults where none are set. */
+  readonly objectives?: Objectives;
   readonly db: TenantDatabase;
   /** The operator's mail relay, where one is offered (the EM plan, EM-B). */
   readonly mailPlatform?: MailPlatform;
@@ -1037,13 +1041,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
-    ...diagnosticsHandlers(),
+    ...diagnosticsHandlers(options.objectives ?? OBJECTIVE_DEFAULTS),
     ...movingHandlers(),
     ...copyingHandlers(),
     ...templateMoveHandlers(),
     ...erasureHandlers(),
 
-    getHealth: async () => ({ status: 'ok' }),
+    // Up only when it reaches its database, so the worker's probe of it measures both (ADR-0101).
+    getHealth: async () => {
+      await options.db.whoAmI().catch(() => {
+        throw new AppError(503, 'database_unavailable', 'The service cannot reach its database.');
+      });
+      return { status: 'ok' };
+    },
 
     ...signInSettingsHandlers({
       tenantOf,

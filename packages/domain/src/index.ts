@@ -194,6 +194,18 @@ export {
   type Measured,
   type PerformanceBudget,
 } from './diagnostics/budgets.js';
+export {
+  BACKUP_CLASSES,
+  OBJECTIVE_DEFAULTS,
+  objectiveReadings,
+  objectivesFrom,
+  REHEARSED_WITHIN_DAYS,
+  type BackupRun,
+  type ObjectiveMeasures,
+  type ObjectiveReadings,
+  type Objectives,
+  type ObjectiveVerdict,
+} from './diagnostics/objectives.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

@@ -280,8 +280,27 @@ describe('the internet stack', () => {
     expect(drill).not.toMatch(/compose[^\n]* up|-v [a-z-]*-data:/);
   });
 
-  it('mails the operator when a deploy or a backup fails, never putting the password on a command line', () => {
-    for (const name of ['alloy-deploy.service', 'alloy-backup.service']) {
+  it('ADM-043 records each class backed up and each restore drilled, failures too, and drills monthly', () => {
+    for (const [script, act] of [
+      [backup, 'backup'],
+      [drill, 'drill'],
+    ] as const) {
+      expect(script, act).toMatch(/insert into platform\.backup_run/);
+      for (const cls of ['databases', 'objects']) {
+        expect(script, `${act} ${cls}`).toMatch(
+          new RegExp(`^record ${cls} ${act} "\\$started" succeeded$`, 'm'),
+        );
+        expect(script, `${act} ${cls}`).toMatch(new RegExp(`^current=${cls} started=`, 'm'));
+      }
+      // A run that stops records its class as failed.
+      expect(script, act).toMatch(new RegExp(`record "\\$current" ${act} "\\$started" failed`));
+    }
+    expect(unit('alloy-drill.timer')).toMatch(/^OnCalendar=\*-\*-01 /m);
+    expect(unit('alloy-drill.service')).toMatch(/restore-drill\.sh/);
+  });
+
+  it('mails the operator when a deploy, a backup or a drill fails, never putting the password on a command line', () => {
+    for (const name of ['alloy-deploy.service', 'alloy-backup.service', 'alloy-drill.service']) {
       expect(unit(name), name).toMatch(/^OnFailure=alloy-alert@%n\.service$/m);
     }
     expect(unit('alloy-alert@.service')).toMatch(/alert\.sh %i/);

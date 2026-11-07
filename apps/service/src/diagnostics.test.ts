@@ -5,7 +5,9 @@ import {
   recordBackgroundWork,
   recordCapabilityMinute,
   recordQueryRun,
+  recordServiceProbe,
 } from '@alloy-works/db';
+import { queryAs } from '@alloy-works/db/testing';
 import { bucketOf, emptyBuckets, PERFORMANCE_BUDGETS } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -21,7 +23,12 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
   );
 
   beforeAll(async () => {
-    h = await startHarness({ appOptions: { measuring } });
+    h = await startHarness({
+      appOptions: {
+        measuring,
+        objectives: { availability: 0.9, recoveryPointHours: 48, recoveryTimeHours: 1 },
+      },
+    });
   }, 120_000);
 
   afterAll(async () => {
@@ -139,6 +146,45 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
     expect(view.performance.map((each) => each.budget)).toEqual(
       PERFORMANCE_BUDGETS.map((each) => each.id),
     );
+  });
+
+  it('ADM-020 reads the operator’s objectives against the probes, the backups and the drills', async () => {
+    const quiet = (await h.call('ada', 'GET', '/v1/diagnostics')).json<DiagnosticsView>();
+    expect(quiet.objectives).toMatchObject({
+      availability: { objective: 0.9, measured: null, verdict: 'unrecorded' },
+      recoveryPoint: { objectiveHours: 48, verdict: 'unrecorded' },
+      recoveryTime: { objectiveHours: 1, verdict: 'unrecorded' },
+      backups: [],
+    });
+
+    const worker = {
+      query: (text: string, values?: readonly unknown[]) =>
+        queryAs(h.db.workerUrl, text, values as unknown[]),
+    };
+    await recordServiceProbe(worker, new Date(Date.now() - 60_000), true);
+    {
+      const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000);
+      for (const [cls, act, hours, seconds] of [
+        ['databases', 'backup', 3, 60],
+        ['objects', 'backup', 3, 300],
+        ['databases', 'drill', 24, 3600],
+        ['objects', 'drill', 24, 3600],
+      ] as const) {
+        await queryAs(
+          h.db.adminUrl,
+          `insert into platform.backup_run (class, act, started_at, finished_at, outcome)
+           values ($1, $2, $3, $3::timestamptz + make_interval(secs => $4), 'succeeded')`,
+          [cls, act, ago(hours), seconds],
+        );
+      }
+    }
+    const view = (await h.call('ada', 'GET', '/v1/diagnostics')).json<DiagnosticsView>();
+    expect(view.objectives.availability).toMatchObject({ measured: 1, verdict: 'met' });
+    expect(view.objectives.recoveryPoint).toMatchObject({ verdict: 'met' });
+    expect(view.objectives.recoveryPoint.hours).toBeCloseTo(3, 1);
+    // Two hours of drills against an hour's objective.
+    expect(view.objectives.recoveryTime).toMatchObject({ hours: 2, verdict: 'missed' });
+    expect(view.objectives.backups).toHaveLength(4);
   });
 
   it('is refused to somebody who does not administer the environment', async () => {

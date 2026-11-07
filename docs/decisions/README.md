@@ -88,6 +88,7 @@ exist.
 | [0098](0098-an-environment-reads-its-own-jobs-through-a-definer.md)               | An environment reads its own jobs through a definer, never the queue            | Accepted           |
 | [0099](0099-a-component-group-is-offered-never-followed.md)                       | A component group is offered, never followed                                    | Accepted           |
 | [0100](0100-usage-is-counted-by-day-from-the-records-each-night.md)               | Usage is counted by day, from the records, each night                           | Accepted           |
+| [0101](0101-availability-is-minutes-probed-up-over-minutes-elapsed.md)            | Availability is minutes probed up over minutes elapsed                          | Accepted           |
 | [0084](0084-the-part-panel-is-grouped-and-folds.md)                               | The Part panel is grouped and folds, and removal is the one confirmation        | Accepted           |
 | [0082](0082-the-versions-panel-is-a-timeline.md)                                  | The Versions panel is a timeline of what the system holds                       | Accepted           |
 | [0083](0083-deleting-a-tenant-is-the-stewards.md)                                 | Deleting a tenant is a process of its own, holding the least that can           | Accepted           |
