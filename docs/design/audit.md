@@ -63,8 +63,8 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **DAT-007** | A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is                         |
 
 **Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-071 and
-LIF-074 (the T3 audit), whose kinds are declared here and emitted by the designs that build their acts; LIF-055, LIF-034 and LIF-035 (T7, ADR-0045:
-the export leaves room for a signature over its sequence); IAM-070 (T7, an audit-reader permission);
+LIF-074 (the T3 audit), whose kinds are declared here and emitted by the designs that build their acts; LIF-034 and LIF-035 (T7, ADR-0045;
+LIF-055, a signed export, is withdrawn); IAM-070 (T7, an audit-reader permission);
 the workflow, approval, hold, deletion and generation events, whose kinds are listed here and whose
 emission is their own designs'.
 
@@ -218,8 +218,8 @@ since the asking transaction's own id can be visible to its own snapshot (the AU
 and AU2-F). A bound by the
 snapshot's `xmin` was the first idea; newest first, it skips an event committed late, and any long
 transaction in the cluster hides committed ones. An `xid8` does not survive a restore into another
-cluster, so a snapshot taken before one reads nothing after it. LIF-055's hash chain (T7) runs over sequence
-order and is computed at export, so it needs nothing stored now.
+cluster, so a snapshot taken before one reads nothing after it. A hash chain, were one wanted, would run over
+sequence order at export, so it needs nothing stored now (LIF-055, which asked for one, is withdrawn).
 
 ## Kept as written
 
@@ -228,7 +228,7 @@ the version chain's does, with a trigger refusing an update for anyone else; a l
 `erase_labels`, run as the schema's owner, which sets `text` and `erased_at` alone (a trigger refuses
 anything else), and which the service calls last when it erases a person. Nothing deletes from
 either. **This is policy enforced by the database, not write-once storage** (LIF-Q02): an operator with
-the owner's role could still alter a row, which LIF-055's signed export (T7) is for.
+the owner's role could still alter a row (LIF-055's signed export, which would have shown it, is withdrawn).
 
 ## Retention
 
