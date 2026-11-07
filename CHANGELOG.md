@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.242.0 - 2026-11-07 (PR #XXXX)
+## 0.242.0 - 2026-11-07 (PR #1059)
 
 Support access, secrets and the boundary: an administrator lets a named person from outside look, at Diagnostics, at titles and names or at content, in chosen spaces until a stated time, and sees it happening. Every secret the environment holds is listed with what uses it before it is replaced, and every way anything can leave the environment is declared in one place, with what is set up for each.
 
