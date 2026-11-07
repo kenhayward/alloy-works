@@ -18477,6 +18477,10 @@
           "howItIsMet": "Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`"
         },
         {
+          "id": "ADM-037",
+          "howItIsMet": "Each silent failure surfaced in Diagnostics, told to administrators by inbox once until it clears, and to the person waiting where there is one (`SILENT_FAILURES`), the searcher by meaning of the index lagging"
+        },
+        {
           "id": "COL-061",
           "howItIsMet": "A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff"
         }
@@ -22820,13 +22824,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 866,
+      "line": 868,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 879,
+      "line": 881,
       "kind": "title"
     },
     {
@@ -24086,7 +24090,7 @@
     {
       "id": "COL-034",
       "file": "apps/service/src/inbox-routes.test.ts",
-      "line": 235,
+      "line": 264,
       "kind": "title"
     },
     {
@@ -24972,9 +24976,15 @@
       "kind": "title"
     },
     {
+      "id": "ADM-037",
+      "file": "apps/service/src/search-meaning-routes.test.ts",
+      "line": 137,
+      "kind": "title"
+    },
+    {
       "id": "GEN-035",
       "file": "apps/service/src/search-meaning-routes.test.ts",
-      "line": 149,
+      "line": 167,
       "kind": "title"
     },
     {
@@ -24992,7 +25002,7 @@
     {
       "id": "SCH-031",
       "file": "apps/service/src/search-meaning-routes.test.ts",
-      "line": 159,
+      "line": 177,
       "kind": "title"
     },
     {
@@ -25974,6 +25984,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-037",
+      "file": "apps/web/src/account/Inbox.test.tsx",
+      "line": 311,
+      "kind": "title"
+    },
+    {
       "id": "COL-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
       "line": 246,
@@ -26114,7 +26130,7 @@
     {
       "id": "ADM-020",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 237,
+      "line": 246,
       "kind": "title"
     },
     {
@@ -26132,7 +26148,7 @@
     {
       "id": "ADM-044",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 218,
+      "line": 227,
       "kind": "title"
     },
     {
@@ -28266,21 +28282,27 @@
       "kind": "title"
     },
     {
+      "id": "ADM-037",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 148,
+      "kind": "title"
+    },
+    {
       "id": "LIF-046",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 181,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 195,
+      "line": 212,
       "kind": "title"
     },
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 406,
+      "line": 423,
       "kind": "title"
     },
     {
@@ -28292,31 +28314,31 @@
     {
       "id": "SCH-053",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 148,
+      "line": 165,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 406,
+      "line": 423,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 465,
+      "line": 482,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 300,
+      "line": 317,
       "kind": "title"
     },
     {
       "id": "SCH-063",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 300,
+      "line": 317,
       "kind": "title"
     },
     {
@@ -30381,6 +30403,12 @@
       "id": "REU-048",
       "file": "apps/worker/src/scan.test.ts",
       "line": 22,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-037",
+      "file": "apps/worker/src/silent-failures-sweep.test.ts",
+      "line": 75,
       "kind": "title"
     },
     {
@@ -33102,6 +33130,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-037",
+      "file": "packages/db/src/silent-failures.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
       "id": "MET-042",
       "file": "packages/db/src/starter-component-type.test.ts",
       "line": 59,
@@ -35120,7 +35154,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1284,
+      "line": 1290,
       "kind": "title"
     },
     {
