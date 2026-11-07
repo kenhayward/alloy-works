@@ -16,6 +16,7 @@ import {
   listApiTokens,
   notifyTenant,
   revokeApiToken,
+  supportNow,
   type StoredApiToken,
   type Tenant,
   type TenantDatabase,
@@ -26,6 +27,7 @@ import { notFound, type Authorised } from './access.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import { contextOf } from './audit.js';
 import { AppError } from './errors.js';
+import { supportScope } from './support.js';
 import type { SessionPrincipal } from './sessions.js';
 import { hashToken } from './sessions.js';
 
@@ -122,7 +124,14 @@ export function tokenHandlers(
       // The issue is recorded as the person's own act (IAM-037; the AU1 plan, AU1-G).
       const issued = await db.withTenant(
         tenantOf(request),
-        (trx) => issueChecked(trx, principalOf(request).principalId, body, expiresAt, secret),
+        async (trx) => {
+          // Asked again in the act's own transaction: support granted since the request was
+          // authenticated still makes no token (support.md).
+          if (await supportNow(trx, principalOf(request).principalId)) {
+            throw supportScope('Support access reads and changes nothing here.');
+          }
+          return issueChecked(trx, principalOf(request).principalId, body, expiresAt, secret);
+        },
         contextOf(request),
       );
       // The secret, once: never kept by a cache between the service and the caller (final review).

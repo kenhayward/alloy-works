@@ -7792,7 +7792,7 @@ export interface paths {
         };
         /**
          * Every support grant, active and ended
-         * @description Lists every support grant, active and ended, the newest first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it, and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.
+         * @description Lists the support grants, active and ended, the newest 200 first: whom it is for, its scope, its spaces, its purpose, until when, who granted it and who revoked it (nobody, where the environment’s cap on outside access was lowered past it), and whether it is active now. Every administrator of the environment may read it, so a tenant can see at any time whether support is looking. Needs administer at the environment.
          */
         get: operations["listSupportAccess"];
         put?: never;
@@ -7818,7 +7818,7 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Ends a support grant at once
+         * Ends a support grant at once, and the invitation it made
          * @description Ends a support grant at once: its person’s next request is decided without it, and their open event streams end. Recorded in the log. Needs grant_support at the environment.
          */
         delete: operations["revokeSupportAccess"];
@@ -96859,7 +96859,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description invitation_accepted */
+            /** @description invitation_accepted; or invitation_supported: the address was given support access, which is kept, and revoking it ends the invitation */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -138869,7 +138869,7 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @description Every grant, active and ended, the newest first */
+                        /** @description Every grant, active and ended, the newest first, at most 200 */
                         items: {
                             id: string;
                             person: {
@@ -139178,7 +139178,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description support_member: the address is somebody in the organisation; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s */
+            /** @description support_member: the address is somebody in the organisation; support_kind_differs: it is invited as such; support_signed_in: somebody signed in with it meanwhile, so try again; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

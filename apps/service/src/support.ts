@@ -41,7 +41,42 @@ const SUPPORT_WRITES: ReadonlySet<string> = new Set([
   'markNotificationRead',
   'deleteNotification',
   'setInboxPreferences',
+  'revokeToken',
 ]);
+
+/**
+ * The routes answering content by who the caller is, decided by the readable set rather than a
+ * target's permission: what they answer is filtered to the granted spaces like any listing.
+ */
+const READS_BY_SPACE: ReadonlySet<string> = new Set([
+  'search',
+  'listChangesSince',
+  'getRelationship',
+  'getCohort',
+]);
+
+/**
+ * Whether a route is decided in a space, so a support grant's spaces bound what it answers: a
+ * permission on a space or something in one, or the readable set. Anything else - decided by
+ * ownership, as a job's download, a conversation or a person's prompts are, or at the environment -
+ * could answer content from outside the granted spaces, and a support person is refused it.
+ */
+export function decidedBySpace(route: RouteContract): boolean {
+  if (READS_BY_SPACE.has(route.operationId)) return true;
+  if (route.access.check !== 'permission') return false;
+  const target = route.access.target;
+  return !('tenant' in target) && !('query' in target) && !('body' in target);
+}
+
+/** What a support principal's request is to record once it is answered (ADM-024). */
+export interface SupportUse {
+  readonly support: SupportGrant;
+  readonly read?: {
+    readonly route: string;
+    readonly on: Readonly<Record<string, string>>;
+    readonly purpose: string;
+  };
+}
 
 /** What a support principal needs to work at all, whatever its scope: the stream and their own inbox. */
 const SUPPORT_READS: ReadonlySet<string> = new Set([
@@ -50,7 +85,7 @@ const SUPPORT_READS: ReadonlySet<string> = new Set([
   'getInboxPreferences',
 ]);
 
-const supportScope = (message: string) =>
+export const supportScope = (message: string) =>
   new AppError(403, 'support_scope', message).refusing({
     permission: null,
     target: null,
@@ -80,15 +115,13 @@ function readPurpose(request: FastifyRequest): string | undefined {
  * but their own sessions, presence and inbox, and so is a token's making; a read their scope does not
  * reach is refused; a content read needs a `Support-Read` header. What is let through is still decided
  * as every request is - the decision reads the same grant, so a space it does not name is not found.
- * The use is recorded once a day, and each content read with its purpose (ADM-024).
+ * Answers what the request is to record, once answered: its use, and a content read with its purpose.
  */
-export async function holdToSupport(
-  db: TenantDatabase,
-  tenant: Tenant,
+export function holdToSupport(
   request: FastifyRequest,
   route: RouteContract,
   support: SupportGrant,
-): Promise<void> {
+): SupportUse {
   const operation = route.operationId;
   if (route.method !== 'GET' && !SUPPORT_WRITES.has(operation)) {
     throw supportScope('Support access reads and changes nothing here.');
@@ -102,6 +135,9 @@ export async function holdToSupport(
   ) {
     throw supportScope('Your support access does not reach this.');
   }
+  if (route.reads === 'content' && !decidedBySpace(route)) {
+    throw supportScope('Support access reads content only in the spaces it was given.');
+  }
   const purpose = route.reads === 'content' ? readPurpose(request) : undefined;
   if (route.reads === 'content' && purpose === undefined) throw supportReadRequired();
   const params = (request.params ?? {}) as Record<string, unknown>;
@@ -110,16 +146,32 @@ export async function holdToSupport(
       (entry): entry is [string, string] => typeof entry[1] === 'string' && UUID.test(entry[1]),
     ),
   );
-  await db.withTenant(
-    tenant,
-    async (trx) => {
-      await recordSupportUse(trx, support);
-      if (purpose !== undefined) {
-        await recordSupportRead(trx, support, { route: operation, on, purpose });
-      }
-    },
-    contextOf(request),
-  );
+  return purpose === undefined ? { support } : { support, read: { route: operation, on, purpose } };
+}
+
+/**
+ * Records a support principal's answered request (ADM-024): the day's use, and a content read, only
+ * once it was answered, so nothing refused or not found is recorded as read. A failure to write is
+ * logged at error and changes nothing sent.
+ */
+export async function recordSupportAnswered(
+  db: TenantDatabase,
+  tenant: Tenant,
+  request: FastifyRequest,
+  use: SupportUse,
+): Promise<void> {
+  try {
+    await db.withTenant(
+      tenant,
+      async (trx) => {
+        await recordSupportUse(trx, use.support);
+        if (use.read !== undefined) await recordSupportRead(trx, use.support, use.read);
+      },
+      contextOf(request),
+    );
+  } catch (failure) {
+    request.log.error({ err: failure }, 'the use of support access could not be recorded');
+  }
 }
 
 /** The spaces a support principal's diagnostics reads may name, or undefined for anybody else. */
@@ -146,6 +198,10 @@ function view(support: StoredSupport): SupportAccessView {
 const REFUSALS: Readonly<Record<SupportRefusal, string>> = {
   'support.member':
     'That address is somebody in the organisation. Support access is for somebody from outside.',
+  'support.signed_in':
+    'Somebody has just signed in with that address. Try again to give them support access.',
+  'support.kind_differs':
+    'That address is already invited as somebody in the organisation. Withdraw that invitation first.',
   'support.erased': 'The person with that address was erased.',
   'support.active': 'They hold support access already. Revoke it first to give them another.',
   'support.expiry_past': 'Choose an end that is still to come.',

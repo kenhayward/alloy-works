@@ -43,7 +43,7 @@ export type InvitationAnswer =
 
 export type WithdrawalAnswer =
   | { readonly withdrawn: string }
-  | { readonly refused: 'invitation.missing' | 'invitation.accepted' };
+  | { readonly refused: 'invitation.missing' | 'invitation.accepted' | 'invitation.supported' };
 
 /** The address as an invitation holds it and as a claim compares it: trimmed and in lower case. */
 export function invitedAddress(email: string): string {
@@ -245,7 +245,7 @@ export async function invite(
  * Records an invitation's act (ADM-002): the invitation, its principal, and the address it was sent to
  * as the invitee's label, which refers to the principal so erasure reaches it.
  */
-async function recordInvitationEvent(
+export async function recordInvitationEvent(
   trx: TenantTransaction,
   kind: 'invitation.sent' | 'invitation.accepted' | 'invitation.withdrawn',
   invitation: { readonly id: string; readonly email: string; readonly principalId: string },
@@ -297,6 +297,13 @@ export async function withdrawInvitation(
     .executeTakeFirst();
   if (!row) return { refused: 'invitation.missing' };
   if (row.accepted_at !== null) return { refused: 'invitation.accepted' };
+  // A support grant is kept for good (support.md), so its person is never removed under it: the
+  // invitation ends by revoking the support that made it.
+  const supported = await sql<{ held: boolean }>`
+    select to_regclass('support_grant') is not null
+       and exists (select from support_grant where principal_id = ${row.principal_id}) as held
+  `.execute(trx);
+  if (supported.rows[0]?.held) return { refused: 'invitation.supported' };
   // One event for each grant and membership the withdrawal removes, then its own, before any delete
   // (the AU1 plan, AU1-H).
   await recordGrantsRevoked(trx, { principal: row.principal_id });

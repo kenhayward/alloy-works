@@ -22,15 +22,18 @@ import {
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { allRoutes } from '@alloy-works/api-contract';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { decidedBySpace } from './support.js';
 import { openStream } from './test/frames.js';
 import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 // A hostname that resolves to this machine: the stream is read over a real socket.
 const HOST = '127.0.0.1';
 const DAY = 86_400_000;
+const MISSING = '00000000-0000-4000-8000-000000000000';
 const SUPPORT = ['sam', 'cam', 'dot', 'rex', 'tia', 'una'];
 
 type Json = Record<string, unknown>;
@@ -172,11 +175,12 @@ describe('support access (support.md; the SA plan, SAb)', () => {
       dot: ['diagnostics', [clinical]],
       rex: ['metadata', [clinical]],
       tia: ['metadata', [clinical]],
+      // Una's lasts a month, so a cap lowered to 20 days ends hers alone.
       una: ['metadata', [clinical]],
     };
     for (const who of SUPPORT) {
       const [scope, spaces] = given[who]!;
-      const made = await granting('ada', supportFor(who, scope, spaces));
+      const made = await granting('ada', supportFor(who, scope, spaces, who === 'una' ? 30 : 7));
       expect(made.statusCode, made.body).toBe(200);
       supports[who] = made.json<{ support: { id: string } }>().support.id;
       cookies[who] = await signIn(app, HOST, who, idp.issuer);
@@ -308,6 +312,8 @@ describe('support access (support.md; the SA plan, SAb)', () => {
         }),
       ]),
     );
+    // Only a read that was answered is recorded: the refused one in Quality is not.
+    expect(used.some((each) => JSON.stringify(each.detail).includes(inQuality))).toBe(false);
     // Once a day for its scope, however many requests.
     expect(used.filter((each) => !('route' in (each.detail as Json)))).toHaveLength(1);
   });
@@ -410,10 +416,18 @@ describe('support access (support.md; the SA plan, SAb)', () => {
     await tenantDb.withTenant(tenant, (trx) =>
       trx
         .updateTable('access_policy')
-        .set({ external_default_days: 3, external_cap_days: 3 })
+        .set({ external_default_days: 20, external_cap_days: 20 })
         .execute(),
     );
     try {
+      expect((await reads('una')).statusCode).toBe(404);
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .updateTable('access_policy')
+          .set({ external_default_days: 30, external_cap_days: 90 })
+          .execute(),
+      );
+      // Ended, not paused: raising the cap again revives nothing.
       expect((await reads('una')).statusCode).toBe(404);
     } finally {
       await tenantDb.withTenant(tenant, (trx) =>
@@ -423,7 +437,104 @@ describe('support access (support.md; the SA plan, SAb)', () => {
           .execute(),
       );
     }
-    expect((await reads('una')).statusCode).toBe(200);
+    const una = (await get('ada', '/v1/support-access'))
+      .json<{ items: Json[] }>()
+      .items.find((each) => each.id === supports.una);
+    expect(una).toMatchObject({ active: false, revokedAt: expect.any(String), revokedBy: null });
+    const ended = (await events_('support.revoked')).find((each) => each.subject === supports.una);
+    expect(ended?.detail).toMatchObject({ reason: 'cap_lowered', principal: ids.una });
+  });
+
+  it('keeps every support grant: an invitation is withdrawn by revoking the support that made it, audited, never by removing its person', async () => {
+    const made = await granting('ada', supportFor('vic', 'metadata', [clinical]));
+    expect(made.statusCode, made.body).toBe(200);
+    const { support, invitation } = made.json<{
+      support: { id: string };
+      invitation: { id: string };
+    }>();
+    const withdrawn = await call('ada', 'DELETE', `/v1/invitations/${invitation.id}`);
+    expect(withdrawn.statusCode).toBe(409);
+    expect(withdrawn.json()).toMatchObject({ code: 'invitation_supported' });
+    expect((await call('ada', 'DELETE', `/v1/support-access/${support.id}`)).statusCode).toBe(200);
+    const invitations = (await get('ada', '/v1/invitations?limit=100')).json<{
+      items: { id: string; lapsed: boolean }[];
+    }>();
+    expect(invitations.items.find((each) => each.id === invitation.id)).toMatchObject({
+      lapsed: true,
+    });
+    const ended = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('subject')
+        .where('kind', '=', 'invitation.withdrawn')
+        .execute(),
+    );
+    expect(ended.map((each) => each.subject)).toContain(invitation.id);
+    // Its person stays, with the grant they held.
+    expect((await call('ada', 'DELETE', `/v1/invitations/${invitation.id}`)).statusCode).toBe(409);
+    expect(
+      (await get('ada', '/v1/support-access'))
+        .json<{ items: Json[] }>()
+        .items.some((each) => each.id === support.id),
+    ).toBe(true);
+  });
+
+  it('refuses a content-scope support person every content route not decided by a space, and lists no people', async () => {
+    const asked = { 'support-read': 'An old export' };
+    for (const url of [
+      '/v1/me/prompts',
+      `/v1/jobs/${MISSING}/download`,
+      `/v1/conversations/${MISSING}`,
+    ]) {
+      const answer = await get('cam', url, asked);
+      expect(answer.statusCode, url).toBe(403);
+      expect(answer.json(), url).toMatchObject({ code: 'support_scope' });
+    }
+    const refused = allRoutes
+      .filter((route) => route.method === 'GET' && !decidedBySpace(route))
+      .filter((route) => route.reads === 'content')
+      .map((route) => route.operationId)
+      .sort();
+    expect(refused).toEqual([
+      'downloadAuditExport',
+      'downloadJob',
+      'downloadTenantExport',
+      'exportThemeCatalogue',
+      'exportVocabulary',
+      'getAssistantRun',
+      'getCitationStyle',
+      'getConversation',
+      'getConversationContext',
+      'getImport',
+      'getImportPart',
+      'getLicence',
+      'getPendingResult',
+      'getPromptLibrary',
+      'getPublicationRequest',
+      'getTranslationSettings',
+      'getTranslationSettingsHistory',
+      'getVocabulary',
+      'getVocabularyUses',
+      'getWebhook',
+      'getWebhookDelivery',
+      'listAuditEvents',
+      'listGuardrails',
+      'listHolds',
+      'listLicences',
+      'listMail',
+      'listPersonalPrompts',
+      'listServiceIdentities',
+      'listWebhookDeliveries',
+      'listWebhooks',
+      'searchImportParts',
+    ]);
+    expect((await get('sam', '/v1/people')).json()).toMatchObject({ items: [] });
+    expect(
+      (await get('ada', '/v1/people')).json<{ items: unknown[] }>().items.length,
+    ).toBeGreaterThan(0);
+    // Revoking a token of their own is still theirs.
+    const revoke = await call('sam', 'DELETE', `/v1/tokens/${MISSING}`);
+    expect(revoke.json()).not.toMatchObject({ code: 'support_scope' });
   });
 
   it("ADM-042 explains a support person's access as support: its scope, spaces, purpose and end", async () => {

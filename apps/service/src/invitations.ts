@@ -39,7 +39,7 @@ export function invitationView(stored: StoredInvitation, now: Date): InvitationV
 }
 
 const REFUSALS = new Map<
-  InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown',
+  InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown' | 'invitation.supported',
   string
 >([
   [
@@ -55,13 +55,18 @@ const REFUSALS = new Map<
     'That address is already invited, and the invitation says otherwise about whether they are from outside the organisation. Withdraw it and invite them again.',
   ],
   [
+    'invitation.supported',
+    'That address was given support access, which is kept. Revoke the support access instead, which ends the invitation.',
+  ],
+  [
     'invitation.accepted',
     'That invitation has been accepted. Remove the grants of the person who accepted it instead.',
   ],
 ]);
 
 function refuse(
-  refusal: InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown',
+  refusal:
+    InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown' | 'invitation.supported',
 ): AppError {
   return refused(409, refusal, REFUSALS.get(refusal)!);
 }

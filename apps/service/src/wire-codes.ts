@@ -49,6 +49,7 @@ const WIRE_CODES = {
   'invitation.signed_in': 'invitation_signed_in',
   'invitation.kind_differs': 'invitation_kind_differs',
   'invitation.accepted': 'invitation_accepted',
+  'invitation.supported': 'invitation_supported',
   'role.name_taken': 'role_name_taken',
   'role.empty': 'role_empty',
   'role.unknown_permission': 'role_unknown_permission',
@@ -244,6 +245,8 @@ const WIRE_CODES = {
   'share.past_cap': 'share_past_cap',
   // Support access (support.md): who it may be for, and when it may end.
   'support.member': 'support_member',
+  'support.signed_in': 'support_signed_in',
+  'support.kind_differs': 'support_kind_differs',
   'support.erased': 'support_erased',
   'support.active': 'support_active',
   'support.expiry_past': 'support_expiry_past',

@@ -93,7 +93,12 @@ import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
 import { presentationHandlers } from './presentation.js';
 import { searchHandlers } from './search.js';
-import { holdToSupport, supportHandlers } from './support.js';
+import {
+  holdToSupport,
+  recordSupportAnswered,
+  supportHandlers,
+  type SupportUse,
+} from './support.js';
 import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
@@ -222,6 +227,8 @@ declare module 'fastify' {
      * scope before the route runs. Null for everybody else.
      */
     support: SupportGrant | null;
+    /** What a support principal's request records once it is answered with success. */
+    supportUse: SupportUse | null;
   }
 }
 
@@ -544,6 +551,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);
   app.decorateRequest('support', null);
+  app.decorateRequest('supportUse', null);
+  // Support's use recorded once answered (ADM-024): a refused or missing read was never a read.
+  app.addHook('onResponse', async (request, reply) => {
+    const use = request.supportUse;
+    if (use === null || request.tenant === null) return;
+    request.supportUse = null;
+    if (reply.statusCode >= 200 && reply.statusCode < 300) {
+      await recordSupportAnswered(db, request.tenant, request, use);
+    }
+  });
 
   function secret(name: string): string {
     const value = secrets.get(name);
@@ -1847,7 +1864,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // A support principal is held to their grant's scope before the route runs (support.md).
       onRequest.push(async (request) => {
         if (request.support !== null) {
-          await holdToSupport(db, tenantOf(request), request, route, request.support);
+          request.supportUse = holdToSupport(request, route, request.support);
         }
       });
     }

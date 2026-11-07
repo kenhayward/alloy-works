@@ -321,7 +321,10 @@ describe('the rule behind a refusal', () => {
       // The SA plan's (SAb): support for somebody inside, erased, holding it already, past now or past
       // the cap, naming no space or another environment's, or revoked twice. Guards of support.md's.
       'support.member',
+      'support.signed_in',
+      'support.kind_differs',
       'support.erased',
+      'invitation.supported',
       'support.active',
       'support.expiry_past',
       'support.past_cap',

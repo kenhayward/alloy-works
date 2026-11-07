@@ -151,7 +151,11 @@ export const invitationRoutes = {
       401: unauthenticated,
       403: forbidden,
       404: { description: 'No such invitation in this environment', schema: ErrorBody },
-      409: { description: 'invitation_accepted', schema: ErrorBody },
+      409: {
+        description:
+          'invitation_accepted; or invitation_supported: the address was given support access, which is kept, and revoking it ends the invitation',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

@@ -187,6 +187,8 @@ const SupportGiven = z.strictObject({
   spaces: z.array(Id),
   purpose: SupportPurpose,
   expiresAt: z.iso.datetime(),
+  /** Ended by the tenant's cap lowered past it, rather than by an administrator. */
+  reason: z.literal('cap_lowered').optional(),
 });
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */

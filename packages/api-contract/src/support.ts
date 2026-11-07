@@ -56,7 +56,9 @@ export const SupportAccessView = z.object({
 export type SupportAccessView = z.infer<typeof SupportAccessView>;
 
 export const SupportAccessList = z.object({
-  items: z.array(SupportAccessView).describe('Every grant, active and ended, the newest first'),
+  items: z
+    .array(SupportAccessView)
+    .describe('Every grant, active and ended, the newest first, at most 200'),
   active: z.number().int().describe('How many are active now'),
 });
 export type SupportAccessList = z.infer<typeof SupportAccessList>;
@@ -120,7 +122,7 @@ export const supportRoutes = {
       },
       409: {
         description:
-          'support_member: the address is somebody in the organisation; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s',
+          'support_member: the address is somebody in the organisation; support_kind_differs: it is invited as such; support_signed_in: somebody signed in with it meanwhile, so try again; support_erased: the person was erased; support_active: they hold active support already; support_expiry_past; support_past_cap: the expiry is past the cap; support_spaces_required: a metadata or content grant names no space; support_space_missing: a space named is not this environment’s',
         schema: ErrorBody,
       },
     },
@@ -129,7 +131,7 @@ export const supportRoutes = {
     operationId: 'revokeSupportAccess',
     method: 'DELETE',
     path: '/v1/support-access/{id}',
-    summary: 'Ends a support grant at once',
+    summary: 'Ends a support grant at once, and the invitation it made',
     tenantScoped: true,
     reads: 'metadata',
     access: {

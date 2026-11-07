@@ -3,7 +3,12 @@ import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { labelled, labels, recordEvent } from './audit.js';
 import { accessPolicy } from './grants.js';
-import { invite, invitedAddress, type StoredInvitation } from './invitations.js';
+import {
+  invite,
+  invitedAddress,
+  recordInvitationEvent,
+  type StoredInvitation,
+} from './invitations.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -23,6 +28,8 @@ export interface StoredSupport extends SupportGrant {
 
 export type SupportRefusal =
   | 'support.member'
+  | 'support.signed_in'
+  | 'support.kind_differs'
   | 'support.erased'
   | 'support.active'
   | 'support.expiry_past'
@@ -80,10 +87,17 @@ function stored(row: Row, now: Date, externalCapDays: number): StoredSupport {
   };
 }
 
+/** The most grants a listing answers: a tenant gives support a handful of times. */
+export const SUPPORT_LISTED = 200;
+
 /** Every support grant, active and ended, the newest first: the tenant's to see at any time (SA-G). */
 export async function listSupport(trx: TenantTransaction): Promise<StoredSupport[]> {
   const policy = await accessPolicy(trx);
-  const rows = await listed(trx).orderBy('s.granted_at', 'desc').orderBy('s.id').execute();
+  const rows = await listed(trx)
+    .orderBy('s.granted_at', 'desc')
+    .orderBy('s.id')
+    .limit(SUPPORT_LISTED)
+    .execute();
   return rows.map((row) => stored(row, policy.now, policy.externalCapDays));
 }
 
@@ -180,6 +194,8 @@ export async function grantSupport(
   const signedIn = known.find((each) => each.signed_in && each.email_verified && !each.erased);
   let principal = signedIn?.id;
   let invitation: StoredInvitation | null = null;
+  /** The invitation this grant answers for: one it made, or renewed holding nothing but support. */
+  let madeFor: string | null = null;
   if (principal === undefined) {
     if (known.some((each) => each.erased)) return { refused: 'support.erased' };
     const invited = await invite(trx, {
@@ -188,9 +204,15 @@ export async function grantSupport(
       invitedBy: input.grantedBy,
       expiresAt: input.expiresAt,
     });
-    if ('refused' in invited) return { refused: 'support.member' };
+    if ('refused' in invited) {
+      return {
+        refused:
+          invited.refused === 'invitation.signed_in' ? 'support.signed_in' : 'support.kind_differs',
+      };
+    }
     invitation = invited.invited;
     principal = invited.invited.principalId;
+    if (!invited.renewed || !(await holdsBeyondSupport(trx, principal))) madeFor = invitation.id;
   }
   if (await activeSupport(trx, principal, policy.now, policy.externalCapDays)) {
     return { refused: 'support.active' };
@@ -205,6 +227,7 @@ export async function grantSupport(
       purpose: input.purpose.trim(),
       expires_at: input.expiresAt,
       granted_by: input.grantedBy,
+      invitation_id: madeFor,
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -228,16 +251,35 @@ export async function revokeSupport(
   await lockAccessForChange(trx);
   const row = await trx
     .selectFrom('support_grant')
-    .select(['id', 'revoked_at'])
+    .select(['id', 'revoked_at', 'invitation_id'])
     .where('id', '=', id)
     .executeTakeFirst();
   if (!row) return { refused: 'support.missing' };
   if (row.revoked_at !== null) return { refused: 'support.revoked' };
   await trx
     .updateTable('support_grant')
-    .set({ revoked_at: sql<Date>`now()`, revoked_by: revokedBy })
+    .set({ revoked_at: sql<Date>`now()`, revoked_by: revokedBy, revoked_reason: 'revoked' })
     .where('id', '=', id)
     .execute();
+  // The invitation it made, still waiting, ends with it: lapsed, and audited as withdrawn, so its
+  // person cannot sign in afterwards holding nothing. The person and the grant stay.
+  if (row.invitation_id !== null) {
+    const lapsed = await trx
+      .updateTable('invitation')
+      .set({ expires_at: sql<Date>`now()` })
+      .where('id', '=', row.invitation_id)
+      .where('accepted_at', 'is', null)
+      .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql<Date>`now()`)]))
+      .returning(['id', 'email', 'principal_id'])
+      .executeTakeFirst();
+    if (lapsed) {
+      await recordInvitationEvent(trx, 'invitation.withdrawn', {
+        id: lapsed.id,
+        email: lapsed.email,
+        principalId: lapsed.principal_id,
+      });
+    }
+  }
   const policy = await accessPolicy(trx);
   const revoked = stored(
     (await listed(trx).where('s.id', '=', id).executeTakeFirstOrThrow()) as Row,
@@ -246,6 +288,21 @@ export async function revokeSupport(
   );
   await recordSupportEvent(trx, 'support.revoked', revoked);
   return { revoked };
+}
+
+/** Whether the principal holds any grant, or belongs to any group: access beyond support. */
+async function holdsBeyondSupport(trx: TenantTransaction, principal: string): Promise<boolean> {
+  const grant = await trx
+    .selectFrom('access_grant')
+    .select('id')
+    .where('principal_id', '=', principal)
+    .executeTakeFirst();
+  const member = await trx
+    .selectFrom('group_member')
+    .select('group_id')
+    .where('principal_id', '=', principal)
+    .executeTakeFirst();
+  return grant !== undefined || member !== undefined;
 }
 
 async function recordSupportEvent(

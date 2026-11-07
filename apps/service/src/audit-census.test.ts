@@ -375,7 +375,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   withdrawInvitation: writes('invitation.withdrawn', 'access.revoked', 'group.member_removed'),
   listSupportAccess: read,
   grantSupportAccess: writes('support.granted', 'invitation.sent'),
-  revokeSupportAccess: writes('support.revoked'),
+  revokeSupportAccess: writes('support.revoked', 'invitation.withdrawn'),
   listGroups: read,
   createGroup: writes('group.made'),
   setGroupMembers: writes('group.member_added', 'group.member_removed'),

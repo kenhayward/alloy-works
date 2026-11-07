@@ -662,6 +662,8 @@ export interface SupportGrantTable {
   granted_at: ColumnType<Date, never, never>;
   revoked_at: ColumnType<Date | null, never, Date>;
   revoked_by: ColumnType<string | null, never, string>;
+  revoked_reason: ColumnType<'revoked' | 'cap_lowered' | null, never, 'revoked' | 'cap_lowered'>;
+  invitation_id: ColumnType<string | null, string | null | undefined, never>;
   used_on: ColumnType<string | null, never, string>;
 }
 
