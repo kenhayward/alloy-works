@@ -38,7 +38,7 @@ function sealedColumns(): Set<string> {
 }
 
 describe('a tenant’s secrets and what consumes each (secrets.md)', () => {
-  it('ADM-047 names one row per kind of secret, each with what reads it and its consumers', () => {
+  it('names one row per kind of secret, each with what reads it and its consumers', () => {
     expect(SECRET_CONSUMERS.map((each) => each.kind)).toEqual([...SECRET_KINDS]);
     for (const each of SECRET_CONSUMERS) {
       expect(each.consumers.length, each.kind).toBeGreaterThan(0);
@@ -47,7 +47,7 @@ describe('a tenant’s secrets and what consumes each (secrets.md)', () => {
     }
   });
 
-  it('ADM-047 holds a row to every sealed or hashed column the migrations make, or names why not', () => {
+  it('holds a row to every sealed or hashed column the migrations make, or names why not', () => {
     const named = new Set([
       ...SECRET_CONSUMERS.flatMap((each) => each.stored),
       ...SECRET_EXCLUSIONS.map((each) => each.stored),

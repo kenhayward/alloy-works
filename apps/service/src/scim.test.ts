@@ -631,7 +631,7 @@ describe('SCIM', () => {
     held = second.secret;
   });
 
-  it('ADM-047 lists every secret with its consumers and overlap, and never a value or a hash', async () => {
+  it('lists every secret with its consumers and overlap, and never a value or a hash', async () => {
     const answer = await app.inject({
       url: '/v1/secrets',
       headers: { host: HOST, cookie: admin.cookie },

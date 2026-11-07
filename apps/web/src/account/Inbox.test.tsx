@@ -345,7 +345,7 @@ describe('the inbox, from the account chip', () => {
     ).toBeInTheDocument();
   });
 
-  it('ADM-047 tells a secret failing since its replacement once, against the secret, naming every consumer', async () => {
+  it('tells a secret failing since its replacement once, against the secret, naming every consumer', async () => {
     const { client } = service([
       {
         id: id(10),

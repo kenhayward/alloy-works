@@ -72,7 +72,7 @@ function service(rotates: boolean) {
 }
 
 describe("Administration's Secrets", () => {
-  it('ADM-047 lists every secret with everything that uses it, when last replaced, an old value still accepted and where it is replaced', async () => {
+  it('lists every secret with everything that uses it, when last replaced, an old value still accepted and where it is replaced', async () => {
     const { client } = service(true);
     render(<Secrets client={client} />);
     const table = await screen.findByRole('table', { name: 'Secrets' });
@@ -106,7 +106,7 @@ describe("Administration's Secrets", () => {
     expect(asked).not.toContain('/v1/secrets');
   });
 
-  it('ADM-047 says in Needs attention which secret a consumer failed with since its replacement, naming every consumer', () => {
+  it('says in Needs attention which secret a consumer failed with since its replacement, naming every consumer', () => {
     const view = {
       capabilities: [],
       work: [],

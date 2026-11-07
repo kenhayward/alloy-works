@@ -164,7 +164,7 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     await db.drop();
   });
 
-  it('ADM-047 lists each secret with what it belongs to, when last replaced and everything that uses it', async () => {
+  it('lists each secret with what it belongs to, when last replaced and everything that uses it', async () => {
     const held = await as((trx) => tenantSecrets(trx));
     const byKind = Object.fromEntries(held.map((each) => [each.kind, each]));
     expect(byKind['model_endpoint_key']).toMatchObject({
@@ -198,7 +198,7 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     for (const secret of [SEALED, RESEALED, HASH]) expect(said).not.toContain(secret);
   });
 
-  it('ADM-047 tells a break after a replacement once, against the secret, naming every consumer', async () => {
+  it('tells a break after a replacement once, against the secret, naming every consumer', async () => {
     await run('finished');
     expect((await as((trx) => secretsFailing(trx))).filter((each) => each.failing)).toEqual([]);
     expect(await sweep()).toBe(0);
@@ -225,7 +225,7 @@ describe("a tenant's secrets and what uses each (secrets.md; the SA plan, SAd)",
     expect(await told()).toHaveLength(2);
   });
 
-  it("ADM-047 reads a connection's break from its runs since the credential was replaced", async () => {
+  it("reads a connection's break from its runs since the credential was replaced", async () => {
     const id = await as(async (trx) => {
       const space = (await createSpace(trx, 'Readings')).id;
       const made = await createConnection(trx, {

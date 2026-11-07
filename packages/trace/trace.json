@@ -20177,10 +20177,6 @@
         {
           "id": "ADM-007",
           "howItIsMet": "Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once"
-        },
-        {
-          "id": "ADM-047",
-          "howItIsMet": "`SECRET_CONSUMERS` held to the migrations; `GET /v1/secrets` and Administration's Secrets; a break told once, naming every consumer"
         }
       ]
     },
@@ -25042,12 +25038,6 @@
       "kind": "title"
     },
     {
-      "id": "ADM-047",
-      "file": "apps/service/src/scim.test.ts",
-      "line": 634,
-      "kind": "title"
-    },
-    {
       "id": "IAM-003",
       "file": "apps/service/src/scim.test.ts",
       "line": 229,
@@ -26104,12 +26094,6 @@
       "kind": "title"
     },
     {
-      "id": "ADM-047",
-      "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 348,
-      "kind": "title"
-    },
-    {
       "id": "COL-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
       "line": 246,
@@ -26461,12 +26445,6 @@
       "id": "LIF-019",
       "file": "apps/web/src/admin/Retention.test.tsx",
       "line": 67,
-      "kind": "title"
-    },
-    {
-      "id": "ADM-047",
-      "file": "apps/web/src/admin/Secrets.test.tsx",
-      "line": 75,
       "kind": "title"
     },
     {
@@ -30934,12 +30912,6 @@
       "kind": "title"
     },
     {
-      "id": "ADM-047",
-      "file": "packages/api-contract/src/secrets.test.ts",
-      "line": 6,
-      "kind": "title"
-    },
-    {
       "id": "API-015",
       "file": "packages/api-contract/src/spec.test.ts",
       "line": 23,
@@ -33259,12 +33231,6 @@
       "id": "SCH-066",
       "file": "packages/db/src/search.test.ts",
       "line": 383,
-      "kind": "title"
-    },
-    {
-      "id": "ADM-047",
-      "file": "packages/db/src/secrets.test.ts",
-      "line": 167,
       "kind": "title"
     },
     {
@@ -36577,12 +36543,6 @@
       "id": "ADM-007",
       "file": "packages/domain/src/secrets/consumers.test.ts",
       "line": 63,
-      "kind": "title"
-    },
-    {
-      "id": "ADM-047",
-      "file": "packages/domain/src/secrets/consumers.test.ts",
-      "line": 41,
       "kind": "title"
     },
     {

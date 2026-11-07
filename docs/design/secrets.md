@@ -62,11 +62,13 @@ check record no reason. Those breaks are not told.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                       |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **ADM-007** | Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once         |
-| **ADM-047** | `SECRET_CONSUMERS` held to the migrations; `GET /v1/secrets` and Administration's Secrets; a break told once, naming every consumer |
+| ID          | How it is met                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **ADM-007** | Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once |
 
 ADM-007 is claimed for **a tenant's own secrets**. The object store credential (0005) is the operator's: the store
-issues it and nothing in the product rotates it, so it is a gap, named, not claimed. ADM-047's second sentence is met
-for connections, model keys, webhooks and mail; the token and sign-in breaks above are not read.
+issues it and nothing in the product rotates it, so it is a gap, named, not claimed; the delivery store's password is
+the service's own, minted when data delivery needs one, and is not replaced on demand. **ADM-047 is not claimed**:
+every secret's consumers are shown before it is replaced, but a break is told for connections, model keys, webhooks
+and mail alone; the token, sign-in and extension breaks above are not read, and a model key's is read from
+`model_unavailable`, which an outage gives too.
