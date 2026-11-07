@@ -58,6 +58,14 @@ import { ComponentGroupPage } from '../groups/ComponentGroupPage.js';
 import { ComponentList } from './ComponentList.js';
 import styles from './Workspace.module.css';
 import { Notice } from '../states/Notice.js';
+import {
+  SupportBanner,
+  SupportReadAsk,
+  SupportWithheld,
+  supportOf,
+  useSupportReadChosen,
+  type MySupport,
+} from '../shell/SupportView.js';
 import { words } from '../words/words.js';
 
 export interface WorkspaceProps {
@@ -167,6 +175,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     if (at !== undefined) document.documentElement.scrollTop = at;
   }, [place]);
   const [me, setMe] = useState<string | null>(null);
+  // A support person's grant (support.md): shown on every page, and content opened only when chosen.
+  const [support, setSupport] = useState<MySupport | null>(null);
+  const supportRead = useSupportReadChosen(support);
   // Asking who is signed in failed for a reason other than nobody being signed in (final review,
   // finding 5): a server error or no answer, which Try again asks about once more.
   const [failed, setFailed] = useState(false);
@@ -177,7 +188,10 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       .GET('/v1/me')
       .then(({ data, response }) => {
         if (!current) return;
-        if (data) setMe(data.id);
+        if (data) {
+          setMe(data.id);
+          setSupport(supportOf(data));
+        }
         // Signed out shows nothing here: the environment panel beside it offers the way in.
         else if (response.status !== 401) setFailed(true);
       })
@@ -210,6 +224,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     // Every field form beneath chooses a vocabulary's values, each read once for the window's client
     // (the VO plan, VO-F).
     <VocabulariesContext.Provider value={vocabulariesFrom(client)}>
+      {support !== null && <SupportBanner support={support} />}
       {[...kept.current]
         .filter(([at, shown]) => at === place || isWork(shown.hash))
         .map(([at, shown]) => (
@@ -224,6 +239,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   function pageFor(hash: string, arrivals: number, me: string): React.JSX.Element {
     if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
     if (/^#\/admin(?:\/|$)/.test(hash)) return <AdministrationPage client={client} />;
+    // Something opened is content to a support person: withheld beyond their scope, and under a
+    // content grant asked first, nothing of it read until they choose to (ADM-026).
+    if (support !== null && isWork(hash)) {
+      if (support.scope !== 'content') return <SupportWithheld support={support} />;
+      if (!supportRead) return <SupportReadAsk support={support} />;
+    }
     // A thread at its own address, where a search result for it opens (the SV plan, SV-M).
     const thread = threadAddress(hash);
     if (thread) {
