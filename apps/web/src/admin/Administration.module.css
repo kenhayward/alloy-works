@@ -563,8 +563,24 @@
   list-style: none;
 }
 
-.ways dl {
-  grid-template-columns: 160px minmax(0, 1fr);
+.ways .card {
+  margin: 0;
+}
+
+.ways .card dl {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
+.ways .card p {
+  margin: 0 0 var(--space-12);
+}
+
+.ways .card > :last-child {
+  margin-bottom: 0;
+}
+
+.ways .card > dl + p {
+  margin-top: var(--space-12);
 }
 
 .wideCard {
