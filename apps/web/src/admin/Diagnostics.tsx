@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { indexLagging } from '@alloy-works/domain';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 
 import { Icon } from '../editor/Icon.js';
@@ -51,6 +52,8 @@ export interface DiagnosticsView {
     } | null;
     readonly p95LagSeconds: number | null;
     readonly maxLagSeconds: number | null;
+    /** How long the oldest version waiting to be findable by meaning has waited (DGe4). */
+    readonly waitingSeconds?: number | null;
   };
   readonly webhooks: {
     readonly subscriptions: number;
@@ -184,6 +187,7 @@ const WORK_NAMES: Readonly<Record<string, WordKey>> = {
   sweepMeasurementsEverywhere: 'admin.diag-work.sweepMeasurementsEverywhere',
   sweepUsageEverywhere: 'admin.diag-work.sweepUsageEverywhere',
   sweepIntegrityEverywhere: 'admin.diag-work.sweepIntegrityEverywhere',
+  sweepSilentFailuresEverywhere: 'admin.diag-work.sweepSilentFailuresEverywhere',
   sweepOldNotifications: 'admin.diag-work.sweepOldNotifications',
   sweepQueryEmbeddingsEverywhere: 'admin.diag-work.sweepQueryEmbeddingsEverywhere',
   sweepRestorations: 'admin.diag-work.sweepRestorations',
@@ -485,6 +489,7 @@ export function needsAttention(view: DiagnosticsView): string[] {
       }),
     );
   }
+  if (indexLagging(view.index.waitingSeconds ?? null)) said.push(words('admin.diag-index-lagging'));
   for (const each of view.integrity.classes) {
     if (each.failing === 0) continue;
     said.push(

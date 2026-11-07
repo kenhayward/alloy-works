@@ -49149,7 +49149,8 @@ export interface operations {
                      *           "confirmed": false
                      *         },
                      *         "p95LagSeconds": 0,
-                     *         "maxLagSeconds": 0
+                     *         "maxLagSeconds": 0,
+                     *         "waitingSeconds": 0
                      *       },
                      *       "webhooks": {
                      *         "subscriptions": -9007199254740991,
@@ -49266,6 +49267,8 @@ export interface operations {
                             /** @description A version's wait to be searchable by meaning, over the last 7 days */
                             p95LagSeconds: number | null;
                             maxLagSeconds: number | null;
+                            /** @description How long the oldest version waiting to be searchable by meaning has waited; null with none waiting */
+                            waitingSeconds: number | null;
                         };
                         webhooks: {
                             subscriptions: number;

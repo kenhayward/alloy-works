@@ -102,6 +102,8 @@ type Answer =
       readonly facets: Facets;
       /** Whether meaning was searched beside the words (the G7 plan, G7-I). */
       readonly meaning?: 'used' | 'unavailable' | 'unconfigured' | 'skipped';
+      /** Meaning used while the index lags past its ceiling (SCH-067; DGe4). */
+      readonly meaningBehind?: true;
     };
 
 /** What narrows the search: each dimension's chosen values, and a field's as `<field>:<value>`. */
@@ -522,6 +524,10 @@ export function SearchPage({
       {answer !== null && problem === null && <p role="status">{searchSaid(answer)}</p>}
       {answer?.outcome === 'results' && answer.meaning === 'unavailable' && problem === null && (
         <p className={styles['about']}>{words('search.searching-by-meaning-is-unavailable')}</p>
+      )}
+      {/* The searcher waiting on the index is told it lags (ADM-037; DGe4). */}
+      {answer?.outcome === 'results' && answer.meaningBehind === true && problem === null && (
+        <p className={styles['about']}>{words('search.new-content-may-not-be')}</p>
       )}
       {results !== null && problem === null && (
         <div className={styles['layout']}>

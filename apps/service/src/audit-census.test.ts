@@ -778,6 +778,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepUsageEverywhere: { none: 'derived' },
     // A stored artifact failing its re-verification, audited by the system (the DG plan, DG-K).
     sweepIntegrityEverywhere: writes('integrity.failed'),
+    // Silent failures told to those who administer, by inbox (DGe4).
+    sweepSilentFailuresEverywhere: { none: 'inbox' },
     // A proposal left 30 days abandoned as the system, its importer told seven days before (IM-F).
     sweepImportsEverywhere: writes('import.abandoned'),
   },

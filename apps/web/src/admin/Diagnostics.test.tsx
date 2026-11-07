@@ -198,6 +198,15 @@ describe("Administration's Diagnostics (the DG plan, DG-H)", () => {
     expect(needsAttention(calm)).toEqual([]);
   });
 
+  it('says the index lags once a version has waited past its five minutes to be found by meaning', () => {
+    const lagging = (waitingSeconds: number) =>
+      needsAttention({ ...calm, index: { ...calm.index, waitingSeconds } });
+    expect(lagging(300)).toEqual([]);
+    expect(lagging(301)).toEqual([
+      'New content has waited more than five minutes to be found by meaning.',
+    ]);
+  });
+
   it('shows each performance budget, what it is held to and whether production meets it', async () => {
     render(<Diagnostics client={service({ ...calm, performance: measured })} />);
     const table = await screen.findByRole('table', { name: 'Performance budgets' });

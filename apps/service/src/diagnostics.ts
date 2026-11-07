@@ -7,6 +7,7 @@ import {
   connectionRunsSince,
   dataPolicy,
   embeddingFreshness,
+  embeddingWaitSeconds,
   embeddingStatus,
   integrityOf,
   mailChannel,
@@ -219,6 +220,7 @@ export function diagnosticsHandlers(objectives: Objectives) {
                 },
           p95LagSeconds: freshness.p95Seconds,
           maxLagSeconds: freshness.maxSeconds,
+          waitingSeconds: await embeddingWaitSeconds(trx),
         },
         webhooks: await webhookCounts(trx),
         mail: {

@@ -58,6 +58,7 @@ import {
   sweepMeasurementsEverywhere,
   sweepUsageEverywhere,
   sweepIntegrityEverywhere,
+  sweepSilentFailuresEverywhere,
   sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -252,6 +253,10 @@ const sweep = setInterval(() => {
   void sweepUsageEverywhere(db, log)
     .then((counted) => counted > 0 && log.info({ counted }, 'counted usage'))
     .catch((error: unknown) => log.error({ err: error }, 'usage count failed'));
+  // Silent failures told to those who administer, once until each clears (DGe4).
+  void sweepSilentFailuresEverywhere(db, log)
+    .then((told) => told > 0 && log.warn({ told }, 'told administrators of silent failures'))
+    .catch((error: unknown) => log.error({ err: error }, 'silent failure sweep failed'));
   // Stored artifacts re-verified, a share a night, never overlapping itself (the DG plan, DG-K).
   if (!verifying) {
     verifying = true;

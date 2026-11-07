@@ -136054,13 +136054,21 @@
                             "number",
                             "null"
                           ]
+                        },
+                        "waitingSeconds": {
+                          "description": "How long the oldest version waiting to be searchable by meaning has waited; null with none waiting",
+                          "type": [
+                            "number",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "serving",
                         "pending",
                         "p95LagSeconds",
-                        "maxLagSeconds"
+                        "maxLagSeconds",
+                        "waitingSeconds"
                       ]
                     },
                     "webhooks": {
@@ -136641,7 +136649,8 @@
                       "confirmed": false
                     },
                     "p95LagSeconds": 0,
-                    "maxLagSeconds": 0
+                    "maxLagSeconds": 0,
+                    "waitingSeconds": 0
                   },
                   "webhooks": {
                     "subscriptions": -9007199254740991,
