@@ -513,9 +513,6 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   get bridge() {
     return words('admin.ct-studio-deliveries');
   },
-  get channel() {
-    return words('admin.channels');
-  },
   get comment() {
     return words('admin.comments');
   },

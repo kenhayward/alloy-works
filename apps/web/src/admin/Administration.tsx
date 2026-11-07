@@ -507,6 +507,8 @@ export function Administration({
   const shown =
     offered === undefined || offered.includes(asked) ? asked : (offered[0] ?? 'overview');
   const counts = useCounts(client, offered, supported !== undefined);
+  // Nothing is read for a section until it is known whether the reader may open it.
+  const opened = supported === undefined ? null : shown;
   const title = SECTIONS.find((each) => each.slug === shown)!;
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
@@ -644,14 +646,14 @@ export function Administration({
         <h1 ref={sectionHeading} tabIndex={-1}>
           {title.title}
         </h1>
-        {shown === 'overview' && (
+        {opened === 'overview' && (
           <Overview
             client={client}
             environment={environment}
             administers={administers.get('tenant') === true}
           />
         )}
-        {shown === 'spaces' && (
+        {opened === 'spaces' && (
           <Spaces
             client={client}
             read={spaces}
@@ -660,30 +662,30 @@ export function Administration({
             onChanged={() => setSpacesRead((count) => count + 1)}
           />
         )}
-        {shown === 'editing' && (
+        {opened === 'editing' && (
           <Editing client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'images' && (
+        {opened === 'images' && (
           <ImagesPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'imports' && (
+        {opened === 'imports' && (
           <ImportPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'translation' && (
+        {opened === 'translation' && (
           <TranslationPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'workflows' && <Workflows client={client} />}
-        {shown === 'vocabularies' && <Vocabularies client={client} />}
-        {shown === 'licences' && <Licences client={client} />}
-        {shown === 'themes' && <Themes client={client} />}
-        {shown === 'people' && <People client={client} makesServices={only === undefined} />}
-        {shown === 'groups' && <Groups client={client} />}
-        {shown === 'roles' && (
+        {opened === 'workflows' && <Workflows client={client} />}
+        {opened === 'vocabularies' && <Vocabularies client={client} />}
+        {opened === 'licences' && <Licences client={client} />}
+        {opened === 'themes' && <Themes client={client} />}
+        {opened === 'people' && <People client={client} makesServices={only === undefined} />}
+        {opened === 'groups' && <Groups client={client} />}
+        {opened === 'roles' && (
           <Roles read={roles} client={client} onMade={() => setRolesRead((read) => read + 1)} />
         )}
-        {shown === 'sign-in' && <SignIn client={client} />}
-        {shown === 'outside' && <Outside client={client} />}
-        {shown === 'support' && (
+        {opened === 'sign-in' && <SignIn client={client} />}
+        {opened === 'outside' && <Outside client={client} />}
+        {opened === 'support' && (
           <SupportAccess
             client={client}
             mayGrant={mayGrantSupport}
@@ -691,15 +693,15 @@ export function Administration({
             onChanged={() => setSupportRead((count) => count + 1)}
           />
         )}
-        {shown === 'holds' && <Holds client={client} />}
-        {shown === 'retention' && <Retention client={client} />}
-        {shown === 'diagnostics' && <Diagnostics client={client} />}
-        {shown === 'usage' && <Usage client={client} />}
-        {shown === 'queries' && (
+        {opened === 'holds' && <Holds client={client} />}
+        {opened === 'retention' && <Retention client={client} />}
+        {opened === 'diagnostics' && <Diagnostics client={client} />}
+        {opened === 'usage' && <Usage client={client} />}
+        {opened === 'queries' && (
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'audit' && <AuditLog client={client} />}
-        {shown === 'export' && (
+        {opened === 'audit' && <AuditLog client={client} />}
+        {opened === 'export' && (
           <>
             <TenantExport client={client} />
             {only === undefined && <Restore client={client} />}
@@ -707,22 +709,22 @@ export function Administration({
             <CloseEnvironment client={client} />
           </>
         )}
-        {shown === 'models' && <Models client={client} />}
-        {shown === 'guardrails' && <Guardrails client={client} />}
-        {shown === 'citation-styles' && <CitationStyles client={client} />}
-        {shown === 'reference-sources' && (
+        {opened === 'models' && <Models client={client} />}
+        {opened === 'guardrails' && <Guardrails client={client} />}
+        {opened === 'citation-styles' && <CitationStyles client={client} />}
+        {opened === 'reference-sources' && (
           <ReferenceSources client={client} mayChange={configures} />
         )}
-        {shown === 'spending' && (
+        {opened === 'spending' && (
           <ModelSpending client={client} administers={administers.get('tenant') === true} />
         )}
-        {shown === 'webhooks' && <Webhooks client={client} />}
-        {shown === 'email' && <Mail client={client} mayChange={configures} />}
-        {shown === 'ctstudio' && <CtStudio client={client} />}
-        {shown === 'extensions' && <Extensions client={client} />}
-        {shown === 'connections' && <Connections client={client} embedded />}
-        {shown === 'query-definitions' && <QueryDefinitions client={client} embedded />}
-        {shown === 'about' && <About about={about} />}
+        {opened === 'webhooks' && <Webhooks client={client} />}
+        {opened === 'email' && <Mail client={client} mayChange={configures} />}
+        {opened === 'ctstudio' && <CtStudio client={client} />}
+        {opened === 'extensions' && <Extensions client={client} />}
+        {opened === 'connections' && <Connections client={client} embedded />}
+        {opened === 'query-definitions' && <QueryDefinitions client={client} embedded />}
+        {opened === 'about' && <About about={about} />}
       </div>
     </section>
   );
