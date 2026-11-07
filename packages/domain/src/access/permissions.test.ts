@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { decide, type AccessFacts, type AccessGrant } from './decide.js';
 import type { Level } from './level.js';
-import { externalCap, isPermission, permissions } from './permissions.js';
+import {
+  administrativePermissions,
+  externalCap,
+  isPermission,
+  permissions,
+  tokenScopes,
+} from './permissions.js';
 import { starterRoles } from './role.js';
 
 const ADA = '00000000-0000-4000-8000-00000000a0da';
@@ -44,6 +50,7 @@ describe('the permission set', () => {
         'manage_definitions',
         'publish',
         'read',
+        'read_diagnostics',
         'retire',
         'rotate_secrets',
         'suggest',
@@ -116,11 +123,24 @@ describe('the permission set', () => {
     expect(externalCap).toContain('retire');
   });
 
-  it('caps an external principal at reading, commenting and suggesting', () => {
+  it('caps an external principal at reading, commenting, suggesting and reading diagnostics', () => {
+    // Reading diagnostics is uncapped for support, an outsider decided apart (the SA plan, SA-F); a
+    // grant of it is at the tenant, where an outsider's allow is refused anyway (IAM-071).
     expect(permissions.filter((permission) => !externalCap.includes(permission))).toEqual([
       'read',
       'comment',
       'suggest',
+      'read_diagnostics',
     ]);
+  });
+
+  it('gives read_diagnostics to Administrator alone of the starter roles, decided at the tenant as administer is, and lets a token hold it', () => {
+    expect(
+      starterRoles
+        .filter((role) => (role.permissions as readonly string[]).includes('read_diagnostics'))
+        .map((role) => role.name),
+    ).toEqual(['Administrator']);
+    expect(administrativePermissions).toContain('read_diagnostics');
+    expect(tokenScopes).toContain('read_diagnostics');
   });
 });

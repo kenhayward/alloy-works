@@ -18,7 +18,18 @@ import { configureStandIn, STAND_IN_SECRET, TEST_SEALING_KEY } from './test/sign
 
 const HOST = 'risk.acme.alloy.test';
 const CALLBACK = `http://${HOST}/v1/sign-in/organisation/callback`;
-const USERS = ['ada', 'grace', 'hedy', 'mary', 'joan', 'ivy', 'rosalind', 'emmy'].map((id) => ({
+const USERS = [
+  'ada',
+  'grace',
+  'hedy',
+  'mary',
+  'joan',
+  'ivy',
+  'rosalind',
+  'emmy',
+  'lise',
+  'barbara',
+].map((id) => ({
   id,
   name: id,
   email: `${id}@acme.example`,
@@ -87,6 +98,14 @@ const SPLIT: Readonly<Record<string, readonly string[]>> = {
     'removeWebhook',
     'listWebhookDeliveries',
     'getWebhookDelivery',
+  ],
+  read_diagnostics: [
+    'getDiagnostics',
+    'getUsage',
+    'getQueryUsage',
+    'getQueryRunsCsv',
+    'getModelUsage',
+    'getMeaningFreshness',
   ],
 };
 
@@ -209,6 +228,25 @@ describe('the high-risk permissions', () => {
     const anotherId = another.json<{ export: { id: string } }>().export.id;
     expect((await get(`/v1/exports/${anotherId}/download`, without.cookie)).statusCode).toBe(403);
     expect((await get(ofPart, both.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
+  });
+
+  it('reads Diagnostics with read_diagnostics, which an Administrator holds, and administer alone does not', async () => {
+    const reader = await holding('lise', 'Diagnostics reader', ['read', 'read_diagnostics']);
+    const admin = await holding('barbara', 'Administrator, no diagnostics', ['read', 'administer']);
+    for (const url of [
+      '/v1/diagnostics',
+      '/v1/usage',
+      '/v1/data/usage',
+      '/v1/data/usage/runs.csv',
+      '/v1/model-usage',
+      '/v1/search/meaning/freshness',
+    ]) {
+      expect((await get(url, ada.cookie)).statusCode, url).toBe(200);
+      expect((await get(url, reader.cookie)).statusCode, url).toBe(200);
+      expect((await get(url, admin.cookie)).statusCode, url).toBe(403);
+    }
+    // Reading Diagnostics administers nothing.
+    expect((await get('/v1/audit', reader.cookie)).statusCode).toBe(403);
   });
 
   it('leaves what grants access or makes a token that edits with administer', () => {

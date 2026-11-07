@@ -2364,7 +2364,7 @@ export interface paths {
         };
         /**
          * What the environment's query runs cost in a period, by query and by document
-         * @description Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.
+         * @description Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs read_diagnostics at the environment.
          */
         get: operations["getQueryUsage"];
         put?: never;
@@ -2384,7 +2384,7 @@ export interface paths {
         };
         /**
          * Every query run in a period, one to a row, as CSV
-         * @description Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.
+         * @description Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs read_diagnostics at the environment.
          */
         get: operations["getQueryRunsCsv"];
         put?: never;
@@ -2568,7 +2568,7 @@ export interface paths {
         };
         /**
          * How the environment's capabilities, background work and deliveries are doing
-         * @description Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.
+         * @description Answers, for whoever may read its diagnostics, how the environment is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs read_diagnostics at the environment, which every role holding administer was given.
          */
         get: operations["getDiagnostics"];
         put?: never;
@@ -5288,7 +5288,7 @@ export interface paths {
         };
         /**
          * What models and queries were used and cost, month by month
-         * @description Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs administer.
+         * @description Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs read_diagnostics.
          */
         get: operations["getModelUsage"];
         put?: never;
@@ -6520,7 +6520,7 @@ export interface paths {
         };
         /**
          * How long new versions took to become findable by meaning, over the last seven days
-         * @description Returns how long the versions of the last seven days took to become findable by meaning: from each version’s cut until no block of it lacked a passage for the serving model, at the 95th percentile, nearest-rank, and the most, in seconds, with how many were measured. Nothing is measured while no model serves or one waits to. Needs administer.
+         * @description Returns how long the versions of the last seven days took to become findable by meaning: from each version’s cut until no block of it lacked a passage for the serving model, at the 95th percentile, nearest-rank, and the most, in seconds, with how many were measured. Nothing is measured while no model serves or one waits to. Needs read_diagnostics.
          */
         get: operations["getMeaningFreshness"];
         put?: never;
@@ -8372,7 +8372,7 @@ export interface paths {
         };
         /**
          * What the environment has used, by day, over the last 13 months
-         * @description Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs administer at the environment.
+         * @description Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs read_diagnostics at the environment.
          */
         get: operations["getUsage"];
         put?: never;
@@ -18020,7 +18020,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics";
                             allowed: boolean;
                         }[];
                     };
@@ -18146,7 +18146,7 @@ export interface operations {
                         disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics";
                             allowed: boolean;
                             /**
                              * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -46285,7 +46285,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -46758,7 +46758,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -46959,7 +46959,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer the environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47067,7 +47067,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer the environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -49443,7 +49443,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer the environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102509,7 +102509,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer this environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -104849,7 +104849,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -117328,7 +117328,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -117463,7 +117463,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
                 };
             };
         };
@@ -117491,7 +117491,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment" | "close_environment" | "suspend_environment" | "suspend_tenant" | "create_tenant" | "share_provider" | "read_diagnostics")[];
                         };
                     };
                 };
@@ -119362,7 +119362,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer this environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -120006,7 +120006,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -120040,7 +120040,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -123327,7 +123327,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -144769,7 +144769,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -144886,7 +144886,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -144920,7 +144920,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "read_diagnostics")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -145223,7 +145223,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller does not administer the environment */
+            /** @description The caller may not read the environment’s diagnostics */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

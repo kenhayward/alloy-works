@@ -128,11 +128,14 @@ export const embeddingRoutes = {
     summary: 'How long new versions took to become findable by meaning, over the last seven days',
     tenantScoped: true,
     reads: 'metadata',
-    access: administer,
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     responses: {
       200: { description: 'The lag', schema: MeaningFreshness },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

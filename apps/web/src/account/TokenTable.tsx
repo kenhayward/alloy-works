@@ -69,6 +69,10 @@ const PERMISSIONS: Readonly<Record<string, readonly [WordKey, WordKey]>> = {
     'account.permission.configure-webhooks',
     'account.permission-label.configure-webhooks',
   ],
+  read_diagnostics: [
+    'account.permission.read-diagnostics',
+    'account.permission-label.read-diagnostics',
+  ],
 };
 
 /** A permission as a list of them says it; the access page's words for one this page does not know. */

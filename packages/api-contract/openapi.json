@@ -47806,7 +47806,8 @@
                               "suspend_environment",
                               "suspend_tenant",
                               "create_tenant",
-                              "share_provider"
+                              "share_provider",
+                              "read_diagnostics"
                             ]
                           },
                           "allowed": {
@@ -48108,7 +48109,8 @@
                               "suspend_environment",
                               "suspend_tenant",
                               "create_tenant",
-                              "share_provider"
+                              "share_provider",
+                              "read_diagnostics"
                             ]
                           },
                           "allowed": {
@@ -128142,7 +128144,8 @@
                                   "hold",
                                   "rotate_secrets",
                                   "configure_services",
-                                  "configure_webhooks"
+                                  "configure_webhooks",
+                                  "read_diagnostics"
                                 ]
                               },
                               "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -129326,7 +129329,8 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks"
+                              "configure_webhooks",
+                              "read_diagnostics"
                             ]
                           },
                           "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -129577,12 +129581,12 @@
       "get": {
         "operationId": "getQueryUsage",
         "summary": "What the environment's query runs cost in a period, by query and by document",
-        "description": "Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.",
+        "description": "Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs read_diagnostics at the environment.",
         "tags": [
           "Query usage"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -129872,7 +129876,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer the environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {
@@ -129960,12 +129964,12 @@
       "get": {
         "operationId": "getQueryRunsCsv",
         "summary": "Every query run in a period, one to a row, as CSV",
-        "description": "Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.",
+        "description": "Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs read_diagnostics at the environment.",
         "tags": [
           "Query usage"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -130112,7 +130116,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer the environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {
@@ -135911,12 +135915,12 @@
       "get": {
         "operationId": "getDiagnostics",
         "summary": "How the environment's capabilities, background work and deliveries are doing",
-        "description": "Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.",
+        "description": "Answers, for whoever may read its diagnostics, how the environment is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs read_diagnostics at the environment, which every role holding administer was given.",
         "tags": [
           "Diagnostics"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -136892,7 +136896,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer the environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {
@@ -306433,12 +306437,12 @@
       "get": {
         "operationId": "getModelUsage",
         "summary": "What models and queries were used and cost, month by month",
-        "description": "Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs administer.",
+        "description": "Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs read_diagnostics.",
         "tags": [
           "Model budget"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -306689,7 +306693,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer this environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {
@@ -312073,7 +312077,8 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks"
+                                "configure_webhooks",
+                                "read_diagnostics"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -349705,7 +349710,8 @@
                                 "suspend_environment",
                                 "suspend_tenant",
                                 "create_tenant",
-                                "share_provider"
+                                "share_provider",
+                                "read_diagnostics"
                               ]
                             }
                           }
@@ -350034,7 +350040,8 @@
                         "suspend_environment",
                         "suspend_tenant",
                         "create_tenant",
-                        "share_provider"
+                        "share_provider",
+                        "read_diagnostics"
                       ]
                     },
                     "description": "What it holds, each once. Without read it can only be granted as a denial"
@@ -350101,7 +350108,8 @@
                               "suspend_environment",
                               "suspend_tenant",
                               "create_tenant",
-                              "share_provider"
+                              "share_provider",
+                              "read_diagnostics"
                             ]
                           }
                         }
@@ -355008,12 +355016,12 @@
       "get": {
         "operationId": "getMeaningFreshness",
         "summary": "How long new versions took to become findable by meaning, over the last seven days",
-        "description": "Returns how long the versions of the last seven days took to become findable by meaning: from each version’s cut until no block of it lacked a passage for the serving model, at the 95th percentile, nearest-rank, and the most, in seconds, with how many were measured. Nothing is measured while no model serves or one waits to. Needs administer.",
+        "description": "Returns how long the versions of the last seven days took to become findable by meaning: from each version’s cut until no block of it lacked a passage for the serving model, at the 95th percentile, nearest-rank, and the most, in seconds, with how many were measured. Nothing is measured while no model serves or one waits to. Needs read_diagnostics.",
         "tags": [
           "Embedding"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -355138,7 +355146,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer this environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {
@@ -356566,7 +356574,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 18,
+                    "maxItems": 19,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -356588,7 +356596,8 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks"
+                        "configure_webhooks",
+                        "read_diagnostics"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -356652,7 +356661,8 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "read_diagnostics"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -364321,7 +364331,8 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "read_diagnostics"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -429775,7 +429786,8 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks"
+                                "configure_webhooks",
+                                "read_diagnostics"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -430039,7 +430051,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 18,
+                    "maxItems": 19,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -430061,7 +430073,8 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks"
+                        "configure_webhooks",
+                        "read_diagnostics"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -430125,7 +430138,8 @@
                           "hold",
                           "rotate_secrets",
                           "configure_services",
-                          "configure_webhooks"
+                          "configure_webhooks",
+                          "read_diagnostics"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -430572,12 +430586,12 @@
       "get": {
         "operationId": "getUsage",
         "summary": "What the environment has used, by day, over the last 13 months",
-        "description": "Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs administer at the environment.",
+        "description": "Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs read_diagnostics at the environment.",
         "tags": [
           "Diagnostics"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "administer",
+        "x-alloy-permission": "read_diagnostics",
         "x-alloy-reads": "metadata",
         "security": [
           {
@@ -430804,7 +430818,7 @@
             }
           },
           "403": {
-            "description": "The caller does not administer the environment",
+            "description": "The caller may not read the environment’s diagnostics",
             "content": {
               "application/json": {
                 "schema": {

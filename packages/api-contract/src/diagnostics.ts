@@ -261,11 +261,14 @@ export const diagnosticsRoutes = {
     summary: "How the environment's capabilities, background work and deliveries are doing",
     tenantScoped: true,
     reads: 'metadata',
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     responses: {
       200: { description: 'The diagnostics', schema: DiagnosticsView },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
-      403: { description: 'The caller does not administer the environment', schema: ErrorBody },
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
   getUsage: {
@@ -275,7 +278,7 @@ export const diagnosticsRoutes = {
     summary: 'What the environment has used, by day, over the last 13 months',
     tenantScoped: true,
     reads: 'metadata',
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     query: UsageQuery,
     responses: {
       200: { description: 'Each measure by day', schema: UsageView },
@@ -284,7 +287,10 @@ export const diagnosticsRoutes = {
         schema: ErrorBody,
       },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
-      403: { description: 'The caller does not administer the environment', schema: ErrorBody },
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;
