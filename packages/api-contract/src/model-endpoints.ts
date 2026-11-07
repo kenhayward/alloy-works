@@ -158,6 +158,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints',
     summary: "The environment's model endpoints, those in use first",
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     responses: {
       200: {
@@ -174,6 +175,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints',
     summary: 'Make a model endpoint, saying whether it sits outside the data boundary',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     body: ModelEndpointBody,
     responses: {
@@ -193,6 +195,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}',
     summary: 'A model endpoint, and whether its key is set',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: ModelEndpointParams,
     responses: {
@@ -208,6 +211,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}',
     summary: "Change a model endpoint's settings; its protocol stays",
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: ModelEndpointParams,
     body: ModelEndpointBody,
@@ -230,6 +234,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}/retirement',
     summary: 'Retire a model endpoint: every purpose routed to it goes nowhere',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: ModelEndpointParams,
     responses: {
@@ -248,6 +253,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}/key',
     summary: "Set or replace a model endpoint's key, sealed by the connector and never answered",
     tenantScoped: true,
+    reads: 'none',
     access: { ...CONFIGURE, permission: 'rotate_secrets' },
     params: ModelEndpointParams,
     body: ModelKeyBody,
@@ -272,6 +278,7 @@ export const modelEndpointRoutes = {
     summary:
       'Test a model endpoint with one short call, recorded as a run with its tokens and cost',
     tenantScoped: true,
+    reads: 'content',
     access: CONFIGURE,
     params: ModelEndpointParams,
     idempotencyKey: false,
@@ -297,6 +304,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-routes',
     summary: 'Which model endpoint each purpose goes to',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     responses: {
       200: { description: 'Every purpose, and its endpoint or none', schema: ModelRouteList },
@@ -310,6 +318,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-routes/{purpose}',
     summary: 'Send a purpose to a model endpoint, or to none',
     tenantScoped: true,
+    reads: 'none',
     access: CONFIGURE,
     params: ModelRouteParams,
     body: ModelRouteBody,

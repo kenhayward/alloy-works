@@ -34,6 +34,7 @@ export const presenceRoutes = {
     path: '/v1/presence',
     summary: 'Say this window is in a document, where and doing what',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: PresenceBody,
     responses: {
@@ -53,6 +54,7 @@ export const presenceRoutes = {
     path: '/v1/presence/{viewer}',
     summary: 'Say this window has left; its stream closing says so too',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     params: PresenceParams,
     responses: {

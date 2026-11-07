@@ -46,6 +46,7 @@ export const presentationRoutes = {
     path: '/v1/presentation',
     summary: "The environment's theme and layout, which a component on its own is shown in",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     responses: {
       200: { description: 'The theme and the frame', schema: PresentationView },
@@ -58,6 +59,7 @@ export const presentationRoutes = {
     path: '/v1/documents/{id}/presentation',
     summary: 'The theme and layout a document is published under, which its text is shown in',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {

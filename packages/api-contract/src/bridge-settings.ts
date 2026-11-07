@@ -88,6 +88,7 @@ export const bridgeSettingsRoutes = {
     path: '/v1/spaces/{space}/bridge-settings',
     summary: "A space's settings for CT Studio deliveries",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     responses: {
@@ -112,6 +113,7 @@ export const bridgeSettingsRoutes = {
     path: '/v1/spaces/{space}/bridge-settings',
     summary: "Set a space's settings for CT Studio deliveries, and turn data delivery on or off",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     body: BridgeSettingsBody,

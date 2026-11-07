@@ -132,6 +132,7 @@ const actOn = (operationId: string, path: string, summary: string, needs: string
     path,
     summary,
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     params: ProposalParams,
     idempotencyKey: false,
@@ -163,6 +164,7 @@ export const assistantRoutes = {
     path: '/v1/documents/{id}/assistant/runs',
     summary: 'Ask the assistant about the open document, its answer streamed as it is made',
     tenantScoped: true,
+    reads: 'content',
     access: {
       check: 'permission',
       permission: 'read',
@@ -199,6 +201,7 @@ export const assistantRoutes = {
     path: '/v1/assistant/runs/{id}',
     summary: 'A run of the assistant you made: each call, what it read and what came back',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: AssistantRunParams,
     responses: {
@@ -214,6 +217,7 @@ export const assistantRoutes = {
     path: '/v1/me/assistant-usage',
     summary: 'Your runs of the assistant this month, and what they cost',
     tenantScoped: true,
+    reads: 'none',
     access: SESSION,
     responses: {
       200: { description: 'This month, by currency', schema: AssistantUsage },

@@ -36,6 +36,7 @@ export const licenceRoutes = {
     path: '/v1/licences',
     summary: "The environment's licences, each at its latest version",
     tenantScoped: true,
+    reads: 'metadata',
     access: signedIn,
     responses: {
       200: { description: 'Every licence, by name', schema: LicenceList },
@@ -48,6 +49,7 @@ export const licenceRoutes = {
     path: '/v1/licences/{id}',
     summary: 'A licence at its latest version',
     tenantScoped: true,
+    reads: 'metadata',
     access: signedIn,
     params: LicenceParams,
     responses: {

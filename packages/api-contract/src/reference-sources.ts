@@ -132,6 +132,7 @@ export const referenceSourceRoutes = {
     path: '/v1/reference-sources',
     summary: 'The reference sources, and whether this environment searches each',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'Every declared source', schema: ReferenceSourceList },
@@ -144,6 +145,7 @@ export const referenceSourceRoutes = {
     path: '/v1/reference-sources',
     summary: 'Switch a reference source on or off for this environment',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'configure_services', target: { tenant: true } },
     body: ReferenceSourceBody,
     responses: {
@@ -163,6 +165,7 @@ export const referenceSourceRoutes = {
     path: '/v1/reference-sources/{source}/search',
     summary: 'Search a reference source, each result matched against the space’s entries',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { body: 'space' } },
     params: SourceParams,
     body: ReferenceSearchBody,
@@ -189,6 +192,7 @@ export const referenceSourceRoutes = {
     path: '/v1/spaces/{space}/bibliography-entries/from-source',
     summary: 'Make an entry in this space from a reference source’s record, or be offered a match',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { space: 'space' } },
     params: SpaceParams,
     body: FromSourceBody,
@@ -219,6 +223,7 @@ export const referenceSourceRoutes = {
     path: '/v1/bibliography-entries/{id}/check',
     summary: 'Check an entry against the source it was obtained from, and record its status',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: EntryParams,
     responses: {
@@ -249,6 +254,7 @@ export const referenceSourceRoutes = {
     path: '/v1/documents/{id}/flagged-sources',
     summary: 'The retracted, superseded and corrected sources cited by what a document places',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {

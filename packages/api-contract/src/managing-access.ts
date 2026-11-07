@@ -199,6 +199,7 @@ export const managingAccessRoutes = {
     path: '/v1/grants',
     summary: 'The grants made at one level, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
     query: GrantListQuery,
     responses: {
@@ -219,6 +220,7 @@ export const managingAccessRoutes = {
     path: '/v1/roles',
     summary: 'The roles a grant can name, with what each holds, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
     query: RoleListQuery,
     responses: {
@@ -239,6 +241,7 @@ export const managingAccessRoutes = {
     path: '/v1/principals',
     summary: 'The people a grant can name: everybody who has signed in or been invited',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
     query: PrincipalListQuery,
     responses: {
@@ -259,6 +262,7 @@ export const managingAccessRoutes = {
     path: '/v1/roles',
     summary: 'Make a role: a named set of permissions, which does nothing until it is granted',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -289,6 +293,7 @@ export const managingAccessRoutes = {
     path: '/v1/grants',
     summary: 'Grant a role to a person or a group at one level, as an allow or a denial',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -319,6 +324,7 @@ export const managingAccessRoutes = {
     path: '/v1/grants/{id}/extension',
     summary: 'Extend access from outside the organisation, as a new grant replacing the old',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -348,6 +354,7 @@ export const managingAccessRoutes = {
     path: '/v1/access/external',
     summary: 'Everybody from outside the organisation, and everything each can reach',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     responses: {
       200: { description: 'Everybody from outside', schema: ExternalAccessList },
@@ -362,6 +369,7 @@ export const managingAccessRoutes = {
     path: '/v1/grants/{id}',
     summary: 'Remove a grant, unless it is the last that keeps this environment administered',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',

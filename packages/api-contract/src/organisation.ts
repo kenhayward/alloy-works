@@ -116,6 +116,7 @@ export const organisationRoutes = {
     path: '/v1/suspension',
     summary: 'Stop this environment, for its organisation or the operator to lift',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'suspend_environment',
@@ -145,6 +146,7 @@ export const organisationRoutes = {
     summary: "This organisation's tenants, as metadata",
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: ACT,
     responses: {
       200: { description: 'Its tenants', schema: OrganisationTenants },
@@ -159,6 +161,7 @@ export const organisationRoutes = {
     summary: 'Ask for another tenant for this organisation',
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'create_tenant',
@@ -190,6 +193,7 @@ export const organisationRoutes = {
     summary: "Share one of the organisation's identity providers with its tenants, or stop",
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'share_provider',
@@ -218,6 +222,7 @@ export const organisationRoutes = {
     summary: "Stop one of this organisation's tenants",
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,
@@ -237,6 +242,7 @@ export const organisationRoutes = {
     summary: "Start one of this organisation's tenants again",
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,
@@ -258,6 +264,7 @@ export const organisationRoutes = {
     summary: "Give up closing one of this organisation's tenants",
     tenantScoped: true,
     organisationTenant: true,
+    reads: 'metadata',
     access: ACT_RECENTLY,
     idempotencyKey: false,
     params: OrganisationTenantParams,

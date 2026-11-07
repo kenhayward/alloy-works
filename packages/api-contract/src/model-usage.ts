@@ -55,6 +55,7 @@ export const modelUsageRoutes = {
     path: '/v1/model-usage',
     summary: 'What models and queries were used and cost, month by month',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: ModelUsageQuery,
     responses: {

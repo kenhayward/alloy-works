@@ -307,6 +307,7 @@ export const searchRoutes = {
     path: '/v1/search',
     summary: 'Everything the caller may read that holds these words, a page at a time',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     query: SearchQuery,
     responses: {

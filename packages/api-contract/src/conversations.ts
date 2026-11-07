@@ -163,6 +163,7 @@ export const conversationRoutes = {
     path: '/v1/conversation-endpoints',
     summary: 'The endpoints a conversation may run on, the default marked',
     tenantScoped: true,
+    reads: 'none',
     access: SESSION,
     responses: {
       200: { description: 'The endpoints', schema: ConversationEndpoints },
@@ -176,6 +177,7 @@ export const conversationRoutes = {
     path: '/v1/conversations',
     summary: 'Start a conversation, on a document the caller may read or on none',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     body: StartConversationBody,
     responses: {
@@ -191,6 +193,7 @@ export const conversationRoutes = {
     path: '/v1/conversations',
     summary: 'The caller’s conversations, the newest first',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     query: ConversationListQuery,
     responses: {
@@ -205,6 +208,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}',
     summary: 'A conversation of the caller’s, with its turns',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: ConversationParams,
     responses: {
@@ -220,6 +224,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}',
     summary: 'Names a conversation of the caller’s, or keeps or lets it go',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     params: ConversationParams,
     body: UpdateConversationBody,
@@ -240,6 +245,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}/context',
     summary: 'What a conversation of the caller’s reads, as they may read it now',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: ConversationParams,
     responses: {
@@ -255,6 +261,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}/context',
     summary: 'Add a part to what a conversation reads',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     params: ConversationParams,
     body: TrayBody,
@@ -276,6 +283,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}/context/{component}/removal',
     summary: 'Remove a part from what a conversation reads',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     params: TrayParams,
     responses: {
@@ -291,6 +299,7 @@ export const conversationRoutes = {
     path: '/v1/conversations/{id}/turns',
     summary: 'Say something in a conversation, the answer streamed as it is made',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: ConversationParams,
     body: TurnBody,

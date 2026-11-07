@@ -30,6 +30,7 @@ export const peopleRoutes = {
     path: '/v1/people',
     summary: "The environment's people, by name, for a user field",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: PeopleQuery,
     responses: {

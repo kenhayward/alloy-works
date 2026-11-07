@@ -51,6 +51,7 @@ export const queryUsageRoutes = {
     path: '/v1/data/usage',
     summary: "What the environment's query runs cost in a period, by query and by document",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: QueryUsageQuery,
     responses: {
@@ -69,6 +70,7 @@ export const queryUsageRoutes = {
     path: '/v1/data/usage/runs.csv',
     summary: 'Every query run in a period, one to a row, as CSV',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: QueryUsageQuery,
     responses: {

@@ -176,6 +176,7 @@ export const cohortRoutes = {
     path: '/v1/spaces/{space}/cohorts',
     summary: 'Make many documents from one template, one for each row of parameters, as a job',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: CohortSpaceParams,
     body: SubmitCohortBody,
@@ -209,6 +210,7 @@ export const cohortRoutes = {
     summary:
       'The cohorts the caller may read, newest first or by title, filtered by template and state',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: CohortListQuery,
     responses: {
@@ -226,6 +228,7 @@ export const cohortRoutes = {
     path: '/v1/cohorts/{id}',
     summary: 'A cohort: what it was made from, and every row, its document or why it failed',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     params: CohortParams,
     responses: {
@@ -240,6 +243,7 @@ export const cohortRoutes = {
     path: '/v1/cohorts/{id}/rerun',
     summary: "Run a cohort's failed rows again, from the same template version",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     params: CohortParams,
     body: RerunCohortBody,

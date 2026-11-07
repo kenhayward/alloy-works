@@ -94,6 +94,7 @@ export const holdRoutes = {
     path: '/v1/holds',
     summary: 'Place a legal hold on an artifact or a space',
     tenantScoped: true,
+    reads: 'content',
     access: holding,
     body: HoldBody,
     responses: {
@@ -114,6 +115,7 @@ export const holdRoutes = {
     path: '/v1/holds/{id}/release',
     summary: 'Release a legal hold',
     tenantScoped: true,
+    reads: 'content',
     access: holding,
     params: HoldParams,
     body: ReleaseHoldBody,
@@ -133,6 +135,7 @@ export const holdRoutes = {
     path: '/v1/holds',
     summary: 'Every legal hold, in force or released, newest first',
     tenantScoped: true,
+    reads: 'content',
     access: holding,
     query: PageQuery,
     responses: {

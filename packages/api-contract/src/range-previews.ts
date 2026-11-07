@@ -92,6 +92,7 @@ export const rangePreviewRoutes = {
     path: '/v1/documents/{id}/range-previews',
     summary: 'Preview the pages of the occurrence being edited, refreshed after each save',
     tenantScoped: true,
+    reads: 'content',
     access: READ,
     params: z.object({ id: LowercaseUuid }),
     body: RequestRangePreviewBody,
@@ -118,6 +119,7 @@ export const rangePreviewRoutes = {
     path: '/v1/documents/{id}/range-previews/{range}',
     summary: 'A range preview: whether its latest refresh is drawn, and its pages',
     tenantScoped: true,
+    reads: 'content',
     access: READ,
     params: RangePreviewParams,
     responses: {
@@ -133,6 +135,7 @@ export const rangePreviewRoutes = {
     path: '/v1/documents/{id}/range-previews/{range}/refresh',
     summary: 'Draw the range again from the latest save its session recorded',
     tenantScoped: true,
+    reads: 'content',
     access: READ,
     params: RangePreviewParams,
     idempotencyKey: false,
@@ -152,6 +155,7 @@ export const rangePreviewRoutes = {
     path: '/v1/documents/{id}/range-previews/{range}/pages/{page}',
     summary: 'One page of a range preview, as PNG',
     tenantScoped: true,
+    reads: 'content',
     access: READ,
     params: RangePageParams,
     responses: {

@@ -212,6 +212,7 @@ export const componentGroupRoutes = {
     path: '/v1/component-groups',
     summary: 'The component groups the caller may read, by title, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: ComponentGroupListQuery,
     responses: {
@@ -229,6 +230,7 @@ export const componentGroupRoutes = {
     path: '/v1/spaces/{space}/component-groups',
     summary: 'Make a component group in this space, at version 0.1, in draft',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateComponentGroupBody,
@@ -254,6 +256,7 @@ export const componentGroupRoutes = {
     path: '/v1/component-groups/{id}',
     summary: 'A component group at its latest version: its members, pinned, and its standing',
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: ComponentGroupParams,
     responses: {
@@ -273,6 +276,7 @@ export const componentGroupRoutes = {
     summary:
       "Cut a component group's next version: its members added, removed, reordered or repinned",
     tenantScoped: true,
+    reads: 'content',
     access: edit,
     params: ComponentGroupParams,
     body: ComponentGroupVersionBody,
@@ -300,6 +304,7 @@ export const componentGroupRoutes = {
     summary:
       'Place a component group in a document: a reference per member, pinned as the group pins it',
     tenantScoped: true,
+    reads: 'content',
     access: edit,
     params: ComponentGroupParams,
     body: PlaceComponentGroupBody,
@@ -330,6 +335,7 @@ export const componentGroupRoutes = {
     summary:
       "Say what taking another version of a placed group would change in the document's latest version",
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: GroupPlacementParams,
     body: GroupTakePreviewBody,
@@ -358,6 +364,7 @@ export const componentGroupRoutes = {
     summary:
       'Take another version of a placed group: its run rewritten, local rewording kept, as the next version',
     tenantScoped: true,
+    reads: 'content',
     access: edit,
     params: GroupPlacementParams,
     body: TakeComponentGroupBody,
@@ -386,6 +393,7 @@ export const componentGroupRoutes = {
     path: '/v1/documents/{id}/groups/{placement}/remove',
     summary: 'Remove a placed group from a document, its members as one',
     tenantScoped: true,
+    reads: 'content',
     access: edit,
     params: GroupPlacementParams,
     body: RemoveComponentGroupBody,

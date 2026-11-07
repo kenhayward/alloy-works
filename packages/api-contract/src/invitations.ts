@@ -98,6 +98,7 @@ export const invitationRoutes = {
     path: '/v1/invitations',
     summary: 'Every invitation, waiting or accepted, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: InvitationListQuery,
     responses: {
@@ -117,6 +118,7 @@ export const invitationRoutes = {
     path: '/v1/invitations',
     summary: 'Invite an address, so the person can be granted access before they first sign in',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: InvitationBody,
     responses: {
@@ -136,6 +138,7 @@ export const invitationRoutes = {
     path: '/v1/invitations/{id}',
     summary: 'Withdraw an invitation nobody has accepted, with its person and their grants',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',

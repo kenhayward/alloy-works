@@ -108,6 +108,7 @@ export const jobRoutes = {
     path: '/v1/artifacts/{id}/impact-reports',
     summary: 'Ask for the complete report of what a change to an artifact reaches, as a job',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ImpactReportParams,
     body: ImpactReportBody,
@@ -128,6 +129,7 @@ export const jobRoutes = {
     path: '/v1/jobs/{id}',
     summary: 'A job: its state, when it started, how far it has got, and how it ended',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     params: JobParams,
     responses: {
@@ -142,6 +144,7 @@ export const jobRoutes = {
     path: '/v1/jobs/{id}/cancel',
     summary: 'Cancel a job',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     params: JobParams,
     responses: {
@@ -161,6 +164,7 @@ export const jobRoutes = {
     path: '/v1/jobs/{id}/download',
     summary: "A link to a succeeded job's result",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     params: JobParams,
     responses: {

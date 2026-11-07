@@ -102,6 +102,7 @@ export const usesRoutes = {
     path: '/v1/styles/uses',
     summary: 'Where a style is used: the components naming it',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: StyleUsesQuery,
     responses: {
@@ -120,6 +121,7 @@ export const usesRoutes = {
     path: '/v1/components/{id}/uses',
     summary: 'Where a component is used: the documents placing it, and what pins it',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentUsesParams,
     responses: {

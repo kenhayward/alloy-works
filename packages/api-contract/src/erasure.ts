@@ -100,6 +100,7 @@ export const erasureRoutes = {
     path: '/v1/principals/{id}/erasure',
     summary: 'What erasing a person takes, what stays, and what refuses it',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     params: ErasureParams,
     responses: {
@@ -117,6 +118,7 @@ export const erasureRoutes = {
     summary: 'Erase a person: their name, address and audit labels, and their access',
     tenantScoped: true,
     // A person at the keyboard, never a token: erasure cannot be undone (the ER final review).
+    reads: 'metadata',
     access: { ...administer, changesAccess: true, credential: 'session' },
     params: ErasureParams,
     responses: {

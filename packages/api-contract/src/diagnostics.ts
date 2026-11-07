@@ -260,6 +260,7 @@ export const diagnosticsRoutes = {
     path: '/v1/diagnostics',
     summary: "How the environment's capabilities, background work and deliveries are doing",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     responses: {
       200: { description: 'The diagnostics', schema: DiagnosticsView },
@@ -273,6 +274,7 @@ export const diagnosticsRoutes = {
     path: '/v1/usage',
     summary: 'What the environment has used, by day, over the last 13 months',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: UsageQuery,
     responses: {

@@ -114,6 +114,7 @@ export const promptRoutes = {
     path: '/v1/prompts',
     summary: 'The prompts the caller may read, each with its space and purpose',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: PromptListQuery,
     responses: {
@@ -131,6 +132,7 @@ export const promptRoutes = {
     path: '/v1/spaces/{space}/prompts',
     summary: 'Make a prompt in this space, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { space: 'space' } },
     params: SpaceParams,
     body: CreatePromptBody,
@@ -152,6 +154,7 @@ export const promptRoutes = {
     path: '/v1/prompts/{id}',
     summary: 'A prompt at its latest version',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: PromptParams,
     responses: {
@@ -170,6 +173,7 @@ export const promptRoutes = {
     path: '/v1/prompts/{id}/versions',
     summary: "Cut a prompt's next version from the one the caller opened",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: PromptParams,
     body: PromptVersionBody,

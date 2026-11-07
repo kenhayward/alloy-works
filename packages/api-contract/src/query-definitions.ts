@@ -171,6 +171,7 @@ export const queryDefinitionRoutes = {
     path: '/v1/query-definitions',
     summary: 'The query definitions the caller may read, each with its space and connection',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: QueryDefinitionListQuery,
     responses: {
@@ -188,6 +189,7 @@ export const queryDefinitionRoutes = {
     path: '/v1/spaces/{space}/query-definitions',
     summary: 'Make a query definition in this space, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateQueryDefinitionBody,
@@ -216,6 +218,7 @@ export const queryDefinitionRoutes = {
     path: '/v1/query-definitions/{id}',
     summary: 'A query definition at its latest version, with the connection it names',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: QueryDefinitionParams,
     responses: {
@@ -235,6 +238,7 @@ export const queryDefinitionRoutes = {
     summary:
       "Cut a query definition's next version from the one the caller opened; retiring among them",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: QueryDefinitionParams,
     body: QueryDefinitionVersionBody,
@@ -267,6 +271,7 @@ export const queryDefinitionRoutes = {
     summary:
       'Where a query definition is used: the components binding it and the documents resolving them',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: QueryDefinitionParams,
     responses: {

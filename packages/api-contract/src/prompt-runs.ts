@@ -72,6 +72,7 @@ export const promptRunRoutes = {
     path: '/v1/documents/{id}/prompts',
     summary: "The prompts a document may run: its template's library, each at the revision it runs",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: PromptRunParams,
     query: DocumentPromptsQuery,
@@ -94,6 +95,7 @@ export const promptRunRoutes = {
     path: '/v1/documents/{id}/prompt-runs',
     summary: "Run a prompt of the document's library on one of its parts, its output a proposal",
     tenantScoped: true,
+    reads: 'content',
     access: {
       check: 'permission',
       permission: 'read',
@@ -127,6 +129,7 @@ export const promptRunRoutes = {
     path: '/v1/prompts/{id}/versions/{version}/trials',
     summary: 'Try a version of a prompt on a part of a document, proposing nothing',
     tenantScoped: true,
+    reads: 'content',
     access: {
       check: 'permission',
       permission: 'read',

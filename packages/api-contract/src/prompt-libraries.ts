@@ -110,6 +110,7 @@ export const promptLibraryRoutes = {
     path: '/v1/prompt-libraries',
     summary: "The environment's prompt libraries, the default first",
     tenantScoped: true,
+    reads: 'metadata',
     access: read,
     responses: {
       200: { description: 'The libraries', schema: LibraryList },
@@ -123,6 +124,7 @@ export const promptLibraryRoutes = {
     path: '/v1/prompt-libraries',
     summary: 'Make a prompt library, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: design,
     body: CreateLibraryBody,
     responses: {
@@ -138,6 +140,7 @@ export const promptLibraryRoutes = {
     path: '/v1/prompt-libraries/{id}',
     summary: 'A prompt library at its latest version, with each prompt at the version it runs',
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: LibraryParams,
     responses: {
@@ -153,6 +156,7 @@ export const promptLibraryRoutes = {
     path: '/v1/prompt-libraries/{id}/versions',
     summary: "Cut a prompt library's next version from the one the caller opened",
     tenantScoped: true,
+    reads: 'content',
     access: design,
     params: LibraryParams,
     body: LibraryVersionBody,

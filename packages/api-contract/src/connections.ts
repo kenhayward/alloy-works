@@ -631,6 +631,7 @@ export const connectionRoutes = {
     path: '/v1/connections',
     summary: 'The connections the caller may read, each with its space and whether it is ready',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: ConnectionListQuery,
     responses: {
@@ -648,6 +649,7 @@ export const connectionRoutes = {
     path: '/v1/spaces/{space}/connections',
     summary: 'Make a connection in this space, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateConnectionBody,
@@ -674,6 +676,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}',
     summary: 'A connection at its latest version, whether its credential is set, and its last test',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ConnectionParams,
     responses: {
@@ -692,6 +695,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/versions',
     summary: "Cut a connection's next version from the one the caller opened; retiring among them",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'configure_services', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: ConnectionVersionBody,
@@ -724,6 +728,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/credential',
     summary: "Set or replace a connection's credential, then test the connection with it",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'rotate_secrets', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: CredentialBody,
@@ -757,6 +762,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/test',
     summary: 'Test a connection: whether it reaches its source and signs in, and what it found',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: z.strictObject({}),
@@ -786,6 +792,7 @@ export const connectionRoutes = {
     summary:
       "List the tables and views a connection's account may read, or a statement's or a built query's result columns",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: DescribeBody,
@@ -833,6 +840,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/sample',
     summary: 'Run a draft query definition against sample values, storing nothing',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: SampleBody,
@@ -871,6 +879,7 @@ export const connectionRoutes = {
     summary:
       'Where a connection is used: the query definitions naming it, and the documents through them',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ConnectionParams,
     responses: {

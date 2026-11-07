@@ -86,6 +86,7 @@ export const versionRoutes = {
     path: '/v1/components/{id}/versions/{version}',
     summary: 'One version of a component, read only',
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: RestoreParams,
     responses: {
@@ -109,6 +110,7 @@ export const versionRoutes = {
     path: '/v1/documents/{id}/versions/{version}',
     summary: 'One version of a document, read only',
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: RestoreParams,
     responses: {

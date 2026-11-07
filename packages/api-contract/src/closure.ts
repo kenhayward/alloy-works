@@ -73,6 +73,7 @@ export const closureRoutes = {
     summary: 'Where this environment is in its life, and what closing it would do',
     tenantScoped: true,
     openWhileClosing: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'Its state', schema: ClosureView },
@@ -87,6 +88,7 @@ export const closureRoutes = {
     path: '/v1/closure',
     summary: 'Close this environment, beginning its grace period',
     tenantScoped: true,
+    reads: 'metadata',
     access: CLOSING,
     idempotencyKey: false,
     body: ClosureBody,
@@ -109,6 +111,7 @@ export const closureRoutes = {
     summary: 'Give up closing this environment, while that can still be done',
     tenantScoped: true,
     openWhileClosing: true,
+    reads: 'metadata',
     access: CLOSING,
     idempotencyKey: false,
     responses: {

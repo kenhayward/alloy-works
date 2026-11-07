@@ -123,6 +123,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks',
     summary: "The environment's webhook subscriptions, a page at a time, never their secrets",
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     query: WebhookListQuery,
     responses: {
@@ -141,6 +142,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks',
     summary: 'Subscribe a service identity’s endpoint to events, answering its signing secret once',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     body: CreateWebhookBody,
     idempotencyKey: false,
@@ -161,6 +163,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'A webhook subscription, never its secret',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: WebhookParams,
     responses: {
@@ -176,6 +179,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'Change a subscription’s URL, description or event types',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: WebhookParams,
     body: ChangeWebhookBody,
@@ -197,6 +201,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}/secret',
     summary: 'Rotate a subscription’s signing secret; the old one signs beside it for 24 hours',
     tenantScoped: true,
+    reads: 'metadata',
     access: { ...CONFIGURE, permission: 'rotate_secrets' },
     params: WebhookParams,
     idempotencyKey: false,
@@ -213,6 +218,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'Remove a subscription, and every delivery waiting for it',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     params: WebhookParams,
     responses: {
@@ -284,6 +290,7 @@ export const webhookDeliveryRoutes = {
     path: '/v1/webhooks/{id}/deliveries',
     summary: 'A subscription’s deliveries, newest first, kept 30 days',
     tenantScoped: true,
+    reads: 'content',
     access: CONFIGURE,
     params: WebhookParams,
     query: WebhookListQuery,
@@ -304,6 +311,7 @@ export const webhookDeliveryRoutes = {
     path: '/v1/webhooks/{id}/deliveries/{delivery}',
     summary: 'One delivery: what was sent, and what came back at each attempt',
     tenantScoped: true,
+    reads: 'content',
     access: CONFIGURE,
     params: DeliveryParams,
     responses: {

@@ -179,6 +179,7 @@ export const templateRoutes = {
     path: '/v1/templates',
     summary: 'The templates the caller may read, each with its name, space and latest version',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: TemplateListQuery,
     responses: {
@@ -196,6 +197,7 @@ export const templateRoutes = {
     path: '/v1/spaces/{space}/templates',
     summary: 'Make a template in this space, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'design', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateTemplateBody,
@@ -220,6 +222,7 @@ export const templateRoutes = {
     path: '/v1/templates/{id}',
     summary: 'A template at its latest version',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: TemplateParams,
     responses: {
@@ -241,6 +244,7 @@ export const templateRoutes = {
     path: '/v1/templates/{id}/versions',
     summary: "Cut a template's next version from the one the caller opened",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'design', target: { artifact: 'id' } },
     params: TemplateParams,
     body: TemplateVersionBody,

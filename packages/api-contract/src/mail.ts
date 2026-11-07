@@ -156,6 +156,7 @@ export const mailChannelRoutes = {
     path: '/v1/mail-channel',
     summary: 'How this environment’s mail leaves, never its password',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     responses: {
       200: { description: 'The channel, and what the operator offers', schema: MailChannelRead },
@@ -169,6 +170,7 @@ export const mailChannelRoutes = {
     path: '/v1/mail-channel',
     summary: 'Turn this environment’s mail on or off, and choose its relay',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     body: SetMailChannelBody,
     idempotencyKey: false,
@@ -190,6 +192,7 @@ export const mailChannelRoutes = {
     path: '/v1/mail-channel/password',
     summary: 'Set the password of this environment’s own relay, sealed to that relay',
     tenantScoped: true,
+    reads: 'none',
     access: { ...CONFIGURE, permission: 'rotate_secrets' },
     body: SetMailPasswordBody,
     idempotencyKey: false,
@@ -212,6 +215,7 @@ export const mailChannelRoutes = {
     path: '/v1/mail-channel/test',
     summary: 'Send a test of this environment’s mail to your own address',
     tenantScoped: true,
+    reads: 'metadata',
     access: CONFIGURE,
     idempotencyKey: false,
     responses: {
@@ -232,6 +236,7 @@ export const mailChannelRoutes = {
     path: '/v1/mail-channel/mail',
     summary: 'This environment’s mail, newest first, kept 30 days',
     tenantScoped: true,
+    reads: 'content',
     access: CONFIGURE,
     query: MailListQuery,
     responses: {

@@ -63,6 +63,7 @@ export const modelLimitRoutes = {
     path: '/v1/model-limits',
     summary: 'How many model runs each person may start an hour',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     responses: {
       200: { description: 'The limits', schema: ModelLimitsView },
@@ -76,6 +77,7 @@ export const modelLimitRoutes = {
     path: '/v1/model-limits',
     summary: "Set the environment's runs an hour per person",
     tenantScoped: true,
+    reads: 'none',
     access: administer,
     body: ModelLimitBody,
     responses: {
@@ -91,6 +93,7 @@ export const modelLimitRoutes = {
     path: '/v1/model-limits/people/{principal}',
     summary: "Set one person's runs an hour, in place of the environment's",
     tenantScoped: true,
+    reads: 'none',
     access: administer,
     params: PersonLimitParams,
     body: PersonLimitBody,

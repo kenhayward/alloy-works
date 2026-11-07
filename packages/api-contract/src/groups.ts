@@ -91,6 +91,7 @@ export const groupRoutes = {
     path: '/v1/groups',
     summary: 'Every group, with its members, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: GroupListQuery,
     responses: {
@@ -112,6 +113,7 @@ export const groupRoutes = {
       "Make a group: the environment's own, or one standing for a value the provider asserts",
     tenantScoped: true,
     // A provider's group takes the members SCIM holds for it (identity.md, "Groups").
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -140,6 +142,7 @@ export const groupRoutes = {
     path: '/v1/groups/{id}/members',
     summary: "Set the members of one of the environment's own groups",
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -171,6 +174,7 @@ export const groupRoutes = {
     path: '/v1/groups/{id}',
     summary: 'Delete a group, with its memberships and every grant it holds',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',

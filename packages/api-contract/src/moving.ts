@@ -98,6 +98,7 @@ export const movingRoutes = {
     path: '/v1/artifacts/{id}/move',
     summary: 'Move a component, document, template or image to another space',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -117,6 +118,7 @@ export const movingRoutes = {
     path: '/v1/artifacts/{id}/move/preview',
     summary: 'What moving to another space would carry, leave and stop',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { artifact: 'id' } },
     params: MoveParams,
     body: MoveBody,

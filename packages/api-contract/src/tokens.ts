@@ -93,6 +93,7 @@ export const tokenRoutes = {
     path: '/v1/tokens',
     summary: "The caller's own tokens, a page at a time, never their secrets",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     query: TokenListQuery,
     responses: {
@@ -111,6 +112,7 @@ export const tokenRoutes = {
     path: '/v1/tokens',
     summary: 'Issue the caller a token that acts as them, masked to its scopes, until it expires',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: CreateTokenBody,
     responses: {
@@ -130,6 +132,7 @@ export const tokenRoutes = {
     path: '/v1/tokens/{id}',
     summary: "Revoke one of the caller's own tokens: the next request with it is refused",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     params: TokenParams,
     responses: {
@@ -162,6 +165,7 @@ export const administeredTokenRoutes = {
     path: '/v1/principals/{id}/tokens',
     summary: "A person's tokens, a page at a time, never their secrets: an administrator's",
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -188,6 +192,7 @@ export const administeredTokenRoutes = {
     path: '/v1/principals/{id}/tokens/{token}',
     summary: "Revoke a person's token, as an administrator: the next request with it is refused",
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',

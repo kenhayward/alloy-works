@@ -92,6 +92,7 @@ export const embeddingRoutes = {
     path: '/v1/embedding',
     summary: 'The embedding model serving meaning, and one waiting, with what it would cost',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     responses: {
       200: { description: 'The models', schema: EmbeddingView },
@@ -105,6 +106,7 @@ export const embeddingRoutes = {
     path: '/v1/embedding/confirmation',
     summary: 'Confirm the waiting embedding model, its cost seen, so the corpus is embedded',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     body: EmbeddingConfirmationBody,
     responses: {
@@ -125,6 +127,7 @@ export const embeddingRoutes = {
     path: '/v1/search/meaning/freshness',
     summary: 'How long new versions took to become findable by meaning, over the last seven days',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     responses: {
       200: { description: 'The lag', schema: MeaningFreshness },

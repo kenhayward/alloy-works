@@ -517,6 +517,7 @@ export const componentRoutes = {
     path: '/v1/components',
     summary: 'The components the caller may read, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: ComponentListQuery,
     responses: {
@@ -536,6 +537,7 @@ export const componentRoutes = {
     summary:
       'The spaces the caller may read, whether each is archived, and whether they may create a component in each',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: SpaceListQuery,
     responses: {
@@ -553,6 +555,7 @@ export const componentRoutes = {
     path: '/v1/spaces',
     summary: 'Make a space',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: CreateSpaceBody,
     responses: {
@@ -572,6 +575,7 @@ export const componentRoutes = {
     path: '/v1/spaces/{id}',
     summary: 'Rename a space, archive it or restore it',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     params: SpaceIdParams,
     body: UpdateSpaceBody,
@@ -597,6 +601,7 @@ export const componentRoutes = {
     path: '/v1/spaces/{space}/default-template',
     summary: 'Make one of the space’s templates the one its new documents take by default',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
     params: SpaceParams,
     body: DefaultTemplateBody,
@@ -626,6 +631,7 @@ export const componentRoutes = {
     tenantScoped: true,
     // A definition is read through what uses it (access.md), extended to creating: whoever may create
     // here, and only they, may see what they may create. Editor 1's finding 4.
+    reads: 'metadata',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
     query: PageQuery,
@@ -652,6 +658,7 @@ export const componentRoutes = {
     path: '/v1/spaces/{space}/components',
     summary: 'Create a component in this space, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateComponentBody,
@@ -685,6 +692,7 @@ export const componentRoutes = {
     path: '/v1/components/{id}',
     summary: 'A component at its latest version, whether the caller may edit it, and its lock',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
     query: ComponentQuery,
@@ -708,6 +716,7 @@ export const componentRoutes = {
     path: '/v1/components/{id}/activity',
     summary: "A component's versions and approvals a week",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
     query: z.object({
@@ -732,6 +741,7 @@ export const componentRoutes = {
     path: '/v1/components/{id}/versions',
     summary: "A component's versions, newest first, a page at a time",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
     query: VersionsQuery,

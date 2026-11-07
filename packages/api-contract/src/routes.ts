@@ -157,6 +157,7 @@ const ownRoutes = {
     path: '/health',
     summary: 'Whether the service is up. Answers on any hostname',
     tenantScoped: false,
+    reads: 'none',
     access: { check: 'none' },
     responses: {
       200: { description: 'The service is up, and reaches its database', schema: Health },
@@ -171,6 +172,7 @@ const ownRoutes = {
     path: '/v1/tenant',
     summary: 'The environment this address serves, as its sign-in page shows it',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'none' },
     responses: {
       200: { description: 'The environment', schema: TenantProfile },
@@ -185,6 +187,7 @@ const ownRoutes = {
     path: '/v1/sign-in/organisation',
     summary: "Begin signing in with the organisation's identity provider",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'none' },
     query: SignInStartQuery,
     responses: {
@@ -201,6 +204,7 @@ const ownRoutes = {
     path: '/v1/sign-in/organisation/callback',
     summary: 'Where the identity provider returns; completes the sign-in',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'none' },
     query: SignInCallback,
     responses: {
@@ -217,6 +221,7 @@ const ownRoutes = {
     path: '/v1/sign-in/google',
     summary: 'Begin signing in with a Google account, by way of the one sign-in address',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'none' },
     query: SignInStartQuery,
     responses: {
@@ -233,6 +238,7 @@ const ownRoutes = {
     summary:
       'Where Google returns, at the sign-in address only; hands the sign-in to its environment',
     tenantScoped: false,
+    reads: 'none',
     access: { check: 'none' },
     query: SignInCallback,
     responses: {
@@ -254,6 +260,7 @@ const ownRoutes = {
     path: '/v1/sign-in/google/complete',
     summary: 'Redeems the one-time code from the sign-in address, and signs in',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'none' },
     query: GoogleHandoff,
     responses: {
@@ -269,6 +276,7 @@ const ownRoutes = {
     summary:
       'What is happening in this environment, or in one document or component, as it happens',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session', credential: 'session' },
     query: StreamQuery,
     responses: {
@@ -294,6 +302,7 @@ const ownRoutes = {
     path: '/v1/sign-out',
     summary: 'End this session, wherever it is in use',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       204: { description: 'Signed out, everywhere this session was in use' },
@@ -309,6 +318,7 @@ const ownRoutes = {
     path: '/v1/sessions/current/reauthentication',
     summary: 'Ask for this session to be signed in again, and say where to send the browser',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: ReauthenticationBody,
     responses: {
@@ -326,6 +336,7 @@ const ownRoutes = {
     path: '/v1/me',
     summary: 'Who is signed in, and to which environment',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'The signed-in principal', schema: Me },
@@ -338,6 +349,7 @@ const ownRoutes = {
     path: '/v1/about',
     summary: 'The locale data the service sorts and formats with',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'What the service runs on', schema: About },
@@ -352,6 +364,7 @@ const ownRoutes = {
     tenantScoped: true,
     // Development scaffolding that writes a row and queues a job: a session alone, so a token with no
     // scopes does nothing but read (service-foundations.md, TK-B).
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       202: { description: 'Asked for; a worker will make it', schema: Sample },
@@ -369,6 +382,7 @@ const ownRoutes = {
     path: '/v1/samples/{sampleId}',
     summary: 'How a sample is coming along, and where to fetch it',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     params: SampleParams,
     responses: {
@@ -384,6 +398,7 @@ const ownRoutes = {
     path: '/v1/access',
     summary: "The caller's own answer for every permission on a target",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'read', target: { query: 'target' } },
     query: AccessQuery,
     responses: {
@@ -400,6 +415,7 @@ const ownRoutes = {
     path: '/v1/access/explain',
     summary: 'Every permission a principal has on a target, and the grants and level behind each',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { query: 'target' } },
     query: ExplainQuery,
     responses: {

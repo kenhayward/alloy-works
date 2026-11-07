@@ -184,6 +184,7 @@ export const definitionRoutes = {
     summary:
       'Every field, metadata schema, component type, variable and axis at its latest version',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { tenant: true } },
     query: DefinitionListQuery,
     responses: {
@@ -202,6 +203,7 @@ export const definitionRoutes = {
     path: '/v1/definitions',
     summary: 'Make a field, a metadata schema or a component type, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'manage_definitions', target: { tenant: true } },
     body: CreateDefinitionBody,
     responses: {
@@ -217,6 +219,7 @@ export const definitionRoutes = {
     path: '/v1/definitions/{id}',
     summary: 'A definition at its latest version',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DefinitionParams,
     responses: {
@@ -238,6 +241,7 @@ export const definitionRoutes = {
     path: '/v1/definitions/{id}/versions',
     summary: "Cut a definition's next version from the one the caller opened",
     tenantScoped: true,
+    reads: 'content',
     access: {
       check: 'permission',
       permission: 'manage_definitions',

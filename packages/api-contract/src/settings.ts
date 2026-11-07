@@ -191,6 +191,7 @@ export const settingsRoutes = {
     summary:
       "The environment's editing settings: how long saved changes are kept, and a lock lasts",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'The editing settings', schema: EditingSettings },
@@ -203,6 +204,7 @@ export const settingsRoutes = {
     path: '/v1/settings/editing',
     summary: "Change the environment's editing settings",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: EditingSettingsBody,
     responses: {
@@ -222,6 +224,7 @@ export const settingsRoutes = {
     path: '/v1/settings/data',
     summary: "The environment's lowered limits on a query's rows, bytes and seconds",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'The data settings, with the ceilings', schema: DataSettings },
@@ -234,6 +237,7 @@ export const settingsRoutes = {
     path: '/v1/settings/import',
     summary: "The environment's policy for the names an imported file carries",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'The import settings', schema: ImportSettings },
@@ -246,6 +250,7 @@ export const settingsRoutes = {
     path: '/v1/settings/import',
     summary: "Change the environment's policy for the names an imported file carries",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: ImportSettings,
     responses: {
@@ -261,6 +266,7 @@ export const settingsRoutes = {
     path: '/v1/settings/images',
     summary: "The environment's policy for images whose rights were never declared",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session' },
     responses: {
       200: { description: 'The images settings', schema: ImagesSettings },
@@ -273,6 +279,7 @@ export const settingsRoutes = {
     path: '/v1/settings/images',
     summary: "Change the environment's policy for images whose rights were never declared",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: ImagesSettings,
     responses: {
@@ -288,6 +295,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation',
     summary: "The environment's policy for publishing in a language",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     responses: {
       200: { description: 'The translation settings', schema: TranslationSettings },
@@ -300,6 +308,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation',
     summary: "Change the environment's policy for publishing in a language",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: TranslationSettingsBody,
     responses: {
@@ -318,6 +327,7 @@ export const settingsRoutes = {
     path: '/v1/settings/translation/history',
     summary: "Every change to the environment's policy for publishing in a language",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: TranslationSettingsHistoryQuery,
     responses: {
@@ -336,6 +346,7 @@ export const settingsRoutes = {
     path: '/v1/settings/data',
     summary: "Lower, or stop lowering, the environment's limits on a query",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     body: DataSettingsBody,
     responses: {

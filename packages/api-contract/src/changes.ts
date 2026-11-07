@@ -80,6 +80,7 @@ export const changesRoutes = {
     path: '/v1/changes',
     summary: 'What changed since an instant, in a document, a space or a set of results',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     query: ChangesQuery,
     responses: {

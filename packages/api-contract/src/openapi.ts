@@ -391,6 +391,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
       ...(route.access.check === 'permission'
         ? { 'x-alloy-permission': route.access.permission }
         : {}),
+      'x-alloy-reads': route.reads,
       security:
         route.access.check === 'none'
           ? []

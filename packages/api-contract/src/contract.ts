@@ -79,6 +79,9 @@ export type RouteAccess =
       readonly recentSignIn?: number;
     };
 
+/** What a route reveals, from most to least (the SA plan, SA-E). */
+export type RouteReads = 'content' | 'metadata' | 'none';
+
 /**
  * One route, declared once. The service registers it, validates and serialises with its schemas,
  * and the OpenAPI document is generated from it - so the three cannot disagree (API-002, API-003).
@@ -97,6 +100,14 @@ export interface RouteContract {
   readonly organisationTenant?: true;
   /** What it checks. Anything but `none` needs a session, and the cross-tenant harness tests it. */
   readonly access: RouteAccess;
+  /**
+   * What its answer or its effect reveals (support.md; ADR-0102): `content` where anything of a body,
+   * caption, comment, field value, version note, approval reason, asset file, publication, search
+   * snippet, SQL text, or mail or webhook delivery; `metadata` where titles, names, states and counts
+   * but none of those; `none` where nothing of the tenant's artifacts or people. Any content makes
+   * it `content`.
+   */
+  readonly reads: RouteReads;
   /** Path parameters, named as the path names them. The service validates them before a handler. */
   readonly params?: z.ZodObject;
   readonly query?: z.ZodObject;

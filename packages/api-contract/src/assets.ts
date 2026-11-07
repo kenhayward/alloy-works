@@ -251,6 +251,7 @@ export const assetRoutes = {
     path: '/v1/spaces/{space}/assets',
     summary: "The space's images the caller may read, searched and filtered",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { space: 'space' } },
     params: SpaceParams,
     query: LibraryAssetQuery,
@@ -275,6 +276,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/uses',
     summary: 'Where an image is used: components, documents, baselines and publications',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: AssetParams,
     responses: {
@@ -293,6 +295,7 @@ export const assetRoutes = {
     path: '/v1/spaces/{space}/asset-uploads',
     summary: 'Make an upload in this space, with the description its image will carry',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateAssetUploadBody,
@@ -314,6 +317,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/replacements',
     summary: "Make an upload replacing an image: its check cuts the image's next version",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: AssetParams,
     body: CreateAssetReplacementBody,
@@ -338,6 +342,7 @@ export const assetRoutes = {
     summary:
       "Fill an upload with its image's bytes, which are checked before anything may place it",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     params: AssetUploadParams,
     rawBody: { contentType: 'application/octet-stream', maxBytes: ASSET_MAX_BYTES },
@@ -372,6 +377,7 @@ export const assetRoutes = {
     path: '/v1/asset-uploads/{id}',
     summary: 'An upload the caller made: its state, and its asset version once ready',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     params: AssetUploadParams,
     responses: {
@@ -386,6 +392,7 @@ export const assetRoutes = {
     path: '/v1/asset-versions/{id}',
     summary: "An asset version's recorded properties",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifactVersion: 'id' } },
     params: AssetVersionParams,
     responses: {
@@ -404,6 +411,7 @@ export const assetRoutes = {
     path: '/v1/asset-versions/{id}/content',
     summary: "An asset version's image, as it was uploaded",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifactVersion: 'id' } },
     params: AssetVersionParams,
     query: AssetContentQuery,
@@ -432,6 +440,7 @@ export const assetRoutes = {
     path: '/v1/asset-versions/{id}/derivatives/{kind}',
     summary: "An asset version's thumbnail or preview",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifactVersion: 'id' } },
     params: AssetDerivativeParams,
     responses: {
@@ -460,6 +469,7 @@ export const assetRoutes = {
     path: '/v1/spaces/{space}/asset-derivatives',
     summary: "Discard a space's image thumbnails and previews, to be made again",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
     params: SpaceParams,
     responses: {
@@ -481,6 +491,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/rights',
     summary: "An image's source and licence, and every change to them",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: AssetParams,
     responses: {
@@ -499,6 +510,7 @@ export const assetRoutes = {
     path: '/v1/assets/{id}/rights',
     summary: "Record an image's source and licence, as a change of its own",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: AssetParams,
     body: SetAssetRightsBody,

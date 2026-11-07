@@ -31,6 +31,7 @@ export const preferenceRoutes = {
     path: '/v1/me/preferences',
     summary: 'The caller’s own preferences',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'Their preferences', schema: MyPreferences },
@@ -45,6 +46,7 @@ export const preferenceRoutes = {
     path: '/v1/me/preferences',
     summary: 'Choose the caller’s own preferences',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: z.strictObject({ interfaceLanguage: MyPreferences.shape.interfaceLanguage }),
     responses: {
