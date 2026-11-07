@@ -229,15 +229,78 @@ describe('copying content, over HTTP (the RM plan)', () => {
     expect(archived.json()).toMatchObject({ code: 'space_archived' });
   });
 
-  it('REU-057 refuses a copy of a component its copier may not read, and one of more than COPY_MAX', async () => {
+  it('REU-057 reuses a component its copier may not read, unnamed, and refuses copying it or one not placed', async () => {
     const unseen = await component(hidden);
     const original = await document([unseen]);
-    const refused = await copying('ivy', original, { to: open, title: 'Mine', components: 'all' });
-    expect(refused.statusCode, refused.body).toBe(400);
-    expect(refused.json()).toMatchObject({ code: 'copy_unreadable', unreadable: 1 });
-    const reused = await copying('ivy', original, { to: open, title: 'Mine', components: 'reuse' });
-    expect(reused.statusCode, reused.body).toBe(200);
+    const preview = await previewing('ivy', original, {
+      to: open,
+      title: 'Mine',
+      components: 'all',
+    });
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(preview.json()).toMatchObject({
+      copied: 0,
+      unreadable: 1,
+      components: [
+        { component: unseen, title: null, placed: 'unreadable', others: null, outcome: 'reuse' },
+      ],
+    });
+    const copied = await copying('ivy', original, { to: open, title: 'Mine', components: 'all' });
+    expect(copied.statusCode, copied.body).toBe(200);
+    const fixed = await copying('ivy', original, {
+      to: open,
+      title: 'Mine',
+      exceptions: [{ component: unseen, as: 'copy' }],
+    });
+    expect(fixed.statusCode, fixed.body).toBe(400);
+    expect(fixed.json()).toMatchObject({ code: 'exception_fixed', component: unseen });
+    const stranger = await component();
+    const unknown = await previewing('ivy', original, {
+      to: open,
+      title: 'Mine',
+      exceptions: [{ component: stranger, as: 'reuse' }],
+    });
+    expect(unknown.statusCode, unknown.body).toBe(400);
+    expect(unknown.json()).toMatchObject({ code: 'exception_unknown', component: stranger });
+  });
 
+  it('REU-068 copies with exceptions, leaving its rewordings behind when asked, and audits both', async () => {
+    const own = await component();
+    const shared = await component();
+    await document([shared], 'Elsewhere');
+    const original = await document([own, shared]);
+    const body = {
+      to: closed,
+      title: 'Chosen',
+      exceptions: [{ component: shared, as: 'copy' }],
+      rewordings: 'drop',
+    };
+    const preview = await previewing('ada', original, body);
+    expect(preview.json()).toMatchObject({
+      copied: 2,
+      overrides: 0,
+      components: [{ outcome: 'copy' }, { placed: 'shared', others: 1, outcome: 'copy' }],
+    });
+    const copied = await copying('ada', original, body);
+    expect(copied.statusCode, copied.body).toBe(200);
+    const { id } = copied.json<{ id: string }>();
+    const events = await tenantDb.withTenant(production, (trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('kind', '=', 'artifact.copied')
+        .where('subject', '=', id)
+        .execute(),
+    );
+    expect(events[0]!.detail).toEqual({
+      from: original,
+      components: 'own',
+      exceptions: [{ component: shared, as: 'copy' }],
+      rewordings: 'drop',
+    });
+  });
+
+  it('REU-057 refuses a copy of more than COPY_MAX components', async () => {
     const parts = await tenantDb.withTenant(
       production,
       async (trx) => {

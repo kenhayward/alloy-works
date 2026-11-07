@@ -581,10 +581,18 @@ export const auditKindSpecs = {
     z.strictObject({ from: Id, to: Id }),
     'packages/db/src/moving.ts',
   ),
-  // A document, component or template copied (the RM plan, RM-N): about the copy, naming the original.
+  // A document, component or template copied (the RM plan, RM-N): about the copy, naming the original;
+  // a document's with its starting point, its exceptions and whether it kept its rewordings.
   'artifact.copied': kind(
     ['LIF-079', 'REU-058'],
-    z.strictObject({ from: Id }),
+    z.strictObject({
+      from: Id,
+      components: z.enum(['reuse', 'own', 'all']).optional(),
+      exceptions: z
+        .array(z.strictObject({ component: Id, as: z.enum(['copy', 'reuse']) }))
+        .optional(),
+      rewordings: z.enum(['keep', 'drop']).optional(),
+    }),
     'packages/db/src/copies.ts',
   ),
   // A component or a document deleted and undeleted (the DL plan, DL-B): about the artifact.

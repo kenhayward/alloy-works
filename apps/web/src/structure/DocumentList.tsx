@@ -210,6 +210,8 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
     id: string;
     title: string;
     space: string;
+    spaceName: string;
+    state?: { readonly key: string; readonly name: string } | null;
   } | null>(null);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
@@ -457,7 +459,13 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                           if (changed) void listing.load(null);
                         }}
                         onDuplicate={() =>
-                          setDuplicating({ id: item.id, title: item.title, space: item.space.id })
+                          setDuplicating({
+                            id: item.id,
+                            title: item.title,
+                            space: item.space.id,
+                            spaceName: item.space.name,
+                            state: item.state,
+                          })
                         }
                       />
                     </td>
@@ -475,6 +483,8 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             id={duplicating.id}
             title={duplicating.title}
             space={duplicating.space}
+            spaceName={duplicating.spaceName}
+            state={duplicating.state}
             onDone={(said) => {
               setDuplicating(null);
               setNotice(said);

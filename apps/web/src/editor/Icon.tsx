@@ -202,6 +202,15 @@ const ADMIN: Record<string, readonly string[]> = {
     'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',
     'M5 15H4V4h11v1',
   ],
+  // Duplicate's (the duplicate handoff): the act, its starting points, what it says and loses.
+  Duplicate: [
+    'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',
+    'M5 15H4V4h11v1',
+  ],
+  Branch: [ring(7, 5, 2), ring(7, 19, 2), ring(17, 7, 2), 'M7 7v10', 'M17 9a6 6 0 0 1-6 6H7'],
+  Information: [ring(12, 12, 8.5), 'M12 11v5', 'M12 8h.01'],
+  Warning: ['M12 4 21 19.5H3z', 'M12 10v4.5', 'M12 17h.01'],
+  Fixed: ['M6 11h12v9H6z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3'],
   Retry: ['M20 12a8 8 0 1 1-2.3-5.6L20 8.5', 'M20 4v4.5h-4.5'],
   Revoke: [BIN],
   Withdraw: [BIN],

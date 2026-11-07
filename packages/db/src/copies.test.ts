@@ -376,7 +376,7 @@ describe('copying a document, a component or a template (the RM plan)', () => {
     });
   });
 
-  it('REU-057 refuses more than COPY_MAX components at once, and a component its copier may not read', async () => {
+  it('REU-057 refuses more than COPY_MAX components at once, counted after its exceptions', async () => {
     const parts = await work(async (trx) => {
       const made: StoredVersion[] = [];
       for (let each = 0; each <= COPY_MAX; each += 1) {
@@ -399,23 +399,160 @@ describe('copying a document, a component or a template (the RM plan)', () => {
     expect(await work((trx) => previewCopy(trx, inputOf(large.artifactId)))).toMatchObject({
       copied: COPY_MAX + 1,
     });
+    // Counted after the exceptions: one set to Reuse brings it within the limit.
+    const within = await work((trx) =>
+      copyArtifact(
+        trx,
+        inputOf(large.artifactId, {
+          exceptions: [{ component: parts[0]!.artifactId, as: 'reuse' }],
+        }),
+      ),
+    );
+    expect(within).toMatchObject({ answer: 'copied', copied: COPY_MAX });
+  });
 
+  it('REU-057 reuses a component its copier may not read, unnamed, rather than refusing the copy', async () => {
     const hidden = await component('Hidden', closed);
     const mixed = await document([reference(hidden, { kind: 'latest' })]);
     const asGrace = { by: grace, components: 'all' as const };
     expect(await work((trx) => previewCopy(trx, inputOf(mixed.artifactId, asGrace)))).toMatchObject(
-      { unreadable: 1 },
+      {
+        copied: 0,
+        unreadable: 1,
+        components: [
+          { component: hidden.artifactId, title: null, placed: 'unreadable', others: null },
+        ],
+      },
     );
-    expect(await work((trx) => copyArtifact(trx, inputOf(mixed.artifactId, asGrace)))).toEqual({
-      answer: 'copy.unreadable',
-      unreadable: 1,
-    });
-    // Reused, it stands as the original's did.
+    expect(
+      await work((trx) => copyArtifact(trx, inputOf(mixed.artifactId, asGrace))),
+    ).toMatchObject({ answer: 'copied', copied: 0, unreadable: 1 });
     expect(
       await work((trx) =>
-        copyArtifact(trx, inputOf(mixed.artifactId, { by: grace, components: 'reuse' })),
+        previewCopy(
+          trx,
+          inputOf(mixed.artifactId, {
+            by: grace,
+            exceptions: [{ component: hidden.artifactId, as: 'copy' }],
+          }),
+        ),
       ),
-    ).toMatchObject({ answer: 'copied', copied: 0 });
+    ).toEqual({ answer: 'copy.exception_fixed', component: hidden.artifactId });
+  });
+
+  it('REU-057 answers each component: where it stands, how many other documents its reader may read place it, and what the copy does', async () => {
+    const own = await component('Alone');
+    const shared = await component('Placed twice');
+    const kept = await component('Put away');
+    await work((trx) => archiveArtifact(trx, kept.artifactId, ada));
+    await document([reference(shared, { kind: 'latest' })], 'Readable elsewhere');
+    await document([reference(shared, { kind: 'latest' })], 'Hidden elsewhere', closed);
+    const original = await document([
+      reference(own, { kind: 'latest' }),
+      reference(shared, { kind: 'latest' }),
+      reference(own, { kind: 'latest' }),
+      reference(kept, { kind: 'latest' }),
+    ]);
+    const preview = await work((trx) => previewCopy(trx, inputOf(original.artifactId)));
+    expect(preview).toMatchObject({
+      components: [
+        { component: own.artifactId, title: 'Alone', placed: 'only', others: 0, outcome: 'copy' },
+        {
+          component: shared.artifactId,
+          title: 'Placed twice',
+          placed: 'shared',
+          others: 2,
+          outcome: 'reuse',
+        },
+        { component: kept.artifactId, placed: 'kept', outcome: 'reuse' },
+      ],
+    });
+    const asGrace = await work((trx) =>
+      previewCopy(trx, inputOf(original.artifactId, { by: grace })),
+    );
+    expect(asGrace).toMatchObject({ components: [{}, { others: 1 }, {}] });
+  });
+
+  it('REU-057 sets components the other way, refusing one not placed or a fixed one copied, and counts the limit after them', async () => {
+    const own = await component('Mine');
+    const shared = await component('Ours');
+    const kept = await component('Retired');
+    await work((trx) => archiveArtifact(trx, kept.artifactId, ada));
+    await document([reference(shared, { kind: 'latest' })], 'The other');
+    const original = await document([
+      reference(own, { kind: 'latest' }),
+      reference(shared, { kind: 'latest' }),
+      reference(kept, { kind: 'latest' }),
+    ]);
+    const exceptions = [
+      { component: own.artifactId, as: 'reuse' as const },
+      { component: shared.artifactId, as: 'copy' as const },
+    ];
+    expect(
+      await work((trx) => previewCopy(trx, inputOf(original.artifactId, { exceptions }))),
+    ).toMatchObject({
+      copied: 1,
+      reused: 2,
+      components: [{ outcome: 'reuse' }, { outcome: 'copy' }, { outcome: 'reuse' }],
+    });
+    const copied = await work((trx) =>
+      copyArtifact(trx, inputOf(original.artifactId, { exceptions })),
+    );
+    if (copied.answer !== 'copied') throw new Error(JSON.stringify(copied));
+    expect(copied.components.map((each) => each.from)).toEqual([shared.artifactId]);
+    const stranger = randomUUID();
+    for (const input of [
+      { exceptions: [{ component: stranger, as: 'reuse' as const }] },
+      { exceptions: [{ component: kept.artifactId, as: 'copy' as const }] },
+    ]) {
+      const refused = await work((trx) => copyArtifact(trx, inputOf(original.artifactId, input)));
+      expect(refused).toEqual({
+        answer:
+          input.exceptions[0]!.component === stranger
+            ? 'copy.exception_unknown'
+            : 'copy.exception_fixed',
+        component: input.exceptions[0]!.component,
+      });
+    }
+  });
+
+  it('REU-068 keeps the document own rewordings on the copy, or leaves every one behind, and audits the choices', async () => {
+    const part = await component('Reworded');
+    const original = await document([
+      reference(
+        part,
+        { kind: 'latest' },
+        { overrides: [{ block: 'p1', against: part.id, text: text('Said our way.') }] },
+      ),
+    ]);
+    expect(
+      await work((trx) => previewCopy(trx, inputOf(original.artifactId, { components: 'reuse' }))),
+    ).toMatchObject({ overrides: 1, overridesDropped: 0 });
+    const copy = async (rewordings: 'keep' | 'drop') => {
+      const before = await work((trx) => newestEvent(trx));
+      const answer = await work((trx) =>
+        copyArtifact(trx, inputOf(original.artifactId, { components: 'reuse', rewordings })),
+      );
+      if (answer.answer !== 'copied') throw new Error(JSON.stringify(answer));
+      const events = await work((trx) => auditEvents(trx, before));
+      return {
+        reference: outlineOf(answer.copy).nodes[0] as OutlineNode & { type: 'reference' },
+        detail: events.find((each) => each.kind === 'artifact.copied')?.detail,
+      };
+    };
+    const kept = await copy('keep');
+    expect(kept.reference.overrides).toHaveLength(1);
+    const dropped = await copy('drop');
+    expect(dropped.reference.overrides).toBeUndefined();
+    expect(dropped.detail).toEqual({
+      from: original.artifactId,
+      components: 'reuse',
+      exceptions: [],
+      rewordings: 'drop',
+    });
+    // The original keeps its own.
+    const now = await work((trx) => latestVersion(trx, original.artifactId));
+    expect((outlineOf(now!).nodes[0] as { overrides?: unknown[] }).overrides).toHaveLength(1);
   });
 
   it('REU-056 copies a component at its latest and a template by its definition, under the new title', async () => {

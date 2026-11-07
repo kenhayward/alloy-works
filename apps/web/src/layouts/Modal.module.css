@@ -135,3 +135,24 @@
   align-items: center;
   padding: var(--space-16);
 }
+
+/* Duplicate (the duplicate handoff): 720px wide, centred, as tall as it holds and never taller than the
+ * window less 32px; its own header, body and foot drawn edge to edge. */
+.duplicate {
+  display: flex;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 32px);
+}
+
+.duplicate > .body {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.scrim[data-size='duplicate'] {
+  align-items: center;
+  padding: var(--space-16);
+}

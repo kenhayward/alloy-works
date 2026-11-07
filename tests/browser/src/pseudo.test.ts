@@ -475,7 +475,7 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       await expect.poll(() => duplicate.getAttribute('aria-disabled')).toBe('false');
       await duplicate.click();
       return page.getByRole('dialog', {
-        name: say(language, 'rows.duplicate-title', { title: grace.component.title }),
+        name: say(language, 'rows.duplicate-heading', { kind: 'component' }),
       });
     },
   },

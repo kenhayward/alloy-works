@@ -13,8 +13,11 @@ import {
   type ContentDocument,
   type CopiedComponent,
   type CopyChoice,
+  type CopyException,
+  type CopyPlacement,
   type MetadataFailure,
   type OutlineDocument,
+  type OutlineNode,
   type Override,
   type Permission,
 } from '@alloy-works/domain';
@@ -29,6 +32,7 @@ import { recordOrigin, templateCopiesAmong } from './origins.js';
 import { linesStored, translationStored } from './lines.js';
 import { resolveOccurrences } from './publishing.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
+import { titlesOf } from './impact.js';
 import { indexTemplateOf } from './reference-index.js';
 import { readScopes } from './scopes.js';
 import { readSpace } from './spaces.js';
@@ -60,6 +64,10 @@ export interface CopyInput {
   readonly title: string;
   /** A document's components (RM-G): its own copied where absent. Nothing else has any. */
   readonly components?: CopyChoice | undefined;
+  /** Components set otherwise than `components` starts them (REU-057). */
+  readonly exceptions?: readonly CopyException[] | undefined;
+  /** Its local overrides kept on the copy, the default, or left behind (REU-068). */
+  readonly rewordings?: 'keep' | 'drop' | undefined;
   readonly by: string;
   readonly scopes?: readonly Permission[] | undefined;
 }
@@ -76,13 +84,15 @@ export interface CopyCounts {
   readonly required: number;
   /** Of those reused, deleted or archived ones, which no choice copies (RM-K). */
   readonly kept: number;
-  /** Of those it would copy, the ones the caller may not read, which refuse the copy (RM-K). */
+  /** Of those reused, the ones the caller may not read: never copied, never named (REU-057). */
   readonly unreadable: number;
   /** References to a copy that tracked the approved revision, made latest (RM-J). */
   readonly approvedToLatest: number;
   /** Components placed at more than one version, copied at the newest shown (RM-J). */
   readonly newestShown: number;
-  /** Overrides dropped, their block changed at the version copied (RM-J). */
+  /** The document's local overrides (REU-068). */
+  readonly overrides: number;
+  /** Of those kept, the ones dropped, their block changed at the version copied (RM-J). */
   readonly overridesDropped: number;
   /** Lines and translations of what is copied, which are not (RM-J). */
   readonly lines: number;
@@ -97,12 +107,26 @@ export interface CopyConsequences {
   readonly bound: number;
 }
 
+/** Each component a document places, once, in the order first placed, as its copy decides it. */
+export interface CopyPlaced {
+  readonly component: string;
+  /** Its title; null where the caller may not read it, or it is gone. */
+  readonly title: string | null;
+  readonly placed: CopyPlacement;
+  /** Other documents, not deleted, the caller may read that place it; null where it is unreadable. */
+  readonly others: number | null;
+  /** A member of a placed group, whose run a copy of it makes plain references (the CG plan). */
+  readonly grouped: boolean;
+  readonly outcome: 'copy' | 'reuse';
+}
+
 export type CopyRefusal =
   | { readonly answer: 'artifact.missing' }
   | { readonly answer: 'space.archived' }
   | { readonly answer: 'content.invalid' }
   | { readonly answer: 'copy.too_large' }
-  | { readonly answer: 'copy.unreadable'; readonly unreadable: number }
+  | { readonly answer: 'copy.exception_unknown'; readonly component: string }
+  | { readonly answer: 'copy.exception_fixed'; readonly component: string }
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   | Exclude<TemplateAnswer, { readonly template: unknown }>;
 
@@ -110,8 +134,10 @@ export type CopyPreview =
   | (CopyCounts & {
       readonly answer: 'previewed';
       readonly consequences: CopyConsequences | null;
+      /** A document's components, each as its copy decides it; none for another kind. */
+      readonly components: readonly CopyPlaced[];
     })
-  | Exclude<CopyRefusal, { answer: 'copy.too_large' | 'copy.unreadable' }>;
+  | Exclude<CopyRefusal, { answer: 'copy.too_large' }>;
 
 export type CopyAnswer =
   | (CopyCounts & {
@@ -132,6 +158,7 @@ const NONE: Omit<CopyCounts, 'kind' | 'titleInUse'> = {
   unreadable: 0,
   approvedToLatest: 0,
   newestShown: 0,
+  overrides: 0,
   overridesDropped: 0,
   lines: 0,
   translations: 0,
@@ -197,6 +224,8 @@ interface Placed {
   required: boolean;
   unreadable: boolean;
   gone: boolean;
+  /** Placed as a member of a group (the CG plan). */
+  grouped: boolean;
   /** The versions its references show, newest first once read. */
   readonly shown: Set<string>;
 }
@@ -209,6 +238,19 @@ interface DocumentPlan {
   /** The components its template copied for it, required or not: its own (REU-057; ND-G). */
   readonly owned: ReadonlySet<string>;
   readonly counts: Omit<CopyCounts, 'kind' | 'titleInUse'>;
+  readonly components: readonly CopyPlaced[];
+}
+
+/** An outline with no reference carrying an override: a copy leaving them behind (REU-068). */
+function withoutOverrides(outline: OutlineDocument): OutlineDocument {
+  const strip = (node: OutlineNode): OutlineNode => {
+    const children = node.children.map(strip);
+    if (node.type !== 'reference' || node.overrides === undefined) return { ...node, children };
+    const { overrides, ...rest } = node;
+    void overrides;
+    return { ...rest, children };
+  };
+  return { ...outline, nodes: outline.nodes.map(strip) };
 }
 
 /** The overrides an outline's references to a component hold. */
@@ -257,14 +299,18 @@ async function planDocument(
   trx: TenantTransaction,
   version: StoredVersion,
   input: CopyInput,
-): Promise<DocumentPlan> {
+): Promise<
+  DocumentPlan | Extract<CopyRefusal, { answer: 'copy.exception_unknown' | 'copy.exception_fixed' }>
+> {
   const read = readOutline(version.content, { artifact: version.artifactId, version: version.id });
   if (!read.ok) throw new Error(`Document version ${version.id} does not read: ${read.failure}`);
   const outline = read.outline;
   const placed = new Map<string, Placed>();
   const nodes = new Map<string, { readonly component: string; readonly origin: boolean }>();
+  let overrides = 0;
   walkOutline(outline.nodes, (node) => {
     if (node.type !== 'reference') return;
+    overrides += node.overrides?.length ?? 0;
     nodes.set(node.id, { component: node.component, origin: node.origin !== undefined });
     const each = placed.get(node.component) ?? {
       component: node.component,
@@ -272,10 +318,12 @@ async function planDocument(
       required: false,
       unreadable: false,
       gone: false,
+      grouped: false,
       shown: new Set<string>(),
     };
     if (node.origin === undefined) each.candidate = true;
     else each.required = true;
+    if (node.group !== undefined) each.grouped = true;
     placed.set(node.component, each);
   });
   // A required one its template made as this document's copy is the document's own (REU-057; ND-G).
@@ -293,32 +341,45 @@ async function planDocument(
       each.shown.add(outcome.version);
     }
   }
-  const candidates = [...placed.values()].filter((each) => each.candidate);
+  const readable = await readableComponents(trx, input.by, [...placed.keys()]);
+  for (const each of placed.values()) {
+    if (!each.gone && !readable.has(each.component)) each.unreadable = true;
+  }
   const archived = new Set<string>();
-  for (const each of candidates) {
+  for (const each of placed.values()) {
     if (!each.gone && !each.unreadable && (await isArchived(trx, each.component))) {
       archived.add(each.component);
     }
   }
+  const seen = [...placed.values()].filter((each) => !each.gone && !each.unreadable);
   const elsewhere = await placedElsewhere(
     trx,
     version.artifactId,
-    candidates.map((each) => each.component),
+    seen.map((each) => each.component),
+    input.by,
   );
-  const chosen = chosenCopies(
-    input.components ?? 'own',
-    candidates.map((each) => ({
-      component: each.component,
-      own: !elsewhere.has(each.component),
-      kept: each.gone || archived.has(each.component),
-    })),
-  );
-  const unreadable = chosen.filter((id) => placed.get(id)!.unreadable);
-  const readable = await readableComponents(trx, input.by, chosen);
+  const placement = (each: Placed): CopyPlacement => {
+    if (each.gone) return 'kept';
+    if (each.unreadable) return 'unreadable';
+    if (!each.candidate) return 'required';
+    if (archived.has(each.component)) return 'kept';
+    return elsewhere.has(each.component) ? 'shared' : 'only';
+  };
+  const placements = [...placed.values()].map((each) => ({
+    component: each.component,
+    placed: placement(each),
+  }));
+  const decided = chosenCopies(input.components ?? 'own', placements, input.exceptions ?? []);
+  if ('refused' in decided) {
+    return {
+      answer: decided.refused === 'fixed' ? 'copy.exception_fixed' : 'copy.exception_unknown',
+      component: decided.component,
+    };
+  }
+  const chosen = decided.copied;
   const copying: { component: string; version: StoredVersion }[] = [];
   let newestShown = 0;
   for (const component of chosen) {
-    if (!readable.has(component)) continue;
     const shown = [...placed.get(component)!.shown];
     if (shown.length > 1) newestShown += 1;
     const versions = (await Promise.all(shown.map((id) => readVersion(trx, id)))).filter(
@@ -343,44 +404,70 @@ async function planDocument(
     });
   }
   const { counts } = copyOutline(outline, replaced, owned);
-  const reused = [...placed.values()].filter((each) => !chosen.includes(each.component));
   const left = await linesOf(
     trx,
     copying.map((each) => each.component),
   );
+  const titles = await titlesOf(
+    trx,
+    seen.map((each) => each.component),
+  );
+  const copiedSet = new Set(chosen);
+  const components = placements.map((each): CopyPlaced => ({
+    component: each.component,
+    title: titles.get(each.component) ?? null,
+    placed: each.placed,
+    others:
+      each.placed === 'unreadable' || placed.get(each.component)!.gone
+        ? null
+        : (elsewhere.get(each.component) ?? 0),
+    grouped: placed.get(each.component)!.grouped,
+    outcome: copiedSet.has(each.component) ? 'copy' : 'reuse',
+  }));
+  const count = (at: CopyPlacement) =>
+    components.filter((each) => each.placed === at && each.outcome === 'reuse').length;
   return {
     version,
     outline,
     copying,
     owned,
+    components,
     counts: {
       copied: chosen.length,
-      reused: reused.length,
-      required: reused.filter((each) => !each.candidate).length,
-      kept: reused.filter((each) => each.candidate && (each.gone || archived.has(each.component)))
-        .length,
-      unreadable: unreadable.length,
+      reused: components.length - chosen.length,
+      required: count('required'),
+      kept: count('kept'),
+      unreadable: count('unreadable'),
       approvedToLatest: counts.approvedToLatest,
       newestShown,
+      overrides,
       overridesDropped: counts.overridesDropped,
       ...left,
     },
   };
 }
 
-/** Which of these components another document, not deleted, places. */
+/**
+ * Each of these components another document, not deleted, places, by how many of those documents
+ * `by` may read: present with 0 where only documents they may not read place it.
+ */
 async function placedElsewhere(
   trx: TenantTransaction,
   document: string,
   components: readonly string[],
-): Promise<ReadonlySet<string>> {
-  if (components.length === 0) return new Set();
+  by: string,
+): Promise<ReadonlyMap<string, number>> {
+  if (components.length === 0) return new Map();
+  const readable = await loadReadableSet(trx, by);
   const deletion = (await deletionStored(trx)) ? sql`and ${notDeletedAs('d')}` : sql``;
-  const { rows } = await sql<{ id: string }>`
-    select distinct r.to_id as id from reference r join artifact d on d.id = r.from_id
+  const seen = readable ? readableArtifactsAs('d', readable) : sql`false`;
+  const { rows } = await sql<{ id: string; others: number }>`
+    select r.to_id as id, count(distinct r.from_id) filter (where ${seen})::int as others
+      from reference r join artifact d on d.id = r.from_id
      where r.to_id = any(${ids(components)}) and r.to_kind = 'component'
-       and r.from_id <> ${document} and d.kind = 'document' ${deletion}`.execute(trx);
-  return new Set(rows.map((row) => row.id));
+       and r.from_id <> ${document} and d.kind = 'document' ${deletion}
+     group by r.to_id`.execute(trx);
+  return new Map(rows.map((row) => [row.id, row.others]));
 }
 
 /** What it is, where it may go and under what title, or why not; read before anything is written. */
@@ -441,10 +528,13 @@ export async function previewCopy(trx: TenantTransaction, input: CopyInput): Pro
   if ('answer' in begun) return begun as CopyPreview;
   const inUse = await titleInUse(trx, { ...begun, space: input.to, by: input.by });
   let counts = NONE;
+  let components: readonly CopyPlaced[] = [];
   let from = [input.artifactId];
   if (begun.kind === 'document') {
     const plan = await planDocument(trx, begun.version, input);
+    if ('answer' in plan) return plan;
     counts = plan.counts;
+    components = plan.components;
     from = [input.artifactId, ...plan.copying.map((each) => each.component)];
   } else if (begun.kind === 'component') {
     counts = { ...NONE, ...(await linesOf(trx, [input.artifactId])) };
@@ -455,6 +545,7 @@ export async function previewCopy(trx: TenantTransaction, input: CopyInput): Pro
     titleInUse: inUse,
     ...counts,
     consequences: begun.from === input.to ? null : await consequencesOf(trx, from),
+    components,
   };
 }
 
@@ -557,6 +648,8 @@ async function recordCopied(
   trx: TenantTransaction,
   copy: StoredVersion,
   from: string,
+  /** A document's: its starting point, exceptions and rewordings (REU-057, REU-068). */
+  chosen: Record<string, unknown> = {},
 ): Promise<void> {
   const place = await artifactPlace(trx, copy.artifactId, copy.id);
   await recordEvent(
@@ -565,7 +658,7 @@ async function recordCopied(
       kind: 'artifact.copied',
       subject: { kind: copy.kind, id: copy.artifactId, version: copy.id },
       space: place.space,
-      detail: { from },
+      detail: { from, ...chosen },
     },
     place.labels,
   );
@@ -601,9 +694,7 @@ async function copyDocument(
   inUse: boolean,
 ): Promise<CopyAnswer> {
   const plan = await planDocument(trx, version, input);
-  if (plan.counts.unreadable > 0) {
-    return { answer: 'copy.unreadable', unreadable: plan.counts.unreadable };
-  }
+  if ('answer' in plan) return plan;
   if (plan.counts.copied > COPY_MAX) return { answer: 'copy.too_large' };
 
   const remap = new Map(plan.copying.map((each) => [each.component, randomUUID()]));
@@ -627,7 +718,9 @@ async function copyDocument(
       ),
     });
   }
-  const copied = copyOutline(plan.outline, replaced, plan.owned).outline;
+  // Left behind, the copy carries none of its overrides; the original keeps every one (REU-068).
+  const from = input.rewordings === 'drop' ? withoutOverrides(plan.outline) : plan.outline;
+  const copied = copyOutline(from, replaced, plan.owned).outline;
   // Its translated titles translate the original's title, which the copy no longer holds.
   const { titles: translated, ...heading } = copied;
   void translated;
@@ -667,7 +760,11 @@ async function copyDocument(
   }
   await copyScope(trx, version.artifactId, document, 'document', input.by);
   await copyBindings(trx, version.artifactId, document, input.by);
-  await recordCopied(trx, copy, version.artifactId);
+  await recordCopied(trx, copy, version.artifactId, {
+    components: input.components ?? 'own',
+    exceptions: [...(input.exceptions ?? [])],
+    rewordings: input.rewordings ?? 'keep',
+  });
   return {
     answer: 'copied',
     kind: 'document',

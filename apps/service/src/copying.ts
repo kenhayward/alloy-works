@@ -53,12 +53,19 @@ function refusal(answer: CopyRefusal, facts: Authorised['facts']): Error {
         `A copy makes at most ${COPY_MAX} components at once: reuse some instead.`,
         { limit: COPY_MAX },
       );
-    case 'copy.unreadable':
+    case 'copy.exception_unknown':
       return refused(
         400,
-        'copy.unreadable',
-        'It places a component you may not read, which cannot be copied: reuse it instead.',
-        { unreadable: answer.unreadable },
+        'copy.exception_unknown',
+        'An exception names a component this document does not place.',
+        { component: answer.component },
+      );
+    case 'copy.exception_fixed':
+      return refused(
+        400,
+        'copy.exception_fixed',
+        'That component cannot be copied: it is reused, whatever the starting point.',
+        { component: answer.component },
       );
     case 'values.invalid':
       return refused(400, 'values.invalid', 'A value of a component no longer fits its field.', {
@@ -79,6 +86,7 @@ const counted = (answer: CopyCounts) => ({
   unreadable: answer.unreadable,
   approvedToLatest: answer.approvedToLatest,
   newestShown: answer.newestShown,
+  overrides: answer.overrides,
   overridesDropped: answer.overridesDropped,
   lines: answer.lines,
   translations: answer.translations,
@@ -92,13 +100,15 @@ export function copyingHandlers() {
       { trx, principalId, facts }: Authorised,
     ): Promise<CopyAnswer> => {
       const { id } = request.params as CopyParams;
-      const { to, title, components } = request.body as CopyBody;
+      const { to, title, components, exceptions, rewordings } = request.body as CopyBody;
       await decideTarget(trx, request, id, to);
       const answer = await copyArtifact(trx, {
         artifactId: id,
         to,
         title,
         components,
+        exceptions,
+        rewordings,
         by: principalId,
         scopes: facts.scopes,
       });
@@ -116,13 +126,15 @@ export function copyingHandlers() {
       { trx, principalId, facts }: Authorised,
     ): Promise<CopyPreviewAnswer> => {
       const { id } = request.params as CopyParams;
-      const { to, title, components } = request.body as CopyBody;
+      const { to, title, components, exceptions, rewordings } = request.body as CopyBody;
       await decideTarget(trx, request, id, to);
       const answer = await previewCopy(trx, {
         artifactId: id,
         to,
         title,
         components,
+        exceptions,
+        rewordings,
         by: principalId,
         scopes: facts.scopes,
       });
@@ -131,6 +143,7 @@ export function copyingHandlers() {
         ...counted(answer),
         limit: COPY_MAX,
         consequences: answer.consequences && { ...answer.consequences },
+        components: answer.components.map((each) => ({ ...each })),
       };
     },
   };
