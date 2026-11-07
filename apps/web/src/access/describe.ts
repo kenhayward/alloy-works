@@ -75,13 +75,7 @@ export interface ExplainedPermission {
   readonly permission: string;
   readonly allowed: boolean;
   readonly reason:
-    | 'allowed'
-    | 'denied'
-    | 'not_granted'
-    | 'capped'
-    | 'scoped'
-    | 'disabled'
-    | 'support';
+    'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped' | 'disabled' | 'support';
   readonly level: string | null;
   readonly checked: readonly string[];
   readonly grants: readonly {

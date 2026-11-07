@@ -20743,6 +20743,31 @@
       ]
     },
     {
+      "document": "support.md",
+      "owns": [
+        {
+          "id": "ADM-022",
+          "howItIsMet": "A diagnostics or metadata grant reads Diagnostics, or metadata in its spaces, and is refused every content route (`support_scope`)"
+        },
+        {
+          "id": "ADM-023",
+          "howItIsMet": "Content read only by the tenant's grant: scoped to spaces, ending at a required, capped expiry, revoked at once, each biting at the next request"
+        },
+        {
+          "id": "ADM-024",
+          "howItIsMet": "`support.granted`, `support.used` and `support.revoked` in the tenant's own log, which its administrators read"
+        },
+        {
+          "id": "ADM-042",
+          "howItIsMet": "`grant_support` grants and revokes, administrators review; scope, spaces, expiry, purpose and person on each; audited; named by `explainAccess`"
+        },
+        {
+          "id": "IAM-070",
+          "howItIsMet": "`grant_support`, the last of its eight acts, granted through a role and explained like the rest"
+        }
+      ]
+    },
+    {
       "document": "system.md",
       "owns": [
         {
@@ -22828,13 +22853,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 868,
+      "line": 872,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 881,
+      "line": 885,
       "kind": "title"
     },
     {
@@ -23458,7 +23483,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2426,
+      "line": 2465,
       "kind": "title"
     },
     {
@@ -25283,6 +25308,36 @@
       "id": "COL-065",
       "file": "apps/service/src/suggestion-routes.test.ts",
       "line": 355,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-022",
+      "file": "apps/service/src/support-routes.test.ts",
+      "line": 253,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-023",
+      "file": "apps/service/src/support-routes.test.ts",
+      "line": 379,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-024",
+      "file": "apps/service/src/support-routes.test.ts",
+      "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-042",
+      "file": "apps/service/src/support-routes.test.ts",
+      "line": 215,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-070",
+      "file": "apps/service/src/support-routes.test.ts",
+      "line": 195,
       "kind": "title"
     },
     {
@@ -33206,6 +33261,36 @@
       "kind": "title"
     },
     {
+      "id": "IAM-070",
+      "file": "packages/db/src/support-access-migration.test.ts",
+      "line": 32,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-022",
+      "file": "packages/db/src/support.test.ts",
+      "line": 155,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-023",
+      "file": "packages/db/src/support.test.ts",
+      "line": 134,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-024",
+      "file": "packages/db/src/support.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-042",
+      "file": "packages/db/src/support.test.ts",
+      "line": 95,
+      "kind": "title"
+    },
+    {
       "id": "DAT-097",
       "file": "packages/db/src/takes.test.ts",
       "line": 332,
@@ -33962,15 +34047,33 @@
       "kind": "title"
     },
     {
+      "id": "IAM-070",
+      "file": "packages/domain/src/access/permissions.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
       "id": "IAM-034",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 92,
+      "line": 93,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 109,
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-022",
+      "file": "packages/domain/src/access/support.test.ts",
+      "line": 57,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-023",
+      "file": "packages/domain/src/access/support.test.ts",
+      "line": 49,
       "kind": "title"
     },
     {
@@ -35164,7 +35267,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1290,
+      "line": 1294,
       "kind": "title"
     },
     {

@@ -235,7 +235,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   lagging past five minutes, integrity failing) is told to whoever administers in their inbox, once
   until it clears, never by email; a search by meaning while the index lags says new content may not
   be found by meaning yet.
-- **Support access.** Through the API (`/v1/support-access`), whoever holds Grant support access, as
+- **Support access.** Through the API (`/v1/support-access`), whoever holds grant support, as
   every administrator of the environment does, lets a named person from outside the organisation look,
   by address: at Diagnostics, or at titles and names, or at content too, in the spaces chosen, for a
   stated purpose, until a stated time within the limit for outside access, and revokes it at once. While
