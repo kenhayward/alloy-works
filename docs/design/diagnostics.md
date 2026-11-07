@@ -35,7 +35,7 @@ all of it is built.
 
 ## Diagnostics' read
 
-`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever administers, in one transaction under the
+`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever holds `read_diagnostics` ([support.md](support.md)), in one transaction under the
 environment's role. Codes and counts, never content.
 
 - **Health** (`capabilityHealth`, DG-F) per capability over 15 minutes: failing at half the answered requests failing
@@ -93,7 +93,7 @@ measure, its kind and unit; `usage_day` holds a UTC day, a measure and an amount
   time, and reference searches, which leave no row and are measured as a capability of their own
   (`MEASURED_OPERATIONS`).
 - **Samples**: the schema's database bytes, and object bytes by kind as each owner records them.
-- **Read** at `GET /v1/usage` by whoever administers: every measure, by day, the last 13 months unless named.
+- **Read** at `GET /v1/usage` by whoever holds `read_diagnostics`: every measure, by day, the last 13 months unless named.
 - **Shown** in Administration's Usage: each measure's 13 months as bars and in numbers (this month so far, last month,
   a year before), a sample as held at its month's last count; any one measure by month or by day.
 

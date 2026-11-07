@@ -61,6 +61,7 @@ understand the storage layer, rather than something to be thrown away.
 | [moving.md](moving.md)                                 | Moving an artifact between spaces in a tenant: who may, what comes along, what stops working                                                                                  |
 | [export-and-import.md](export-and-import.md)           | A tenant, its configuration or a part exported and readable without the product, and restored: audit only into an empty tenant                                                |
 | [The life of a tenant](tenant-lifecycle.md)            | Suspending, closing and deleting a tenant on a stated timetable; organisation administrators, from a tenant of their own that holds no content                                |
+| [support.md](support.md)                               | Support access: a named outsider's grant, decided apart, by scope, until a stated time; what each route reads                                                                 |
 
 ## Why these are not one per requirement area
 

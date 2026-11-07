@@ -230,7 +230,7 @@ describe('the high-risk permissions', () => {
     expect((await get(ofPart, both.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
   });
 
-  it('reads Diagnostics with read_diagnostics, which an Administrator holds, and administer alone does not', async () => {
+  it('ADM-017 lets an Administrator read Diagnostics through read_diagnostics, which administer alone no longer gives', async () => {
     const reader = await holding('lise', 'Diagnostics reader', ['read', 'read_diagnostics']);
     const admin = await holding('barbara', 'Administrator, no diagnostics', ['read', 'administer']);
     for (const url of [
