@@ -863,6 +863,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything that can leave this environment, and what is configured for each
+         * @description Answers every way anything can leave this environment: model endpoints, embedding, machine translation, reference sources, malware scanning (none exists), data connections, webhooks, mail, extensions, vocabulary sources and CT Studio. For each, what may leave in plain words, whether it is on by default, the operation and permission that change it, and its residency: an endpoint’s declared boundary, else none declared. Then what is configured for it here, each by name, on or off, and its host alone, never a path or query an address can carry a key in, nor any secret. Needs administer at the environment.
+         */
+        get: operations["getBoundary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/changes": {
         parameters: {
             query?: never;
@@ -28561,6 +28581,140 @@ export interface operations {
                                 } | null;
                             } | null;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getBoundary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every way out, never a secret or an address’s path */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "ways": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every way anything can leave this environment */
+                        ways: {
+                            /**
+                             * @description model_endpoint, embedding, translation, reference_source, malware_scanning, data_connection, webhook, mail, extension, vocabulary_source or ct_studio
+                             * @enum {string}
+                             */
+                            way: "model_endpoint" | "embedding" | "translation" | "reference_source" | "malware_scanning" | "data_connection" | "webhook" | "mail" | "extension" | "vocabulary_source" | "ct_studio";
+                            /** @description What may leave by it, in plain words */
+                            what: string;
+                            /** @description Whether a new environment sends by it before anyone changes it */
+                            onByDefault: boolean;
+                            /** @description Who may change it; null where nothing exists to change */
+                            changedBy: {
+                                /** @description The operation that turns it on or changes where it goes */
+                                operation: string;
+                                /** @description The permission that operation needs */
+                                permission: string;
+                            } | null;
+                            /**
+                             * @description endpoint: each endpoint declares its boundary, inside or outside; not_declared: no residency is stated, since what is promised (ADM-Q01) is open
+                             * @enum {string}
+                             */
+                            residency: "endpoint" | "not_declared";
+                            /** @description Why nothing sends by it, where nothing does; else null */
+                            absent: string | null;
+                            /** @description Whether anything configured here sends by it now */
+                            on: boolean;
+                            /** @description What this environment has configured for it */
+                            items: {
+                                /** @description Its id, or a declared source’s key */
+                                id: string;
+                                /** @description Its name; a webhook without a description, its host */
+                                name: string;
+                                /** @description Whether anything is sent by it now */
+                                on: boolean;
+                                /** @description The host it is sent to, never a path or query, which can carry a key; null where none */
+                                host: string | null;
+                                /** @description A model endpoint’s declared boundary; null for anything else, which declares none */
+                                boundary: ("inside" | "outside") | null;
+                                /** @description A word more: a connection’s type, a relay’s owner (own or platform), an extension’s kind, the translation policy; null where none */
+                                detail: string | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not hold administer at the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

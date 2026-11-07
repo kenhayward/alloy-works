@@ -228,6 +228,10 @@
       "description": "Invite people before their first sign-in."
     },
     {
+      "name": "Boundary",
+      "description": "See everything that can leave the environment: what may leave by each way, whether it is on by default, who may change it and what is configured."
+    },
+    {
       "name": "Secrets",
       "description": "See every secret the environment holds, what uses each and when it was last replaced, before replacing one."
     },
@@ -370,6 +374,7 @@
         "Groups",
         "Sessions",
         "Invitations",
+        "Boundary",
         "Secrets",
         "Support access",
         "Sign-in settings",
@@ -80312,6 +80317,336 @@
                         "mayEdit",
                         "mayRetire"
                       ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/boundary": {
+      "get": {
+        "operationId": "getBoundary",
+        "summary": "Everything that can leave this environment, and what is configured for each",
+        "description": "Answers every way anything can leave this environment: model endpoints, embedding, machine translation, reference sources, malware scanning (none exists), data connections, webhooks, mail, extensions, vocabulary sources and CT Studio. For each, what may leave in plain words, whether it is on by default, the operation and permission that change it, and its residency: an endpoint’s declared boundary, else none declared. Then what is configured for it here, each by name, on or off, and its host alone, never a path or query an address can carry a key in, nor any secret. Needs administer at the environment.",
+        "tags": [
+          "Boundary"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "x-alloy-reads": "metadata",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every way out, never a secret or an address’s path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ways": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "way": {
+                            "type": "string",
+                            "enum": [
+                              "model_endpoint",
+                              "embedding",
+                              "translation",
+                              "reference_source",
+                              "malware_scanning",
+                              "data_connection",
+                              "webhook",
+                              "mail",
+                              "extension",
+                              "vocabulary_source",
+                              "ct_studio"
+                            ],
+                            "description": "model_endpoint, embedding, translation, reference_source, malware_scanning, data_connection, webhook, mail, extension, vocabulary_source or ct_studio"
+                          },
+                          "what": {
+                            "type": "string",
+                            "description": "What may leave by it, in plain words"
+                          },
+                          "onByDefault": {
+                            "type": "boolean",
+                            "description": "Whether a new environment sends by it before anyone changes it"
+                          },
+                          "changedBy": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "operation": {
+                                    "type": "string",
+                                    "description": "The operation that turns it on or changes where it goes"
+                                  },
+                                  "permission": {
+                                    "type": "string",
+                                    "description": "The permission that operation needs"
+                                  }
+                                },
+                                "required": [
+                                  "operation",
+                                  "permission"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who may change it; null where nothing exists to change"
+                          },
+                          "residency": {
+                            "type": "string",
+                            "enum": [
+                              "endpoint",
+                              "not_declared"
+                            ],
+                            "description": "endpoint: each endpoint declares its boundary, inside or outside; not_declared: no residency is stated, since what is promised (ADM-Q01) is open"
+                          },
+                          "absent": {
+                            "description": "Why nothing sends by it, where nothing does; else null",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "on": {
+                            "type": "boolean",
+                            "description": "Whether anything configured here sends by it now"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "Its id, or a declared source’s key"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Its name; a webhook without a description, its host"
+                                },
+                                "on": {
+                                  "type": "boolean",
+                                  "description": "Whether anything is sent by it now"
+                                },
+                                "host": {
+                                  "description": "The host it is sent to, never a path or query, which can carry a key; null where none",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "boundary": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "inside",
+                                        "outside"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "A model endpoint’s declared boundary; null for anything else, which declares none"
+                                },
+                                "detail": {
+                                  "description": "A word more: a connection’s type, a relay’s owner (own or platform), an extension’s kind, the translation policy; null where none",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "on",
+                                "host",
+                                "boundary",
+                                "detail"
+                              ]
+                            },
+                            "description": "What this environment has configured for it"
+                          }
+                        },
+                        "required": [
+                          "way",
+                          "what",
+                          "onByDefault",
+                          "changedBy",
+                          "residency",
+                          "absent",
+                          "on",
+                          "items"
+                        ]
+                      },
+                      "description": "Every way anything can leave this environment"
+                    }
+                  },
+                  "required": [
+                    "ways"
+                  ]
+                },
+                "example": {
+                  "ways": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not hold administer at the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
