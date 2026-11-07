@@ -2,10 +2,13 @@ import type { DiagnosticsView, UsageView } from '@alloy-works/api-contract';
 import {
   countUsage,
   createMeasuring,
+  integrityDue,
   recordBackgroundWork,
   recordCapabilityMinute,
   recordQueryRun,
+  verifyIntegrity,
 } from '@alloy-works/db';
+import { queryAs } from '@alloy-works/db/testing';
 import { bucketOf, emptyBuckets, PERFORMANCE_BUDGETS } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -139,6 +142,44 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
     expect(view.performance.map((each) => each.budget)).toEqual(
       PERFORMANCE_BUDGETS.map((each) => each.id),
     );
+  });
+
+  it('says, class by class, how many items were checked in the period and which failed', async () => {
+    const key = `${h.tenant.role}/sha256/${'a'.repeat(64)}`;
+    const { rows } = await queryAs(
+      h.db.adminUrl,
+      `insert into "${h.tenant.schema}".audit_export (snapshot, state, object_key, sha256, bytes, finished_at)
+       values (pg_current_snapshot(), 'done', $1, $2, 1, now()) returning id`,
+      [key, 'a'.repeat(64)],
+    );
+    const lost = rows[0]!.id as string;
+    await h.tenantDb.withTenant(
+      h.tenant,
+      async (trx) => {
+        // Tonight's share, the export's object missing from the store.
+        for (const item of (await integrityDue(trx)) ?? [])
+          await verifyIntegrity(trx, item, () => Promise.resolve(null));
+      },
+      { actorKind: 'system' },
+    );
+    const { integrity } = (await h.call('ada', 'GET', '/v1/diagnostics')).json<DiagnosticsView>();
+    expect(integrity.periodDays).toBe(28);
+    expect(integrity.classes.map((each) => each.class)).toEqual([
+      'asset',
+      'version',
+      'audit_export',
+      'tenant_export',
+    ]);
+    expect(integrity.classes.find((each) => each.class === 'audit_export')).toEqual({
+      class: 'audit_export',
+      items: 1,
+      checkedInPeriod: 1,
+      failing: 1,
+      lastFailure: { item: lost, failure: 'object_missing', at: expect.any(String) as string },
+    });
+    const versions = integrity.classes.find((each) => each.class === 'version')!;
+    expect(versions.items).toBeGreaterThan(0);
+    expect(versions).toMatchObject({ checkedInPeriod: Math.ceil(versions.items / 28), failing: 0 });
   });
 
   it('is refused to somebody who does not administer the environment', async () => {

@@ -7,6 +7,7 @@ import {
   dataPolicy,
   embeddingFreshness,
   embeddingStatus,
+  integrityOf,
   mailChannel,
   mailCounts,
   ownJobs,
@@ -196,6 +197,7 @@ export function diagnosticsHandlers() {
       const budget = await readBudget(trx);
       const spent = budget === null ? null : await spendThisMonth(trx, budget.currency);
       const policy = await dataPolicy(trx);
+      const integrity = await integrityOf(trx, now);
       return {
         at: now.toISOString(),
         capabilities,
@@ -236,6 +238,16 @@ export function diagnosticsHandlers() {
                   limitMicros: budget.limitMicros.toString(),
                 },
           queryRunsAtOnce: policy.concurrentRuns ?? runsAtOnce.default,
+        },
+        integrity: {
+          periodDays: integrity.periodDays,
+          classes: integrity.classes.map((each) => ({
+            ...each,
+            lastFailure:
+              each.lastFailure === null
+                ? null
+                : { ...each.lastFailure, at: each.lastFailure.at.toISOString() },
+          })),
         },
       };
     },
