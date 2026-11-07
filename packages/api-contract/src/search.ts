@@ -288,6 +288,12 @@ export const SearchAnswerView = z.discriminatedUnion('outcome', [
       .describe(
         "Whether meaning was searched beside the words: `used`, its best fused with the best of the words; `unavailable`, the embedding model did not answer, so these are the words alone; `unconfigured`, no embedding model serves this environment; `skipped`, nothing to search by meaning (scoped terms, exclusions or filters alone, or an earlier version or a baseline). The count and facets are always the words'",
       ),
+    meaningBehind: z
+      .literal(true)
+      .optional()
+      .describe(
+        'Where meaning was used while new versions have waited past five minutes to be findable by meaning (SCH-067): what changed lately may not be found by meaning yet. Absent otherwise',
+      ),
     ...said,
   }),
 ]);

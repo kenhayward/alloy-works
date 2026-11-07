@@ -10,8 +10,9 @@ import {
   readsOnlyShares,
   translationsOf,
   type Translation,
+  embeddingWaitSeconds,
 } from '@alloy-works/db';
-import type { SearchKind } from '@alloy-works/domain';
+import { indexLagging, type SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { listedTranslations } from './components.js';
 import { AppError } from './errors.js';
@@ -62,6 +63,8 @@ function view(
   meaning: MeaningState = 'skipped',
   /** Each component found's translations (LOC-016; TE-B). */
   translated: ReadonlyMap<string, readonly Translation[]> = new Map(),
+  /** Meaning was used while the index lags past its ceiling (SCH-067; DGe4). */
+  behind = false,
 ): SearchAnswerView {
   const message = sentenceFor(answer);
   if (answer.outcome === 'nothing_to_match') {
@@ -74,6 +77,7 @@ function view(
     capped: answer.capped,
     facetsBounded: answer.facetsBounded,
     meaning,
+    ...(behind ? { meaningBehind: true as const } : {}),
     message,
     facets: {
       kinds: answer.facets.kinds.map((each) => ({ ...each })),
@@ -223,7 +227,7 @@ export function searchHandlers(
           },
         },
       );
-      const { answer, open, outside, translated } = await db.withTenant(
+      const { answer, open, outside, translated, behind } = await db.withTenant(
         tenantOf(request),
         async (trx) => {
           const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
@@ -249,6 +253,8 @@ export function searchHandlers(
             outside: await readsOnlyShares(trx, principalOf(request).principalId),
             // Read only of what the reader was found to read, so none they may not is named.
             translated: await translationsOf(trx, components),
+            // The searcher told that what changed lately may not be found by meaning yet (ADM-037).
+            behind: meaning.state === 'used' && indexLagging(await embeddingWaitSeconds(trx)),
           };
         },
       );
@@ -283,6 +289,7 @@ export function searchHandlers(
         outside,
         meaning.state,
         translated,
+        behind,
       );
     },
   };

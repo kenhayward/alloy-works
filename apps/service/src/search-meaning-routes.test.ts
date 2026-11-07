@@ -134,6 +134,24 @@ describe('searching by meaning through the service (the G7 plan, G7-G to G7-I)',
     expect(answer.items.find((each) => each.artifactId === id.Sites)?.found).toBe('both');
   });
 
+  it('ADM-037 tells a searcher by meaning that new content may not be found by meaning yet while the index lags past its ceiling', async () => {
+    expect(await search('north weir')).not.toHaveProperty('meaningBehind');
+    const waiting = crypto.randomUUID();
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx
+        .insertInto('embedding_queued')
+        .values({ artifact_id: waiting, queued_at: new Date(Date.now() - 6 * 60_000) })
+        .execute(),
+    );
+    try {
+      expect(await search('north weir')).toMatchObject({ meaning: 'used', meaningBehind: true });
+    } finally {
+      await h.tenantDb.withTenant(h.tenant, (trx) =>
+        trx.deleteFrom('embedding_queued').where('artifact_id', '=', waiting).execute(),
+      );
+    }
+  });
+
   it("embeds a search's words once a day for its searcher, as a run of theirs", async () => {
     const before = embedded.length;
     const runs = (await h.tenantDb.withTenant(h.tenant, (trx) => runsThisMonth(trx, h.ids.grace!)))

@@ -290014,7 +290014,8 @@
                               "webhook",
                               "reference",
                               "import",
-                              "mail"
+                              "mail",
+                              "diagnostics"
                             ]
                           },
                           "actor": {
@@ -290419,6 +290420,38 @@
                             ],
                             "description": "A proposal left alone, abandoned in seven days; null otherwise"
                           },
+                          "diagnostics": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "source_down",
+                                      "job_failed",
+                                      "index_lagging",
+                                      "work_failing",
+                                      "capability_failing",
+                                      "integrity_failing"
+                                    ]
+                                  },
+                                  "subject": {
+                                    "type": "string",
+                                    "description": "What it is of: a data source by id, a kind of job, background work or a capability by name, an integrity class; empty for the index"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "subject"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A failure nobody would otherwise see, told to those who administer once until it clears; null otherwise"
+                          },
                           "at": {
                             "type": "string",
                             "format": "date-time",
@@ -290440,6 +290473,7 @@
                           "webhook",
                           "reference",
                           "import",
+                          "diagnostics",
                           "at",
                           "read"
                         ]
@@ -354387,6 +354421,11 @@
                             "skipped"
                           ],
                           "description": "Whether meaning was searched beside the words: `used`, its best fused with the best of the words; `unavailable`, the embedding model did not answer, so these are the words alone; `unconfigured`, no embedding model serves this environment; `skipped`, nothing to search by meaning (scoped terms, exclusions or filters alone, or an earlier version or a baseline). The count and facets are always the words'"
+                        },
+                        "meaningBehind": {
+                          "description": "Where meaning was used while new versions have waited past five minutes to be findable by meaning (SCH-067): what changed lately may not be found by meaning yet. Absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         },
                         "message": {
                           "type": "string",
