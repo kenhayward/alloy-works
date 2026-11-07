@@ -3,6 +3,7 @@ import { useId, useSyncExternalStore } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { formats, words } from '../words/words.js';
+import styles from './SupportView.module.css';
 
 /** The support access the signed-in person holds, as `/v1/me` answers it (support.md). */
 export interface MySupport {
@@ -99,10 +100,10 @@ export function SupportReadAsk({ support }: { support: MySupport }) {
     <section aria-labelledby={id}>
       <h1 id={id}>{words('shell.support-read-question')}</h1>
       <p>{words('shell.support-read-sentence', { purpose: support.purpose })}</p>
-      <p>
+      <p className={styles['choices']}>
         <button type="button" className="primary" onClick={() => chooseSupportRead(support)}>
           {words('shell.support-read-yes')}
-        </button>{' '}
+        </button>
         <a href="#/">{words('shell.support-read-no')}</a>
       </p>
     </section>

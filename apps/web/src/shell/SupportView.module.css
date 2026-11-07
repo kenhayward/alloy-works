@@ -1,0 +1,7 @@
+/* Reading content under support access, or not: the two choices apart, the yes first (SA-G). */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-16);
+}

@@ -293,12 +293,13 @@ function GiveSupport({
 
   return (
     <form
+      className={styles['settings']}
       onSubmit={(event) => void give(event)}
       aria-label={words('admin.support-give')}
       noValidate
     >
       <h2>{words('admin.support-give')}</h2>
-      <label className={styles['filter']}>
+      <label className={`${styles['setting']} ${styles['settingWide']}`}>
         {words('admin.support-address')}
         <input
           type="email"
@@ -310,21 +311,20 @@ function GiveSupport({
       <fieldset>
         <legend>{words('admin.support-what')}</legend>
         {SCOPES.map((each) => (
-          <label key={each} className={styles['check']}>
-            <input
-              type="radio"
-              name={`${id}-scope`}
-              value={each}
-              checked={scope === each}
-              aria-describedby={`${id}-${each}`}
-              onChange={() => setScope(each)}
-            />
+          <label key={each} className={styles['setting']}>
             <span>
+              <input
+                type="radio"
+                name={`${id}-scope`}
+                value={each}
+                checked={scope === each}
+                aria-describedby={`${id}-${each}`}
+                onChange={() => setScope(each)}
+              />{' '}
               <span className={styles['strong']}>{scopeName(each)}</span>
-              <br />
-              <span id={`${id}-${each}`} className={styles['muted']}>
-                {scopeExplained(each)}
-              </span>
+            </span>
+            <span id={`${id}-${each}`} className={styles['muted']}>
+              {scopeExplained(each)}
             </span>
           </label>
         ))}
@@ -336,22 +336,24 @@ function GiveSupport({
             : words('admin.support-spaces-required')}
         </legend>
         {[...names].map(([space, name]) => (
-          <label key={space} className={styles['check']}>
-            <input
-              type="checkbox"
-              checked={spaces.has(space)}
-              onChange={(change) => {
-                const next = new Set(spaces);
-                if (change.target.checked) next.add(space);
-                else next.delete(space);
-                setSpaces(next);
-              }}
-            />
-            <span data-content>{name}</span>
+          <label key={space} className={styles['setting']}>
+            <span>
+              <input
+                type="checkbox"
+                checked={spaces.has(space)}
+                onChange={(change) => {
+                  const next = new Set(spaces);
+                  if (change.target.checked) next.add(space);
+                  else next.delete(space);
+                  setSpaces(next);
+                }}
+              />{' '}
+              <span data-content>{name}</span>
+            </span>
           </label>
         ))}
       </fieldset>
-      <label className={styles['filter']}>
+      <label className={`${styles['setting']} ${styles['settingWide']}`}>
         {words('admin.support-why')}
         <textarea
           value={purpose}
@@ -359,7 +361,7 @@ function GiveSupport({
           onChange={(change) => setPurpose(change.target.value)}
         />
       </label>
-      <label className={styles['filter']}>
+      <label className={styles['setting']}>
         {words('admin.support-ends')}
         <input
           type="date"
@@ -473,7 +475,7 @@ export function SupportAccess({
               <tbody>
                 {read.items.map((row) => (
                   <tr key={row.id} data-archived={row.active ? undefined : 'true'}>
-                    <td>
+                    <td className={styles['wraps']}>
                       <span className={styles['strong']} data-content>
                         {personOf(row)}
                       </span>
@@ -486,7 +488,7 @@ export function SupportAccess({
                         </>
                       )}
                     </td>
-                    <td>
+                    <td className={styles['wraps']}>
                       {scopeName(row.scope)}
                       {row.spaces.length > 0 && (
                         <>
@@ -497,15 +499,17 @@ export function SupportAccess({
                         </>
                       )}
                     </td>
-                    <td data-content>{row.purpose}</td>
-                    <td>
+                    <td className={styles['wraps']} data-content>
+                      {row.purpose}
+                    </td>
+                    <td className={styles['wraps']}>
                       <span {...(row.grantedBy.name === null ? {} : { 'data-content': '' })}>
                         {named(row.grantedBy)}
                       </span>
                       <br />
                       <span className={styles['muted']}>{when(row.grantedAt)}</span>
                     </td>
-                    <td>{when(row.expiresAt)}</td>
+                    <td className={styles['wraps']}>{when(row.expiresAt)}</td>
                     <td>
                       <Standing row={row} />
                     </td>
