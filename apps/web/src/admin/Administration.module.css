@@ -553,6 +553,20 @@
   background: var(--surface);
 }
 
+/* What leaves: each way out a card, its facts beneath what it sends (SA-J). */
+.ways {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ways dl {
+  grid-template-columns: 160px minmax(0, 1fr);
+}
+
 .wideCard {
   grid-column: 1 / -1;
 }

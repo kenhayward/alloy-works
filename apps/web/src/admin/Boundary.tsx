@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { permissionName } from '../access/describe.js';
 import { administersAt } from '../access/ManageAccessLink.js';
@@ -63,6 +63,7 @@ const wayName = (way: Way) => words(`admin.boundary-way.${way}`);
  * that changes it. Asked of the service, as every panel is: one who does not administer is told so.
  */
 export function Boundary({ client }: { client: Client }) {
+  const id = useId();
   const [read, setRead] = useState<readonly WayRow[] | 'refused' | 'failed' | null>(null);
   useEffect(() => {
     let current = true;
@@ -101,82 +102,74 @@ export function Boundary({ client }: { client: Client }) {
           <p>{words('admin.boundary-could-not-be-read')}</p>
         </Notice>
       ) : (
-        <table aria-label={words('admin.boundary')} className={styles['table']}>
-          <thead>
-            <tr>
-              <th scope="col">{words('admin.boundary-way')}</th>
-              <th scope="col">{words('admin.boundary-by-default')}</th>
-              <th scope="col">{words('admin.boundary-changed-by')}</th>
-              <th scope="col">{words('admin.boundary-residency')}</th>
-              <th scope="col">{words('admin.boundary-here')}</th>
-              <th scope="col">
-                <span className={styles['hidden']}>{words('admin.actions')}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {read.map((row) => {
-              const at = CHANGED_AT[row.way];
-              return (
-                <tr key={row.way}>
-                  <td className={styles['wraps']}>
-                    <span className={styles['strong']}>{wayName(row.way)}</span>
-                    <br />
-                    <span className={styles['muted']}>
-                      {words(`admin.boundary-what.${row.way}`)}
-                    </span>
-                  </td>
-                  <td>{words('admin.boundary-on-off', { on: row.onByDefault ? 'yes' : 'no' })}</td>
-                  <td className={styles['wraps']}>
-                    {row.changedBy === null
-                      ? words('admin.boundary-changed-by-nobody')
-                      : words('admin.boundary-changed-by-holder', {
-                          permission: permissionName(row.changedBy.permission),
-                        })}
-                  </td>
-                  <td className={styles['wraps']}>
-                    {words(`admin.boundary-residency.${row.residency}`)}
-                  </td>
-                  <td className={styles['wraps']}>
-                    {row.absent !== null ? (
-                      <span className={styles['muted']}>
-                        {row.way === 'malware_scanning'
-                          ? words('admin.boundary-absent.malware_scanning')
-                          : words('admin.boundary-absent')}
-                      </span>
-                    ) : row.items.length === 0 ? (
-                      <span className={styles['muted']}>{words('admin.boundary-here-none')}</span>
-                    ) : (
-                      <ul className={styles['consumers']}>
-                        {row.items.map((item) => (
-                          <li key={item.id}>
-                            {words('admin.boundary-item', {
-                              name: item.name,
-                              on: item.on ? 'yes' : 'no',
-                              host:
-                                item.host === null || item.host === item.name ? 'none' : item.host,
-                              boundary: item.boundary ?? 'none',
-                            })}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                  <td className={styles['wraps']}>
-                    {at !== null && (
+        <ul aria-label={words('admin.boundary')} className={styles['ways']}>
+          {read.map((row) => {
+            const at = CHANGED_AT[row.way];
+            const heading = `${id}-${row.way}`;
+            return (
+              <li key={row.way}>
+                <section aria-labelledby={heading} className={styles['card']}>
+                  <h2 id={heading}>{wayName(row.way)}</h2>
+                  <p className={styles['muted']}>{words(`admin.boundary-what.${row.way}`)}</p>
+                  <dl>
+                    <dt>{words('admin.boundary-by-default')}</dt>
+                    <dd>
+                      {words('admin.boundary-on-off', { on: row.onByDefault ? 'yes' : 'no' })}
+                    </dd>
+                    <dt>{words('admin.boundary-changed-by')}</dt>
+                    <dd>
+                      {row.changedBy === null
+                        ? words('admin.boundary-changed-by-nobody')
+                        : words('admin.boundary-changed-by-holder', {
+                            permission: permissionName(row.changedBy.permission),
+                          })}
+                    </dd>
+                    <dt>{words('admin.boundary-residency')}</dt>
+                    <dd>{words(`admin.boundary-residency.${row.residency}`)}</dd>
+                    <dt>{words('admin.boundary-here')}</dt>
+                    <dd>
+                      {row.absent !== null ? (
+                        row.way === 'malware_scanning' ? (
+                          words('admin.boundary-absent.malware_scanning')
+                        ) : (
+                          words('admin.boundary-absent')
+                        )
+                      ) : row.items.length === 0 ? (
+                        words('admin.boundary-here-none')
+                      ) : (
+                        <ul className={styles['consumers']}>
+                          {row.items.map((item) => (
+                            <li key={item.id}>
+                              {words('admin.boundary-item', {
+                                name: item.name,
+                                on: item.on ? 'yes' : 'no',
+                                host:
+                                  item.host === null || item.host === item.name
+                                    ? 'none'
+                                    : item.host,
+                                boundary: item.boundary ?? 'none',
+                              })}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </dd>
+                  </dl>
+                  {at !== null && (
+                    <p>
                       <a
                         href={at}
                         aria-label={words('admin.boundary-change-for', { way: wayName(row.way) })}
                       >
                         {words('admin.boundary-change')}
                       </a>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </p>
+                  )}
+                </section>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </>
   );

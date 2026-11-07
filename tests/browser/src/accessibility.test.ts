@@ -934,7 +934,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const arrival: Arrival = {
         shows: [
           page.getByRole('heading', { name: 'What leaves', level: 1 }),
-          page.getByRole('table', { name: 'What leaves' }),
+          page.getByRole('list', { name: 'What leaves' }),
         ],
       };
       await arrive(arrival);

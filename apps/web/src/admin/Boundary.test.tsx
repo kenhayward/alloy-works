@@ -91,33 +91,34 @@ describe("Administration's What leaves", () => {
   it('ADM-041 shows each way out: what may leave, whether on by default, who may change it, residency and what is set up here', async () => {
     const { client } = service(true);
     render(<Boundary client={client} />);
-    const table = await screen.findByRole('table', { name: 'What leaves' });
-    const rows = within(table).getAllByRole('row').slice(1);
-    expect(rows).toHaveLength(4);
-    expect(rows[0]).toHaveTextContent('Model endpoints');
-    expect(rows[0]).toHaveTextContent('Whoever may configure services');
-    expect(rows[0]).toHaveTextContent('Each endpoint says whether it is inside or outside');
-    expect(rows[0]).toHaveTextContent('Hosted');
-    expect(rows[0]).toHaveTextContent('hosted.example.test');
-    expect(rows[0]).toHaveTextContent(
+    const list = await screen.findByRole('list', { name: 'What leaves' });
+    const ways = within(list).getAllByRole('region');
+    expect(ways).toHaveLength(4);
+    const fact = (way: HTMLElement, term: string) =>
+      within(way).getByText(term, { selector: 'dt' }).nextElementSibling;
+    const models = screen.getByRole('region', { name: 'Model endpoints' });
+    expect(models).toHaveTextContent('Each endpoint says whether it is inside or outside');
+    expect(fact(models, 'Before anyone changes it')).toHaveTextContent('Off');
+    expect(fact(models, 'Who may change it')).toHaveTextContent('Whoever may configure services');
+    expect(fact(models, 'Set up here')).toHaveTextContent(
       'Hosted, on, to hosted.example.test, outside your data boundary',
     );
-    expect(within(rows[0]!).getByRole('link', { name: 'Change Model endpoints' })).toHaveAttribute(
+    expect(within(models).getByRole('link', { name: 'Change Model endpoints' })).toHaveAttribute(
       'href',
       '#/admin/models',
     );
-    expect(rows[1]).toHaveTextContent('Reference sources');
-    expect(within(rows[1]!).getAllByRole('cell')[1]).toHaveTextContent('On');
-    expect(within(rows[0]!).getAllByRole('cell')[1]).toHaveTextContent('Off');
-    expect(rows[1]).toHaveTextContent('Not declared');
-    expect(within(rows[1]!).getAllByRole('listitem')[1]).toHaveTextContent('PubMed, off');
-    expect(within(rows[1]!).getByRole('link')).toHaveAttribute('href', '#/admin/reference-sources');
-    expect(rows[2]).toHaveTextContent('Malware scanning');
-    expect(rows[2]).toHaveTextContent('No scanning service exists yet.');
-    expect(within(rows[2]!).queryByRole('link')).toBeNull();
-    expect(rows[3]).toHaveTextContent('Whoever may configure webhooks');
-    expect(rows[3]).toHaveTextContent('Nothing set up');
-    expect(within(rows[3]!).getByRole('link')).toHaveAttribute('href', '#/admin/webhooks');
+    const sources = screen.getByRole('region', { name: 'Reference sources' });
+    expect(fact(sources, 'Before anyone changes it')).toHaveTextContent('On');
+    expect(fact(sources, 'Residency')).toHaveTextContent('Not declared');
+    expect(within(sources).getAllByRole('listitem')[1]).toHaveTextContent('PubMed, off');
+    expect(within(sources).getByRole('link')).toHaveAttribute('href', '#/admin/reference-sources');
+    const scanning = screen.getByRole('region', { name: 'Malware scanning' });
+    expect(scanning).toHaveTextContent('No scanning service exists yet.');
+    expect(within(scanning).queryByRole('link')).toBeNull();
+    const webhooks = screen.getByRole('region', { name: 'Webhooks' });
+    expect(fact(webhooks, 'Who may change it')).toHaveTextContent('Whoever may configure webhooks');
+    expect(fact(webhooks, 'Set up here')).toHaveTextContent('Nothing set up');
+    expect(within(webhooks).getByRole('link')).toHaveAttribute('href', '#/admin/webhooks');
   });
 
   it('asks the service first, and sends one who does not administer nothing more', async () => {
