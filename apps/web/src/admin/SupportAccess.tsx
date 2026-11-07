@@ -484,7 +484,7 @@ export function SupportAccess({
                       {row.person.name !== null && (
                         <>
                           <br />
-                          <span className={styles['muted']} data-content>
+                          <span className={`${styles['muted']} ${styles['breaks']}`} data-content>
                             {row.person.email}
                           </span>
                         </>

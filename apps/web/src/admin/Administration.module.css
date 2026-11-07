@@ -313,7 +313,10 @@
   padding-block: var(--space-4);
   overflow: visible;
   white-space: normal;
-  /* A word with no space to break at, an address, breaks where it must rather than spilling over. */
+}
+
+/* An address in a cell that wraps, which has no space to break at, breaks where it must. */
+.breaks {
   overflow-wrap: anywhere;
 }
 
