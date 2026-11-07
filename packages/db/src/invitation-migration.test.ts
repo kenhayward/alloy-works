@@ -19,14 +19,15 @@ describe('migration 0014, over invitations made before it', () => {
     before = await mkdtemp(join(tmpdir(), 'aw-before-0014-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      // And not 0187, 0188, 0189 or 0208, which rely on the invitation 0014 makes, nor 0213, on 0187's provider_id.
+      // And not 0187, 0188, 0189 or 0208, which rely on the invitation 0014 makes, nor 0213, on 0187's provider_id, nor 0218, whose support grant names an invitation.
       filter: (source) =>
         !source.endsWith('0014_invitations.sql') &&
         !source.endsWith('0187_identity_providers.sql') &&
         !source.endsWith('0188_sign_in_settings.sql') &&
         !source.endsWith('0189_scim.sql') &&
         !source.endsWith('0208_mail_invitations_and_closures.sql') &&
-        !source.endsWith('0213_session_provider_check.sql'),
+        !source.endsWith('0213_session_provider_check.sql') &&
+        !source.endsWith('0218_support_access.sql'),
     });
   });
 
@@ -63,6 +64,7 @@ describe('migration 0014, over invitations made before it', () => {
       '0189_scim',
       '0208_mail_invitations_and_closures',
       '0213_session_provider_check',
+      '0218_support_access',
     ]);
 
     const { rows } = await queryAs(
