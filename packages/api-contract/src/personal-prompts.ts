@@ -67,6 +67,7 @@ export const personalPromptRoutes = {
     path: '/v1/me/prompts',
     summary: 'Your personal prompts',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     responses: {
       200: { description: 'Your own', schema: PersonalPromptList },
@@ -80,6 +81,7 @@ export const personalPromptRoutes = {
     path: '/v1/me/prompts',
     summary: 'Save a personal prompt',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     body: PersonalPromptBody,
     responses: {
@@ -98,6 +100,7 @@ export const personalPromptRoutes = {
     path: '/v1/me/prompts/{id}',
     summary: 'Change a personal prompt',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: PersonalPromptParams,
     body: PersonalPromptBody,
@@ -114,6 +117,7 @@ export const personalPromptRoutes = {
     path: '/v1/me/prompts/{id}/removal',
     summary: 'Delete a personal prompt',
     tenantScoped: true,
+    reads: 'metadata',
     access: SESSION,
     params: PersonalPromptParams,
     responses: {
@@ -129,6 +133,7 @@ export const personalPromptRoutes = {
     path: '/v1/me/prompts/{id}/promotion',
     summary: 'Promote a personal prompt into a space, as a new prompt at draft',
     tenantScoped: true,
+    reads: 'content',
     access: SESSION,
     params: PersonalPromptParams,
     body: PromotionBody,

@@ -106,6 +106,7 @@ export const shareRoutes = {
     path: '/v1/publications/{id}/shares',
     summary: "A publication's shares outside the organisation, each with every access",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'publish', target: { publication: 'id' } },
     params: z.object({ id: LowercaseUuid }),
     responses: {
@@ -121,6 +122,7 @@ export const shareRoutes = {
     path: '/v1/publications/{id}/shares',
     summary: 'Shares a publication with a named person outside the organisation',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'publish',
@@ -148,6 +150,7 @@ export const shareRoutes = {
     path: '/v1/publications/{id}/shares/{share}',
     summary: 'Revokes a share at once',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'publish',
@@ -168,6 +171,7 @@ export const shareRoutes = {
     path: '/v1/publications/{id}/outputs/{format}',
     summary: "A publication's output, through the service, decided at each request",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: SharedOutputParams,
     query: SharedOutputQuery,

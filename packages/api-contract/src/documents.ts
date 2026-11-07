@@ -771,6 +771,7 @@ export const documentRoutes = {
     path: '/v1/documents',
     summary: 'The documents the caller may read, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: DocumentListQuery,
     responses: {
@@ -789,6 +790,7 @@ export const documentRoutes = {
     summary:
       "Create a document in this space, at version 0.1: an empty outline, or its template's starting one",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateDocumentBody,
@@ -836,6 +838,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}',
     summary: 'A document at its latest version, and whether the caller may restructure it',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {
@@ -854,6 +857,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/numbering',
     summary: "The latest version's numbering, as the caller is shown it",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {
@@ -872,6 +876,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/contributions',
     summary: 'What each occurrence of the latest version contributes, as the caller is shown it',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {
@@ -891,6 +896,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/texts',
     summary: 'The text of every component the latest version places, as the caller is shown it',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {
@@ -913,6 +919,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/values',
     summary: "Write the document's own values, whole, as one version with the outline unchanged",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: DocumentValuesBody,
@@ -947,6 +954,7 @@ export const documentRoutes = {
     summary:
       "The document's parameters: what its template declares, their values and their history",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     query: DocumentParametersQuery,
@@ -975,6 +983,7 @@ export const documentRoutes = {
     summary:
       "Write the document's parameters, whole, as one version with its outline and values unchanged",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: DocumentParametersBody,
@@ -1010,6 +1019,7 @@ export const documentRoutes = {
     summary:
       "Write the document's own translation fallback, as one version with everything else unchanged",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: DocumentFallbackBody,
@@ -1036,6 +1046,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/profile',
     summary: "Write the document's profile, whole, as one version with everything else unchanged",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: DocumentProfileBody,
@@ -1068,6 +1079,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/placement',
     summary: "What placing another document's section here would pull in",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     query: PlacementQuery,
@@ -1091,6 +1103,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/placement',
     summary: "Place another document's section here, as references under a new section",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: PlacementBody,
@@ -1124,6 +1137,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/language',
     summary: "Change a document's language, and optionally its components'",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: DocumentLanguageBody,
@@ -1157,6 +1171,7 @@ export const documentRoutes = {
     path: '/v1/documents/{id}/outline',
     summary: 'Apply one operation to the outline, as one version',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: OutlineOperationBody,

@@ -131,6 +131,7 @@ export const extensionRoutes = {
     path: '/v1/extensions',
     summary: 'The extensions installed, removed ones too, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     query: ExtensionListQuery,
     responses: {
@@ -149,6 +150,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/preview',
     summary: 'Read an extension’s manifest by its URL, before installing it',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     body: PreviewExtensionBody,
     responses: {
@@ -168,6 +170,7 @@ export const extensionRoutes = {
     path: '/v1/extensions',
     summary: 'Install an extension at the manifest its preview showed',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     body: InstallExtensionBody,
     responses: {
@@ -188,6 +191,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}',
     summary: 'An extension and the manifest it has now',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     params: ExtensionParams,
     responses: {
@@ -203,6 +207,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}/preview',
     summary: 'Read an extension’s manifest again, saying what an update would change',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     params: ExtensionParams,
     responses: {
@@ -220,6 +225,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}/update',
     summary: 'Move an extension to the manifest its update preview showed',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     params: ExtensionParams,
     body: UpdateExtensionBody,
@@ -243,6 +249,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}/uses',
     summary: 'The connections using an extension, retired ones too',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     params: ExtensionParams,
     responses: {
@@ -258,6 +265,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}',
     summary: 'Remove an extension no connection uses but a retired one',
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     params: ExtensionParams,
     responses: {
@@ -278,6 +286,7 @@ export const extensionRoutes = {
     path: '/v1/extensions/{id}/secret',
     summary: 'Set the secret a reference extension is sent',
     tenantScoped: true,
+    reads: 'none',
     access: ADMINISTER,
     params: ExtensionParams,
     body: ExtensionSecretBody,

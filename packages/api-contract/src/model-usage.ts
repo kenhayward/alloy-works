@@ -55,13 +55,17 @@ export const modelUsageRoutes = {
     path: '/v1/model-usage',
     summary: 'What models and queries were used and cost, month by month',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    reads: 'metadata',
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     query: ModelUsageQuery,
     responses: {
       200: { description: 'The months', schema: ModelUsageView },
       400: { description: 'Months not a whole number from 1 to 13', schema: ErrorBody },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
-      403: { description: 'The caller does not administer this environment', schema: ErrorBody },
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

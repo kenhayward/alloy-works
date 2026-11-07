@@ -82,6 +82,7 @@ export const modelBudgetRoutes = {
     path: '/v1/model-budget',
     summary: 'The monthly model budget, this month’s spend, and who is told',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     responses: {
       200: { description: 'The budget', schema: ModelBudgetView },
@@ -95,6 +96,7 @@ export const modelBudgetRoutes = {
     path: '/v1/model-budget',
     summary: 'Set or lift the monthly model budget',
     tenantScoped: true,
+    reads: 'none',
     access: administer,
     body: ModelBudgetBody,
     responses: {
@@ -114,6 +116,7 @@ export const modelBudgetRoutes = {
     path: '/v1/model-budget/recipients',
     summary: 'Name who is told when the model budget crosses a threshold',
     tenantScoped: true,
+    reads: 'none',
     access: administer,
     body: BudgetRecipientsBody,
     responses: {

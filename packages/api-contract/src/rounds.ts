@@ -114,6 +114,7 @@ export const roundRoutes = {
     path: '/v1/documents/{id}/rounds',
     summary: 'Open a review round on this document: its reviewers, its scope and its due date',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: DocumentParams,
     body: OpenRoundBody,
@@ -141,6 +142,7 @@ export const roundRoutes = {
     path: '/v1/documents/{id}/rounds',
     summary: 'The review rounds on this document, newest first',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     responses: {
@@ -159,6 +161,7 @@ export const roundRoutes = {
     path: '/v1/rounds/{id}',
     summary: 'A review round, each reviewer by state, and whether everybody has reviewed',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: roundTarget },
     params: RoundParams,
     responses: {
@@ -174,6 +177,7 @@ export const roundRoutes = {
     path: '/v1/rounds/{id}/closure',
     summary: 'Close a review round, for good',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'edit', target: roundTarget },
     params: RoundParams,
     responses: {
@@ -192,6 +196,7 @@ export const roundRoutes = {
     path: '/v1/rounds/{id}/start',
     summary: 'Say you have started your review in this round',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: roundTarget },
     params: RoundParams,
     responses: {
@@ -212,6 +217,7 @@ export const roundRoutes = {
     path: '/v1/rounds/{id}/completion',
     summary: 'Say you have finished your review, with comments or with nothing to say',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: roundTarget },
     params: RoundParams,
     body: CompleteReviewBody,
@@ -237,6 +243,7 @@ export const roundRoutes = {
     path: '/v1/rounds/{id}/reopening',
     summary: 'Take back your completion while the round is open',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: roundTarget },
     params: RoundParams,
     responses: {

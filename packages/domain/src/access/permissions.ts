@@ -41,6 +41,9 @@ export const permissions = [
   // An organisation's acts, meaningful only in its own tenant (tenant-lifecycle.md, TL-L).
   'create_tenant',
   'share_provider',
+  // Reading Diagnostics and usage (the SA plan, SA-F): every role and token holding `administer`
+  // gained it by migration 0217. Support's narrowest scope names it; it is uncapped for an outsider.
+  'read_diagnostics',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -103,7 +106,7 @@ export const externalCap: readonly Permission[] = [
 
 /**
  * What is decided "at the target's level or above" (access.md, "Routes"), so a denial below does not
- * stand against somebody holding it above: `administer`, and the six split out of it, which keep its rule.
+ * stand against somebody holding it above: `administer`, and the acts split out of it, which keep its rule.
  */
 export const administrativePermissions: readonly Permission[] = [
   'administer',
@@ -119,6 +122,7 @@ export const administrativePermissions: readonly Permission[] = [
   'suspend_tenant',
   'create_tenant',
   'share_provider',
+  'read_diagnostics',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

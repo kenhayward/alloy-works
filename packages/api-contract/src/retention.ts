@@ -75,6 +75,7 @@ export const retentionRoutes = {
     path: '/v1/retention',
     summary: 'The retention keeps in force',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     responses: {
       200: { description: 'The keeps in force', schema: RetentionView },
@@ -88,6 +89,7 @@ export const retentionRoutes = {
     path: '/v1/retention',
     summary: 'Set or clear a retention keep for a kind, a space, or a kind in a space',
     tenantScoped: true,
+    reads: 'metadata',
     access: administer,
     body: RetentionBody,
     responses: {

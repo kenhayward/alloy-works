@@ -150,6 +150,7 @@ describe('API tokens, from the account chip', () => {
       'Rotate secrets',
       'Configure services',
       'Configure webhooks',
+      'Read diagnostics',
     ]);
     expect(offered).toHaveLength(tokenScopes.length);
     expect(within(form).queryByRole('checkbox', { name: 'Read' })).toBeNull();

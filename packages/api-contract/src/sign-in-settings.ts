@@ -154,6 +154,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings',
     summary: 'How people sign in to this environment: its providers, Google and session lifetimes',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'configure_services', target: { tenant: true } },
     responses: {
       200: { description: 'What is configured, never a secret', schema: SignInSettings },
@@ -168,6 +169,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers',
     summary: 'Add an identity provider, or open one of the same issuer closed before',
     tenantScoped: true,
+    reads: 'metadata',
     access: CHANGING,
     body: ProviderBody,
     idempotencyKey: false,
@@ -185,6 +187,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}',
     summary: 'Rename an identity provider, or change the claim its groups come in',
     tenantScoped: true,
+    reads: 'metadata',
     access: CHANGING,
     params: ProviderParams,
     body: ProviderChangeBody,
@@ -203,6 +206,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/secret',
     summary: "Replace an open identity provider's client secret",
     tenantScoped: true,
+    reads: 'none',
     access: { ...CHANGING, permission: 'rotate_secrets' },
     params: ProviderParams,
     body: ProviderSecretBody,
@@ -221,6 +225,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/closure',
     summary: 'Close an identity provider, ending its sessions and its people’s tokens',
     tenantScoped: true,
+    reads: 'metadata',
     access: CLOSING,
     params: ProviderParams,
     responses: {
@@ -238,6 +243,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/scim',
     summary: 'Have an identity provider provision people and groups by SCIM',
     tenantScoped: true,
+    reads: 'metadata',
     access: CHANGING,
     params: ProviderParams,
     body: ScimOnBody,
@@ -255,6 +261,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/scim',
     summary: 'Stop an identity provider provisioning, ending its token',
     tenantScoped: true,
+    reads: 'metadata',
     access: CHANGING,
     params: ProviderParams,
     responses: {
@@ -271,6 +278,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/scim/token',
     summary: "Make a provider's SCIM token, shown this once, ending any before it",
     tenantScoped: true,
+    reads: 'none',
     access: { ...CHANGING, permission: 'rotate_secrets' },
     params: ProviderParams,
     body: z.strictObject({}),
@@ -290,6 +298,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/google',
     summary: 'Open or close the Google route, and set the Workspace domains it admits',
     tenantScoped: true,
+    reads: 'none',
     access: CLOSING,
     body: GoogleSettingsBody,
     responses: {
@@ -309,6 +318,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/sessions',
     summary: 'Set how long a session lasts; a shortening reaches open sessions at once',
     tenantScoped: true,
+    reads: 'none',
     access: CHANGING,
     body: SessionSettingsBody,
     responses: {
@@ -324,6 +334,7 @@ export const signInSettingsRoutes = {
     path: '/v1/principals/{id}/disablement',
     summary: 'Disable a person: their sessions and tokens end at once, and they sign in no more',
     tenantScoped: true,
+    reads: 'metadata',
     access: {
       check: 'permission',
       permission: 'administer',
@@ -350,6 +361,7 @@ export const signInSettingsRoutes = {
     path: '/v1/principals/{id}/disablement',
     summary: 'Enable a person disabled; what ended stays ended',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     params: PrincipalParams,
     responses: {

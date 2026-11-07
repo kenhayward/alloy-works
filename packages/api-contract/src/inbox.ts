@@ -243,6 +243,7 @@ export const inboxRoutes = {
     path: '/v1/me/attention',
     summary: 'What waits on the caller that they may resolve',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'What waits, and how many', schema: AttentionView },
@@ -256,6 +257,7 @@ export const inboxRoutes = {
     path: '/v1/inbox',
     summary: 'The caller’s notifications, newest first',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session', credential: 'session' },
     query: InboxQuery,
     responses: {
@@ -274,6 +276,7 @@ export const inboxRoutes = {
     path: '/v1/inbox/{id}/read',
     summary: 'Mark one of the caller’s notifications read',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     params: NotificationParams,
     responses: {
@@ -289,6 +292,7 @@ export const inboxRoutes = {
     path: '/v1/inbox/{id}',
     summary: 'Delete one of the caller’s notifications',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     params: NotificationParams,
     responses: {
@@ -304,6 +308,7 @@ export const inboxRoutes = {
     path: '/v1/inbox/preferences',
     summary: 'How often the caller is told of each kind',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'Each kind’s cadence', schema: InboxPreferences },
@@ -317,6 +322,7 @@ export const inboxRoutes = {
     path: '/v1/inbox/preferences',
     summary: 'Choose how often the caller is told of each kind',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: InboxPreferencesBody,
     responses: {

@@ -1,6 +1,7 @@
 export type {
   HttpMethod,
   RouteAccess,
+  RouteReads,
   RouteContract,
   RouteResponse,
   RouteTarget,

@@ -47,6 +47,7 @@ export const datasetSourceRoutes = {
     path: '/v1/datasets',
     summary: 'The stored results the caller may read, to query as a source of their own',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: DatasetSourceQuery,
     responses: {
@@ -61,6 +62,7 @@ export const datasetSourceRoutes = {
     path: '/v1/datasets/{id}/sample',
     summary: 'Run a draft query over a stored result against sample values, storing nothing',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DatasetParams,
     body: SampleBody,

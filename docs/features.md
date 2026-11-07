@@ -217,7 +217,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
-- **Diagnostics.** An administrator of the environment reads how it is doing in Administration's
+- **Diagnostics.** Whoever holds Read diagnostics, as every administrator of the environment does, reads how it is doing in Administration's
   **Diagnostics**, or through the API (`GET /v1/diagnostics`): what failed with nobody told first, then
   each capability's health over the last 15 minutes (healthy, degraded, failing or idle, in icon and
   words), its requests, server error rate and 95th percentile; the search index's model and lag;

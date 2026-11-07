@@ -72,6 +72,7 @@ export const impactRoutes = {
     path: '/v1/artifacts/{id}/impact',
     summary: 'What a change to an artifact reaches, to a depth',
     tenantScoped: true,
+    reads: 'metadata',
     access: read,
     params: ArtifactParams,
     query: ImpactQuery,
@@ -91,6 +92,7 @@ export const impactRoutes = {
     path: '/v1/artifacts/{id}/references',
     summary: 'What an artifact uses: what its latest version references',
     tenantScoped: true,
+    reads: 'metadata',
     access: read,
     params: ArtifactParams,
     responses: {

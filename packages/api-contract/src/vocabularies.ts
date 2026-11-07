@@ -155,6 +155,7 @@ export const vocabularyRoutes = {
     path: '/v1/vocabularies',
     summary: "The environment's vocabularies, each at its latest version",
     tenantScoped: true,
+    reads: 'metadata',
     access: signedIn,
     responses: {
       200: { description: 'Every vocabulary, by name', schema: VocabularyList },
@@ -167,6 +168,7 @@ export const vocabularyRoutes = {
     path: '/v1/vocabularies/import',
     summary: 'Import a SKOS concept scheme, as JSON-LD or Turtle, as a vocabulary',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'manage_definitions', target: { tenant: true } },
     body: ImportVocabularyBody,
     bodyMaxBytes: TERM_IMPORT_BODY_MOST,
@@ -192,6 +194,7 @@ export const vocabularyRoutes = {
     summary: "Refresh a vocabulary's values from its source, recording a version",
     tenantScoped: true,
     // Decided at the vocabulary, so one that is not here is not found, as a definition's version is.
+    reads: 'content',
     access: { check: 'permission', permission: 'manage_definitions', target: { artifact: 'id' } },
     params: VocabularyParams,
     // Answered after the deciding transaction commits, as a sample is; a repeat refreshes again.
@@ -240,6 +243,7 @@ export const vocabularyRoutes = {
     path: '/v1/vocabularies/{id}',
     summary: 'A vocabulary at its latest version',
     tenantScoped: true,
+    reads: 'content',
     access: signedIn,
     params: VocabularyParams,
     responses: {
@@ -255,6 +259,7 @@ export const vocabularyRoutes = {
     summary:
       'Where a vocabulary is used: the fields and axes naming it, and the components holding each value',
     tenantScoped: true,
+    reads: 'content',
     access: signedIn,
     params: VocabularyParams,
     responses: {
@@ -272,6 +277,7 @@ export const vocabularyRoutes = {
     path: '/v1/vocabularies/{id}/export',
     summary: 'A vocabulary as a SKOS concept scheme in JSON-LD',
     tenantScoped: true,
+    reads: 'content',
     access: signedIn,
     params: VocabularyParams,
     responses: {

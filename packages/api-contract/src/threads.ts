@@ -178,6 +178,7 @@ const startThread = (kind: 'component' | 'document') =>
     path: `/v1/${kind}s/{id}/threads`,
     summary: `Start a thread on this ${kind}, with its first comment`,
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'comment', target: { artifact: 'id' } },
     params: kind === 'component' ? ComponentParams : DocumentParams,
     body: StartThreadBody,
@@ -202,6 +203,7 @@ const listThreads = (kind: 'component' | 'document') =>
         ? 'The threads on this component, newest first'
         : 'The threads on this document and on each component it places that the caller may read, newest first',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: kind === 'component' ? ComponentParams : DocumentParams,
     query: ThreadListQuery,
@@ -233,6 +235,7 @@ export const threadRoutes = {
     summary:
       'The threads on a baseline’s document and the components it pins that the caller may read, judged against the pins, newest first',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { baseline: 'id' } },
     params: BaselineParams,
     query: ThreadListQuery,
@@ -256,6 +259,7 @@ export const threadRoutes = {
     path: '/v1/threads/{id}',
     summary: 'A thread, every comment and every text each has had',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { thread: 'id' } },
     params: ThreadParams,
     responses: {
@@ -271,6 +275,7 @@ export const threadRoutes = {
     path: '/v1/threads/{id}/comments',
     summary: 'Reply to a thread',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'comment', target: { thread: 'id' } },
     params: ThreadParams,
     body: CommentBody,
@@ -293,6 +298,7 @@ export const threadRoutes = {
     path: '/v1/threads/{id}/comments/{comment}',
     summary: 'Give one’s own comment a new text, keeping every earlier one',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'comment', target: { thread: 'id' } },
     params: CommentParams,
     body: CommentBody,
@@ -319,6 +325,7 @@ export const threadRoutes = {
     path: '/v1/threads/read',
     summary: 'Mark threads read, as far as each has been commented on',
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     body: ThreadsReadBody,
     responses: {
@@ -337,6 +344,7 @@ export const threadRoutes = {
     path: '/v1/threads/{id}/internal',
     summary: 'Make an open thread internal, once and for good',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'comment', target: { thread: 'id' } },
     params: ThreadParams,
     responses: {
@@ -353,6 +361,7 @@ export const threadRoutes = {
     path: '/v1/threads/{id}/resolution',
     summary: 'Resolve a thread, once',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'comment', target: { thread: 'id' } },
     params: ThreadParams,
     responses: {

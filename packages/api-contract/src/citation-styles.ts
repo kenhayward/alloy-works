@@ -123,6 +123,7 @@ export const citationStyleRoutes = {
     path: '/v1/citation-styles',
     summary: "The environment's citation styles, by name",
     tenantScoped: true,
+    reads: 'metadata',
     access: read,
     responses: {
       200: { description: 'The styles', schema: StyleList },
@@ -136,6 +137,7 @@ export const citationStyleRoutes = {
     path: '/v1/citation-styles',
     summary: 'Upload a CSL style, at version 0.1',
     tenantScoped: true,
+    reads: 'content',
     access: design,
     body: CreateStyleBody,
     responses: {
@@ -151,6 +153,7 @@ export const citationStyleRoutes = {
     path: '/v1/citation-styles/preview',
     summary: 'Render the sample entries in a CSL style, and propose what it requires',
     tenantScoped: true,
+    reads: 'content',
     access: design,
     body: PreviewStyleBody,
     responses: {
@@ -165,6 +168,7 @@ export const citationStyleRoutes = {
     path: '/v1/citation-styles/{id}',
     summary: 'A citation style at its latest version',
     tenantScoped: true,
+    reads: 'content',
     access: read,
     params: StyleParams,
     responses: {
@@ -180,6 +184,7 @@ export const citationStyleRoutes = {
     path: '/v1/citation-styles/{id}/versions',
     summary: "Cut a citation style's next version from the one the caller opened",
     tenantScoped: true,
+    reads: 'content',
     access: design,
     params: StyleParams,
     body: StyleVersionBody,

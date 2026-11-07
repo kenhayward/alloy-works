@@ -132,6 +132,7 @@ export const ctStudioRoutes = {
     path: '/v1/ct-studio',
     summary: "The environment's CT Studio: its identity, its token, and the spaces it delivers to",
     tenantScoped: true,
+    reads: 'metadata',
     access: ADMINISTER,
     responses: {
       200: { description: 'What is connected', schema: CtStudioStatus },
@@ -146,6 +147,7 @@ export const ctStudioRoutes = {
     summary:
       'Connect a space to CT Studio: its identity, its Author grant, its token and its settings',
     tenantScoped: true,
+    reads: 'metadata',
     access: GRANTS_ACCESS,
     // A token's secret is answered once and never kept, so no answer is remembered for a replay.
     idempotencyKey: false,
@@ -177,6 +179,7 @@ export const ctStudioRoutes = {
     path: '/v1/ct-studio/tokens',
     summary: 'Issue CT Studio a new token, or a new identity in place of a disabled one',
     tenantScoped: true,
+    reads: 'metadata',
     access: GRANTS_ACCESS,
     // A token's secret is answered once and never kept, so no answer is remembered for a replay.
     idempotencyKey: false,
@@ -198,6 +201,7 @@ export const ctStudioRoutes = {
     path: '/v1/ct-studio/connections/{space}',
     summary: 'Disconnect a space from CT Studio: its Author grant and its settings go',
     tenantScoped: true,
+    reads: 'metadata',
     access: CHANGES_ACCESS,
     params: SpaceParams,
     responses: {

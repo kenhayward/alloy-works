@@ -104,6 +104,7 @@ export const exportRoutes = {
     path: '/v1/exports',
     summary: 'Export the whole environment, or one part of it, as it stands, as a job',
     tenantScoped: true,
+    reads: 'metadata',
     access: EXPORTS,
     body: TenantExportRequest,
     bodyOptional: true,
@@ -126,6 +127,7 @@ export const exportRoutes = {
     path: '/v1/exports',
     summary: "The environment's exports, the newest first, a page at a time",
     tenantScoped: true,
+    reads: 'metadata',
     access: EXPORTS,
     query: TenantExportQuery,
     responses: {
@@ -143,6 +145,7 @@ export const exportRoutes = {
     path: '/v1/exports/{id}',
     summary: 'An export of the environment: whether it is ready, and what it holds',
     tenantScoped: true,
+    reads: 'metadata',
     access: EXPORTS,
     params: TenantExportParams,
     responses: {
@@ -160,6 +163,7 @@ export const exportRoutes = {
     path: '/v1/exports/{id}/download',
     summary: 'A link to download an export of the environment; each one handed out is recorded',
     tenantScoped: true,
+    reads: 'content',
     access: EXPORTS,
     params: TenantExportParams,
     responses: {

@@ -51,7 +51,8 @@ export const queryUsageRoutes = {
     path: '/v1/data/usage',
     summary: "What the environment's query runs cost in a period, by query and by document",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    reads: 'metadata',
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     query: QueryUsageQuery,
     responses: {
       200: { description: 'The totals', schema: QueryUsageView },
@@ -60,7 +61,10 @@ export const queryUsageRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
-      403: { description: 'The caller does not administer the environment', schema: ErrorBody },
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
   getQueryRunsCsv: {
@@ -69,7 +73,8 @@ export const queryUsageRoutes = {
     path: '/v1/data/usage/runs.csv',
     summary: 'Every query run in a period, one to a row, as CSV',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    reads: 'metadata',
+    access: { check: 'permission', permission: 'read_diagnostics', target: { tenant: true } },
     query: QueryUsageQuery,
     responses: {
       200: {
@@ -83,7 +88,10 @@ export const queryUsageRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
-      403: { description: 'The caller does not administer the environment', schema: ErrorBody },
+      403: {
+        description: 'The caller may not read the environment’s diagnostics',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

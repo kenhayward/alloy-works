@@ -161,6 +161,7 @@ export const suggestionRoutes = {
     path: '/v1/components/{id}/suggestions',
     summary: 'Suggest a change to this component: a draft of it, kept beside it',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'suggest', target: { artifact: 'id' } },
     params: ComponentParams,
     body: MakeSuggestionBody,
@@ -194,6 +195,7 @@ export const suggestionRoutes = {
     path: '/v1/components/{id}/suggestions',
     summary: 'The suggestions on this component, newest first',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
     query: SuggestionListQuery,
@@ -217,6 +219,7 @@ export const suggestionRoutes = {
     path: '/v1/documents/{id}/suggestions',
     summary: 'The suggestions on every component this document places that the caller may read',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     query: SuggestionListQuery,
@@ -240,6 +243,7 @@ export const suggestionRoutes = {
     path: '/v1/suggestions/{id}',
     summary: 'A suggestion, and what its redline is drawn from',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { suggestion: 'id' } },
     params: SuggestionParams,
     responses: {
@@ -255,6 +259,7 @@ export const suggestionRoutes = {
     path: '/v1/suggestions/{id}/acceptance',
     summary: 'Accept a suggestion: apply it to the component as it is now, as your version',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { suggestion: 'id' } },
     params: SuggestionParams,
     responses: {
@@ -283,6 +288,7 @@ export const suggestionRoutes = {
     path: '/v1/suggestions/{id}/rejection',
     summary: 'Reject a suggestion',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'edit', target: { suggestion: 'id' } },
     params: SuggestionParams,
     responses: {
@@ -302,6 +308,7 @@ export const suggestionRoutes = {
     path: '/v1/suggestions/{id}/withdrawal',
     summary: 'Withdraw your own suggestion',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { suggestion: 'id' } },
     params: SuggestionParams,
     responses: {
@@ -322,6 +329,7 @@ export const suggestionRoutes = {
     summary:
       'Accept or reject every pending suggestion on a component or a document, or one person’s',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { body: 'scope' } },
     body: ResolveSuggestionsBody,
     responses: {

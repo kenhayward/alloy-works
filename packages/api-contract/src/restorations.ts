@@ -138,6 +138,7 @@ export const restorationRoutes = {
     path: '/v1/restorations',
     summary: 'Begin restoring this environment from an archive',
     tenantScoped: true,
+    reads: 'metadata',
     access: ACT,
     idempotencyKey: false,
     responses: {
@@ -152,6 +153,7 @@ export const restorationRoutes = {
     path: '/v1/restorations',
     summary: "This environment's latest restorations, the newest first",
     tenantScoped: true,
+    reads: 'metadata',
     access: READ,
     responses: {
       200: { description: 'The latest twenty', schema: TenantRestorationList },
@@ -165,6 +167,7 @@ export const restorationRoutes = {
     path: '/v1/restorations/{id}',
     summary: 'A restoration: where it has got to, and what it would do',
     tenantScoped: true,
+    reads: 'metadata',
     access: READ,
     params: TenantRestorationParams,
     responses: {
@@ -180,6 +183,7 @@ export const restorationRoutes = {
     path: '/v1/restorations/{id}/archive',
     summary: 'Send the archive, as bytes; a job then checks it',
     tenantScoped: true,
+    reads: 'metadata',
     access: ACT,
     params: TenantRestorationParams,
     idempotencyKey: false,
@@ -202,6 +206,7 @@ export const restorationRoutes = {
     path: '/v1/restorations/{id}/answers',
     summary: 'Answer for each secret and each sign-in provider it names',
     tenantScoped: true,
+    reads: 'metadata',
     access: ACT,
     params: TenantRestorationParams,
     body: TenantRestorationAnswers,
@@ -226,6 +231,7 @@ export const restorationRoutes = {
     path: '/v1/restorations/{id}/apply',
     summary: 'Restore it: a job applies all of it or nothing',
     tenantScoped: true,
+    reads: 'metadata',
     access: ACT,
     params: TenantRestorationParams,
     responses: {
@@ -246,6 +252,7 @@ export const restorationRoutes = {
     path: '/v1/restore-review',
     summary: 'What would fall due in a restored environment once dates and reminders run',
     tenantScoped: true,
+    reads: 'metadata',
     access: READ,
     responses: {
       200: { description: 'The review', schema: RestoreReview },
@@ -259,6 +266,7 @@ export const restorationRoutes = {
     path: '/v1/restore-review/end',
     summary: 'Let dates and reminders run again in a restored environment',
     tenantScoped: true,
+    reads: 'metadata',
     access: ACT,
     responses: {
       200: { description: 'The review, ended', schema: RestoreReview },

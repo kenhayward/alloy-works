@@ -50,6 +50,7 @@ export const sessionRoutes = {
     path: '/v1/sessions',
     summary: "The caller's own sessions that have not ended",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: "The caller's sessions", schema: SessionList },
@@ -64,6 +65,7 @@ export const sessionRoutes = {
     path: '/v1/sessions/{id}',
     summary: "End one of the caller's own sessions; ending this one signs out",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     params: SessionParams,
     responses: {
@@ -80,6 +82,7 @@ export const sessionRoutes = {
     path: '/v1/sessions',
     summary: "End every session of the caller's but this one",
     tenantScoped: true,
+    reads: 'none',
     access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'Ended', schema: SessionsEnded },

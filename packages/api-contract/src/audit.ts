@@ -122,6 +122,7 @@ export const auditRoutes = {
     path: '/v1/audit',
     summary: "The environment's audit log, newest first, filtered, a page at a time",
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: AuditListQuery,
     responses: {
@@ -142,6 +143,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports',
     summary: 'Export every event matching these filters, as the log stands now',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     body: AuditExportBody,
     responses: {
@@ -161,6 +163,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports/{id}',
     summary: 'An export of the audit log: whether it is ready, and what it holds',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     params: AuditExportParams,
     responses: {
@@ -177,6 +180,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports/{id}/download',
     summary: 'A link to download an export of the audit log; each one handed out is recorded',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     params: AuditExportParams,
     responses: {

@@ -586,6 +586,7 @@ export const publishingRoutes = {
     path: '/v1/documents/{id}/publications',
     summary: 'Publish the latest version of this document',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'publish', target: { artifact: 'id' } },
     params: DocumentParams,
     body: RequestPublicationBody,
@@ -623,6 +624,7 @@ export const publishingRoutes = {
     summary: 'Preview the latest version of this document as a PDF, kept an hour for the caller',
     tenantScoped: true,
     // `read`, not `publish` (PV-B): a reader who may not publish still sees the pages.
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     body: RequestPreviewBody,
@@ -660,6 +662,7 @@ export const publishingRoutes = {
     summary:
       'A publish or a preview the caller asked for: its state, every failure, and its publication once made, or its PDF while it lasts',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'session' },
     params: PublicationRequestParams,
     responses: {
@@ -678,6 +681,7 @@ export const publishingRoutes = {
     path: '/v1/documents/{id}/publications',
     summary: "The document's publications the caller may read, a page at a time",
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
     query: PublicationListQuery,
@@ -705,6 +709,7 @@ export const publishingRoutes = {
     path: '/v1/publications',
     summary: 'Every publication the caller may read, of every document, a page at a time',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'session' },
     query: PublicationListQuery,
     responses: {
@@ -722,6 +727,7 @@ export const publishingRoutes = {
     path: '/v1/publications/{id}',
     summary: 'A publication: its record, and a link to each output',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: PublicationParams,
     responses: {
@@ -747,6 +753,7 @@ export const publishingRoutes = {
     path: '/v1/publications/{id}/bindings',
     summary: 'The values a publication printed, and the results they were taken from',
     tenantScoped: true,
+    reads: 'content',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: PublicationParams,
     responses: {

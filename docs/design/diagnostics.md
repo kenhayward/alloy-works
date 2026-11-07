@@ -35,7 +35,7 @@ all of it is built.
 
 ## Diagnostics' read
 
-`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever administers, in one transaction under the
+`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`), for whoever holds `read_diagnostics` ([ADR-0102](../decisions/0102-every-route-declares-what-it-reads.md)), in one transaction under the
 environment's role. Codes and counts, never content.
 
 - **Health** (`capabilityHealth`, DG-F) per capability over 15 minutes: failing at half the answered requests failing
@@ -77,7 +77,7 @@ waiting is told, or why nobody waits, and how administrators are; a test finds e
   minutes (`indexLagging`). A search that used meaning meanwhile answers `meaningBehind`, and Search says new
   content may not be found by meaning yet; Diagnostics says so in Needs attention.
 - **Administrators are told** by `sweepSilentFailuresEverywhere` (`silentFailuresOf`, `tellSilentFailures`): each
-  failure read from the records Diagnostics reads, and told once to those who administer at the environment, each
+  failure read from the records Diagnostics reads, and told once to those who read Diagnostics (`read_diagnostics`) at the environment, each
   decided again on their grants, by the inbox kind `diagnostics`, never mailed, as a failing mail channel is (EM-N).
   `silent_failure_told` (0216) keeps what was told, left out of exports; a failure cleared is forgotten, so its
   return tells again, and one told to nobody is told when somebody may be.
@@ -93,7 +93,7 @@ measure, its kind and unit; `usage_day` holds a UTC day, a measure and an amount
   time, and reference searches, which leave no row and are measured as a capability of their own
   (`MEASURED_OPERATIONS`).
 - **Samples**: the schema's database bytes, and object bytes by kind as each owner records them.
-- **Read** at `GET /v1/usage` by whoever administers: every measure, by day, the last 13 months unless named.
+- **Read** at `GET /v1/usage` by whoever holds `read_diagnostics`: every measure, by day, the last 13 months unless named.
 - **Shown** in Administration's Usage: each measure's 13 months as bars and in numbers (this month so far, last month,
   a year before), a sample as held at its month's last count; any one measure by month or by day.
 
@@ -172,6 +172,7 @@ declare what is re-verified and within what period: 28 days.
 | **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                                                  |
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                                                    |
 | **ADM-044** | Assets, versions and audit exports re-verified within a declared 28 days, a share a night (`INTEGRITY_CLASSES`); a failure shown in Diagnostics and audited as `integrity.failed`                                 |
+| **ADM-017** | An Administrator reads Diagnostics and usage through `read_diagnostics`, which every role and token holding `administer` gained                                                                                   |
 | **ADM-037** | Each silent failure surfaced in Diagnostics, told to administrators by inbox once until it clears, and to the person waiting where there is one (`SILENT_FAILURES`), the searcher by meaning of the index lagging |
 | **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                                              |
 

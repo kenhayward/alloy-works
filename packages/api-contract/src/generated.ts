@@ -93,6 +93,7 @@ export const generatedRoutes = {
     path: '/v1/documents/{id}/generated',
     summary: 'Which of a document’s content came from a model, and who accepted it',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: GeneratedParams,
     responses: {
@@ -117,6 +118,7 @@ export const generatedRoutes = {
     path: '/v1/publications/{id}/generated',
     summary: 'Which of what a publication printed came from a model, and who accepted it',
     tenantScoped: true,
+    reads: 'metadata',
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: GeneratedParams,
     responses: {
