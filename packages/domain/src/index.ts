@@ -225,8 +225,24 @@ export {
   type SilentFailureKind,
   type SilentFailureToldKind,
   type SilentFailureNow,
+  type SecretFailing,
   type SilentReadings,
 } from './diagnostics/silent.js';
+// A tenant's secrets and what consumes each (docs/design/secrets.md; ADM-007, ADM-047).
+export {
+  SECRET_CONSUMER_KINDS,
+  SECRET_CONSUMERS,
+  SECRET_EXCLUSIONS,
+  SECRET_KINDS,
+  SECRET_OVERLAP_HOURS,
+  SECRETS_ABSENT,
+  secretConsumers,
+  type SecretBreakRead,
+  type SecretConsumerKind,
+  type SecretConsumers,
+  type SecretKind,
+  type SecretReplacement,
+} from './secrets/consumers.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

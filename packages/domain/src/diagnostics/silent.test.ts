@@ -45,6 +45,7 @@ describe('silent failures, kind by kind (the DG plan, pre-flight 7)', () => {
       'work_failing',
       'capability_failing',
       'integrity_failing',
+      'secret_failing',
     ]);
   });
 
@@ -76,6 +77,11 @@ describe('silent failures, kind by kind (the DG plan, pre-flight 7)', () => {
 
   it('tells the person whose request a failing capability failed, at once', () => {
     toldWhereItSays('capability_failing');
+  });
+
+  it('tells the person whose act a replaced secret failed, at once, and administrators by inbox', () => {
+    toldWhereItSays('secret_failing');
+    expect(kind('secret_failing').administrators.by).toBe('inbox');
   });
 
   it('says why nobody waits on background work or on integrity, and tells administrators instead', () => {
@@ -139,8 +145,26 @@ describe('the silent failures administrators are told of (the DG plan, DGe4)', (
         'source_down',
         'index_lagging',
         'integrity_failing',
+        'secret_failing',
       ]),
     );
+  });
+
+  it('tells a secret failing since its replacement against the secret, keyed by that replacement', () => {
+    const secret = {
+      kind: 'connection_credential',
+      name: 'Warehouse',
+      consumers: ['Orders', 'Stock'],
+    } as const;
+    expect(
+      silentFailuresNow({
+        ...quiet,
+        secrets: [
+          { key: 'connection_credential:c1:1000', failing: true, secret },
+          { key: 'connection_credential:c2:2000', failing: false, secret },
+        ],
+      }),
+    ).toEqual([{ kind: 'secret_failing', subject: 'connection_credential:c1:1000', secret }]);
   });
 
   it('tells each failure once until it clears, and a cleared one again when it returns', () => {
