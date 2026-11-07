@@ -1099,6 +1099,7 @@ describe("Administration's menu", () => {
       '#/admin/holds',
       '#/admin/retention',
       '#/admin/diagnostics',
+      '#/admin/usage',
       '#/admin/queries',
       '#/admin/audit',
       '#/admin/export',

@@ -893,6 +893,20 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s Usage: each measure by month and one by day (the DG plan, DGd2)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/usage`);
+      const arrival: Arrival = {
+        shows: [page.getByRole('table', { name: 'Usage by month' })],
+      };
+      await arrive(arrival);
+      await page.getByRole('radio', { name: 'By day' }).check();
+      await checkAxe(page, 'what the environment has used', task.meta, arrival);
+    });
+  });
+
   it('passes axe on the inbox at its own address, with the kinds sent by email, where mail is on (the EM plan, EMc)', async ({
     task,
   }) => {

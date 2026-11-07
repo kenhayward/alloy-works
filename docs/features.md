@@ -225,6 +225,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the last day's jobs by kind and state; each data source's runs, down when its latest failed; and the
   month's model spend against its budget. Codes and counts only, never content. Measured by the minute,
   kept by the hour after a week and by the day after 90 days, for 13 months.
+- **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
+  used over 13 months: the database and stored files (publications, assets, imports, exports), and the
+  publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,
+  embedding runs and query time. Each measure has a trend, this month so far, last month and the same
+  month a year before, and any one is shown by month or by day. Counted each night from the
+  environment's own records, reaching back at most 30 days; files are counted as each record holds
+  them, so a file used twice counts twice. Model spend is under **Model spending**.
 - **Suspending an environment.** The operator suspends one with a reason, from the `steward` command line, and lifts that the same way. Every route refuses within 30 seconds, an open stream ends, jobs and sweeps wait, and a person is told it is suspended, never why, though a download link already signed lives out its 5 minutes. Lifting loses nothing, and a webhook still being tried loses no time. An administrator cannot suspend from inside yet.
 - **An organisation's own tenant.** An organisation administers from a tenant holding no content: sign-in, people,
   roles, sessions, audit and export are the ones every tenant has, and everything else there answers as not there. Its
