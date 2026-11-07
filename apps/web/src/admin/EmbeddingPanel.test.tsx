@@ -12,8 +12,13 @@ const inside = { id: 'e1', name: 'Our embedder', boundary: 'inside', retired: fa
 
 const measured = { versions: 20, p95Seconds: 1.4, maxSeconds: 4.02 };
 
-function service(freshness: unknown = measured, confirming?: () => Response | Promise<Response>) {
+function service(
+  freshness: unknown = measured,
+  confirming?: () => Response | Promise<Response>,
+  administers = true,
+) {
   const sent: unknown[] = [];
+  const asked: string[] = [];
   let view = {
     serving: { model: 'embed-small-768', dims: 768, endpoint: inside },
     pending: {
@@ -29,6 +34,13 @@ function service(freshness: unknown = measured, confirming?: () => Response | Pr
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
+    asked.push(path);
+    if (path === '/v1/access') {
+      return json(200, {
+        target: 'tenant',
+        permissions: [{ permission: 'administer', allowed: administers }],
+      });
+    }
     if (path === '/v1/embedding') return json(200, view);
     if (path === '/v1/search/meaning/freshness') return json(200, freshness);
     if (path === '/v1/embedding/confirmation') {
@@ -39,10 +51,24 @@ function service(freshness: unknown = measured, confirming?: () => Response | Pr
     }
     return json(404, { code: 'not_found', message: 'Not found' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    sent,
+    asked,
+  };
 }
 
 describe("Models' searching by meaning", () => {
+  it('shows a reader of Diagnostics alone how long versions took to be findable, never asking for the model', async () => {
+    const { client, asked } = service(measured, undefined, false);
+    render(<EmbeddingPanel client={client} generation={0} />);
+    const panel = await screen.findByRole('region', { name: 'Searching by meaning' });
+    expect(panel).toHaveTextContent('Findable by meaning within 2 s at p95');
+    expect(panel).not.toHaveTextContent('could not');
+    expect(within(panel).queryByRole('button')).toBeNull();
+    expect(asked).not.toContain('/v1/embedding');
+  });
+
   it('GEN-044 shows what embedding the corpus would cost before it runs, embedding nothing until it is confirmed, the old model serving meanwhile', async () => {
     const user = userEvent.setup();
     const { client, sent } = service();

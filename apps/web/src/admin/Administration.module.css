@@ -315,6 +315,11 @@
   white-space: normal;
 }
 
+/* An address in a cell that wraps, which has no space to break at, breaks where it must. */
+.breaks {
+  overflow-wrap: anywhere;
+}
+
 .table tr[data-current='true'] td {
   background: var(--accent-weak);
 }

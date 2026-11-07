@@ -235,14 +235,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   lagging past five minutes, integrity failing) is told to whoever administers in their inbox, once
   until it clears, never by email; a search by meaning while the index lags says new content may not
   be found by meaning yet.
-- **Support access.** Through the API (`/v1/support-access`), whoever holds grant support, as
+- **Support access.** In Administration's **Support access**, or through the API
+  (`/v1/support-access`), whoever holds grant support, as
   every administrator of the environment does, lets a named person from outside the organisation look,
   by address: at Diagnostics, or at titles and names, or at content too, in the spaces chosen, for a
   stated purpose, until a stated time within the limit for outside access, and revokes it at once. While
   it lasts the person changes nothing and reads nothing beyond it, Diagnostics naming only what is in
   those spaces, and each content request must say why in a `Support-Read` header. Every administrator
   lists every grant, active or ended; granting, revoking, each day of use and each content read are on
-  the audit log, and the access explanation names it. Administration's screens for it are not built yet.
+  the audit log, and the access explanation names it. While any is active, every administrator sees
+  who, at what and until when at the top of Administration. The support person sees a banner of what
+  their access reaches on every page and is offered only Diagnostics, Usage, Query usage and Model
+  spending in Administration; under content access they are asked before any content opens, and then
+  each read says why, while beyond their scope a page says it is withheld.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the
   publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,

@@ -297028,6 +297028,60 @@
                         }
                       ],
                       "description": "The language they chose for the interface, or null for their browser’s; never the content’s"
+                    },
+                    "support": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "string",
+                              "enum": [
+                                "diagnostics",
+                                "metadata",
+                                "content"
+                              ]
+                            },
+                            "spaces": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "description": "The spaces it reads, by name; for diagnostics, those its reads may name"
+                            },
+                            "purpose": {
+                              "type": "string",
+                              "description": "Why support was given, as the log keeps it"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "description": "When it ends"
+                            }
+                          },
+                          "required": [
+                            "scope",
+                            "spaces",
+                            "purpose",
+                            "expiresAt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The support access they hold now (docs/design/support.md), or null: a support person reads nothing else"
                     }
                   },
                   "required": [
@@ -297039,7 +297093,8 @@
                     "environment",
                     "outside",
                     "sharesOnly",
-                    "interfaceLanguage"
+                    "interfaceLanguage",
+                    "support"
                   ]
                 },
                 "example": {
@@ -297051,7 +297106,13 @@
                   "environment": "example",
                   "outside": false,
                   "sharesOnly": false,
-                  "interfaceLanguage": "en-GB"
+                  "interfaceLanguage": "en-GB",
+                  "support": {
+                    "scope": "diagnostics",
+                    "spaces": [],
+                    "purpose": "example",
+                    "expiresAt": "example"
+                  }
                 }
               }
             },
@@ -414808,6 +414869,21 @@
                               }
                             ]
                           },
+                          "revokedReason": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "revoked",
+                                  "cap_lowered"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked"
+                          },
                           "active": {
                             "type": "boolean",
                             "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
@@ -414824,6 +414900,7 @@
                           "grantedAt",
                           "revokedAt",
                           "revokedBy",
+                          "revokedReason",
                           "active"
                         ]
                       },
@@ -414834,16 +414911,32 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
                       "description": "How many are active now"
+                    },
+                    "defaultDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How long access from outside lasts unless the grant says otherwise, in days"
+                    },
+                    "capDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The longest a grant may last from now, in days: the cap on access from outside"
                     }
                   },
                   "required": [
                     "items",
-                    "active"
+                    "active",
+                    "defaultDays",
+                    "capDays"
                   ]
                 },
                 "example": {
                   "items": [],
-                  "active": -9007199254740991
+                  "active": -9007199254740991,
+                  "defaultDays": -9007199254740991,
+                  "capDays": -9007199254740991
                 }
               }
             },
@@ -415200,6 +415293,21 @@
                             }
                           ]
                         },
+                        "revokedReason": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked",
+                                "cap_lowered"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked"
+                        },
                         "active": {
                           "type": "boolean",
                           "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
@@ -415216,6 +415324,7 @@
                         "grantedAt",
                         "revokedAt",
                         "revokedBy",
+                        "revokedReason",
                         "active"
                       ]
                     },
@@ -415347,6 +415456,7 @@
                       "id": "example",
                       "name": "example"
                     },
+                    "revokedReason": "revoked",
                     "active": false
                   },
                   "invitation": {
@@ -415755,6 +415865,21 @@
                         }
                       ]
                     },
+                    "revokedReason": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "revoked",
+                            "cap_lowered"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked"
+                    },
                     "active": {
                       "type": "boolean",
                       "description": "Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends"
@@ -415771,6 +415896,7 @@
                     "grantedAt",
                     "revokedAt",
                     "revokedBy",
+                    "revokedReason",
                     "active"
                   ]
                 },
@@ -415795,6 +415921,7 @@
                     "id": "example",
                     "name": "example"
                   },
+                  "revokedReason": "revoked",
                   "active": false
                 }
               }

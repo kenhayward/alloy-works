@@ -8,6 +8,7 @@ import {
   type SupportAccessView,
 } from '@alloy-works/api-contract';
 import {
+  accessPolicy,
   grantSupport,
   listSupport,
   recordSupportRead,
@@ -17,6 +18,7 @@ import {
   type SupportRefusal,
   type Tenant,
   type TenantDatabase,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import { supportReaches, type AccessFacts, type SupportGrant } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -174,6 +176,26 @@ export async function recordSupportAnswered(
   }
 }
 
+/** A support person's own grant as `/v1/me` answers it, each space by its name (ADM-026). */
+export async function mySupport(trx: TenantTransaction, support: SupportGrant | null) {
+  if (support === null) return null;
+  const named =
+    support.spaces.length === 0
+      ? []
+      : await trx
+          .selectFrom('space')
+          .select(['id', 'name'])
+          .where('id', 'in', [...support.spaces])
+          .orderBy('name')
+          .execute();
+  return {
+    scope: support.scope,
+    spaces: named.map((each) => ({ id: each.id, name: each.name })),
+    purpose: support.purpose,
+    expiresAt: support.expiresAt.toISOString(),
+  };
+}
+
 /** The spaces a support principal's diagnostics reads may name, or undefined for anybody else. */
 export function supportSpaces(facts: AccessFacts): readonly string[] | undefined {
   return facts.support?.spaces;
@@ -191,6 +213,7 @@ function view(support: StoredSupport): SupportAccessView {
     grantedAt: support.grantedAt.toISOString(),
     revokedAt: support.revokedAt && support.revokedAt.toISOString(),
     revokedBy: support.revokedBy && { ...support.revokedBy },
+    revokedReason: support.revokedReason,
     active: support.active,
   };
 }
@@ -219,7 +242,13 @@ export function supportHandlers() {
       { trx }: Authorised,
     ): Promise<SupportAccessList> => {
       const items = (await listSupport(trx)).map(view);
-      return { items, active: items.filter((each) => each.active).length };
+      const policy = await accessPolicy(trx);
+      return {
+        items,
+        active: items.filter((each) => each.active).length,
+        defaultDays: policy.externalDefaultDays,
+        capDays: policy.externalCapDays,
+      };
     },
 
     grantSupportAccess: async (

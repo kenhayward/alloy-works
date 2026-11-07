@@ -229,8 +229,11 @@ describe('support access (support.md; the SA plan, SAb)', () => {
       purpose: "Looking at sam's ticket",
       grantedBy: { id: ids.ada, name: 'Ada' },
       revokedAt: null,
+      revokedReason: null,
       active: true,
     });
+    // What a grant may last, for the form that makes one: the policy on access from outside.
+    expect(listed.json()).toMatchObject({ defaultDays: 30, capDays: 90 });
     expect((await events_('support.granted')).map((each) => each.subject)).toEqual(
       expect.arrayContaining([supports.sam, supports.cam]),
     );
@@ -440,9 +443,25 @@ describe('support access (support.md; the SA plan, SAb)', () => {
     const una = (await get('ada', '/v1/support-access'))
       .json<{ items: Json[] }>()
       .items.find((each) => each.id === supports.una);
-    expect(una).toMatchObject({ active: false, revokedAt: expect.any(String), revokedBy: null });
+    expect(una).toMatchObject({
+      active: false,
+      revokedAt: expect.any(String),
+      revokedBy: null,
+      revokedReason: 'cap_lowered',
+    });
     const ended = (await events_('support.revoked')).find((each) => each.subject === supports.una);
     expect(ended?.detail).toMatchObject({ reason: 'cap_lowered', principal: ids.una });
+  });
+
+  it('answers a support person their own grant on /v1/me, its spaces by name, and nobody else any', async () => {
+    const cam = (await get('cam', '/v1/me')).json<{ support: unknown }>();
+    expect(cam.support).toEqual({
+      scope: 'content',
+      spaces: [{ id: clinical, name: 'Clinical' }],
+      purpose: "Looking at cam's ticket",
+      expiresAt: expect.any(String),
+    });
+    expect((await get('ada', '/v1/me')).json()).toMatchObject({ support: null });
   });
 
   it('keeps every support grant: an invitation is withdrawn by revoking the support that made it, audited, never by removing its person', async () => {

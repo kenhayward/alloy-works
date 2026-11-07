@@ -39,6 +39,7 @@ import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { SignIn } from './SignIn.js';
 import { Spaces } from './Spaces.js';
+import { ActiveSupport, SupportAccess } from './SupportAccess.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
 import { Themes } from './Themes.js';
@@ -237,6 +238,14 @@ const SECTIONS = [
     },
     group: 'people',
   },
+  // Who from outside may look in, at what and until when; given and revoked here (support.md).
+  {
+    slug: 'support',
+    get title() {
+      return words('admin.support-access');
+    },
+    group: 'people',
+  },
   {
     slug: 'holds',
     get title() {
@@ -316,6 +325,12 @@ const SECTIONS = [
 export type Section = (typeof SECTIONS)[number]['slug'];
 const GROUPS = ['environment', 'people', 'data', 'system'] as const;
 
+/**
+ * What somebody who reads Diagnostics and administers nothing may open (SA-F): a support person, or a
+ * role holding `read_diagnostics` alone. The rest would only refuse them.
+ */
+const DIAGNOSTICS_ONLY: readonly Section[] = ['diagnostics', 'usage', 'queries', 'spending'];
+
 /** A group's name, in the menu and the trail. */
 const groupName = (group: (typeof GROUPS)[number]): string =>
   ({
@@ -346,9 +361,14 @@ function useSection(): Section {
  * How many each section holds, for the menu (AD-A): a listing's `total`, or the rows of one that is a
  * page already; nothing where the reader may not see it, or it could not be read.
  */
-function useCounts(client: Client, only?: readonly Section[]): Partial<Record<Section, number>> {
+function useCounts(
+  client: Client,
+  only: readonly Section[] | undefined,
+  ready: boolean,
+): Partial<Record<Section, number>> {
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   useEffect(() => {
+    if (!ready) return undefined;
     let current = true;
     const count = (section: Section, read: () => Promise<number | undefined>) => {
       if (only !== undefined && !only.includes(section)) return;
@@ -421,7 +441,7 @@ function useCounts(client: Client, only?: readonly Section[]): Partial<Record<Se
     return () => {
       current = false;
     };
-  }, [client, only]);
+  }, [client, only, ready]);
   return counts;
 }
 
@@ -443,8 +463,52 @@ export function Administration({
   only?: readonly Section[];
 }) {
   const asked = useSection();
-  const shown = only === undefined || only.includes(asked) ? asked : only[0]!;
-  const counts = useCounts(client, only);
+  /**
+   * Whether the reader is a support person (`/v1/me`), and whether they read Diagnostics: one who
+   * reads it and administers nothing is offered only what they may open (SA-F). Counts wait for it,
+   * so a support person is never sent what would only be refused.
+   */
+  const [supported, setSupported] = useState<boolean | undefined>(undefined);
+  const [readsDiagnostics, setReadsDiagnostics] = useState(false);
+  const [mayGrantSupport, setMayGrantSupport] = useState(false);
+  const [supportRead, setSupportRead] = useState(0);
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/me')
+      .then(({ data }) => {
+        if (current) setSupported(data?.support != null);
+      })
+      .catch(() => {
+        if (current) setSupported(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  useEffect(() => {
+    if (supported !== false) return undefined;
+    let current = true;
+    void administersAt(client, 'tenant', 'read_diagnostics').then((answer) => {
+      if (current) setReadsDiagnostics(answer);
+    });
+    void administersAt(client, 'tenant', 'grant_support').then((answer) => {
+      if (current) setMayGrantSupport(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client, supported]);
+  const [administersTenant, setAdministersTenant] = useState<boolean | undefined>(undefined);
+  const diagnosticsOnly = supported === true || (administersTenant === false && readsDiagnostics);
+  const offered = diagnosticsOnly
+    ? DIAGNOSTICS_ONLY.filter((each) => only === undefined || only.includes(each))
+    : only;
+  const shown =
+    offered === undefined || offered.includes(asked) ? asked : (offered[0] ?? 'overview');
+  const counts = useCounts(client, offered, supported !== undefined);
+  // Nothing is read for a section until it is known whether the reader may open it.
+  const opened = supported === undefined ? null : shown;
   const title = SECTIONS.find((each) => each.slug === shown)!;
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
@@ -524,6 +588,8 @@ export function Administration({
     askAdminister('tenant');
   }, [askAdminister]);
   const mayChangeSpaces = administers.get('tenant') === true;
+  const tenantAnswer = administers.get('tenant');
+  useEffect(() => setAdministersTenant(tenantAnswer), [tenantAnswer]);
   const configures = configuresServices === true;
   useEffect(() => {
     if (spaces === null || typeof spaces !== 'object') return;
@@ -546,7 +612,8 @@ export function Administration({
             </p>
             <ul aria-labelledby={`admin-group-${group}`}>
               {SECTIONS.filter(
-                (each) => each.group === group && (only === undefined || only.includes(each.slug)),
+                (each) =>
+                  each.group === group && (offered === undefined || offered.includes(each.slug)),
               ).map((section) => (
                 <li key={section.slug}>
                   <a
@@ -566,6 +633,12 @@ export function Administration({
         ))}
       </nav>
       <div className={styles['shown']}>
+        {/* Seen at once by every administrator, whichever section is open (ADM-025). */}
+        <ActiveSupport
+          client={client}
+          enabled={administers.get('tenant') === true}
+          generation={supportRead}
+        />
         <nav aria-label={words('admin.breadcrumb')} className={styles['trail']}>
           <a href="#/admin/overview">{words('admin.administration')}</a>
           <span>{` / ${groupName(title.group)}`}</span>
@@ -573,14 +646,14 @@ export function Administration({
         <h1 ref={sectionHeading} tabIndex={-1}>
           {title.title}
         </h1>
-        {shown === 'overview' && (
+        {opened === 'overview' && (
           <Overview
             client={client}
             environment={environment}
             administers={administers.get('tenant') === true}
           />
         )}
-        {shown === 'spaces' && (
+        {opened === 'spaces' && (
           <Spaces
             client={client}
             read={spaces}
@@ -589,38 +662,46 @@ export function Administration({
             onChanged={() => setSpacesRead((count) => count + 1)}
           />
         )}
-        {shown === 'editing' && (
+        {opened === 'editing' && (
           <Editing client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'images' && (
+        {opened === 'images' && (
           <ImagesPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'imports' && (
+        {opened === 'imports' && (
           <ImportPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'translation' && (
+        {opened === 'translation' && (
           <TranslationPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'workflows' && <Workflows client={client} />}
-        {shown === 'vocabularies' && <Vocabularies client={client} />}
-        {shown === 'licences' && <Licences client={client} />}
-        {shown === 'themes' && <Themes client={client} />}
-        {shown === 'people' && <People client={client} makesServices={only === undefined} />}
-        {shown === 'groups' && <Groups client={client} />}
-        {shown === 'roles' && (
+        {opened === 'workflows' && <Workflows client={client} />}
+        {opened === 'vocabularies' && <Vocabularies client={client} />}
+        {opened === 'licences' && <Licences client={client} />}
+        {opened === 'themes' && <Themes client={client} />}
+        {opened === 'people' && <People client={client} makesServices={only === undefined} />}
+        {opened === 'groups' && <Groups client={client} />}
+        {opened === 'roles' && (
           <Roles read={roles} client={client} onMade={() => setRolesRead((read) => read + 1)} />
         )}
-        {shown === 'sign-in' && <SignIn client={client} />}
-        {shown === 'outside' && <Outside client={client} />}
-        {shown === 'holds' && <Holds client={client} />}
-        {shown === 'retention' && <Retention client={client} />}
-        {shown === 'diagnostics' && <Diagnostics client={client} />}
-        {shown === 'usage' && <Usage client={client} />}
-        {shown === 'queries' && (
+        {opened === 'sign-in' && <SignIn client={client} />}
+        {opened === 'outside' && <Outside client={client} />}
+        {opened === 'support' && (
+          <SupportAccess
+            client={client}
+            mayGrant={mayGrantSupport}
+            generation={supportRead}
+            onChanged={() => setSupportRead((count) => count + 1)}
+          />
+        )}
+        {opened === 'holds' && <Holds client={client} />}
+        {opened === 'retention' && <Retention client={client} />}
+        {opened === 'diagnostics' && <Diagnostics client={client} />}
+        {opened === 'usage' && <Usage client={client} />}
+        {opened === 'queries' && (
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}
-        {shown === 'audit' && <AuditLog client={client} />}
-        {shown === 'export' && (
+        {opened === 'audit' && <AuditLog client={client} />}
+        {opened === 'export' && (
           <>
             <TenantExport client={client} />
             {only === undefined && <Restore client={client} />}
@@ -628,20 +709,22 @@ export function Administration({
             <CloseEnvironment client={client} />
           </>
         )}
-        {shown === 'models' && <Models client={client} />}
-        {shown === 'guardrails' && <Guardrails client={client} />}
-        {shown === 'citation-styles' && <CitationStyles client={client} />}
-        {shown === 'reference-sources' && (
+        {opened === 'models' && <Models client={client} />}
+        {opened === 'guardrails' && <Guardrails client={client} />}
+        {opened === 'citation-styles' && <CitationStyles client={client} />}
+        {opened === 'reference-sources' && (
           <ReferenceSources client={client} mayChange={configures} />
         )}
-        {shown === 'spending' && <ModelSpending client={client} />}
-        {shown === 'webhooks' && <Webhooks client={client} />}
-        {shown === 'email' && <Mail client={client} mayChange={configures} />}
-        {shown === 'ctstudio' && <CtStudio client={client} />}
-        {shown === 'extensions' && <Extensions client={client} />}
-        {shown === 'connections' && <Connections client={client} embedded />}
-        {shown === 'query-definitions' && <QueryDefinitions client={client} embedded />}
-        {shown === 'about' && <About about={about} />}
+        {opened === 'spending' && (
+          <ModelSpending client={client} administers={administers.get('tenant') === true} />
+        )}
+        {opened === 'webhooks' && <Webhooks client={client} />}
+        {opened === 'email' && <Mail client={client} mayChange={configures} />}
+        {opened === 'ctstudio' && <CtStudio client={client} />}
+        {opened === 'extensions' && <Extensions client={client} />}
+        {opened === 'connections' && <Connections client={client} embedded />}
+        {opened === 'query-definitions' && <QueryDefinitions client={client} embedded />}
+        {opened === 'about' && <About about={about} />}
       </div>
     </section>
   );

@@ -47,6 +47,12 @@ export const SupportAccessView = z.object({
   grantedAt: z.string(),
   revokedAt: z.string().nullable(),
   revokedBy: Named.nullable(),
+  revokedReason: z
+    .enum(['revoked', 'cap_lowered'])
+    .nullable()
+    .describe(
+      'Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked',
+    ),
   active: z
     .boolean()
     .describe(
@@ -60,6 +66,14 @@ export const SupportAccessList = z.object({
     .array(SupportAccessView)
     .describe('Every grant, active and ended, the newest first, at most 200'),
   active: z.number().int().describe('How many are active now'),
+  defaultDays: z
+    .number()
+    .int()
+    .describe('How long access from outside lasts unless the grant says otherwise, in days'),
+  capDays: z
+    .number()
+    .int()
+    .describe('The longest a grant may last from now, in days: the cap on access from outside'),
 });
 export type SupportAccessList = z.infer<typeof SupportAccessList>;
 

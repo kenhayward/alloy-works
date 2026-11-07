@@ -734,7 +734,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sample_pdf: { none: 'derived' },
     publish: writes('publication.produced', 'publication.failed'),
     preview: { none: 'preview' },
-    ingest: writes('content.version_cut', 'asset.ingested', 'asset.refused'),
+    ingest: writes('content.version_cut', 'asset.replaced', 'asset.ingested', 'asset.refused'),
     // Derivatives kept beside an original, made from it again whenever discarded (the AL plan, AL-H).
     derive: { none: 'derived' },
     check_pdf: { none: 'derived' },

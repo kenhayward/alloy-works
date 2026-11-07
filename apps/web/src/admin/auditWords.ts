@@ -98,9 +98,6 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'bridge.settings_changed'() {
     return words('admin.bridge-settings-changed');
   },
-  get 'channel.changed'() {
-    return words('admin.channel-changed');
-  },
   get 'component.type_changed'() {
     return words('admin.component-type-changed');
   },
@@ -515,9 +512,6 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   },
   get bridge() {
     return words('admin.ct-studio-deliveries');
-  },
-  get channel() {
-    return words('admin.channels');
   },
   get comment() {
     return words('admin.comments');

@@ -2,8 +2,8 @@
 
 How a tenant lets somebody from outside it look, at what and until when, and sees it happening (ADM-022 to ADM-026,
 ADM-042). Built by [the SA plan](../plans/2026-11-07-sa-support-access-boundary-and-secrets.md), which holds the
-decisions. **SAa and SAb are built**: what each route reads, `read_diagnostics`, and support granted, decided, held to
-its scope and audited at the service. SAc builds Administration's Support access and the support person's own view.
+decisions. **SAa to SAc are built**: what each route reads, `read_diagnostics`, support granted, decided, held to its
+scope and audited at the service, and Administration's Support access with the support person's own view.
 
 ## Who support is
 
@@ -79,6 +79,24 @@ reason `support`. ADM-042's "shown in ADM-025" is met by that listing, the lozen
 person and its grants; **revoking the support ends the invitation it made**, lapsed and audited as
 `invitation.withdrawn`, so its person cannot sign in later holding nothing.
 
+## Shown
+
+- **Administration's Support access** (`apps/web/src/admin/SupportAccess.tsx`) lists every grant, how it stands as a
+  `Chip` (an operational status, not a state of content), and how it ended, `cap_lowered` included. To whoever holds
+  `grant_support` it offers the form, each scope explained, its end defaulting to the policy's default and refused
+  past the cap (the listing answers both), the service's refusals said as sentences; and **Revoke**, which says what
+  it ends first.
+- **While any grant is active**, `ActiveSupport` names who, what scope, where and until when at the top of every
+  section, to every administrator, linking to the section (ADM-025).
+- **The support person** reads their grant on `/v1/me` (`support`, spaces by name). The workspace shows it on every
+  page; Administration offers them Diagnostics, Usage, Query usage and Model spending alone, as it does anybody who
+  reads Diagnostics and administers nothing, and panels joining an `administer` read (the budget, the limits, the
+  embedding model) are asked for apart. An opened page (anything but a list, Home or Administration) is **withheld**
+  beyond their scope, and under a content grant **asks first**, its purpose shown; once chosen, `sendSupportRead`
+  has every client say `Support-Read` for the window, a reload asking again (ADM-026). A header carries ASCII, so
+  the purpose is sent plainly spelt. A metadata grant's opened pages are withheld whole, though some would show
+  only titles.
+
 ## Requirements owned
 
 | ID          | How it is met                                                                                                                                    |
@@ -88,8 +106,5 @@ person and its grants; **revoking the support ends the invitation it made**, lap
 | **ADM-024** | `support.granted`, `support.used` and `support.revoked` in the tenant's own log, which its administrators read                                   |
 | **ADM-042** | `grant_support` grants and revokes, administrators review; scope, spaces, expiry, purpose and person on each; audited; named by `explainAccess`  |
 | **IAM-070** | `grant_support`, the last of its eight acts, granted through a role and explained like the rest                                                  |
-
-**Not claimed yet.** ADM-025 asks that the tenant see at any time whether support is active and what it covers:
-`GET /v1/support-access` answers it, and SAc's lozenge for every administrator completes it. ADM-026 asks support
-tooling to make reading content a deliberate act: the `Support-Read` header makes it one at the API, and SAc's
-renderer, which asks first, is the tooling.
+| **ADM-025** | `GET /v1/support-access` answers what is active and what it covers at any time, and every administrator sees it at the top of Administration     |
+| **ADM-026** | Content is read only with `Support-Read` at the API; the renderer withholds it beyond the scope and asks before any is read, then says why       |

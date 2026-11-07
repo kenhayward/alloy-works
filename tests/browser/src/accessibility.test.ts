@@ -897,6 +897,22 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on Administration’s Support access: giving it, and every grant listed (the SA plan, SAc)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/support`);
+      const arrival: Arrival = {
+        shows: [
+          page.getByRole('heading', { name: 'Support access', level: 1 }),
+          page.getByRole('form', { name: 'Give support access' }),
+        ],
+      };
+      await arrive(arrival);
+      await checkAxe(page, 'support access given and listed', task.meta, arrival);
+    });
+  });
+
   it('passes axe on Administration’s Usage: each measure by month and one by day (the DG plan, DGd2)', async ({
     task,
   }) => {

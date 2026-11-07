@@ -1,4 +1,4 @@
-import { INTERFACE_LANGUAGES, TENANT_STATES } from '@alloy-works/domain';
+import { INTERFACE_LANGUAGES, supportScopes, TENANT_STATES } from '@alloy-works/domain';
 import { parseLevel, permissions } from '@alloy-works/domain';
 import { z } from 'zod';
 
@@ -151,6 +151,19 @@ export const Me = z.object({
     .nullable()
     .describe(
       'The language they chose for the interface, or null for their browser’s; never the content’s',
+    ),
+  support: z
+    .object({
+      scope: z.enum(supportScopes),
+      spaces: z
+        .array(z.object({ id: z.string(), name: z.string() }))
+        .describe('The spaces it reads, by name; for diagnostics, those its reads may name'),
+      purpose: z.string().describe('Why support was given, as the log keeps it'),
+      expiresAt: z.string().describe('When it ends'),
+    })
+    .nullable()
+    .describe(
+      'The support access they hold now (docs/design/support.md), or null: a support person reads nothing else',
     ),
 });
 export type Me = z.infer<typeof Me>;

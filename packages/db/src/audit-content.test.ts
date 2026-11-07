@@ -12,11 +12,13 @@ import {
   setConnectionCredential,
 } from './connections.js';
 import { createComponent } from './creation.js';
+import { setMailChannel } from './mail.js';
 import { nameDataset } from './datasets.js';
 import { claimLock, saveIteration } from './editing.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { requestPublication } from './publishing.js';
+import { grantSupport, recordSupportUse, revokeSupport } from './support.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import {
@@ -498,6 +500,102 @@ describe('content and data on the audit log', () => {
       refuseAssetUpload(trx, uploads.refused.id, 'malformed', 'awaiting'),
     );
     expect(again).toEqual([]);
+  });
+
+  it('LIF-072 records an asset replaced, support granted, used and revoked, and the notification channel changed, each as a kind of its own', async () => {
+    const key = (fill: string) => `${tenant.role}/sha256/${fill.repeat(64)}`;
+    const worker: AuditContext = { actorKind: 'system', requestedBy: ada };
+    const first = await service.withTenant(
+      tenant,
+      async (trx) => {
+        const upload = await createAssetUpload(trx, {
+          spaceId: general,
+          uploader: ada,
+          alternative: null,
+        });
+        await receiveAssetBytes(trx, upload.id, { key: key('c'), format: 'png', bytes: 3530 });
+        return upload;
+      },
+      acting,
+    );
+    const original = await service.withTenant(
+      tenant,
+      (trx) => recordAsset(trx, first.id, header),
+      worker,
+    );
+    const replacing = await service.withTenant(
+      tenant,
+      async (trx) => {
+        const upload = await createAssetUpload(trx, {
+          spaceId: general,
+          uploader: ada,
+          alternative: null,
+          replaces: original.artifactId,
+        });
+        await receiveAssetBytes(trx, upload.id, { key: key('d'), format: 'png', bytes: 3530 });
+        return upload;
+      },
+      acting,
+    );
+    const { answer: replaced, events: replacement } = await recorded(
+      (trx) => recordAsset(trx, replacing.id, { ...header, width: 640 }),
+      worker,
+    );
+    expect(replacement.map((event) => event.kind)).toEqual([
+      'content.version_cut',
+      'asset.replaced',
+      'asset.ingested',
+    ]);
+    expect(ofKind(replacement, 'asset.replaced')[0]).toMatchObject({
+      actorKind: 'system',
+      subjectKind: 'asset',
+      subject: original.artifactId,
+      subjectVersion: replaced.id,
+      space: general,
+      detail: { replaced: original.id, requestedBy: ada },
+    });
+
+    // Support's grant, a day's use and its revocation (ADM-024).
+    const { answer: granted, events: granting } = await recorded((trx) =>
+      grantSupport(trx, {
+        email: 'helper@vendor.example',
+        scope: 'metadata',
+        spaces: [general],
+        purpose: 'Why the outline will not save',
+        expiresAt: new Date(Date.now() + 3 * 86_400_000),
+        grantedBy: ada,
+      }),
+    );
+    if (!('granted' in granted)) throw new Error(granted.refused);
+    expect(ofKind(granting, 'support.granted')).toHaveLength(1);
+    const { events: using } = await recorded((trx) => recordSupportUse(trx, granted.granted));
+    expect(using.map((event) => [event.kind, event.detail.scope])).toEqual([
+      ['support.used', 'metadata'],
+    ]);
+    const { events: revoking } = await recorded((trx) =>
+      revokeSupport(trx, granted.granted.id, ada),
+    );
+    expect(ofKind(revoking, 'support.revoked')).toHaveLength(1);
+
+    // Mail, the one notification channel (COL-060), changed.
+    const { events: channel } = await recorded((trx) =>
+      setMailChannel(trx, {
+        enabled: false,
+        relay: 'platform',
+        host: null,
+        port: null,
+        username: null,
+        fromAddress: null,
+        fromName: null,
+        by: ada,
+      }),
+    );
+    expect(channel.map((event) => [event.kind, event.detail.change])).toEqual([
+      ['mail_channel.changed', 'made'],
+    ]);
+    for (const event of [...granting, ...using, ...revoking, ...channel]) {
+      expect(event, event.kind).toMatchObject({ actorKind: 'person', actor: ada });
+    }
   });
 
   it('records a dataset named, and a publication requested but not a preview', async () => {

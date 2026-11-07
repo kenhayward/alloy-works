@@ -289,7 +289,7 @@ export async function recordAsset(
           ...authorship,
           substance: { kind: 'asset', content },
         })
-      : await replaceAsset(trx, upload.replaces, authorship, content);
+      : await replaceAsset(trx, upload.replaces, upload.spaceId, authorship, content);
   await trx
     .updateTable('asset_upload')
     .set({
@@ -334,6 +334,7 @@ export async function recordAsset(
 async function replaceAsset(
   trx: TenantTransaction,
   assetId: string,
+  spaceId: string,
   authorship: { readonly author: string; readonly note?: string },
   content: AssetVersionContent,
 ): Promise<StoredVersion> {
@@ -346,7 +347,15 @@ async function replaceAsset(
     ...authorship,
     substance: { kind: 'asset', content },
   });
-  if (answer.answer === 'recorded') return answer.version;
+  if (answer.answer === 'recorded') {
+    // Replaced, as a kind of its own (LIF-072; AST-031): bytes that were already its latest replace nothing.
+    await recordAssetEvent(trx, spaceId, {
+      kind: 'asset.replaced',
+      subject: { kind: 'asset', id: assetId, version: answer.version.id },
+      detail: { replaced: latest.id },
+    });
+    return answer.version;
+  }
   if (answer.answer === 'version.unchanged') return answer.current;
   throw new Error(`Asset ${assetId} could not be replaced: ${answer.answer}`);
 }

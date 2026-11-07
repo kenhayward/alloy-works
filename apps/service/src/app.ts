@@ -95,6 +95,7 @@ import { presentationHandlers } from './presentation.js';
 import { searchHandlers } from './search.js';
 import {
   holdToSupport,
+  mySupport,
   recordSupportAnswered,
   supportHandlers,
   type SupportUse,
@@ -1453,7 +1454,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getMe: async (request) => {
       const principal = principalOf(request);
-      const { profile, kind, sharesOnly, interfaceLanguage, state } = await db.withTenant(
+      const { profile, kind, sharesOnly, interfaceLanguage, state, support } = await db.withTenant(
         tenantOf(request),
         async (trx) => ({
           state: (await ownTenantState(trx)).state,
@@ -1465,6 +1466,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
             .executeTakeFirst(),
           sharesOnly: await readsOnlyShares(trx, principal.principalId),
           interfaceLanguage: await interfaceLanguageOf(trx, principal.principalId),
+          support: await mySupport(trx, request.support),
         }),
       );
       return {
@@ -1477,6 +1479,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         outside: kind?.kind === 'external',
         sharesOnly,
         interfaceLanguage,
+        support,
       };
     },
 

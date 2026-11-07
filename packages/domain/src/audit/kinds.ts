@@ -448,7 +448,12 @@ export const auditKindSpecs = {
     z.strictObject({ reason: AuditName }),
     'packages/db/src/assets.ts',
   ),
-  'asset.replaced': kind(['LIF-072'], empty, LATER),
+  // A replacement's new version cut (AL-M; LIF-072): the version it replaced. Its subject is the new one.
+  'asset.replaced': kind(
+    ['LIF-072', 'AST-031'],
+    z.strictObject({ replaced: Id }),
+    'packages/db/src/assets.ts',
+  ),
   'asset.relicensed': kind(['LIF-072', 'AST-031'], empty, 'packages/db/src/assets.ts'),
   'asset.derivatives_discarded': kind(
     ['AST-048', 'LIF-069'],
@@ -935,7 +940,6 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/bridge-store.ts',
   ),
-  'channel.changed': kind(['LIF-072'], empty, LATER),
   // A tool call through MCP (the G8 plan, G8-F): identifiers kept, any text its length and digest,
   // never its words (LIF-030).
   'tool.used': kind(

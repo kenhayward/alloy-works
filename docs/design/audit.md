@@ -45,6 +45,7 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **LIF-073** | Hold applied and removed, archival and deletion are kinds of their own; gate rejection (LIF-074) is declared                                                       |
 | **LIF-079** | `artifact.copied`, written once for each copy made: a document, a template, and each component a document's copy makes ([structure.md](structure.md), Copying)     |
 | **LIF-069** | A bound value revised and an asset ingested are kinds of their own                                                                                                 |
+| **LIF-072** | An asset replaced or re-licensed, support granted, used and revoked, and the mail channel (the only notification channel) changed are kinds of their own           |
 | **LIF-070** | A relationship made, changed and removed, and an access to a shared publication, are kinds of their own, each written by its act's design                          |
 | **LIF-025** | Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))                                 |
 | **LIF-029** | An event and its labels read without the content they describe, which may be gone                                                                                  |
@@ -61,7 +62,7 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **ADM-039** | An administrator exports it, complete and scoped to the tenant                                                                                                     |
 | **DAT-007** | A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is                         |
 
-**Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-071, LIF-072 and
+**Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-071 and
 LIF-074 (the T3 audit), whose kinds are declared here and emitted by the designs that build their acts; LIF-055, LIF-034 and LIF-035 (T7, ADR-0045:
 the export leaves room for a signature over its sequence); IAM-070 (T7, an audit-reader permission);
 the workflow, approval, hold, deletion and generation events, whose kinds are listed here and whose
@@ -167,11 +168,11 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `theme.declared`, `theme.moved`                                                                | a theme declared the environment's, its subject, `{ from }`; or a template moved to another theme, its subject, `{ from, to }` ([themes.md](themes.md))                                                              | STY-072, STY-026 |
 
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
-`lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, and those the AU1 review
+`lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, and those the AU1 review
 added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,
 `tenant.closed`, `extension.changed`, `organisation.changed`, `import.restored`,
 `library.changed`, `line.merged`, `component.type_changed`,
-`publication.shared_accessed`, `support.*`, `channel.changed`. A design emitting one
+`publication.shared_accessed`. A design emitting one
 cites it in its tests.
 
 ## Writing

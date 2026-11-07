@@ -879,10 +879,11 @@ describe("Administration's Overview, Roles and About", () => {
     const { client } = service(overview);
     render(<Administration client={client} about={null} />);
     const page = screen.getByRole('region', { name: 'Administration' });
+    // Opened once it is known who reads it.
+    const counted = await within(page).findByRole('list', { name: 'What this environment holds' });
     expect(page).toHaveTextContent(
       'Changes in Administration take effect at once, for everybody in this environment.',
     );
-    const counted = within(page).getByRole('list', { name: 'What this environment holds' });
     await waitFor(() =>
       expect(within(counted).getByRole('link', { name: '2 Spaces, 1 archived' })).toHaveAttribute(
         'href',
@@ -1090,6 +1091,7 @@ describe("Administration's menu", () => {
       '#/admin/roles',
       '#/admin/sign-in',
       '#/admin/outside',
+      '#/admin/support',
     ]);
     expect(
       within(screen.getByRole('list', { name: 'System' }))
@@ -1409,14 +1411,14 @@ describe('Access from Administration', () => {
     expect(
       within(dialog).queryByRole('button', { name: 'Manage access to the whole environment' }),
     ).toBeNull();
-    // Asked twice of the environment, for administer and configuring services, once of each space,
-    // and not again on coming back.
+    // Asked of the environment for administer, configuring services, reading Diagnostics and granting
+    // support, once of each space, and not again on coming back.
     expect(
       asked
         .filter((url) => url.pathname === '/v1/access')
         .map((url) => url.searchParams.get('target'))
         .sort(),
-    ).toEqual(['space:s1', 'space:s2', 'tenant', 'tenant']);
+    ).toEqual(['space:s1', 'space:s2', 'tenant', 'tenant', 'tenant', 'tenant']);
   });
 
   it('keeps focus in Administration once a grant removed takes its Remove button with it', async () => {
@@ -2074,5 +2076,98 @@ describe('Spaces in Administration', () => {
     await within(table).findByRole('button', { name: 'Access to the space General' });
     expect(within(dialog).queryByRole('button', { name: 'New space' })).toBeNull();
     expect(within(table).queryByRole('button', { name: /^(Rename|Archive|Restore) / })).toBeNull();
+  });
+});
+
+describe('support access in Administration (support.md; the SA plan, SAc)', () => {
+  const active = {
+    id: 'g1',
+    person: { id: 'p9', name: 'Sam', email: 'sam@vendor.example' },
+    scope: 'content',
+    spaces: ['s1'],
+    purpose: 'Why the outline will not save',
+    expiresAt: '2026-11-20T09:00:00.000Z',
+    grantedBy: { id: 'p1', name: 'Ada' },
+    grantedAt: '2026-11-01T09:00:00.000Z',
+    revokedAt: null,
+    revokedBy: null,
+    revokedReason: null,
+    active: true,
+  };
+  const listing = (items: unknown[]) => () =>
+    json(200, { items, active: items.length, defaultDays: 30, capDays: 90 });
+
+  it('ADM-025 tells every administrator, whichever section is open, who has support access, at what and until when', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/access': administering('tenant'),
+      '/v1/support-access': listing([active, { ...active, id: 'g2', active: false }]),
+    });
+    render(<Administration client={client} about={null} />);
+    const notice = await screen.findByRole('status', { name: 'Support access active now' });
+    expect(await within(notice).findByText(/in General/)).toHaveTextContent(
+      /^Support access is active: Sam may look at Content in General until 20 Nov 2026/,
+    );
+    expect(within(notice).getAllByRole('paragraph')).toHaveLength(2);
+    expect(within(notice).getByRole('link', { name: 'See support access' })).toHaveAttribute(
+      'href',
+      '#/admin/support',
+    );
+    await userEvent.click(section('Roles'));
+    expect(await screen.findByRole('heading', { name: 'Roles', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Support access active now' })).toBeInTheDocument();
+  });
+
+  it('shows no notice while no support access is active, and asks nothing of somebody who administers nothing', async () => {
+    const quiet = service({
+      ...everything,
+      '/v1/access': administering('tenant'),
+      '/v1/support-access': listing([{ ...active, active: false }]),
+    });
+    const { unmount } = render(<Administration client={quiet.client} about={null} />);
+    await waitFor(() =>
+      expect(quiet.asked.some((url) => url.pathname === '/v1/support-access')).toBe(true),
+    );
+    expect(screen.queryByRole('status', { name: 'Support access active now' })).toBeNull();
+    unmount();
+
+    const reader = service({ ...everything, '/v1/access': administering() });
+    render(<Administration client={reader.client} about={null} />);
+    await waitFor(() =>
+      expect(reader.asked.some((url) => url.pathname === '/v1/access')).toBe(true),
+    );
+    expect(reader.asked.some((url) => url.pathname === '/v1/support-access')).toBe(false);
+  });
+
+  it('offers a support person only what they may open, Diagnostics first, asking nothing they would be refused', async () => {
+    const { client, asked } = service({
+      ...everything,
+      '/v1/me': () =>
+        json(200, {
+          id: 'p9',
+          support: {
+            scope: 'diagnostics',
+            spaces: [],
+            purpose: 'Failing deliveries',
+            expiresAt: '2026-11-20T09:00:00.000Z',
+          },
+        }),
+    });
+    render(<Administration client={client} about={null} />);
+    expect(
+      await screen.findByRole('heading', { name: 'Diagnostics', level: 1 }),
+    ).toBeInTheDocument();
+    const menu = screen.getByRole('navigation', { name: 'Sections of Administration' });
+    expect(
+      within(menu)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['#/admin/spending', '#/admin/diagnostics', '#/admin/usage', '#/admin/queries']);
+    for (const path of ['/v1/principals', '/v1/groups', '/v1/roles', '/v1/holds']) {
+      expect(
+        asked.some((url) => url.pathname === path),
+        path,
+      ).toBe(false);
+    }
   });
 });

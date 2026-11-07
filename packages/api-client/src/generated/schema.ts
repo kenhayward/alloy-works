@@ -98508,7 +98508,13 @@ export interface operations {
                      *       "environment": "example",
                      *       "outside": false,
                      *       "sharesOnly": false,
-                     *       "interfaceLanguage": "en-GB"
+                     *       "interfaceLanguage": "en-GB",
+                     *       "support": {
+                     *         "scope": "diagnostics",
+                     *         "spaces": [],
+                     *         "purpose": "example",
+                     *         "expiresAt": "example"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -98534,6 +98540,20 @@ export interface operations {
                         sharesOnly: boolean;
                         /** @description The language they chose for the interface, or null for their browser’s; never the content’s */
                         interfaceLanguage: ("en-GB" | "en-XA" | "ar-XB") | null;
+                        /** @description The support access they hold now (docs/design/support.md), or null: a support person reads nothing else */
+                        support: {
+                            /** @enum {string} */
+                            scope: "diagnostics" | "metadata" | "content";
+                            /** @description The spaces it reads, by name; for diagnostics, those its reads may name */
+                            spaces: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description Why support was given, as the log keeps it */
+                            purpose: string;
+                            /** @description When it ends */
+                            expiresAt: string;
+                        } | null;
                     };
                 };
             };
@@ -138865,7 +138885,9 @@ export interface operations {
                     /**
                      * @example {
                      *       "items": [],
-                     *       "active": -9007199254740991
+                     *       "active": -9007199254740991,
+                     *       "defaultDays": -9007199254740991,
+                     *       "capDays": -9007199254740991
                      *     }
                      */
                     "application/json": {
@@ -138895,11 +138917,17 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             } | null;
+                            /** @description Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked */
+                            revokedReason: ("revoked" | "cap_lowered") | null;
                             /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
                             active: boolean;
                         }[];
                         /** @description How many are active now */
                         active: number;
+                        /** @description How long access from outside lasts unless the grant says otherwise, in days */
+                        defaultDays: number;
+                        /** @description The longest a grant may last from now, in days: the cap on access from outside */
+                        capDays: number;
                     };
                 };
             };
@@ -139045,6 +139073,7 @@ export interface operations {
                      *           "id": "example",
                      *           "name": "example"
                      *         },
+                     *         "revokedReason": "revoked",
                      *         "active": false
                      *       },
                      *       "invitation": {
@@ -139090,6 +139119,8 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             } | null;
+                            /** @description Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked */
+                            revokedReason: ("revoked" | "cap_lowered") | null;
                             /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
                             active: boolean;
                         };
@@ -139268,6 +139299,7 @@ export interface operations {
                      *         "id": "example",
                      *         "name": "example"
                      *       },
+                     *       "revokedReason": "revoked",
                      *       "active": false
                      *     }
                      */
@@ -139296,6 +139328,8 @@ export interface operations {
                             id: string;
                             name: string | null;
                         } | null;
+                        /** @description Why it ended early: revoked by somebody, or cap_lowered, the cap on access from outside lowered past its expiry; null while unrevoked */
+                        revokedReason: ("revoked" | "cap_lowered") | null;
                         /** @description Whether it lets its person in now: not revoked, not expired, and within the environment's cap, which a lowered cap ends */
                         active: boolean;
                     };
