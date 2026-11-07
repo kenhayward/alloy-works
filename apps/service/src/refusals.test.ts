@@ -318,6 +318,16 @@ describe('the rule behind a refusal', () => {
       'share.erased',
       'share.expiry_past',
       'share.past_cap',
+      // The SA plan's (SAb): support for somebody inside, erased, holding it already, past now or past
+      // the cap, naming no space or another environment's, or revoked twice. Guards of support.md's.
+      'support.member',
+      'support.erased',
+      'support.active',
+      'support.expiry_past',
+      'support.past_cap',
+      'support.spaces_required',
+      'support.space_missing',
+      'support.revoked',
       'grant.role_fixed',
       // The WF6 plan's (WF6-C): no template, already its newest, or not its newest.
       'template.none',

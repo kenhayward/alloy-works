@@ -37,9 +37,8 @@ a person disabled at the provider keeps their session until it expires or an adm
 here, as before (PC-F). Back-channel logout was considered and left out (IN-C, [the PC plan](../plans/2026-11-06-pc-provider-checks-each-session.md)). **IAM-056** is met for a provider that
 provisions by SCIM, whose memberships come from SCIM alone and apply on receipt; without SCIM they are
 re-read at each sign-in and re-authentication, which a person using only a token never makes, so no
-interval bounds them. **IAM-070** names eight acts; six exist and are split out here, and suspension or
-closure (the TL slice) and granting support access (ADM-042) take their permissions when they are
-built, since a permission no check reads is a promise with nothing behind it
+interval bounds them. **IAM-070** names eight acts; six are split out here, suspension and closure are
+the TL slice's, and granting support access is `grant_support`, claimed in [support.md](support.md)
 ([permissions.ts](../../packages/domain/src/access/permissions.ts)). IAM-068 and IAM-079,
 organisation-wide providers, are TL's.
 

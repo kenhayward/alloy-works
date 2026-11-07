@@ -235,6 +235,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   lagging past five minutes, integrity failing) is told to whoever administers in their inbox, once
   until it clears, never by email; a search by meaning while the index lags says new content may not
   be found by meaning yet.
+- **Support access.** Through the API (`/v1/support-access`), whoever holds Grant support access, as
+  every administrator of the environment does, lets a named person from outside the organisation look,
+  by address: at Diagnostics, or at titles and names, or at content too, in the spaces chosen, for a
+  stated purpose, until a stated time within the limit for outside access, and revokes it at once. While
+  it lasts the person changes nothing and reads nothing beyond it, Diagnostics naming only what is in
+  those spaces, and each content request must say why in a `Support-Read` header. Every administrator
+  lists every grant, active or ended; granting, revoking, each day of use and each content read are on
+  the audit log, and the access explanation names it. Administration's screens for it are not built yet.
 - **Usage.** Administration's **Usage**, or the API (`GET /v1/usage`), shows what the environment has
   used over 13 months: the database and stored files (publications, assets, imports, exports), and the
   publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches,
