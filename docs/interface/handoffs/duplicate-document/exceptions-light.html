@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Part panel: exceptions, light</title>
+<style>x-dc{display:none!important}</style>
+<style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" data-dc-tpl="1"><style data-dc-tpl="2">
+body{margin:0;background:#e6e9ed}
+</style><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" data-dc-tpl="1"><style data-dc-tpl="2">
+body{margin:0}
+@keyframes dupbar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+.dup .scroller{scrollbar-width:thin}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="dp-exceptions-light"><div data-dc-tpl="3" style="width: 1040px; height: 720px;"><div class="sc-host" data-sc-name="Dup" data-dc-tpl="4"><div data-dc-tpl="3" class="dup" style="position: relative; width: 1040px; height: 720px; overflow: hidden; background: rgb(230, 233, 237); font-family: &quot;IBM Plex Sans&quot;, system-ui, sans-serif; font-size: 13px; color: rgb(21, 32, 43);">
+  <div data-dc-tpl="4" aria-hidden="true" style="position: absolute; inset: 0px; padding: 28px 40px; opacity: 0.35;">
+    <div data-dc-tpl="5" style="height: 22px; width: 220px; border-radius: 6px; background: rgb(201, 208, 216);"></div>
+    <div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 220px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 300px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 260px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 340px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 240px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 310px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 280px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 200px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 330px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 260px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 290px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 220px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 260px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div><div data-dc-tpl="7" style="margin-top: 18px; height: 34px; border-bottom: 1px solid rgb(225, 229, 234); display: flex; gap: 24px; align-items: center;"><span data-dc-tpl="8" style="width: 300px; height: 10px; border-radius: 4px; background: rgb(201, 208, 216);"></span><span data-dc-tpl="9" style="width: 90px; height: 10px; border-radius: 4px; background: rgb(225, 229, 234);"></span></div>
+  </div>
+  <div data-dc-tpl="10" style="position: absolute; inset: 0px; background: rgba(21, 32, 43, 0.32);"></div>
+
+  <div data-dc-tpl="11" role="dialog" aria-modal="true" aria-labelledby="dup-h" style="position: absolute; left: 50%; top: 50%; width: 720px; transform: translate(-50%, -50%); box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid rgb(201, 208, 216); border-radius: 14px; background: rgb(255, 255, 255); box-shadow: rgba(15, 23, 42, 0.22) 0px 24px 60px; overflow: hidden;">
+
+    <div data-dc-tpl="12" style="flex: 0 0 auto; padding: 18px 16px 16px 22px; display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid rgb(225, 229, 234);">
+      <span data-dc-tpl="13" aria-hidden="true" style="flex: 0 0 auto; width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: rgb(228, 241, 245); color: rgb(22, 90, 114); box-shadow: rgba(29, 106, 133, 0.22) 0px 0px 0px 1px inset;"><svg data-dc-tpl="14" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path data-dc-tpl="15" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg></span>
+      <div data-dc-tpl="16" style="flex: 1 1 0%; min-width: 0px;">
+        <h2 data-dc-tpl="17" id="dup-h" style="margin: 0px; font-size: 17px; font-weight: 600;">Duplicate this document</h2>
+        <div data-dc-tpl="18" style="margin-top: 4px; display: flex; align-items: center; gap: 8px; min-width: 0px; font-size: 12px; color: rgb(86, 96, 108);">
+          <svg data-dc-tpl="19" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto;"><path data-dc-tpl="20" d="M14 3H6v18h12V7zM14 3v4h4"></path></svg>
+          <span data-dc-tpl="21" style="min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgb(21, 32, 43);">Clinical study report FIN-3101</span>
+          <span data-dc-tpl="22" style="flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; height: 18px; box-sizing: border-box; padding: 0px 7px 0px 5px; border-radius: 999px; border: 1px solid rgb(201, 208, 216); background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-size: 10px; font-weight: 600;"><svg data-dc-tpl="23" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="3 3.2" stroke-linecap="round" aria-hidden="true"><path data-dc-tpl="24" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path></svg>Draft</span>
+          <span data-dc-tpl="25" style="flex: 0 0 auto;">· Clinical · 22 components</span>
+        </div>
+      </div>
+      <button data-dc-tpl="26" type="button" aria-label="Close" style="flex: 0 0 auto; width: 30px; height: 30px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 7px; background: transparent; color: rgb(86, 96, 108); cursor: pointer;"><svg data-dc-tpl="27" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path data-dc-tpl="28" d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <div data-dc-tpl="29" style="flex: 0 0 auto; padding: 16px 22px 4px;">
+      <div data-dc-tpl="30" style="display: grid; grid-template-columns: minmax(0px, 1fr) 200px; gap: 12px;">
+        <label data-dc-tpl="31" style="display: block; min-width: 0px;">
+          <span data-dc-tpl="32" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: rgb(86, 96, 108);">Title of the copy</span>
+          <input data-dc-tpl="33" type="text" value="Clinical study report FIN-3101 (copy)" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0px 12px; border: 1px solid rgb(29, 106, 133); border-radius: 9px; background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-family: inherit; font-size: 14px; font-weight: 500; outline: rgba(29, 106, 133, 0.22) solid 2px; outline-offset: 1px;">
+        </label>
+        <label data-dc-tpl="34" style="display: block; min-width: 0px;">
+          <span data-dc-tpl="35" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: rgb(86, 96, 108);">Where</span>
+          <span data-dc-tpl="36" style="height: 38px; box-sizing: border-box; padding: 0px 10px; display: flex; align-items: center; gap: 8px; border: 1px solid rgb(201, 208, 216); border-radius: 9px; background: rgb(238, 241, 244);"><svg data-dc-tpl="37" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="38" d="M3 6h6l2 2h10v11H3z"></path></svg><span data-dc-tpl="39" style="flex: 1 1 0%;">Clinical</span><svg data-dc-tpl="40" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="41" d="M6 9l6 6 6-6"></path></svg></span>
+        </label>
+      </div>
+      
+
+      <div data-dc-tpl="46" style="margin-top: 16px; display: flex; align-items: baseline; gap: 8px;">
+        <span data-dc-tpl="47" id="dup-start" style="font-size: 12px; font-weight: 600;">Components: start from</span>
+        <span data-dc-tpl="48" style="font-size: 12px; color: rgb(86, 96, 108);">then make exceptions below, one component at a time</span>
+      </div>
+      <div data-dc-tpl="49" role="radiogroup" aria-labelledby="dup-start" style="margin-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); gap: 10px;">
+        
+          <button data-dc-tpl="51" type="button" role="radio" aria-checked="false" style="position: relative; min-height: 0px; box-sizing: border-box; padding: 11px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; border: 1px solid rgb(225, 229, 234); border-radius: 11px; background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-family: inherit; text-align: left; cursor: pointer;">
+            <span data-dc-tpl="52" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+              <span data-dc-tpl="53" aria-hidden="true" style="flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgb(255, 255, 255); color: rgb(86, 96, 108);"><svg data-dc-tpl="54" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path data-dc-tpl="55" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></span>
+              <span data-dc-tpl="56" style="flex: 1 1 0%; font-size: 13px; font-weight: 600; line-height: 1.25;"><span class="sc-interp">Reuse every component</span></span>
+              <span data-dc-tpl="57" aria-hidden="true" style="flex: 0 0 auto; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid rgb(201, 208, 216); background: transparent;"></span>
+            </span>
+            <span data-dc-tpl="58" style="font-size: 12px; color: rgb(86, 96, 108); line-height: 1.45;"><span class="sc-interp">Both place the same components; a change shows in each.</span></span>
+          </button>
+        
+          <button data-dc-tpl="51" type="button" role="radio" aria-checked="true" style="position: relative; min-height: 0px; box-sizing: border-box; padding: 11px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; border: 1.5px solid rgb(29, 106, 133); border-radius: 11px; background: rgb(228, 241, 245); color: rgb(21, 32, 43); font-family: inherit; text-align: left; cursor: pointer;">
+            <span data-dc-tpl="52" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+              <span data-dc-tpl="53" aria-hidden="true" style="flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgb(29, 106, 133); color: rgb(255, 255, 255);"><svg data-dc-tpl="54" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path data-dc-tpl="55" d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6M18 9a9 9 0 0 1-9 9"></path></svg></span>
+              <span data-dc-tpl="56" style="flex: 1 1 0%; font-size: 13px; font-weight: 600; line-height: 1.25;"><span class="sc-interp">Copy its own, reuse shared</span></span>
+              <span data-dc-tpl="57" aria-hidden="true" style="flex: 0 0 auto; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 5px solid rgb(29, 106, 133); background: rgb(255, 255, 255);"></span>
+            </span>
+            <span data-dc-tpl="58" style="font-size: 12px; color: rgb(86, 96, 108); line-height: 1.45;"><span class="sc-interp">Copies those only placed here; shares the rest.</span></span>
+          </button>
+        
+          <button data-dc-tpl="51" type="button" role="radio" aria-checked="false" style="position: relative; min-height: 0px; box-sizing: border-box; padding: 11px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; border: 1px solid rgb(225, 229, 234); border-radius: 11px; background: rgb(238, 241, 244); color: rgb(21, 32, 43); font-family: inherit; text-align: left; cursor: pointer;">
+            <span data-dc-tpl="52" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+              <span data-dc-tpl="53" aria-hidden="true" style="flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgb(255, 255, 255); color: rgb(86, 96, 108);"><svg data-dc-tpl="54" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path data-dc-tpl="55" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg></span>
+              <span data-dc-tpl="56" style="flex: 1 1 0%; font-size: 13px; font-weight: 600; line-height: 1.25;"><span class="sc-interp">Copy every component</span></span>
+              <span data-dc-tpl="57" aria-hidden="true" style="flex: 0 0 auto; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid rgb(201, 208, 216); background: transparent;"></span>
+            </span>
+            <span data-dc-tpl="58" style="font-size: 12px; color: rgb(86, 96, 108); line-height: 1.45;"><span class="sc-interp">Stands alone: everything it may copy is copied.</span></span>
+          </button>
+        
+      </div>
+
+      
+      <section data-dc-tpl="59" aria-label="Each component" style="margin-top: 12px; border: 1px solid rgb(225, 229, 234); border-radius: 11px; background: rgb(238, 241, 244); overflow: hidden;">
+        <div data-dc-tpl="60" style="padding: 9px 10px 10px 8px;">
+          <div data-dc-tpl="61" style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+            <button data-dc-tpl="62" type="button" aria-expanded="true" style="height: 28px; padding: 0px 8px 0px 6px; display: inline-flex; align-items: center; gap: 10px; border: 0px; border-radius: 7px; background: transparent; color: rgb(21, 32, 43); font-family: inherit; font-size: 12px; cursor: pointer;">
+              <svg data-dc-tpl="63" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="64" d="M6 9l6 6 6-6"></path></svg>
+              <span data-dc-tpl="65" style="display: inline-flex; align-items: center; gap: 6px;"><span data-dc-tpl="66" aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; background: rgb(29, 106, 133);"></span><b data-dc-tpl="67" style="font-weight: 600;"><span class="sc-interp">16</span></b> copied</span>
+              <span data-dc-tpl="68" style="display: inline-flex; align-items: center; gap: 6px;"><span data-dc-tpl="69" aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; background: rgb(91, 63, 184);"></span><b data-dc-tpl="70" style="font-weight: 600;"><span class="sc-interp">6</span></b> reused</span>
+              <span data-dc-tpl="71" style="color: rgb(22, 90, 114);"><span class="sc-interp">Hide the components</span></span>
+            </button>
+            <span data-dc-tpl="72" style="flex: 1 1 0%;"></span>
+            
+              <span data-dc-tpl="74" style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0px 4px 0px 8px; border-radius: 999px; background: rgb(255, 255, 255); border: 1px solid rgb(29, 106, 133); color: rgb(22, 90, 114); font-size: 11px; font-weight: 600;"><span data-dc-tpl="75" aria-hidden="true" style="width: 6px; height: 6px; border-radius: 50%; background: rgb(29, 106, 133);"></span><span class="sc-interp">2 exceptions</span><button data-dc-tpl="76" type="button" aria-label="Clear the exceptions" title="Clear the exceptions" style="width: 18px; height: 18px; padding: 0px; display: inline-flex; align-items: center; justify-content: center; border: 0px; border-radius: 50%; background: rgb(228, 241, 245); color: inherit; cursor: pointer;"><svg data-dc-tpl="77" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path data-dc-tpl="78" d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+            
+          </div>
+          <div data-dc-tpl="79" aria-hidden="true" style="margin: 7px 2px 0px 6px; height: 8px; display: flex; gap: 2px; border-radius: 999px; overflow: hidden; background: rgb(225, 229, 234);">
+            <span data-dc-tpl="80" style="width: 72.7273%; background: rgb(29, 106, 133);"></span>
+            <span data-dc-tpl="81" style="width: 27.2727%; background: rgb(91, 63, 184);"></span>
+          </div>
+        </div>
+        
+          <div data-dc-tpl="83" style="border-top: 1px solid rgb(225, 229, 234); background: rgb(255, 255, 255);">
+            <ul data-dc-tpl="84" aria-label="What happens to each component" class="scroller" style="margin: 0px; padding: 2px 0px; list-style: none; height: 132px; overflow-y: auto; scrollbar-color: rgb(201, 208, 216) transparent;">
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Title page</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Title page" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Synopsis</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Synopsis" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: rgba(29, 106, 133, 0.06);">
+                  <span data-dc-tpl="88" aria-hidden="true" style="position: absolute; left: 0px; top: 6px; bottom: 6px; width: 3px; border-radius: 0px 2px 2px 0px; background: rgb(29, 106, 133);"></span>
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Ethics statement</span><span data-dc-tpl="93" style="margin-left: 8px; font-size: 10px; font-weight: 600; color: rgb(22, 90, 114);">EXCEPTION</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 3 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Ethics statement" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Investigators and sites</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Investigators and sites" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Study objectives</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Study objectives" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: rgba(29, 106, 133, 0.06);">
+                  <span data-dc-tpl="88" aria-hidden="true" style="position: absolute; left: 0px; top: 6px; bottom: 6px; width: 3px; border-radius: 0px 2px 2px 0px; background: rgb(29, 106, 133);"></span>
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Eligibility criteria</span><span data-dc-tpl="93" style="margin-left: 8px; font-size: 10px; font-weight: 600; color: rgb(22, 90, 114);">EXCEPTION</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 5 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Eligibility criteria" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Randomisation scheme</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Randomisation scheme" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Primary endpoint</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Primary endpoint" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Secondary endpoints</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Secondary endpoints" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Bench testing summary</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 2 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Bench testing summary" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(91, 63, 184); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Adverse events</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Adverse events" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Concomitant medication</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Concomitant medication" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Statistical methods</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Statistical methods" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Protocol deviations</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Protocol deviations" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Data handling</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 4 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Data handling" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(91, 63, 184); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Quality assurance</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 7 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Quality assurance" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(91, 63, 184); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Discussion</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Discussion" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Conclusions</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Conclusions" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">References</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Only here</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, References" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Device description</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Also in 3 more</span></span>
+                  
+                  
+                    <span data-dc-tpl="100" role="radiogroup" aria-label="In the copy, Device description" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid rgb(201, 208, 216); border-radius: 7px; background: rgb(238, 241, 244);">
+                      <button data-dc-tpl="101" type="button" role="radio" aria-checked="false" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: transparent; color: rgb(86, 96, 108); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="102" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="103" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Copy</button>
+                      <button data-dc-tpl="104" type="button" role="radio" aria-checked="true" style="padding: 0px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0px; border-radius: 5px; background: rgb(91, 63, 184); color: rgb(255, 255, 255); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="105" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="106" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>Reuse</button>
+                    </span>
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Confidentiality notice</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Required by the template</span></span>
+                  
+                    <span data-dc-tpl="96" title="Its template requires it: always reused, never copied" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 7px; border: 1px dashed rgb(201, 208, 216); color: rgb(86, 96, 108); font-size: 11px; font-weight: 600;"><svg data-dc-tpl="97" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="98" d="M4 11h16v10H4zM8 11V7a4 4 0 0 1 8 0v4"></path></svg>Reused</span>
+                  
+                  
+                </li>
+              
+                <li data-dc-tpl="86" style="position: relative; height: 32px; padding: 0px 12px 0px 14px; display: flex; align-items: center; gap: 10px; background: transparent;">
+                  
+                  <svg data-dc-tpl="89" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+                  <span data-dc-tpl="91" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Abbreviations</span></span>
+                  <span data-dc-tpl="94" style="flex: 0 0 auto; width: 120px; font-size: 11px; color: rgb(86, 96, 108); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Required by the template</span></span>
+                  
+                    <span data-dc-tpl="96" title="Its template requires it: always reused, never copied" style="flex: 0 0 auto; width: 118px; height: 24px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 7px; border: 1px dashed rgb(201, 208, 216); color: rgb(86, 96, 108); font-size: 11px; font-weight: 600;"><svg data-dc-tpl="97" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="98" d="M4 11h16v10H4zM8 11V7a4 4 0 0 1 8 0v4"></path></svg>Reused</span>
+                  
+                  
+                </li>
+              
+            </ul>
+          </div>
+        
+      </section>
+
+      
+      <label data-dc-tpl="107" style="margin-top: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; border: 1px solid rgb(225, 229, 234); border-radius: 10px; cursor: pointer;">
+        <span data-dc-tpl="108" role="checkbox" aria-checked="true" tabindex="0" style="flex: 0 0 auto; margin-top: 1px; width: 18px; height: 18px; box-sizing: border-box; border-radius: 5px; display: flex; align-items: center; justify-content: center; border: 0px; background: rgb(29, 106, 133); color: rgb(255, 255, 255);"><svg data-dc-tpl="110" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="111" d="M5 12l5 5L20 7"></path></svg></span>
+        <span data-dc-tpl="112" style="flex: 1 1 0%; min-width: 0px;">
+          <span data-dc-tpl="113" style="display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 500;">Keep local rewordings on the copy<span data-dc-tpl="114" style="display: inline-block; min-width: 18px; box-sizing: border-box; padding: 0px 6px; border-radius: 999px; background: rgb(238, 241, 244); border: 1px solid rgb(225, 229, 234); font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums; text-align: center; color: rgb(86, 96, 108);">3</span></span>
+          <span data-dc-tpl="115" style="display: block; margin-top: 2px; font-size: 12px; color: rgb(86, 96, 108); line-height: 1.45;"><span class="sc-interp">The copy reads as this one does. 1 that no longer applies, as its paragraph has changed, is dropped.</span></span>
+        </span>
+      </label>
+
+      <ul data-dc-tpl="116" aria-label="What the copy reuses and leaves" style="margin: 12px 0px 0px; padding: 0px; list-style: none; display: flex; flex-direction: column; gap: 6px;">
+        
+          <li data-dc-tpl="118" style="display: flex; gap: 8px; font-size: 12px; line-height: 1.45; color: rgb(86, 96, 108);"><svg data-dc-tpl="119" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56606c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto; margin-top: 1px;"><path data-dc-tpl="120" d="M12 16v-5M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path></svg><span data-dc-tpl="121"><span class="sc-interp">2 components its template requires are reused, never copied.</span></span></li>
+        
+      </ul>
+    </div>
+
+    <div data-dc-tpl="122" style="flex: 0 0 auto; margin-top: 14px; border-top: 1px solid rgb(225, 229, 234);">
+      
+      <div data-dc-tpl="126" style="padding: 12px 16px 12px 22px; display: flex; align-items: center; gap: 10px;">
+        <span data-dc-tpl="127" role="status" style="flex: 1 1 0%; min-width: 0px; font-size: 12px; color: rgb(86, 96, 108);"><span class="sc-interp">Into Clinical, as a new Draft.</span></span>
+        <button data-dc-tpl="128" type="button" style="height: 34px; padding: 0px 14px; border: 1px solid rgb(201, 208, 216); border-radius: 8px; background: transparent; color: rgb(21, 32, 43); font-family: inherit; font-size: 13px; opacity: 1; cursor: pointer;">Cancel</button>
+        <button data-dc-tpl="129" type="button" aria-disabled="false" style="height: 34px; padding: 0px 14px 0px 11px; display: flex; align-items: center; gap: 7px; border: 0px; border-radius: 8px; background: rgb(29, 106, 133); color: rgb(255, 255, 255); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="130" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="131" d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg><span class="sc-interp">Duplicate</span></button>
+      </div>
+    </div>
+  </div></div></div></div></div></div>
+
+
+</body></html>

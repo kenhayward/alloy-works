@@ -226,6 +226,8 @@ describe('the domain package', () => {
         'chosenCopies',
         'copyContent',
         'copyOutline',
+        'isFixed',
+        'startsCopied',
         // CG: a component group, placed as a run of references and taken at another version.
         'COMPONENT_GROUP_SCHEMA_VERSION',
         'GROUP_MEMBERS_MOST',

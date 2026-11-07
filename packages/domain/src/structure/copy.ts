@@ -8,21 +8,63 @@ export const COPY_MAX = 200;
 /** What a document copy does with its components (RM-G): reuse them, copy its own, or copy them all. */
 export type CopyChoice = 'reuse' | 'own' | 'all';
 
-/** A component a document places, as a copy decides it (RM-G, RM-K). */
+/**
+ * Where a component a document places stands, as a copy decides it (RM-G, RM-K; REU-057): placed in
+ * no other document, or in others; or fixed, never copied - its template requires and shares it, it is
+ * archived or deleted, or the caller may not read it.
+ */
+export type CopyPlacement = 'only' | 'shared' | 'required' | 'kept' | 'unreadable';
+
+/** A component a document places, as a copy decides it. */
 export interface PlacedComponent {
   readonly component: string;
-  /** Placed in no other document. */
-  readonly own: boolean;
-  /** Deleted or archived: reused under any choice. */
-  readonly kept: boolean;
+  readonly placed: CopyPlacement;
 }
 
-/** The components a choice copies, in the order given; never one deleted or archived (RM-K). */
-export function chosenCopies(choice: CopyChoice, placed: readonly PlacedComponent[]): string[] {
-  if (choice === 'reuse') return [];
-  return placed
-    .filter((each) => !each.kept && (choice === 'all' || each.own))
-    .map((each) => each.component);
+/** A component set otherwise than its starting point (REU-057). */
+export interface CopyException {
+  readonly component: string;
+  readonly as: 'copy' | 'reuse';
+}
+
+/** Whether no choice copies a component placed so (RM-K; REU-057). */
+export const isFixed = (placed: CopyPlacement): boolean =>
+  placed === 'required' || placed === 'kept' || placed === 'unreadable';
+
+/** Whether a starting point copies a component placed so, before any exception. */
+export function startsCopied(choice: CopyChoice, placed: CopyPlacement): boolean {
+  if (isFixed(placed) || choice === 'reuse') return false;
+  return choice === 'all' || placed === 'only';
+}
+
+/**
+ * The components a choice and its exceptions copy, in the order placed (REU-057); or the first
+ * exception refused: one naming a component not placed, or copying a fixed one.
+ */
+export function chosenCopies(
+  choice: CopyChoice,
+  placed: readonly PlacedComponent[],
+  exceptions: readonly CopyException[] = [],
+):
+  | { readonly copied: string[] }
+  | { readonly refused: 'unknown' | 'fixed'; readonly component: string } {
+  const by = new Map(placed.map((each) => [each.component, each.placed]));
+  const set = new Map<string, 'copy' | 'reuse'>();
+  for (const each of exceptions) {
+    const at = by.get(each.component);
+    if (at === undefined) return { refused: 'unknown', component: each.component };
+    if (each.as === 'copy' && isFixed(at)) return { refused: 'fixed', component: each.component };
+    set.set(each.component, each.as);
+  }
+  return {
+    copied: placed
+      .filter((each) =>
+        set.has(each.component)
+          ? set.get(each.component) === 'copy'
+          : startsCopied(choice, each.placed),
+      )
+      .map((each) => each.component),
+  };
 }
 
 /** A component's copy, as the outline's copy repoints to it (RM-J). */

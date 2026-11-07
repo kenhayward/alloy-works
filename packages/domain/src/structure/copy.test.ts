@@ -1,12 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import { COPY_MAX, chosenCopies, copyContent, copyOutline, type CopiedComponent } from './copy.js';
+import {
+  COPY_MAX,
+  chosenCopies,
+  copyContent,
+  copyOutline,
+  isFixed,
+  type CopiedComponent,
+} from './copy.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument, type OutlineDocument } from './outline.js';
 import type { ContentDocument } from '../content/model/document.js';
 
 const A = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 const B = '11111111-1111-4111-8111-111111111111';
 const C = '33333333-3333-4333-8333-333333333333';
+const D = 'd0000000-0000-4000-8000-000000000004';
+const E = 'd0000000-0000-4000-8000-000000000005';
+const F = 'd0000000-0000-4000-8000-000000000006';
 const PIN = '22222222-2222-4222-8222-222222222222';
 const COPY_A = '44444444-4444-4444-8444-444444444444';
 const COPY_A_VERSION = '55555555-5555-4555-8555-555555555555';
@@ -225,17 +235,54 @@ describe('a copied component (RM-J)', () => {
   });
 });
 
-describe('which components a document copy copies (RM-G, RM-H, RM-K)', () => {
+describe('which components a document copy copies (RM-G, RM-H, RM-K; the duplicate handoff)', () => {
   const placed = [
-    { component: A, own: true, kept: false },
-    { component: B, own: false, kept: false },
-    { component: C, own: true, kept: true },
+    { component: A, placed: 'only' as const },
+    { component: B, placed: 'shared' as const },
+    { component: C, placed: 'kept' as const },
+    { component: D, placed: 'unreadable' as const },
+    { component: E, placed: 'required' as const },
   ];
 
-  it('REU-057 reuses every one, copies only its own, or copies every one, never one deleted or archived', () => {
-    expect(chosenCopies('reuse', placed)).toEqual([]);
-    expect(chosenCopies('own', placed)).toEqual([A]);
-    expect(chosenCopies('all', placed)).toEqual([A, B]);
+  it('REU-057 reuses every one, copies only its own, or copies every one, never one fixed', () => {
+    expect(chosenCopies('reuse', placed)).toEqual({ copied: [] });
+    expect(chosenCopies('own', placed)).toEqual({ copied: [A] });
+    expect(chosenCopies('all', placed)).toEqual({ copied: [A, B] });
+  });
+
+  it('REU-057 sets any one component the other way from its starting point', () => {
+    expect(chosenCopies('own', placed, [{ component: B, as: 'copy' }])).toEqual({
+      copied: [A, B],
+    });
+    expect(chosenCopies('all', placed, [{ component: A, as: 'reuse' }])).toEqual({
+      copied: [B],
+    });
+    // Set to what it starts as, or a fixed one to Reuse, it changes nothing.
+    expect(
+      chosenCopies('own', placed, [
+        { component: A, as: 'copy' },
+        { component: D, as: 'reuse' },
+      ]),
+    ).toEqual({ copied: [A] });
+  });
+
+  it('REU-057 refuses copying a fixed component, and an exception for one not placed', () => {
+    for (const fixed of [C, D, E]) {
+      expect(chosenCopies('own', placed, [{ component: fixed, as: 'copy' }])).toEqual({
+        refused: 'fixed',
+        component: fixed,
+      });
+    }
+    expect(chosenCopies('own', placed, [{ component: F, as: 'reuse' }])).toEqual({
+      refused: 'unknown',
+      component: F,
+    });
+  });
+
+  it('says which placements no choice copies', () => {
+    expect(
+      ['only', 'shared', 'required', 'kept', 'unreadable'].map((each) => isFixed(each as never)),
+    ).toEqual([false, false, true, true, true]);
   });
 
   it('sets COPY_MAX at 200, as PLACE_MAX holds a placement', () => {

@@ -48942,12 +48942,55 @@
                     "description": "The copy's title, or a template's name; one in use there is warned of"
                   },
                   "components": {
-                    "description": "A document's components: reuse every one, copy only those no other document places (the default), or copy every one",
+                    "description": "A document's components, where they start from: reuse every one, copy only those no other document places (the default), or copy every one",
                     "type": "string",
                     "enum": [
                       "reuse",
                       "own",
                       "all"
+                    ]
+                  },
+                  "exceptions": {
+                    "description": "A document's components set otherwise than `components` starts them; one not placed in the document, or copying one that is fixed (required by its template, archived or deleted, or not the caller's to read), is refused",
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "component": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ],
+                          "description": "A component the document places"
+                        },
+                        "as": {
+                          "type": "string",
+                          "enum": [
+                            "copy",
+                            "reuse"
+                          ],
+                          "description": "Copied, or reused, whatever `components` says"
+                        }
+                      },
+                      "required": [
+                        "component",
+                        "as"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "rewordings": {
+                    "description": "A document's local overrides: kept on the copy (the default), or left behind on the original only",
+                    "type": "string",
+                    "enum": [
+                      "keep",
+                      "drop"
                     ]
                   }
                 },
@@ -49036,7 +49079,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Of those it would copy, the ones the caller may not read, which refuse the copy"
+                      "description": "Of those reused, the ones the caller may not read: never copied, never named"
                     },
                     "approvedToLatest": {
                       "type": "integer",
@@ -49050,11 +49093,17 @@
                       "maximum": 9007199254740991,
                       "description": "Components placed at more than one version, copied at the newest shown"
                     },
+                    "overrides": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The document's local overrides"
+                    },
                     "overridesDropped": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Local overrides dropped, their paragraph changed at the version copied"
+                      "description": "Of those kept, the ones dropped, their paragraph changed at the version copied"
                     },
                     "lines": {
                       "type": "integer",
@@ -49116,6 +49165,7 @@
                     "unreadable",
                     "approvedToLatest",
                     "newestShown",
+                    "overrides",
                     "overridesDropped",
                     "lines",
                     "translations",
@@ -49134,6 +49184,7 @@
                   "unreadable": -9007199254740991,
                   "approvedToLatest": -9007199254740991,
                   "newestShown": -9007199254740991,
+                  "overrides": -9007199254740991,
                   "overridesDropped": -9007199254740991,
                   "lines": -9007199254740991,
                   "translations": -9007199254740991,
@@ -49160,7 +49211,7 @@
             }
           },
           "400": {
-            "description": "content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers",
+            "description": "content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once, counted after the exceptions; exception_unknown: an exception names a component the document does not place; exception_fixed: an exception copies a component that is fixed; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers",
             "content": {
               "application/json": {
                 "schema": {
@@ -49380,10 +49431,22 @@
                       "maximum": 9007199254740991
                     },
                     "unreadable": {
-                      "description": "copy_unreadable: how many components it would copy the caller may not read",
+                      "description": "No longer sent: a component the caller may not read is reused instead",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "component": {
+                      "description": "exception_unknown, exception_fixed: the component the exception names",
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
                     },
                     "failures": {
                       "description": "values_invalid: each value that no longer fits its field",
@@ -49704,12 +49767,55 @@
                     "description": "The copy's title, or a template's name; one in use there is warned of"
                   },
                   "components": {
-                    "description": "A document's components: reuse every one, copy only those no other document places (the default), or copy every one",
+                    "description": "A document's components, where they start from: reuse every one, copy only those no other document places (the default), or copy every one",
                     "type": "string",
                     "enum": [
                       "reuse",
                       "own",
                       "all"
+                    ]
+                  },
+                  "exceptions": {
+                    "description": "A document's components set otherwise than `components` starts them; one not placed in the document, or copying one that is fixed (required by its template, archived or deleted, or not the caller's to read), is refused",
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "component": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ],
+                          "description": "A component the document places"
+                        },
+                        "as": {
+                          "type": "string",
+                          "enum": [
+                            "copy",
+                            "reuse"
+                          ],
+                          "description": "Copied, or reused, whatever `components` says"
+                        }
+                      },
+                      "required": [
+                        "component",
+                        "as"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "rewordings": {
+                    "description": "A document's local overrides: kept on the copy (the default), or left behind on the original only",
+                    "type": "string",
+                    "enum": [
+                      "keep",
+                      "drop"
                     ]
                   }
                 },
@@ -49774,7 +49880,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Of those it would copy, the ones the caller may not read, which refuse the copy"
+                      "description": "Of those reused, the ones the caller may not read: never copied, never named"
                     },
                     "approvedToLatest": {
                       "type": "integer",
@@ -49788,11 +49894,17 @@
                       "maximum": 9007199254740991,
                       "description": "Components placed at more than one version, copied at the newest shown"
                     },
+                    "overrides": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The document's local overrides"
+                    },
                     "overridesDropped": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Local overrides dropped, their paragraph changed at the version copied"
+                      "description": "Of those kept, the ones dropped, their paragraph changed at the version copied"
                     },
                     "lines": {
                       "type": "integer",
@@ -49854,6 +49966,77 @@
                         }
                       ],
                       "description": "What a copy in another space leaves behind in this one; null in the same space"
+                    },
+                    "components": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          "title": {
+                            "description": "Its title; null where the caller may not read it, or it is gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "placed": {
+                            "type": "string",
+                            "enum": [
+                              "only",
+                              "shared",
+                              "required",
+                              "kept",
+                              "unreadable"
+                            ],
+                            "description": "Placed in no other document, or in others; or fixed, never copied: required by its template, archived or deleted, or not the caller's to read"
+                          },
+                          "others": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Other documents the caller may read that place it; null where it is not theirs to read"
+                          },
+                          "grouped": {
+                            "type": "boolean",
+                            "description": "A member of a placed group: copying it makes the run plain references"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "copy",
+                              "reuse"
+                            ],
+                            "description": "What the copy does with it, exceptions applied"
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title",
+                          "placed",
+                          "others",
+                          "grouped",
+                          "outcome"
+                        ]
+                      },
+                      "description": "A document's components, each once in the order first placed; none for another kind"
                     }
                   },
                   "required": [
@@ -49866,11 +50049,13 @@
                     "unreadable",
                     "approvedToLatest",
                     "newestShown",
+                    "overrides",
                     "overridesDropped",
                     "lines",
                     "translations",
                     "limit",
-                    "consequences"
+                    "consequences",
+                    "components"
                   ]
                 },
                 "example": {
@@ -49883,6 +50068,7 @@
                   "unreadable": -9007199254740991,
                   "approvedToLatest": -9007199254740991,
                   "newestShown": -9007199254740991,
+                  "overrides": -9007199254740991,
                   "overridesDropped": -9007199254740991,
                   "lines": -9007199254740991,
                   "translations": -9007199254740991,
@@ -49892,7 +50078,8 @@
                     "terms": -9007199254740991,
                     "imagesStaying": -9007199254740991,
                     "bound": -9007199254740991
-                  }
+                  },
+                  "components": []
                 }
               }
             },
@@ -49915,7 +50102,7 @@
             }
           },
           "400": {
-            "description": "content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once; copy_unreadable: a component it would copy is one the caller may not read; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers",
+            "description": "content_invalid: the title is not one its kind takes; copy_too_large: more components than the limit at once, counted after the exceptions; exception_unknown: an exception names a component the document does not place; exception_fixed: an exception copies a component that is fixed; values_invalid: a value of a component no longer stores; template_unresolved, or another refusal making a template answers",
             "content": {
               "application/json": {
                 "schema": {
@@ -50135,10 +50322,22 @@
                       "maximum": 9007199254740991
                     },
                     "unreadable": {
-                      "description": "copy_unreadable: how many components it would copy the caller may not read",
+                      "description": "No longer sent: a component the caller may not read is reused instead",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "component": {
+                      "description": "exception_unknown, exception_fixed: the component the exception names",
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
                     },
                     "failures": {
                       "description": "values_invalid: each value that no longer fits its field",
