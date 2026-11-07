@@ -27,7 +27,10 @@ embedding index, each on its own page. Nothing re-verifies a stored hash on a sc
 | DGc2 | Administration's Diagnostics page; silent failures surfaced there                                                                                                        |
 | DGd  | ADR-0100; usage counted by day: storage, publications, assets and every external operation that exists; `GET /v1/usage`                                                  |
 | DGd2 | Administration's Usage page: each measure as a trend of 13 months (ADM-033)                                                                                              |
-| DGe  | Budgets registered and measured in production; objectives declared and measured; integrity re-verified; silent failures told by inbox (ADM-037); close                   |
+| DGe  | Performance budgets registered, each read against production in Diagnostics                                                                                              |
+| DGe2 | Objectives declared and measured: availability probed, backups and drills recorded                                                                                       |
+| DGe3 | Integrity re-verified: assets, version digests and audit exports, a share a night                                                                                        |
+| DGe4 | Silent failures told by inbox (ADM-037); the close                                                                                                                       |
 
 ## Ken's answers
 

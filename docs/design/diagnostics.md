@@ -83,9 +83,34 @@ measure, its kind and unit; `usage_day` holds a UTC day, a measure and an amount
 - **Shown** in Administration's Usage: each measure's 13 months as bars and in numbers (this month so far, last month,
   a year before), a sample as held at its month's last count; any one measure by month or by day.
 
+## Performance budgets
+
+`PERFORMANCE_BUDGETS` (`packages/domain/src/diagnostics/budgets.ts`, DG-J) registers every budget the specification
+states: its requirement, the design that claims it, what its tests measure it on, its percentile, time and ceiling,
+whether it is provisional and the tranche that confirms it (T7, where every budget is weighed again together). A test
+holds the registry to the corpus: a requirement in force that states a percentile or "a stated budget" fails until it is
+registered, and one superseded fails until it is taken out.
+
+Each says how production measures it:
+
+- **request**: an operation timed in the service as a capability of its own (`BUDGETED_OPERATIONS`, beside
+  `MEASURED_OPERATIONS`): searches, relationships and impact, a document's structure. Its time is a bound of
+  `LATENCY_BOUNDS_MS`, so met or missed is exact, and its capability's health is degraded past it (DG-F).
+- **job**: a kind of job's run in the worker, not its wait to start (preview, publishing).
+- **lag**: the index's lag by meaning, from `embedding_lag`.
+- **immediate**: met as built (words findable in their version's transaction).
+- **unmeasured**, with why: timed in the browser, which reports nothing to the service (CNT-180, STR-073); a delivery
+  nobody acknowledges (API-036); a query's embedding timed within its search (SCH-036); a bulk generation nothing times
+  end to end (REU-049); a budget with no time yet (VER-051).
+
+Diagnostics reads each against the last 7 days of minutes (`capabilityTotals`): met, missed, nothing measured, met as
+built or not measured. A sample is held to a ceiling by its bucket's upper bound, so a ceiling between two bounds
+(CNT-186's six seconds) is held to the bound below it: a reading may say missed of a budget met, never the reverse.
+
 ## Not yet built
 
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging; budgets, objectives, availability, backups and integrity (DGe).
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging; objectives,
+availability, backups and integrity (DGe2 to DGe4).
 
 ## Requirements owned
 
@@ -99,7 +124,9 @@ Telling an administrator of a silent failure in their inbox, and an author of th
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |
 | **COL-061** | A failing mail channel and failing or disabled webhooks surfaced in Diagnostics, beside EM-L's stable id and EM-M's declared backoff                                                       |
 
-**ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
+**ADM-016 and ADM-046 are not claimed** (pre-flight 6): every budget is registered and read against production, but
+six of their requirements are not measured there: VER-051 states no time yet, and for the rest nothing reports a
+time the service could read. **ADM-037 is not claimed**: Diagnostics surfaces each silent failure to the administrator, but the index lagging tells
 nobody waiting (above). The rest are claimed as each is answered in full. **ADM-048 is not claimed**: every chargeable
 operation that exists is counted, model runs by the Model spending page, but malware scanning does not exist yet
 (AST-Q03).

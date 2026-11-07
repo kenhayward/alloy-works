@@ -85,6 +85,43 @@ export async function capabilityUsage(
   }));
 }
 
+/**
+ * What each capability did by minute since `since`, summed in the database, counted against the
+ * current bounds alone: the reading a performance budget is held to (DG-J), by capability.
+ */
+export async function capabilityTotals(
+  trx: TenantTransaction,
+  since: Date,
+): Promise<CapabilityCount[]> {
+  const { rows } = await sql<{
+    capability: string;
+    requests: string;
+    client_errors: string;
+    server_errors: string;
+    refused: string;
+    buckets: number[];
+  }>`
+    with chosen as (
+      select * from capability_usage
+      where span = 'minute' and at >= ${since} and buckets_version = ${BUCKETS_VERSION}
+    )
+    select capability, sum(requests) as requests, sum(client_errors) as client_errors,
+      sum(server_errors) as server_errors, sum(refused) as refused,
+      (select array_agg(total order by place) from (
+         select place, sum(count)::int as total
+         from chosen inner_rows, unnest(inner_rows.buckets) with ordinality as bucket (count, place)
+         where inner_rows.capability = chosen.capability group by place) totals) as buckets
+    from chosen group by capability order by capability`.execute(trx);
+  return rows.map((row) => ({
+    capability: row.capability,
+    requests: Number(row.requests),
+    clientErrors: Number(row.client_errors),
+    serverErrors: Number(row.server_errors),
+    refused: Number(row.refused),
+    buckets: row.buckets,
+  }));
+}
+
 const DAY_MS = 86_400_000;
 const kept = (span: MeasurementSpan) =>
   MEASUREMENT_TIERS.find((tier) => tier.span === span)!.keptDays * DAY_MS;

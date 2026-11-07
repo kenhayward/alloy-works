@@ -1688,6 +1688,7 @@ export {
   type BackgroundWork,
 } from './background-work.js';
 export {
+  capabilityTotals,
   capabilityUsage,
   recordCapabilityMinute,
   rollUpMeasurements,

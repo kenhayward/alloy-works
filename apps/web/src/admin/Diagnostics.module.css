@@ -1,0 +1,9 @@
+/* Administration's Diagnostics (the DG plan, DGe). */
+/* A budget's requirement is short: the room goes to the words beside it. */
+.budgets th:first-child {
+  width: 6.5rem;
+}
+
+.budgets th:last-child {
+  width: 30%;
+}

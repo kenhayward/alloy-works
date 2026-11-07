@@ -23552,7 +23552,7 @@
     {
       "id": "ADM-011",
       "file": "apps/service/src/diagnostics.test.ts",
-      "line": 107,
+      "line": 149,
       "kind": "title"
     },
     {
@@ -26090,19 +26090,19 @@
     {
       "id": "ADM-021",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 101,
+      "line": 149,
       "kind": "title"
     },
     {
       "id": "ADM-036",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 80,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "COL-061",
       "file": "apps/web/src/admin/Diagnostics.test.tsx",
-      "line": 101,
+      "line": 149,
       "kind": "title"
     },
     {
@@ -32228,7 +32228,7 @@
     {
       "id": "ADM-035",
       "file": "packages/db/src/measurements.test.ts",
-      "line": 74,
+      "line": 79,
       "kind": "title"
     },
     {
@@ -35066,7 +35066,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1272,
+      "line": 1275,
       "kind": "title"
     },
     {
@@ -37676,13 +37676,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1537,
+      "line": 1538,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1106,
+      "line": 1107,
       "kind": "title"
     },
     {

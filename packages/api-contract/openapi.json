@@ -136142,6 +136142,124 @@
                       },
                       "description": "Each connection run on in the last 24 hours"
                     },
+                    "performance": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "budget": {
+                            "type": "string",
+                            "description": "The requirement stating it, with what it times where one states two"
+                          },
+                          "requirement": {
+                            "type": "string"
+                          },
+                          "owner": {
+                            "type": "string",
+                            "description": "The design that claims it"
+                          },
+                          "reference": {
+                            "type": "string",
+                            "description": "What the tests measure it on"
+                          },
+                          "percentile": {
+                            "description": "The fraction held to `withinMs`, such as 0.95",
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "withinMs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "neverAboveMs": {
+                            "description": "No sample above this",
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "provisional": {
+                            "type": "boolean"
+                          },
+                          "confirmedBy": {
+                            "type": "string",
+                            "description": "The tranche by which it is confirmed"
+                          },
+                          "measuredAs": {
+                            "type": "string",
+                            "enum": [
+                              "request",
+                              "job",
+                              "lag",
+                              "immediate",
+                              "unmeasured"
+                            ],
+                            "description": "How production measures it: an operation's requests, a job's run without its wait, the index's lag, met as built, or not at all"
+                          },
+                          "capability": {
+                            "description": "The capability whose measurements it is read from",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "met",
+                              "missed",
+                              "nothing",
+                              "immediate",
+                              "unmeasured"
+                            ],
+                            "description": "Over the last 7 days: met, missed, nothing measured, met as built, or not measured in production"
+                          },
+                          "atMs": {
+                            "description": "Its percentile as measured: for requests and jobs, the bucket bound holding it",
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "largestMs": {
+                            "description": "The largest sample, as a bucket bound; null with nothing, or past every bound",
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "why": {
+                            "description": "Why it is met as built, or not measured in production",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "budget",
+                          "requirement",
+                          "owner",
+                          "reference",
+                          "percentile",
+                          "withinMs",
+                          "neverAboveMs",
+                          "provisional",
+                          "confirmedBy",
+                          "measuredAs",
+                          "capability",
+                          "verdict",
+                          "atMs",
+                          "largestMs",
+                          "why"
+                        ]
+                      },
+                      "description": "Every performance budget the specification states, read against production"
+                    },
                     "budgets": {
                       "type": "object",
                       "properties": {
@@ -136195,6 +136313,7 @@
                     "webhooks",
                     "mail",
                     "connections",
+                    "performance",
                     "budgets"
                   ]
                 },
@@ -136225,6 +136344,7 @@
                     "givenUp": -9007199254740991
                   },
                   "connections": [],
+                  "performance": [],
                   "budgets": {
                     "model": {
                       "currency": "example",

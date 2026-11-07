@@ -2,7 +2,12 @@ import { BUCKETS_VERSION, bucketOf, emptyBuckets } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { capabilityUsage, recordCapabilityMinute, rollUpMeasurements } from './measurements.js';
+import {
+  capabilityTotals,
+  capabilityUsage,
+  recordCapabilityMinute,
+  rollUpMeasurements,
+} from './measurements.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
@@ -103,5 +108,51 @@ describe("a capability's requests measured by minute and rolled up (the DG plan,
     ]);
     await as((trx) => rollUpMeasurements(trx, new Date(now.getTime() + 400 * day)));
     expect(await as((trx) => capabilityUsage(trx, 'day', new Date(0)))).toEqual([]);
+  });
+
+  it("sums each capability's minutes since a time, the current bounds alone", async () => {
+    const since = new Date('2030-01-01T00:00:00Z');
+    const row = (capability: string, buckets: number[]) => ({
+      capability,
+      requests: buckets.reduce((sum, each) => sum + each, 0),
+      clientErrors: 0,
+      serverErrors: 1,
+      refused: 0,
+      buckets,
+    });
+    await as(async (trx) => {
+      await recordCapabilityMinute(trx, new Date(since.getTime() - 60_000), [
+        row('Searches', timed(9000)),
+      ]);
+      await recordCapabilityMinute(trx, since, [row('Searches', timed(20, 40))]);
+      await recordCapabilityMinute(trx, new Date(since.getTime() + 60_000), [
+        row('Searches', timed(300)),
+        row('Document structure', timed(100)),
+      ]);
+      await sql`
+        insert into capability_usage
+          (span, at, capability, buckets_version, requests, client_errors, server_errors, refused, buckets)
+        values ('minute', ${since}, 'Searches', ${BUCKETS_VERSION + 1}, 1, 0, 0, 0, ${[1]})`.execute(
+        trx,
+      );
+    });
+    expect(await as((trx) => capabilityTotals(trx, since))).toEqual([
+      {
+        capability: 'Document structure',
+        requests: 1,
+        clientErrors: 0,
+        serverErrors: 1,
+        refused: 0,
+        buckets: timed(100),
+      },
+      {
+        capability: 'Searches',
+        requests: 3,
+        clientErrors: 0,
+        serverErrors: 2,
+        refused: 0,
+        buckets: timed(20, 40, 300),
+      },
+    ]);
   });
 });
