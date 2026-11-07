@@ -4483,16 +4483,32 @@ the reference index's group rows feed where-used and the deletion and moving gua
 ungroups its run (`copy.ts`). The web is `apps/web/src/groups/`: the list under Components' Kind filter, the
 group's page, Place a component group, and a placed group's Take version and Remove group in the Part panel.
 
-## Diagnostics, measured
+## Diagnostics
 
-The DG plan, [ADR-0096](decisions/0096-measurements-are-kept-by-each-tenant-in-fixed-buckets.md). The service counts
-each request by capability, its errors and its time, a minute at a time, into `capability_usage` (`0209`;
-`packages/db/src/measuring.ts`, `measurements.ts`), folded to hours after a week and days after 90 days, kept 13
-months (`MEASUREMENT_TIERS`, `packages/domain/src/diagnostics/measure.ts`). The worker records each sweep's and loop's
-last run, outcome and next due in `background_work` (`0211`; `apps/worker/src/background.ts`) and counts its jobs by
-kind. `GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`) reads health per capability over 15 minutes
-(`health.ts`), background work, the last day of jobs, the search index, webhook and mail delivery, data sources' runs
-and the month's model spend. The page in Administration is still to come.
+Designed in [diagnostics.md](design/diagnostics.md), the DG plan.
+[ADR-0096](decisions/0096-measurements-are-kept-by-each-tenant-in-fixed-buckets.md): the service counts each request by
+capability, its errors and its time, a minute at a time, into `capability_usage` (`0209`;
+`packages/db/src/measuring.ts`, `measurements.ts`), folded to hours after a week and days after 90 days, kept 13 months
+(`MEASUREMENT_TIERS`, `packages/domain/src/diagnostics/`). The worker records each sweep's and loop's last run, outcome
+and next due in `background_work` (`0211`; `inEachTenant`, `apps/worker/src/background.ts`) and counts its jobs by kind,
+read through `platform.own_jobs` ([ADR-0098](decisions/0098-an-environment-reads-its-own-jobs-through-a-definer.md)).
+`GET /v1/diagnostics` (`apps/service/src/diagnostics.ts`) reads health per capability over 15 minutes (`health.ts`),
+background work, jobs, the index, deliveries, data sources, budgets, every performance budget against 7 days
+(`PERFORMANCE_BUDGETS`, `budgets.ts`), the objectives and integrity; Administration's Diagnostics
+(`apps/web/src/admin/Diagnostics.tsx`) shows it, Needs attention first.
+
+- **Usage** ([ADR-0100](decisions/0100-usage-is-counted-by-day-from-the-records-each-night.md)): `sweepUsageEverywhere`
+  counts each day from each record's own table into `usage_day` (`0214`), read at `GET /v1/usage` and shown in
+  Administration's Usage.
+- **Objectives** ([ADR-0101](decisions/0101-availability-is-minutes-probed-up-over-minutes-elapsed.md)): the worker
+  probes `/health` each minute into `platform.service_probe`; the internet stack's backup and drill scripts record
+  each run in `platform.backup_run`; both are read through definers.
+- **Integrity**: `sweepIntegrityEverywhere` re-verifies a share of each class a night into `integrity_check` (`0215`),
+  a failure audited as `integrity.failed`.
+- **Silent failures**: `SILENT_FAILURES` (`silent.ts`) says how each kind's person waiting is told.
+  `sweepSilentFailuresEverywhere` reads them from Diagnostics' records (`packages/db/src/silent-failures.ts`) and tells
+  those who administer by the inbox kind `diagnostics`, never mailed, once until each clears (`silent_failure_told`,
+  `0216`). A search that used meaning while the index lags past five minutes answers `meaningBehind`.
 
 ## Backups pulled
 
