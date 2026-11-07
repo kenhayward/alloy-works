@@ -41,7 +41,7 @@ restores only into an empty tenant** (Ken); a tenant in use takes a partial arch
 
 **Not claimed.** IMP-045 names notification channels, which do not exist until EM: the census will catch their table, and EM claims it then. ADM-029 is TL's: this offers the export, TL makes closure wait for it. ADM-043, a rehearsal
 on a schedule, is DG's, and this slice must not be presented as a backup until it is. LIF-055, a chain over
-exported audit, is SG's; EI-H leaves room for it. IAM-066 asks for far more than an archive; this answers
+exported audit, is withdrawn. IAM-066 asks for far more than an archive; this answers
 only its export artifacts.
 
 ## Decisions
