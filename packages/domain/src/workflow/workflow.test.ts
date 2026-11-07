@@ -116,6 +116,81 @@ describe('a workflow definition (workflow.md)', () => {
     });
   });
 
+  it("declares a signed gate on a document's baseline gate: two meanings, roles by name, approvals the roles' count", () => {
+    const signature = (extra: object = {}) => ({
+      meaning: { approve: '  I approve this document.  ', disapprove: 'I do not approve it.' },
+      roles: ['Technical reviewer', 'Quality'],
+      ...extra,
+    });
+    const gate = (extra: object = {}) => ({
+      approvals: 2,
+      notAuthor: true,
+      reject: { name: 'Return', to: 'draft' },
+      designates: true,
+      baseline: true,
+      publication: 'none',
+      signature: signature(),
+      ...extra,
+    });
+    const body = (gated: object) => ({
+      states: [state('draft', { initial: true }), state('done', { approved: true })],
+      transitions: [{ ...move('approve', 'draft', 'done'), permission: 'approve', gate: gated }],
+    });
+    const parsed = parseWorkflowBody(body(gate()), 'document');
+    expect(parsed).toMatchObject({ ok: true });
+    // Kept as given, composed and trimmed, so the version keeps the meanings verbatim.
+    expect(parsed.ok && parsed.body.transitions[0]!.gate!.signature).toEqual({
+      meaning: { approve: 'I approve this document.', disapprove: 'I do not approve it.' },
+      roles: ['Technical reviewer', 'Quality'],
+    });
+    const refused = (gated: object, kind: 'document' | 'component' = 'document') =>
+      parseWorkflowBody(body(gated), kind);
+    expect(refused(gate(), 'component')).toMatchObject({
+      ok: false,
+      problems: [
+        { rule: 'gate_kind', path: 'transitions.0.gate.baseline' },
+        { rule: 'signature_kind', path: 'transitions.0.gate.signature' },
+      ],
+    });
+    expect(refused(gate({ baseline: false }))).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'signature_baseline', path: 'transitions.0.gate.baseline' }],
+    });
+    expect(refused(gate({ approvals: 1 }))).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'signature_approvals', path: 'transitions.0.gate.approvals' }],
+    });
+    expect(
+      refused(gate({ approvals: 2, signature: signature({ roles: ['Quality', 'Quality'] }) })),
+    ).toMatchObject({
+      ok: false,
+      problems: [
+        { rule: 'signature_role_duplicate', path: 'transitions.0.gate.signature.roles.1' },
+      ],
+    });
+    for (const meaning of [
+      { approve: '   ', disapprove: 'No.' },
+      { approve: 'Yes.', disapprove: 'x'.repeat(501) },
+      { approve: 'Yes.' },
+    ]) {
+      expect(refused(gate({ signature: signature({ meaning }) }))).toMatchObject({
+        ok: false,
+        problems: [{ rule: 'workflow_invalid' }],
+      });
+    }
+    expect(refused(gate({ approvals: 1, signature: signature({ roles: [] }) }))).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'workflow_invalid', path: 'transitions.0.gate.signature.roles' }],
+    });
+    expect(
+      refused(
+        gate({
+          signature: signature({ meaning: { approve: 'x'.repeat(500), disapprove: 'No.' } }),
+        }),
+      ),
+    ).toMatchObject({ ok: true });
+  });
+
   it('LIF-004 lets a transition require conditions, each once, and only those its kind has', () => {
     const body = (requires: unknown) => ({
       states: [state('draft', { initial: true }), state('done', { approved: true })],

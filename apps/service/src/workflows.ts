@@ -337,6 +337,12 @@ export function workflowHandlers() {
           throw refused(409, 'artifact.archived', 'It is archived, and moves once unarchived.');
         case 'approval.given':
           throw refused(409, 'approval.given', 'You have approved it already.');
+        case 'signature.required':
+          throw refused(
+            409,
+            'signature.required',
+            'This gate is signed: it is approved or rejected only by signing.',
+          );
         case 'approval.author':
           throw refused(
             403,

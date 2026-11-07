@@ -15,13 +15,14 @@ type Kind = 'component' | 'document';
 type Body = typeof SEED_WORKFLOW;
 
 /** Each kind's workflow in force, a save making the next version; `refuse` answers a save instead. */
-function service(refuse?: () => Response) {
+function service(refuse?: () => Response, documentBody: Body = SEED_WORKFLOW) {
   const versions: Record<Kind, { version: number; body: Body; by: typeof IVY | null; at: string }> =
     {
       component: { version: 1, body: SEED_WORKFLOW, by: null, at: '2026-10-13T09:00:00.000Z' },
-      document: { version: 2, body: SEED_WORKFLOW, by: IVY, at: '2026-10-13T09:00:00.000Z' },
+      document: { version: 2, body: documentBody, by: IVY, at: '2026-10-13T09:00:00.000Z' },
     };
   const sent: unknown[] = [];
+  const asked: URL[] = [];
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     if (request.method === 'POST') {
@@ -36,6 +37,18 @@ function service(refuse?: () => Response) {
       };
       return json(200, { kind, ...versions[kind] });
     }
+    if (new URL(request.url).pathname === '/v1/roles') {
+      asked.push(new URL(request.url));
+      return json(200, {
+        items: [
+          { id: 'r1', name: 'Reader', permissions: ['read'] },
+          { id: 'r2', name: 'Approver', permissions: ['read', 'comment', 'approve'] },
+          { id: 'r3', name: 'Approving alone', permissions: ['approve'] },
+          { id: 'r4', name: 'Quality', permissions: ['read', 'approve'] },
+        ],
+        next: null,
+      });
+    }
     return json(200, {
       workflows: (['component', 'document'] as const).map((kind) => ({
         definition: { kind, ...versions[kind] },
@@ -43,7 +56,11 @@ function service(refuse?: () => Response) {
       })),
     });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    sent,
+    asked,
+  };
 }
 
 const components = () => screen.getByRole('region', { name: 'Components' });
@@ -225,6 +242,125 @@ describe("Administration's Workflows", () => {
       baseline: true,
       publication: 'required',
     });
+  });
+
+  it("makes a document's gate signed: two meanings, roles that may approve, an approval each, a baseline taken", async () => {
+    const { client, sent, asked } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    expect(
+      within(components()).queryByRole('checkbox', { name: 'Approve is signed' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(within(documents).getByRole('checkbox', { name: 'Approve is signed' }));
+    expect(asked.find((url) => url.pathname === '/v1/roles')?.searchParams.get('level')).toBe(
+      'tenant',
+    );
+
+    // The baseline is what is signed: taken, and not to be turned off while signed.
+    const baseline = within(documents).getByRole('checkbox', { name: 'Approve takes a baseline' });
+    expect(baseline).toBeChecked();
+    expect(baseline).toBeDisabled();
+
+    const approving = within(documents).getByRole('textbox', { name: 'Approving Approve means' });
+    expect(approving).toHaveValue('I approve this document as the record it is.');
+    await userEvent.clear(approving);
+    await userEvent.type(approving, 'I approve this record as accurate.');
+    expect(
+      within(documents).getByRole('textbox', { name: 'Disapproving Approve means' }),
+    ).toHaveValue('I do not approve this document, for the reason I give.');
+
+    // Only roles holding approve and read are offered.
+    await within(documents).findByRole('checkbox', { name: 'Approve is signed under Approver' });
+    for (const role of ['Reader', 'Approving alone']) {
+      expect(
+        within(documents).queryByRole('checkbox', { name: `Approve is signed under ${role}` }),
+      ).not.toBeInTheDocument();
+    }
+    for (const role of ['Approver', 'Quality']) {
+      await userEvent.click(
+        within(documents).getByRole('checkbox', { name: `Approve is signed under ${role}` }),
+      );
+    }
+    const approvers = within(documents).getByRole('combobox', { name: 'Approvers Approve needs' });
+    expect(approvers).toHaveValue('2');
+    expect(approvers).toBeDisabled();
+
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    expect(await within(documents).findByText('Saved as version 3.')).toBeInTheDocument();
+    const saved = sent[0] as { transitions: { key: string; gate?: object }[] };
+    expect(saved.transitions.find((each) => each.key === 'approve')?.gate).toMatchObject({
+      approvals: 2,
+      baseline: true,
+      signature: {
+        meaning: {
+          approve: 'I approve this record as accurate.',
+          disapprove: 'I do not approve this document, for the reason I give.',
+        },
+        roles: ['Approver', 'Quality'],
+      },
+    });
+  });
+
+  it('reads a signed gate with its meanings and roles, offering the other roles that may approve', async () => {
+    const signedBody: Body = {
+      ...SEED_WORKFLOW,
+      transitions: SEED_WORKFLOW.transitions.map((each) =>
+        each.gate === undefined
+          ? each
+          : {
+              ...each,
+              gate: {
+                ...each.gate,
+                baseline: true,
+                signature: {
+                  meaning: { approve: 'I approve it.', disapprove: 'I do not.' },
+                  roles: ['Quality'],
+                },
+              },
+            },
+      ),
+    };
+    const { client } = service(undefined, signedBody);
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    expect(within(documents).getByRole('checkbox', { name: 'Approve is signed' })).toBeChecked();
+    expect(within(documents).getByRole('textbox', { name: 'Approving Approve means' })).toHaveValue(
+      'I approve it.',
+    );
+    expect(
+      within(documents).getByRole('checkbox', { name: 'Approve is signed under Quality' }),
+    ).toBeChecked();
+    expect(
+      await within(documents).findByRole('checkbox', { name: 'Approve is signed under Approver' }),
+    ).not.toBeChecked();
+  });
+
+  it('turns a signed gate back into an unsigned one, keeping its baseline and approvals', async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    const signedBox = within(documents).getByRole('checkbox', { name: 'Approve is signed' });
+    await userEvent.click(signedBox);
+    await userEvent.click(
+      await within(documents).findByRole('checkbox', { name: 'Approve is signed under Quality' }),
+    );
+    await userEvent.click(signedBox);
+    expect(
+      within(documents).queryByRole('textbox', { name: 'Approving Approve means' }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(documents).getByRole('checkbox', { name: 'Approve takes a baseline' }),
+    ).toBeEnabled();
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    await within(documents).findByText('Saved as version 3.');
+    const gate = (sent[0] as { transitions: { key: string; gate?: object }[] }).transitions.find(
+      (each) => each.key === 'approve',
+    )?.gate;
+    expect(gate).toMatchObject({ approvals: 1, baseline: true });
+    expect(gate).not.toHaveProperty('signature');
   });
 
   it("LIF-004 sets what a transition requires, from what its kind can: a document's any, a component's suggestions and threads", async () => {

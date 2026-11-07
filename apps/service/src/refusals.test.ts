@@ -275,6 +275,8 @@ describe('the rule behind a refusal', () => {
       'approval.given',
       // The WF2 plan's (WF2-H, WF2-I): a gate whose baseline or publication cannot be made.
       'gate.baseline_refused',
+      // The ES plan's (ES-H): a signed gate decided without a signature.
+      'signature.required',
       // The WF5 plan's (WF5-A): an owner who may not read it, an effective date with no offset.
       'owner.invalid',
       'dates.invalid',

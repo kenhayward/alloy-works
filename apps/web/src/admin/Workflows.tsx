@@ -81,6 +81,13 @@ interface Gate {
   readonly designates?: boolean;
   readonly baseline?: boolean;
   readonly publication?: 'none' | 'permitted' | 'required';
+  readonly signature?: Signature;
+}
+
+/** A signed gate (the ES plan, ES-E, ES-M): what signing means, and the roles whose quorum passes it. */
+interface Signature {
+  readonly meaning: { readonly approve: string; readonly disapprove: string };
+  readonly roles: readonly string[];
 }
 
 /** A kind's workflow in force, and how many are in each state now (workflow.md, "Definitions"). */
@@ -149,6 +156,15 @@ export function keyOf(name: string, taken: readonly string[]): string {
 const labelled = <T extends { name: string }>(rows: readonly T[]): Edited<T>[] =>
   rows.map((row) => ({ ...row, label: row.name }));
 
+/** A gate as a save sends it: its signature's roles a list of its own. */
+const wireGate = ({ signature, ...gate }: Gate) =>
+  signature === undefined
+    ? gate
+    : { ...gate, signature: { meaning: { ...signature.meaning }, roles: [...signature.roles] } };
+
+/** A gate no longer signed: its baseline and approvals as they were. */
+const withoutSignature = ({ signature: _, ...gate }: Gate): Gate => gate;
+
 /**
  * **Administration's Workflows** (LIF-001, LIF-002; the WF1 plan, WF-J): each kind's states, how many
  * are in each, and its transitions, each with what it needs and whether it asks for a reason; edited
@@ -201,6 +217,8 @@ function KindWorkflow({
   // The review policy, for a component's and a document's workflow (the WF5 plan, WF5-E).
   const [review, setReview] = useState<Review | undefined>(body.review);
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
+  // The roles a signed gate may name: those holding approve and read, read when first wanted.
+  const [signers, setSigners] = useState<readonly string[] | undefined>(undefined);
   const [said, setSaid] = useState('');
   const [problems, setProblems] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -254,7 +272,7 @@ function KindWorkflow({
           ...(review === undefined ? {} : { review }),
           transitions: transitions.map(({ label: _, gate, requires, ...each }) => ({
             ...each,
-            ...(gate === undefined ? {} : { gate }),
+            ...(gate === undefined ? {} : { gate: wireGate(gate) }),
             ...(requires === undefined ? {} : { requires: [...requires] }),
           })),
         },
@@ -457,6 +475,28 @@ function KindWorkflow({
               <td>
                 <GateCell
                   kind={kind}
+                  signers={signers}
+                  onSigners={() => {
+                    if (signers !== undefined) return;
+                    setSigners([]);
+                    void client
+                      .GET('/v1/roles', {
+                        params: { query: { level: 'tenant', limit: '100' } },
+                      })
+                      .then(({ data }) => {
+                        if (!data) return;
+                        setSigners(
+                          data.items
+                            .filter(
+                              (role) =>
+                                role.permissions.includes('approve') &&
+                                role.permissions.includes('read'),
+                            )
+                            .map((role) => role.name),
+                        );
+                      })
+                      .catch(() => undefined);
+                  }}
                   transition={transition}
                   stateOptions={stateOptions}
                   initial={states.find((each) => each.initial)?.key ?? transition.from}
@@ -557,18 +597,23 @@ function KindWorkflow({
  */
 function GateCell({
   kind,
+  signers,
+  onSigners,
   transition,
   stateOptions,
   initial,
   onChange,
 }: {
   kind: Kind;
+  signers: readonly string[] | undefined;
+  onSigners: () => void;
   transition: Transition & { label: string };
   stateOptions: React.ReactNode;
   initial: string;
   onChange: (change: Partial<Transition>) => void;
 }) {
   const { gate, label } = transition;
+  const signature = gate?.signature;
   return (
     <div className={styles['gate']}>
       <input
@@ -600,6 +645,8 @@ function GateCell({
             <select
               aria-label={words('admin.approvers-needs', { label })}
               value={gate.approvals}
+              // A signed gate needs one approval for each role it names.
+              disabled={signature !== undefined}
               onChange={(change) =>
                 onChange({ gate: { ...gate, approvals: Number(change.target.value) } })
               }
@@ -646,6 +693,8 @@ function GateCell({
                   type="checkbox"
                   aria-label={words('admin.takes-a-baseline', { label })}
                   checked={gate.baseline ?? false}
+                  // What is signed is the baseline (LIF-087): a signed gate always takes one.
+                  disabled={signature !== undefined}
                   onChange={(change) =>
                     onChange({
                       gate: {
@@ -675,11 +724,127 @@ function GateCell({
                 <option value="permitted">{words('admin.may-publish')}</option>
                 <option value="required">{words('admin.publishes-2')}</option>
               </select>
+              <SignatureFields
+                label={label}
+                gate={gate}
+                signers={signers}
+                onSigners={onSigners}
+                onChange={(next) => onChange({ gate: next })}
+              />
             </>
           )}
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Whether a document's gate is signed (the ES plan, ES-M): signing turns its baseline on, offers two
+ * meanings to edit and the roles that may approve, and keeps its approvals at the roles' count.
+ */
+function SignatureFields({
+  label,
+  gate,
+  signers,
+  onSigners,
+  onChange,
+}: {
+  label: string;
+  gate: Gate;
+  signers: readonly string[] | undefined;
+  onSigners: () => void;
+  onChange: (gate: Gate) => void;
+}) {
+  const signature = gate.signature;
+  const isSigned = signature !== undefined;
+  // A gate read signed offers its roles at once.
+  useEffect(() => {
+    if (isSigned) onSigners();
+  }, [isSigned, onSigners]);
+  const signed = (next: Signature) =>
+    onChange({ ...gate, approvals: Math.max(1, next.roles.length), signature: next });
+  // Offered: every role that may approve, and any the gate already names, so it can be taken off.
+  const offered = [
+    ...(signers ?? []),
+    ...(signature?.roles ?? []).filter((role) => !(signers ?? []).includes(role)),
+  ];
+  return (
+    <>
+      <label>
+        <input
+          type="checkbox"
+          aria-label={words('admin.is-signed', { label })}
+          checked={signature !== undefined}
+          onChange={(change) => {
+            if (!change.target.checked) {
+              onChange(withoutSignature(gate));
+              return;
+            }
+            onSigners();
+            onChange({
+              ...gate,
+              baseline: true,
+              approvals: 1,
+              signature: {
+                meaning: {
+                  approve: words('admin.default-approve-meaning'),
+                  disapprove: words('admin.default-disapprove-meaning'),
+                },
+                roles: [],
+              },
+            });
+          }}
+        />
+        {words('admin.signed')}
+      </label>
+      {signature && (
+        <>
+          <input
+            aria-label={words('admin.approving-means', { label })}
+            value={signature.meaning.approve}
+            onChange={(change) =>
+              signed({
+                ...signature,
+                meaning: { ...signature.meaning, approve: change.target.value },
+              })
+            }
+          />
+          <input
+            aria-label={words('admin.disapproving-means', { label })}
+            value={signature.meaning.disapprove}
+            onChange={(change) =>
+              signed({
+                ...signature,
+                meaning: { ...signature.meaning, disapprove: change.target.value },
+              })
+            }
+          />
+          <span>{words('admin.signed-under-roles')}</span>
+          {signers !== undefined && offered.length === 0 && (
+            <span className={styles['muted']}>{words('admin.no-role-may-sign')}</span>
+          )}
+          {offered.map((role) => (
+            <label key={role}>
+              <input
+                type="checkbox"
+                aria-label={words('admin.signed-under', { label, role })}
+                checked={signature.roles.includes(role)}
+                onChange={(change) =>
+                  signed({
+                    ...signature,
+                    roles: change.target.checked
+                      ? [...signature.roles, role]
+                      : signature.roles.filter((each) => each !== role),
+                  })
+                }
+              />
+              <span data-content>{role}</span>
+            </label>
+          ))}
+        </>
+      )}
+    </>
   );
 }
 

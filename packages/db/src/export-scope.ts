@@ -39,6 +39,7 @@ export const PARTIAL_CONTENT: ReadonlySet<string> = new Set([
   'definition_name',
   'document_template',
   'document_template_move',
+  'electronic_signature',
   'line_closed',
   'line_return',
   'machine_draft',

@@ -56,6 +56,8 @@ export type GateAnswer =
   | { readonly answer: 'permission.refused'; readonly permission: TransitionPermission }
   | { readonly answer: 'approval.author' }
   | { readonly answer: 'approval.given' }
+  /** A signed gate, approved or rejected without a signature: nothing is recorded (the ES plan, ES-H). */
+  | { readonly answer: 'signature.required' }
   /** What the gate's transition requires is not met: nothing is recorded (LIF-004; WF3-B). */
   | { readonly answer: 'conditions.unmet'; readonly unmet: readonly UnmetCondition[] }
   | { readonly answer: 'reason.required' | 'reason.invalid' };
@@ -113,6 +115,8 @@ export async function decideGate(
   );
   const gate = transition?.gate;
   if (!transition || !gate) return { answer: 'transition.unknown' };
+  // Signing decides a signed gate (ESb); a plain decision there is never taken.
+  if (gate.signature !== undefined) return { answer: 'signature.required' };
   if (transition.from !== standing.state.key) return { answer: 'state.moved', standing };
   const version = await latestVersionId(trx, input.artifactId, input.line);
   if (version !== input.version) return { answer: 'version.moved', standing };

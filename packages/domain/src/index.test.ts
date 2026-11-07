@@ -136,6 +136,8 @@ describe('the domain package', () => {
         'checkRole',
         'administerOrAbove',
         'beyondHolding',
+        // Whether a principal holds a role, by name, for a permission: who may sign under it (ES-F).
+        'holdsRole',
         'decide',
         'externalCap',
         'formatLevel',
@@ -913,6 +915,8 @@ describe('the domain package', () => {
         'TRANSITION_PERMISSIONS',
         'workflowBodySchema',
         'parseWorkflowBody',
+        // The canonical text a signature's digest is over (the ES plan, ES-Q).
+        'signatureManifest',
         'SEED_WORKFLOW',
         'initialState',
         'decidingDefinition',

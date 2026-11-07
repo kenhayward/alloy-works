@@ -136,6 +136,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   document_template: kept(),
   document_template_move: renumbered(),
   editing_policy: singleton(),
+  electronic_signature: kept(),
   email_attempt: leftOut('A try at sending a mail, kept a short while.'),
   email_delivery: leftOut('A mail being sent, kept a short while.'),
   embedding: MEANING,

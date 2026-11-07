@@ -207,6 +207,8 @@ const WIRE_CODES = {
   'approval.given': 'approval_given',
   'approval.author': 'approval_author',
   'gate.baseline_refused': 'gate_baseline_refused',
+  // A signed gate decided without a signature (the ES plan, ES-H).
+  'signature.required': 'signature_required',
   'conditions.unmet': 'conditions_unmet',
   'owner.invalid': 'owner_invalid',
   'dates.invalid': 'dates_invalid',
