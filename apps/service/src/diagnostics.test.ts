@@ -189,6 +189,9 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
   });
 
   it('ADM-020 reads the operator’s objectives against the probes, the backups and the drills', async () => {
+    // The platform's probes and runs are shared by the suite: start from none, whatever ran before.
+    await queryAs(h.db.adminUrl, 'delete from platform.service_probe');
+    await queryAs(h.db.adminUrl, 'delete from platform.backup_run');
     const quiet = (await h.call('ada', 'GET', '/v1/diagnostics')).json<DiagnosticsView>();
     expect(quiet.objectives).toMatchObject({
       availability: { objective: 0.9, measured: null, verdict: 'unrecorded' },
