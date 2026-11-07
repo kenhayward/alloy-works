@@ -49143,6 +49143,7 @@ export interface operations {
                      *         "givenUp": -9007199254740991
                      *       },
                      *       "connections": [],
+                     *       "performance": [],
                      *       "budgets": {
                      *         "model": {
                      *           "currency": "example",
@@ -49248,6 +49249,42 @@ export interface operations {
                             /** @description Its latest run failed: as far as the product knows, the source is down */
                             down: boolean;
                             lastFailure: string | null;
+                        }[];
+                        /** @description Every performance budget the specification states, read against production */
+                        performance: {
+                            /** @description The requirement stating it, with what it times where one states two */
+                            budget: string;
+                            requirement: string;
+                            /** @description The design that claims it */
+                            owner: string;
+                            /** @description What the tests measure it on */
+                            reference: string;
+                            /** @description The fraction held to `withinMs`, such as 0.95 */
+                            percentile: number | null;
+                            withinMs: number | null;
+                            /** @description No sample above this */
+                            neverAboveMs: number | null;
+                            provisional: boolean;
+                            /** @description The tranche by which it is confirmed */
+                            confirmedBy: string;
+                            /**
+                             * @description How production measures it: an operation's requests, a job's run without its wait, the index's lag, met as built, or not at all
+                             * @enum {string}
+                             */
+                            measuredAs: "request" | "job" | "lag" | "immediate" | "unmeasured";
+                            /** @description The capability whose measurements it is read from */
+                            capability: string | null;
+                            /**
+                             * @description Over the last 7 days: met, missed, nothing measured, met as built, or not measured in production
+                             * @enum {string}
+                             */
+                            verdict: "met" | "missed" | "nothing" | "immediate" | "unmeasured";
+                            /** @description Its percentile as measured: for requests and jobs, the bucket bound holding it */
+                            atMs: number | null;
+                            /** @description The largest sample, as a bucket bound; null with nothing, or past every bound */
+                            largestMs: number | null;
+                            /** @description Why it is met as built, or not measured in production */
+                            why: string | null;
                         }[];
                         budgets: {
                             /** @description The month's model spend against its budget; null with no budget set */

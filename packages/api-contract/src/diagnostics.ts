@@ -64,6 +64,39 @@ const ConnectionView = z.object({
   lastFailure: z.string().nullable(),
 });
 
+/** A performance budget, as registered and as production measured it (the DG plan, DG-J). */
+const PerformanceView = z.object({
+  budget: z.string().describe('The requirement stating it, with what it times where one states two'),
+  requirement: z.string(),
+  owner: z.string().describe('The design that claims it'),
+  reference: z.string().describe('What the tests measure it on'),
+  percentile: z.number().nullable().describe('The fraction held to `withinMs`, such as 0.95'),
+  withinMs: z.number().nullable(),
+  neverAboveMs: z.number().nullable().describe('No sample above this'),
+  provisional: z.boolean(),
+  confirmedBy: z.string().describe('The tranche by which it is confirmed'),
+  measuredAs: z
+    .enum(['request', 'job', 'lag', 'immediate', 'unmeasured'])
+    .describe(
+      "How production measures it: an operation's requests, a job's run without its wait, the index's lag, met as built, or not at all",
+    ),
+  capability: z.string().nullable().describe('The capability whose measurements it is read from'),
+  verdict: z
+    .enum(['met', 'missed', 'nothing', 'immediate', 'unmeasured'])
+    .describe(
+      'Over the last 7 days: met, missed, nothing measured, met as built, or not measured in production',
+    ),
+  atMs: z
+    .number()
+    .nullable()
+    .describe('Its percentile as measured: for requests and jobs, the bucket bound holding it'),
+  largestMs: z
+    .number()
+    .nullable()
+    .describe('The largest sample, as a bucket bound; null with nothing, or past every bound'),
+  why: z.string().nullable().describe('Why it is met as built, or not measured in production'),
+});
+
 export const DiagnosticsView = z.object({
   at,
   capabilities: z.array(CapabilityView).describe('Each capability with requests in the window'),
@@ -93,6 +126,9 @@ export const DiagnosticsView = z.object({
     givenUp: z.int(),
   }),
   connections: z.array(ConnectionView).describe('Each connection run on in the last 24 hours'),
+  performance: z
+    .array(PerformanceView)
+    .describe('Every performance budget the specification states, read against production'),
   budgets: z.object({
     model: z
       .object({

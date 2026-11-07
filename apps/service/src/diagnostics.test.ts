@@ -6,6 +6,7 @@ import {
   recordCapabilityMinute,
   recordQueryRun,
 } from '@alloy-works/db';
+import { bucketOf, emptyBuckets, PERFORMANCE_BUDGETS } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
 
@@ -97,6 +98,40 @@ describe("the environment's diagnostics, for whoever administers it (the DG plan
     expect(view.webhooks).toEqual({ subscriptions: 0, failing: 0, disabledFailing: 0 });
     expect(view.mail).toMatchObject({ enabled: false, failingSince: null });
     expect(view.budgets.queryRunsAtOnce).toBeGreaterThan(0);
+  });
+
+  it('reads each performance budget against the last 7 days, and a capability past its budget as degraded', async () => {
+    const slow = emptyBuckets();
+    slow[bucketOf(300)] = 10;
+    await h.tenantDb.withTenant(
+      h.tenant,
+      (trx) =>
+        recordCapabilityMinute(trx, new Date(Date.now() - 60_000), [
+          { capability: 'Searches', requests: 10, clientErrors: 0, serverErrors: 0, refused: 0, buckets: slow },
+        ]),
+      { actorKind: 'system' },
+    );
+    const view = (await h.call('ada', 'GET', '/v1/diagnostics')).json<DiagnosticsView>();
+    expect(view.capabilities.find((each) => each.capability === 'Searches')).toMatchObject({
+      health: 'degraded',
+      p95Ms: 500,
+    });
+    const reading = (budget: string) => view.performance.find((each) => each.budget === budget);
+    expect(reading('SCH-033')).toMatchObject({
+      requirement: 'SCH-033',
+      measuredAs: 'request',
+      capability: 'Searches',
+      withinMs: 250,
+      verdict: 'missed',
+      atMs: 500,
+      largestMs: 500,
+    });
+    expect(reading('PUB-102')).toMatchObject({ measuredAs: 'job', verdict: 'nothing', atMs: null });
+    expect(reading('SCH-066')).toMatchObject({ verdict: 'immediate' });
+    expect(reading('API-036')).toMatchObject({ verdict: 'unmeasured', why: expect.any(String) });
+    expect(view.performance.map((each) => each.budget)).toEqual(
+      PERFORMANCE_BUDGETS.map((each) => each.id),
+    );
   });
 
   it('is refused to somebody who does not administer the environment', async () => {

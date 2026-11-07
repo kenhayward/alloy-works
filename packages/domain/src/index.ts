@@ -184,6 +184,16 @@ export {
   USAGE_RECOUNT_DAYS,
   type UsageMeasure,
 } from './diagnostics/usage.js';
+export {
+  BUDGETED_OPERATIONS,
+  budgetVerdict,
+  PERFORMANCE_BUDGETS,
+  type BudgetMeasure,
+  type BudgetReading,
+  type BudgetVerdict,
+  type Measured,
+  type PerformanceBudget,
+} from './diagnostics/budgets.js';
 // A tenant's mail channel: its settings and its password's sealing (docs/design/mail.md).
 export {
   childMailRequestSchema,

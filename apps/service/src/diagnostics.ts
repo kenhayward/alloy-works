@@ -1,6 +1,7 @@
 import type { DiagnosticsView, UsageQuery, UsageView } from '@alloy-works/api-contract';
 import {
   backgroundWork,
+  capabilityTotals,
   capabilityUsage,
   connectionRunsSince,
   dataPolicy,
@@ -17,10 +18,12 @@ import {
 } from '@alloy-works/db';
 import {
   addBuckets,
+  budgetVerdict,
   capabilityHealth,
   emptyBuckets,
   HEALTH_WINDOW_MS,
   JOB_CAPABILITIES,
+  PERFORMANCE_BUDGETS,
   runsAtOnce,
   USAGE_KEPT_DAYS,
   USAGE_MEASURES,
@@ -32,6 +35,53 @@ import { AppError } from './errors.js';
 
 const DAY = 86_400_000;
 const iso = (date: Date | null) => (date === null ? null : date.toISOString());
+
+/** A capability's request budget: the tightest a registered budget holds it to (DG-F). */
+const budgetOf = (capability: string) => {
+  const held = PERFORMANCE_BUDGETS.flatMap((each) =>
+    each.production.kind === 'request' &&
+    each.production.capability === capability &&
+    each.withinMs !== null
+      ? [each.withinMs]
+      : [],
+  );
+  return held.length === 0 ? undefined : Math.min(...held);
+};
+
+const finite = (ms: number | undefined) => (ms === undefined || !Number.isFinite(ms) ? null : ms);
+
+/** Each registered budget against the last 7 days of production (DG-J). */
+function performance(
+  totals: readonly { capability: string; buckets: readonly number[] }[],
+  lag: { p95Seconds: number | null; maxSeconds: number | null },
+): DiagnosticsView['performance'] {
+  return PERFORMANCE_BUDGETS.map((budget) => {
+    const { production } = budget;
+    const capability =
+      production.kind === 'request' || production.kind === 'job' ? production.capability : null;
+    const reading = budgetVerdict(budget, {
+      buckets: totals.find((each) => each.capability === capability)?.buckets ?? [],
+      lag,
+    });
+    return {
+      budget: budget.id,
+      requirement: budget.requirement,
+      owner: budget.owner,
+      reference: budget.reference,
+      percentile: budget.percentile,
+      withinMs: budget.withinMs,
+      neverAboveMs: budget.neverAboveMs,
+      provisional: budget.provisional,
+      confirmedBy: budget.confirmedBy,
+      measuredAs: production.kind,
+      capability,
+      verdict: reading.verdict,
+      atMs: finite(reading.atMs),
+      largestMs: finite(reading.largestMs),
+      why: production.kind === 'unmeasured' || production.kind === 'immediate' ? production.why : null,
+    };
+  });
+}
 
 /** A capability's minutes in the window, added up; only the current bucket version adds. */
 function summed(minutes: readonly CapabilityUsage[]) {
@@ -100,7 +150,10 @@ export function diagnosticsHandlers() {
         new Date(now.getTime() - HEALTH_WINDOW_MS),
       );
       const capabilities = summed(minutes)
-        .map(({ capability, counts }) => ({ capability, ...capabilityHealth(counts) }))
+        .map(({ capability, counts }) => ({
+          capability,
+          ...capabilityHealth(counts, budgetOf(capability)),
+        }))
         .sort((a, b) => a.capability.localeCompare(b.capability));
       const work = (await backgroundWork(trx)).map((run) => ({
         work: run.work,
@@ -168,6 +221,10 @@ export function diagnosticsHandlers() {
           givenUp: mail.givenUp,
         },
         connections,
+        performance: performance(
+          await capabilityTotals(trx, new Date(now.getTime() - 7 * DAY)),
+          { p95Seconds: freshness.p95Seconds, maxSeconds: freshness.maxSeconds },
+        ),
         budgets: {
           model:
             budget === null || spent === null

@@ -4,6 +4,8 @@
  * held when it was counted.
  */
 
+import { BUDGETED_OPERATIONS } from './budgets.js';
+
 /** Days kept: 13 months, so a year's trend has the same month a year before (ADM-033). */
 export const USAGE_KEPT_DAYS = 396;
 /** The last days counted again each night, so a record that lands late still counts. */
@@ -31,10 +33,11 @@ export type UsageMeasure = (typeof USAGE_MEASURES)[number]['measure'];
 
 /**
  * Operations measured as a capability of their own, beside their route's tag, since they leave no row
- * to count (ADR-0100, decision 5).
+ * to count (ADR-0100, decision 5), and those a performance budget times.
  */
 export const MEASURED_OPERATIONS: Readonly<Record<string, string>> = {
   searchReferenceSource: 'Reference searches',
+  ...BUDGETED_OPERATIONS,
 };
 
 const DAY_MS = 86_400_000;
