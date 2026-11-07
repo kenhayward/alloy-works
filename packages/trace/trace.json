@@ -18449,6 +18449,10 @@
           "howItIsMet": "Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)"
         },
         {
+          "id": "ADM-033",
+          "howItIsMet": "Administration's Usage: each measure as a trend of 13 months, against last month and a year before, and by month or day; kept 396 days"
+        },
+        {
           "id": "ADM-035",
           "howItIsMet": "Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100"
         },
@@ -25996,7 +26000,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1908,
+      "line": 1909,
       "kind": "title"
     },
     {
@@ -26008,7 +26012,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 2050,
+      "line": 2051,
       "kind": "title"
     },
     {
@@ -26369,6 +26373,12 @@
       "id": "LOC-036",
       "file": "apps/web/src/admin/TranslationPolicy.test.tsx",
       "line": 102,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-033",
+      "file": "apps/web/src/admin/Usage.test.tsx",
+      "line": 58,
       "kind": "title"
     },
     {
@@ -37666,13 +37676,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1523,
+      "line": 1537,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1092,
+      "line": 1106,
       "kind": "title"
     },
     {

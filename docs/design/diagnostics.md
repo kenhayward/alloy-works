@@ -3,7 +3,7 @@
 How an administrator answers "is it us or is it you" without a support ticket: each capability's health, what
 background work last did, what failed silently, what the environment uses, and whether the product meets what it
 promises. Built by [the DG plan](../plans/2026-11-06-dg-diagnostics-usage-and-health.md), which holds the decisions;
-built so far is the measuring, background work, Diagnostics, and usage counted by day.
+built so far is the measuring, background work, Diagnostics, and usage.
 
 ## Measuring
 
@@ -80,11 +80,12 @@ measure, its kind and unit; `usage_day` holds a UTC day, a measure and an amount
   (`MEASURED_OPERATIONS`).
 - **Samples**: the schema's database bytes, and object bytes by kind as each owner records them.
 - **Read** at `GET /v1/usage` by whoever administers: every measure, by day, the last 13 months unless named.
+- **Shown** in Administration's Usage: each measure's 13 months as bars and in numbers (this month so far, last month,
+  a year before), a sample as held at its month's last count; any one measure by month or by day.
 
 ## Not yet built
 
-Telling an administrator of a silent failure in their inbox, and an author of the index lagging; usage's page (DGd2);
-budgets, objectives, availability, backups and integrity (DGe).
+Telling an administrator of a silent failure in their inbox, and an author of the index lagging; budgets, objectives, availability, backups and integrity (DGe).
 
 ## Requirements owned
 
@@ -92,6 +93,7 @@ budgets, objectives, availability, backups and integrity (DGe).
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **ADM-015** | Each capability's requests, server error rate and 95th percentile measured by minute, and read as its health over 15 minutes (`capabilityHealth`)                                          |
 | **ADM-011** | Query time, storage, publications and assets stored, each measured by day for the environment it is used in (`countUsage`, ADR-0100)                                                       |
+| **ADM-033** | Administration's Usage: each measure as a trend of 13 months, against last month and a year before, and by month or day; kept 396 days                                                     |
 | **ADM-035** | Each precision and how long it is kept, declared in `MEASUREMENT_TIERS` and ADR-0096 before anything is measured, and held to by the roll-up, and usage's in `USAGE_MEASURES` and ADR-0100 |
 | **ADM-036** | Administration's Diagnostics: health, latency and error rate per capability, the index, webhook delivery, recent background work and the budgets                                           |
 | **ADM-021** | A data source down, as far as its latest run failed, said in Diagnostics' Needs attention and its data sources                                                                             |

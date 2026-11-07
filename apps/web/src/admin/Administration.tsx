@@ -32,6 +32,7 @@ import { Outside } from './Outside.js';
 import { People } from './People.js';
 import { QueryUsage } from './QueryUsage.js';
 import { Diagnostics } from './Diagnostics.js';
+import { Usage } from './Usage.js';
 import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
@@ -255,6 +256,14 @@ const SECTIONS = [
     slug: 'diagnostics',
     get title() {
       return words('admin.diagnostics');
+    },
+    group: 'system',
+  },
+  // What the environment has used, by day, as trends of 13 months (ADM-033; ADR-0100).
+  {
+    slug: 'usage',
+    get title() {
+      return words('admin.usage');
     },
     group: 'system',
   },
@@ -606,6 +615,7 @@ export function Administration({
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}
         {shown === 'diagnostics' && <Diagnostics client={client} />}
+        {shown === 'usage' && <Usage client={client} />}
         {shown === 'queries' && (
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}
