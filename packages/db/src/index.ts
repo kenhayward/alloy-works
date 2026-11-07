@@ -1653,6 +1653,7 @@ export {
 } from './bridge-store.js';
 export { readCtStudio, writeCtStudio, type CtStudioRecord } from './ct-studio.js';
 export { secretsFailing, tenantSecrets, type SecretConsumer, type SecretHeld } from './secrets.js';
+export { tenantBoundary, type BoundaryItem, type BoundaryWay } from './boundary.js';
 export {
   deliveryNote,
   writeDocumentDelivery,
