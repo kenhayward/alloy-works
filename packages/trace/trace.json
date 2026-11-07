@@ -20177,6 +20177,10 @@
         {
           "id": "ADM-007",
           "howItIsMet": "Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once"
+        },
+        {
+          "id": "ADM-041",
+          "howItIsMet": "`OUTBOUND`, held to every sender, and `GET /v1/boundary`: each way out, what leaves, default, permission, residency"
         }
       ]
     },
@@ -22874,13 +22878,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 873,
+      "line": 874,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 886,
+      "line": 887,
       "kind": "title"
     },
     {
@@ -23145,6 +23149,12 @@
       "id": "TAB-008",
       "file": "apps/service/src/bound-table-rows.test.ts",
       "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-041",
+      "file": "apps/service/src/boundary-routes.test.ts",
+      "line": 38,
       "kind": "title"
     },
     {
@@ -26187,6 +26197,12 @@
       "id": "IAM-068",
       "file": "apps/web/src/admin/AuditLog.test.tsx",
       "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-041",
+      "file": "apps/web/src/admin/Boundary.test.tsx",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -30882,6 +30898,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-041",
+      "file": "packages/api-contract/src/boundary.test.ts",
+      "line": 6,
+      "kind": "title"
+    },
+    {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 200,
@@ -31341,6 +31363,12 @@
       "id": "STR-069",
       "file": "packages/db/src/bibliography.test.ts",
       "line": 490,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-041",
+      "file": "packages/db/src/boundary.test.ts",
+      "line": 67,
       "kind": "title"
     },
     {
@@ -34278,6 +34306,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-041",
+      "file": "packages/domain/src/boundary/outbound.test.ts",
+      "line": 57,
+      "kind": "title"
+    },
+    {
       "id": "API-070",
       "file": "packages/domain/src/bridge/blocks.test.ts",
       "line": 107,
@@ -35354,7 +35388,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1301,
+      "line": 1305,
       "kind": "title"
     },
     {
@@ -37970,13 +38004,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1572,
+      "line": 1588,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1141,
+      "line": 1157,
       "kind": "title"
     },
     {
