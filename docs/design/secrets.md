@@ -1,7 +1,7 @@
 # Secrets
 
 How a tenant replaces any secret it holds without reading it, and sees first everything that uses it (ADM-007,
-ADM-047). Built by [the SA plan](../plans/2026-11-07-sa-support-access-boundary-and-secrets.md)'s SAd, which holds the
+ADM-047), and sees everything that can leave it (ADM-041). Built by [the SA plan](../plans/2026-11-07-sa-support-access-boundary-and-secrets.md)'s SAd and SAe, which holds the
 decisions (SA-C, SA-H, SA-I).
 
 ## Secrets
@@ -60,11 +60,38 @@ it too, and to support says nothing, whose spaces may not reach the consumers. A
 SCIM, CT Studio or service token cannot be told from a stranger's; a refused sign-in secret and a failing extension
 check record no reason. Those breaks are not told.
 
+## The boundary
+
+Everything that can leave a tenant, declared once (ADM-041; the SA plan, SA-J, SAe). **`OUTBOUND`**
+([`packages/domain/src/boundary/outbound.ts`](../../packages/domain/src/boundary/outbound.ts)) has a row per way out:
+model endpoints, embedding, machine translation, reference sources, malware scanning, data connections, webhooks,
+mail, extensions, vocabulary sources and CT Studio. Each says what may leave in plain words, whether it is on by
+default (only Crossref and PubMed are), the operation and permission that turn it on or move it, and its residency.
+**Residency is stated only where an endpoint declares one**: a model endpoint's `boundary`, inside or outside, set by
+an administrator (GEN-031), so model endpoints, embedding and translation say it per endpoint and the rest say "not
+declared". What residency is promised is ADM-Q01, open. **Malware scanning is a row with nothing behind it**: no
+scanner exists (AST-Q03). CT Studio delivers in and is sent nothing.
+
+**Held to the code**: a test scans the service, worker and connector for every module that opens a socket, an HTTP
+request, an SMTP transport, a database client, a `fetch` or the connector's guarded exchange, and holds each to a row's
+`senders` or to `OUTBOUND_EXCLUSIONS` with why: the connector's exchange itself, the service's and worker's hop to the
+connector, the product's own database and health probe, sign-in, and the API reference page's same-origin script. A
+way out cannot be added without a row. A test in `packages/api-contract` holds each row's operation and permission to
+the route.
+
+**`GET /v1/boundary`** (`administer`; reads metadata) answers every row with what this tenant has set up for it: each
+endpoint by name with its boundary and whether a purpose routes to it, the reference sources on or off, connections,
+webhooks, the mail relay, extensions, vocabulary sources and the spaces CT Studio delivers to. An address is answered
+by its host alone, since a path or query can carry a key, and no secret is selected; tests hold the answer free of
+both. **Administration's What leaves** shows it, one row per way out, each linked to the page that changes it, asking
+the service for `administer` first.
+
 ## Requirements owned
 
 | ID          | How it is met                                                                                                               |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------- |
 | **ADM-007** | Every tenant secret is write-only and replaced without being read: a token held outside overlaps 24 hours, the rest at once |
+| **ADM-041** | `OUTBOUND`, held to every sender, and `GET /v1/boundary`: each way out, what leaves, default, permission, residency         |
 
 ADM-007 is claimed for **a tenant's own secrets**. The object store credential (0005) is the operator's: the store
 issues it and nothing in the product rotates it, so it is a gap, named, not claimed; the delivery store's password is
@@ -72,3 +99,7 @@ the service's own, minted when data delivery needs one, and is not replaced on d
 every secret's consumers are shown before it is replaced, but a break is told for connections, model keys, webhooks
 and mail alone; the token, sign-in and extension breaks above are not read, and a model key's is read from
 `model_unavailable`, which an outage gives too.
+
+ADM-041 is claimed with residency **where declared, else not declared**: ADM-Q01 (what residency is promised) is
+open, so nothing beyond a model endpoint's own `boundary` is stated. Each way names the one permission that turns it
+on; machine translation also needs an endpoint routed (`configure_services`).
