@@ -325,9 +325,15 @@ export function DuplicateDialog({
             <h2 id={heading}>{words('rows.duplicate-heading', { kind })}</h2>
             <p className={styles['about']}>
               <Icon name="Document" size={14} />
-              <span className={styles['original']}>{title}</span>
+              <span className={styles['original']} data-content>
+                {title}
+              </span>
               {state && <StateLozenge size="small" state={state} />}
-              {spaceName !== undefined && <span>· {spaceName}</span>}
+              {spaceName !== undefined && (
+                <span>
+                  · <span data-content>{spaceName}</span>
+                </span>
+              )}
               {document && known !== null && (
                 <span>· {words('rows.components-count', { count: placed.length })}</span>
               )}
@@ -455,7 +461,7 @@ export function DuplicateDialog({
                       >
                         <span className={styles['rowName']}>
                           <Icon name="Part component" size={14} />
-                          <span>{shown}</span>
+                          <span data-content={each.title !== null || undefined}>{shown}</span>
                           {excepted && (
                             <span className={styles['exception']}>{words('rows.exception')}</span>
                           )}
