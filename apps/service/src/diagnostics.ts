@@ -1,4 +1,4 @@
-import type { DiagnosticsView } from '@alloy-works/api-contract';
+import type { DiagnosticsView, UsageQuery, UsageView } from '@alloy-works/api-contract';
 import {
   backgroundWork,
   capabilityUsage,
@@ -11,6 +11,7 @@ import {
   ownJobs,
   readBudget,
   spendThisMonth,
+  usageDays,
   webhookCounts,
   type CapabilityUsage,
 } from '@alloy-works/db';
@@ -21,9 +22,13 @@ import {
   HEALTH_WINDOW_MS,
   JOB_CAPABILITIES,
   runsAtOnce,
+  USAGE_KEPT_DAYS,
+  USAGE_MEASURES,
   workHealth,
 } from '@alloy-works/domain';
+import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
+import { AppError } from './errors.js';
 
 const DAY = 86_400_000;
 const iso = (date: Date | null) => (date === null ? null : date.toISOString());
@@ -52,8 +57,41 @@ function summed(minutes: readonly CapabilityUsage[]) {
  * Diagnostics (diagnostics.md; the DG plan, DG-H): everything an administrator needs to tell "us" from
  * "you", read in one transaction under the environment's role. Codes and counts, never content.
  */
+const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+/** The days asked for (ADR-0100): the last 13 months unless named, never one ending first or longer. */
+function daysOf(query: UsageQuery): { readonly from: string; readonly to: string } {
+  const to = query.to ?? dayOf(Date.now());
+  const from = query.from ?? dayOf(Date.parse(to) - (USAGE_KEPT_DAYS - 1) * DAY);
+  const span = (Date.parse(to) - Date.parse(from)) / DAY;
+  if (span < 0 || span >= USAGE_KEPT_DAYS) {
+    throw new AppError(
+      400,
+      'invalid_request',
+      'Choose days that end after they start and span no more than 13 months.',
+    );
+  }
+  return { from, to };
+}
+
 export function diagnosticsHandlers() {
   return {
+    getUsage: async (request: FastifyRequest, { trx }: Authorised): Promise<UsageView> => {
+      const { from, to } = daysOf(request.query as UsageQuery);
+      const counted = await usageDays(trx, from, to);
+      return {
+        from,
+        to,
+        measures: USAGE_MEASURES.map(({ measure, kind, unit }) => ({
+          measure,
+          kind,
+          unit,
+          days: counted
+            .filter((each) => each.measure === measure)
+            .map(({ day, amount }) => ({ day, amount })),
+        })),
+      };
+    },
     getDiagnostics: async (_request: unknown, { trx }: Authorised): Promise<DiagnosticsView> => {
       const now = new Date();
       const minutes = await capabilityUsage(

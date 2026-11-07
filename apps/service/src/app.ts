@@ -65,6 +65,7 @@ import {
 import {
   CONTENT_LANGUAGES_CLDR,
   formatLevel,
+  MEASURED_OPERATIONS,
   permissions,
   type Decision,
   type Permission,
@@ -447,14 +448,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const measured = new WeakMap<FastifyRequest, { tenant: Tenant; refused: boolean }>();
   app.addHook('onResponse', async (request, reply) => {
     const resolved = measured.get(request);
-    const capability = (request.routeOptions.config as { capability?: string } | undefined)
-      ?.capability;
-    if (resolved && capability) {
-      measuring.record(resolved.tenant, capability, {
-        status: reply.statusCode,
-        ms: reply.elapsedTime,
-        refused: resolved.refused,
-      });
+    const config = request.routeOptions.config as
+      { capability?: string; alsoMeasuredAs?: string } | undefined;
+    if (!resolved) return;
+    const counted = {
+      status: reply.statusCode,
+      ms: reply.elapsedTime,
+      refused: resolved.refused,
+    };
+    for (const capability of [config?.capability, config?.alsoMeasuredAs]) {
+      if (capability) measuring.record(resolved.tenant, capability, counted);
     }
   });
   app.addHook('onResponse', async (request) => {
@@ -1803,8 +1806,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       method: route.method,
       // OpenAPI names a path parameter `{like this}`; Fastify names it `:like_this`.
       url: route.path.replace(/\{(\w+)\}/g, ':$1'),
-      // What it is measured as: the contract's tag (the DG plan, DG-C).
-      config: { capability: documentationFor(route).tag },
+      // What it is measured as: the contract's tag (the DG plan, DG-C), and an operation that leaves no
+      // row to count as usage, under a capability of its own as well (ADR-0100).
+      config: {
+        capability: documentationFor(route).tag,
+        alsoMeasuredAs: MEASURED_OPERATIONS[route.operationId],
+      },
       schema: {
         response,
         ...(route.query ? { querystring: route.query } : {}),

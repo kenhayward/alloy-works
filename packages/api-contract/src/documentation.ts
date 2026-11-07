@@ -500,7 +500,7 @@ const operationTags = {
     'getPublicationBindings',
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
-  Diagnostics: ['getDiagnostics'],
+  Diagnostics: ['getDiagnostics', 'getUsage'],
   'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
   'Range previews': [
     'requestRangePreview',
@@ -1495,6 +1495,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
   getDiagnostics:
     'Answers, for whoever administers the environment, how it is doing: each capability’s health, request count, server error rate and 95th percentile over the last 15 minutes; each sweep and loop’s last run, its outcome, last failure code and when it is next due; the last day’s jobs by kind and state; the search index’s model and lag; webhook and mail delivery; each connection’s recent runs and whether its latest failed; and the month’s model spend against its budget. Codes and counts alone, never content. Needs administer at the environment.',
+  getUsage:
+    'Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs administer at the environment.',
   getQueryRunsCsv:
     'Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.',
   listPublicationShares:

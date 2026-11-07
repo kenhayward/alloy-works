@@ -107,6 +107,40 @@ export const DiagnosticsView = z.object({
 });
 export type DiagnosticsView = z.infer<typeof DiagnosticsView>;
 
+/** A period of days (ADR-0100): the last 13 months unless named. */
+const day = z.iso.date().describe('A UTC day, YYYY-MM-DD');
+export const UsageQuery = z.object({
+  from: day.optional().describe('The first day, inclusive; 395 days before `to` where absent'),
+  to: day.optional().describe('The last day, inclusive; today where absent'),
+});
+export type UsageQuery = z.infer<typeof UsageQuery>;
+
+export const UsageView = z.object({
+  from: day,
+  to: day,
+  measures: z
+    .array(
+      z.object({
+        measure: z
+          .string()
+          .describe(
+            'databaseBytes, publicationBytes, assetBytes, importBytes, exportBytes, publications, assets, mail, webhooks, translationJobs, referenceSearches, embeddingRuns or queryMs',
+          ),
+        kind: z
+          .enum(['count', 'sample'])
+          .describe(
+            'A count is what happened that day; a sample, what was held when it was counted',
+          ),
+        unit: z.enum(['count', 'bytes', 'ms']),
+        days: z
+          .array(z.object({ day, amount: z.number() }))
+          .describe('Oldest first; a day with nothing counted is absent'),
+      }),
+    )
+    .describe('Every measure declared, in the order declared, whether or not it has days'),
+});
+export type UsageView = z.infer<typeof UsageView>;
+
 export const diagnosticsRoutes = {
   getDiagnostics: {
     operationId: 'getDiagnostics',
@@ -117,6 +151,24 @@ export const diagnosticsRoutes = {
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     responses: {
       200: { description: 'The diagnostics', schema: DiagnosticsView },
+      401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
+      403: { description: 'The caller does not administer the environment', schema: ErrorBody },
+    },
+  },
+  getUsage: {
+    operationId: 'getUsage',
+    method: 'GET',
+    path: '/v1/usage',
+    summary: 'What the environment has used, by day, over the last 13 months',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    query: UsageQuery,
+    responses: {
+      200: { description: 'Each measure by day', schema: UsageView },
+      400: {
+        description: 'A day that is not one, `from` after `to`, or a period past 13 months',
+        schema: ErrorBody,
+      },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
       403: { description: 'The caller does not administer the environment', schema: ErrorBody },
     },

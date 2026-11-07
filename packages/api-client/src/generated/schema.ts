@@ -8363,6 +8363,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What the environment has used, by day, over the last 13 months
+         * @description Answers what the environment has used, by UTC day: database bytes and object bytes by kind, each sampled once a night, and the publications made, assets stored, mail sent, webhook deliveries, translation jobs, reference searches, embedding runs and query time, counted each night from their records. Every measure declared is listed, each day with nothing counted left out. The last 13 months unless named, never more. Object bytes are as each owner records them, so an object two share counts twice. Needs administer at the environment.
+         */
+        get: operations["getUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/vocabularies": {
         parameters: {
             query?: never;
@@ -144886,6 +144906,153 @@ export interface operations {
             };
             /** @description No such token of the caller's in this environment */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getUsage: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Each measure by day */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "from": "2026-01-01",
+                     *       "to": "2026-01-01",
+                     *       "measures": []
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * Format: date
+                         * @description A UTC day, YYYY-MM-DD
+                         */
+                        from: string;
+                        /**
+                         * Format: date
+                         * @description A UTC day, YYYY-MM-DD
+                         */
+                        to: string;
+                        /** @description Every measure declared, in the order declared, whether or not it has days */
+                        measures: {
+                            /** @description databaseBytes, publicationBytes, assetBytes, importBytes, exportBytes, publications, assets, mail, webhooks, translationJobs, referenceSearches, embeddingRuns or queryMs */
+                            measure: string;
+                            /**
+                             * @description A count is what happened that day; a sample, what was held when it was counted
+                             * @enum {string}
+                             */
+                            kind: "count" | "sample";
+                            /** @enum {string} */
+                            unit: "count" | "bytes" | "ms";
+                            /** @description Oldest first; a day with nothing counted is absent */
+                            days: {
+                                /**
+                                 * Format: date
+                                 * @description A UTC day, YYYY-MM-DD
+                                 */
+                                day: string;
+                                amount: number;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description A day that is not one, `from` after `to`, or a period past 13 months */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer the environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

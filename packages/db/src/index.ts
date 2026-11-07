@@ -1679,6 +1679,7 @@ export {
 export { originOf, type Origin } from './origins.js';
 export { ownJobs, type OwnJobs, type QueueState } from './own-jobs.js';
 export { connectionRunsSince, type ConnectionRuns } from './connection-runs.js';
+export { countUsage, usageDays, type UsageDay } from './usage.js';
 export {
   backgroundWork,
   recordBackgroundWork,

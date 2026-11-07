@@ -271,6 +271,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   translation_policy_change: kept(),
   translation_state: renumbered(),
   unsaved_discarded: kept(),
+  usage_day: leftOut('What the environment used, by day, counted afresh in a copy.'),
   version_definition: kept(),
   webhook_attempt: leftOut('A try at sending an event, kept a short while.'),
   webhook_delivery: leftOut('An event being sent, kept a short while.'),

@@ -32,4 +32,21 @@ describe('each request counted by its capability for its environment (the DG pla
     expect(of('Components')).toMatchObject({ requests: 1, clientErrors: 1 });
     expect(written.every((each) => each.tenant === h.tenant.id)).toBe(true);
   });
+
+  it('ADM-011 counts a reference search as a capability of its own, beside its route tag, since it leaves no row', async () => {
+    written.length = 0;
+    const searched = await h.call(
+      'ada',
+      'POST',
+      '/v1/reference-sources/11111111-1111-4111-8111-111111111111/search',
+      {},
+    );
+    expect(searched.statusCode).toBeGreaterThanOrEqual(400);
+    await measuring.flush();
+    const counted = written.flatMap((each) => each.counts);
+    expect(counted.find((each) => each.capability === 'Reference searches')).toMatchObject({
+      requests: 1,
+    });
+    expect(counted.filter((each) => each.capability !== 'Reference searches')).toHaveLength(1);
+  });
 });

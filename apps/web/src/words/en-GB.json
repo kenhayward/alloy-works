@@ -6345,6 +6345,7 @@
   "admin.diag-work.sweepImportsEverywhere": "Abandoned imports cleared",
   "admin.diag-work.sweepMailEverywhere": "Old mail cleared",
   "admin.diag-work.sweepMeasurementsEverywhere": "Measurements rolled up",
+  "admin.diag-work.sweepUsageEverywhere": "Usage counted",
   "admin.diag-work.sweepOldNotifications": "Old notifications cleared",
   "admin.diag-work.sweepQueryEmbeddingsEverywhere": "Old search vectors cleared",
   "admin.diag-work.sweepRestorations": "Restore uploads cleared",
