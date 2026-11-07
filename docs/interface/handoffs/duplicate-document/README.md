@@ -28,12 +28,12 @@ Delivered as a zip that unpacks at the repository root, into
 
 ## Screens
 
-| Files             | Screen                                                                                   |
-| ----------------- | ---------------------------------------------------------------------------------------- |
-| `collapsed-*`     | Copy its own, reuse shared: 14 copied, 8 reused; the list folded; rewordings kept          |
-| `exceptions-*`    | The list open: two components set to Copy against the starting point, so 16 and 6          |
-| `another-start-*` | Copy every component chosen after that: the exceptions gone; rewordings not kept           |
-| `copying-*`       | Copying, with a title already in use in the space; everything waits                        |
+| Files             | Screen                                                                            |
+| ----------------- | --------------------------------------------------------------------------------- |
+| `collapsed-*`     | Copy its own, reuse shared: 14 copied, 8 reused; the list folded; rewordings kept |
+| `exceptions-*`    | The list open: two components set to Copy against the starting point, so 16 and 6 |
+| `another-start-*` | Copy every component chosen after that: the exceptions gone; rewordings not kept  |
+| `copying-*`       | Copying, with a title already in use in the space; everything waits               |
 
 ## Decisions to record (one ADR)
 
@@ -58,11 +58,11 @@ Delivered as a zip that unpacks at the repository root, into
    hint "then make exceptions below, one component at a time").
    - **Each card** has an icon tile, the choice's name, a radio dot at the right, and one sentence:
 
-     | Choice                         | Icon         | Sentence                                         |
-     | ------------------------------ | ------------ | ------------------------------------------------ |
-     | Reuse every component          | link         | Both place the same components; a change shows in each. |
-     | Copy its own, reuse shared     | branch       | Copies those only placed here; shares the rest.  |
-     | Copy every component           | duplicate    | Stands alone: everything it may copy is copied.  |
+     | Choice                     | Icon      | Sentence                                                |
+     | -------------------------- | --------- | ------------------------------------------------------- |
+     | Reuse every component      | link      | Both place the same components; a change shows in each. |
+     | Copy its own, reuse shared | branch    | Copies those only placed here; shares the rest.         |
+     | Copy every component       | duplicate | Stands alone: everything it may copy is copied.         |
 
    - **The chosen card:** `--accent-weak` behind it, a 1.5px `--accent` edge, and its tile on
      `--accent`. The others are on `--sunken`.
@@ -91,6 +91,7 @@ Delivered as a zip that unpacks at the repository root, into
      - "EXCEPTION" in `--accent-text` after the name.
 
      Setting it back to its starting point makes it no longer an exception.
+
    - **A fixed row** cannot be copied: a dashed "Reused" with a lock, and the reason as its tooltip
      and in the "placed" column. The reasons today's preview already counts:
      - required by the template (`required`);
@@ -130,12 +131,13 @@ The preview and the copy each take two more things (`POST /v1/artifacts/{id}/cop
 {
   "to": "space-id",
   "title": "…",
-  "components": "own",                       // the starting point, as today
-  "exceptions": [                            // new: set otherwise than the starting point
-    { "node": "node-id", "as": "copy" },     //   "copy" | "reuse"
-    { "node": "node-id", "as": "reuse" }
+  "components": "own", // the starting point, as today
+  "exceptions": [
+    // new: set otherwise than the starting point
+    { "node": "node-id", "as": "copy" }, //   "copy" | "reuse"
+    { "node": "node-id", "as": "reuse" },
   ],
-  "rewordings": "keep"                       // new: "keep" (default) | "drop"
+  "rewordings": "keep", // new: "keep" (default) | "drop"
 }
 ```
 
@@ -147,6 +149,7 @@ The preview and the copy each take two more things (`POST /v1/artifacts/{id}/cop
 
   Keep the counts it gives today. Add `reused`, and `overrides` (standing) beside
   `overridesDropped`.
+
 - **Refusing:**
   - an exception to Copy a fixed component is refused (400, `exception_fixed`, naming it);
   - an exception naming a node not in the document is refused (400);
