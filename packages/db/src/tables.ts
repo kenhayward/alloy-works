@@ -147,6 +147,8 @@ export interface IdentityProviderTable {
   secret_name: string | null;
   /** The client secret, sealed to this tenant and to sign-in (0042); null only beside a name. */
   sealed_secret: string | null;
+  /** Set by the database whenever the secret changes (0220). */
+  secret_set_at: ColumnType<Date | null, never, never>;
   /** Marked by an organisation, for the steward to copy into its tenants (0203; TL-M). */
   shared: Generated<boolean>;
   /** A copy of the organisation's: a tenant may close it, not edit it (0203; TL-M). */
@@ -231,6 +233,8 @@ export interface MailChannelTable {
   port: number | null;
   username: string | null;
   sealed_password: string | null;
+  /** Set by the database whenever the password changes (0220). */
+  password_set_at: ColumnType<Date | null, never, never>;
   from_address: string | null;
   from_name: string | null;
   updated_at: ColumnType<Date, Date | undefined, Date>;
@@ -341,6 +345,8 @@ export interface WebhookSubscriptionTable {
   event_types: string[];
   sealed: string;
   sealed_previous: string | null;
+  /** Set by the database whenever the secret changes (0220). */
+  secret_set_at: ColumnType<Date | null, never, never>;
   previous_until: Date | null;
   created_by: string | null;
   created_at: Generated<Date>;
@@ -395,6 +401,8 @@ export interface ApiTokenTable {
   created_at: Generated<Date>;
   expires_at: Date;
   last_used_at: ColumnType<Date | null, never, Date>;
+  /** When a replaced token stops being accepted: set once, never past its expiry (0220). */
+  ends_at: ColumnType<Date | null, never, Date>;
 }
 
 export interface InvitationTable {
