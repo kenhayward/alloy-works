@@ -25,7 +25,9 @@ document version alone does not pin what it shows (a `latest` reference floats);
 5. **The provider takes the password.** Alloy Works asks the provider to sign the person in again and never handles
    a password.
 6. **An import elsewhere reads Not verified there.** An export carries the rows; another environment holds another
-   sealing key, so its signatures do not verify unless the sealing key travels with the archive.
+   sealing key, so its signatures do not verify unless the sealing key travels with the archive. The key is salted
+   with the tenant's id, so a signature copied into another tenant never verifies (11.70); a restore into a new
+   tenant, even in the same environment, reads Not verified for the same reason.
 
 ## What would change the answer
 
