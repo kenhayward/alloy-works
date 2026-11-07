@@ -98,5 +98,5 @@ One-click unsubscribe (the plan's Not in this slice).
 | **ADM-055** | A trigger on the audit log and the closure sweep queue a notice to each person, by the operator's relay, whatever the channel says (EM-V)                                                                                               |
 
 Built. **IMP-045** waits for the rest of what it lists. **COL-061** asks for ADM-036's
-diagnostics, which DG builds, and **LIF-072** for events that do not exist yet, so this slice claims neither: a failing channel
-shows in Administration, and a change to it is audited.
+diagnostics, which DG builds, so this slice does not claim it: a failing channel shows in Administration, and a change
+to it is audited, `mail_channel.changed` answering LIF-072's notification channel ([audit.md](audit.md)).

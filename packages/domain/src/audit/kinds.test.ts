@@ -108,7 +108,6 @@ describe('the audit kinds', () => {
       'bridge.refused',
       'bridge.settings_changed',
       'publication.shared_accessed',
-      'channel.changed',
       'tool.used',
       // The AU1 plan's additions (AU1-A).
       'group.made',
@@ -248,6 +247,7 @@ describe('the audit kinds', () => {
         outcome: 'revision',
       },
       'asset.refused': { reason: 'too_many_pixels' },
+      'asset.replaced': { replaced: ID },
       'publication.requested': { request: ID, formats: ['pdf', 'docx'] },
       'publication.produced': { request: ID, publication: OTHER },
       'publication.failed': { request: ID, codes: ['occurrence_unreadable', 'engine'] },
@@ -274,6 +274,22 @@ describe('the audit kinds', () => {
     for (const kind of auditKinds) {
       expect(() => parseAuditDetail(kind, { note: 'anything' }), kind).toThrow(kind);
     }
+  });
+
+  it('LIF-072 has an asset replaced and re-licensed, a support grant, use and revocation, and a notification channel changed, each a kind of its own with its writer', () => {
+    for (const kind of [
+      'asset.replaced',
+      'asset.relicensed',
+      'support.granted',
+      'support.used',
+      'support.revoked',
+      'mail_channel.changed',
+    ] as const) {
+      expect(auditKindSpecs[kind].requirements, kind).toContain('LIF-072');
+      expect(auditKindSpecs[kind].emittedBy, kind).not.toBeNull();
+    }
+    // Mail is the only notification channel (COL-060), so it has the one kind.
+    expect(isAuditKind('channel.changed')).toBe(false);
   });
 
   it('LIF-070 has a relationship made, changed and removed, and an access to a shared publication, each a kind of its own with its writer', () => {

@@ -3775,7 +3775,6 @@
   "admin.data-confirmed": "Data confirmed",
   "admin.data-fetched": "Data fetched",
   "admin.data-revised": "Data revised",
-  "admin.channel-changed": "Channel changed",
   "admin.component-type-changed": "Component type changed",
   "admin.connection-changed": "Connection changed",
   "admin.connection-credential-set": "Connection credential set",
