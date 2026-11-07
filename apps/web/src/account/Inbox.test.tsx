@@ -344,4 +344,33 @@ describe('the inbox, from the account chip', () => {
       await screen.findByText('Background work in your environment is failing or late.'),
     ).toBeInTheDocument();
   });
+
+  it('ADM-047 tells a secret failing since its replacement once, against the secret, naming every consumer', async () => {
+    const { client } = service([
+      {
+        id: id(10),
+        kind: 'diagnostics',
+        actor: null,
+        thread: null,
+        on: null,
+        counts: null,
+        diagnostics: {
+          kind: 'secret_failing',
+          subject: 'model_endpoint_key:e1:1000',
+          replaced: {
+            kind: 'model_endpoint_key',
+            name: 'Drafting',
+            consumers: ['drafting', 'translate'],
+          },
+        },
+        at: '2026-11-07T10:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const row = (await screen.findByText(/secret of Drafting/)).closest('li')!;
+    expect(row).toHaveTextContent(
+      'Something using the secret of Drafting has failed to authenticate since it was replaced. It is used by drafting and translate.',
+    );
+  });
 });
